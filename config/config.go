@@ -42,7 +42,7 @@ func LoadConfig() {
 
 		explicitConfigFile := os.Getenv("CONFIG_FILE")
 		if explicitConfigFile != "" {
-			fmt.Printf("CONFIG_FILE: %s\n", explicitConfigFile)
+			fmt.Printf("CONFIG_FILE not specified: %s\n", explicitConfigFile)
 			viper.SetConfigFile(explicitConfigFile)
 		} else {
 			viper.SetConfigName("config")
