@@ -1,7 +1,7 @@
 {
   "authority_id": "some-store",
-  "root_key_path": "/home/diesel/Desktop/mp/keys/root-private-key.pem",
-  "generic_key_path": "/home/diesel/Desktop/mp/keys/generic-private-key.pem",
+  "root_key_path": "/home/a-user/root-private-key.pem",
+  "generic_key_path": "/home/a-user/freetocompute/generic-private-key.pem",
   "root_account_init": {
     "id": "some-store",
     "display_name": "some-store",
