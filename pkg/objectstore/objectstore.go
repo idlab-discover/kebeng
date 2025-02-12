@@ -15,8 +15,8 @@ import (
 )
 
 type ObjectStore interface {
-	SaveFileToBucket(bucket string, filePath string)
-	GetFileFromBucket(bucket string, filePath string)
+	SaveFileToBucket(bucket string, filePath string) error
+	GetFileFromBucket(bucket string, filePath string) (*[]byte, error)
 }
 
 type Impl struct {

@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"io"
+   "fmt"
 	"os"
 	"path"
 	"strconv"
@@ -52,15 +53,18 @@ type IStoreHandler interface {
 	AuthSession() *responses.Session
 }
 
+// TODO add objectstore to the handler
 type Handler struct {
 	accounts repositories.IAccountRepository
 	snaps    repositories.ISnapsRepository
+   obs  objectstore.ObjectStore
 }
 
-func NewHandler(accts repositories.IAccountRepository, snaps repositories.ISnapsRepository) *Handler {
+func NewHandler(accts repositories.IAccountRepository, snaps repositories.ISnapsRepository, obs objectstore.ObjectStore) *Handler {
 	return &Handler{
 		accts,
 		snaps,
+      obs,
 	}
 }
 
@@ -246,12 +250,12 @@ func (h *Handler) GetSnapRevisionAssertion(SHA3384Encoded string, rootStoreKey *
 }
 
 func (h *Handler) SnapDownload(snapFilename string) (*[]byte, error) {
-	// TODO: make this part of construction
-	obs := objectstore.NewObjectStore()
+	bytes, err := h.obs.GetFileFromBucket("snaps", snapFilename)
 
-	bytes, err := obs.GetFileFromBucket("snaps", snapFilename)
 	if err == nil && bytes != nil {
 		return bytes, nil
+   } else if bytes == nil || len(*bytes) == 0 {
+      return nil, fmt.Errorf("snap not found, err: %w", err)
 	} else if err != nil {
 		logrus.Error(err)
 		return nil, err
