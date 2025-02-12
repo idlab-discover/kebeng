@@ -62,6 +62,7 @@ func (s *Server) Run() {
 		panic(err)
 	}
 
+	// TODO: assertions next step
 	rootAuthorityId := config.MustGetString(configkey.RootAuthority)
 	signingDB := assertstest.NewSigningDB(rootAuthorityId, asserts.RSAPrivateKey(rootPrivateKey))
 
@@ -77,7 +78,7 @@ func (s *Server) Run() {
 		panic(err)
 	}
 
-	handler := store.NewHandler(repositories.NewAccountRepository(db), repositories.NewSnapsRepository(db))
+	handler := store.NewHandler(repositories.NewAccountRepository(db), repositories.NewSnapsRepository(db), obs)
 	store := store.New(handler, assertsDatabase, rootPrivateKey, genericPrivateKey, signingDB)
 	if store == nil {
 		panic("store was not created, cannot continue")
@@ -135,21 +136,21 @@ func GetDatabaseWithRootKeyS3(minioClient *minio.Client) *asserts.Database {
 		})
 		for object := range objectCh {
 			if strings.Contains(object.Key, "pem") {
-				objectPtr, err2 := minioClient.GetObject(ctx, bucket, object.Key, minio.GetObjectOptions{})
-				if err2 != nil {
-					panic(err2)
+				objectPtr, err := minioClient.GetObject(ctx, bucket, object.Key, minio.GetObjectOptions{})
+				if err != nil {
+					panic(err)
 				}
 				bytes, _ := ioutil.ReadAll(objectPtr)
 
-				rsaPK, err2 := crypto.ParseRSAPrivateKeyFromPEM(bytes)
-				if err2 != nil {
+				rsaPK, err := crypto.ParseRSAPrivateKeyFromPEM(bytes)
+				if err != nil {
 					panic(err)
 				}
 
 				assertPK := asserts.RSAPrivateKey(rsaPK)
 
-				err2 = db.ImportKey(assertPK)
-				if err2 != nil {
+				err = db.ImportKey(assertPK)
+				if err != nil {
 					panic(err)
 				}
 			}
