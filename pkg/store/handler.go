@@ -252,17 +252,16 @@ func (h *Handler) GetSnapRevisionAssertion(SHA3384Encoded string, rootStoreKey *
 func (h *Handler) SnapDownload(snapFilename string) (*[]byte, error) {
 	bytes, err := h.obs.GetFileFromBucket("snaps", snapFilename)
 
-	if err == nil && bytes != nil {
-		return bytes, nil
-   } else if bytes == nil || len(*bytes) == 0 {
-      return nil, fmt.Errorf("snap not found, err: %w", err)
-	} else if err != nil {
-		logrus.Error(err)
-		return nil, err
-	}
+   if err != nil {
+      logrus.Error(err)
+      return nil, fmt.Errorf("error fetching snap: %w", err)
+   }
 
-	logrus.Errorf("Error trying to get snap file %s for download", snapFilename)
-	return nil, errors.New("unknown error encountered while trying to get snap for download")
+   if bytes != nil && len(*bytes) == 0 {
+      return nil, fmt.Errorf("snap file %s not found", snapFilename)
+   }
+   
+   return bytes, nil
 }
 
 func (h *Handler) SnapRefresh(actions *[]*requests.SnapActionJSON) (*responses.SnapActionResultList, error) {
