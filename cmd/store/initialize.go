@@ -11,7 +11,7 @@ import (
 	"github.com/freetocompute/kebe/config/configkey"
 	"github.com/freetocompute/kebe/pkg/crypto"
 	"github.com/freetocompute/kebe/pkg/database"
-	// "github.com/freetocompute/kebe/pkg/models"
+	"github.com/freetocompute/kebe/pkg/models"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/sirupsen/logrus"
@@ -111,7 +111,10 @@ var Initialize = cobra.Command{
 		makeBucketAndAddKey(minioClient, "root", initConfig.RootKeyPath, "private-key.pem")
 		makeBucketAndAddKey(minioClient, "generic", initConfig.GenericKeyPath, "private-key.pem")
       
-      /* TODO check how this works when we need it
+      
+      /* TODO check how this works when we need it 
+         in server.Run() this functionality does work why?
+
       // TODO: this is a redundant load
       rootKey := crypto.GetPrivateKeyFromPEMFile(initConfig.RootKeyPath)
 
