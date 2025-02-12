@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"strings"
 	"sync"
@@ -53,14 +52,10 @@ func (s *Server) Run() {
 	})
 
 	db, _ := database.CreateDatabase()
-   fmt.Printf("database is created")
 	assertsDatabase := GetDatabaseWithRootKey()
-   
-   fmt.Printf("about to create NewObjectStore")
+
 	obs := objectstore.NewObjectStore()
-   fmt.Printf("NewObjectStore created\n")
 	bytes, _ := obs.GetFileFromBucket("root", "private-key.pem")
-   fmt.Printf("bytes: %+v\n", bytes)
 	rootPrivateKey, err := crypto.ParseRSAPrivateKeyFromPEM(*bytes)
 	if err != nil {
 		logrus.Error(err)
