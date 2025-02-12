@@ -112,18 +112,22 @@ func (h *Handler) AuthDevice(serialRequest *asserts.SerialRequest, genericPrivat
 
 func (h *Handler) UnscannedUpload(snapFile io.Reader) (string, error) {
 	snapFileName, id, err := saveFileToTemp(snapFile)
-	if err == nil {
-		// TODO: create "unscanned" bucket if it doesn't exist, should check at start-up / constuction
-		objStore := objectstore.NewObjectStore()
-		err = objStore.SaveFileToBucket("unscanned", path.Join("/", "tmp", snapFileName))
-		if err == nil {
-			return id, nil
-		}
+	if err != nil {
+		logrus.Errorf("Failed to save file to temp storage: %v", err)
+		return "", err
 	}
 
-	logrus.Error(err)
-	return "", err
+	// TODO: create "unscanned" bucket if it doesn't exist, should check at start-up / construction
+	objStore := objectstore.NewObjectStore()
+	tmpPath := path.Join(os.TempDir(), snapFileName)
 
+	err = objStore.SaveFileToBucket("unscanned", tmpPath)
+	if err != nil {
+		logrus.Errorf("Failed to save file to object store: %v", err)
+		return "", err
+	}
+
+	return id, nil
 }
 
 func (h *Handler) AuthSession() *responses.Session {
