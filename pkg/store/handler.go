@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"io"
+   "fmt"
 	"os"
 	"path"
 	"strconv"
@@ -52,15 +53,18 @@ type IStoreHandler interface {
 	AuthSession() *responses.Session
 }
 
+// TODO add objectstore to the handler
 type Handler struct {
 	accounts repositories.IAccountRepository
 	snaps    repositories.ISnapsRepository
+   obs  objectstore.ObjectStore
 }
 
-func NewHandler(accts repositories.IAccountRepository, snaps repositories.ISnapsRepository) *Handler {
+func NewHandler(accts repositories.IAccountRepository, snaps repositories.ISnapsRepository, obs objectstore.ObjectStore) *Handler {
 	return &Handler{
 		accts,
 		snaps,
+      obs,
 	}
 }
 
@@ -250,19 +254,18 @@ func (h *Handler) GetSnapRevisionAssertion(SHA3384Encoded string, rootStoreKey *
 }
 
 func (h *Handler) SnapDownload(snapFilename string) (*[]byte, error) {
-	// TODO: make this part of construction
-	obs := objectstore.NewObjectStore()
+	bytes, err := h.obs.GetFileFromBucket("snaps", snapFilename)
 
-	bytes, err := obs.GetFileFromBucket("snaps", snapFilename)
-	if err == nil && bytes != nil {
-		return bytes, nil
-	} else if err != nil {
-		logrus.Error(err)
-		return nil, err
-	}
+   if err != nil {
+      logrus.Error(err)
+      return nil, fmt.Errorf("error fetching snap: %w", err)
+   }
 
-	logrus.Errorf("Error trying to get snap file %s for download", snapFilename)
-	return nil, errors.New("unknown error encountered while trying to get snap for download")
+   if bytes != nil && len(*bytes) == 0 {
+      return nil, fmt.Errorf("snap file %s not found", snapFilename)
+   }
+   
+   return bytes, nil
 }
 
 func (h *Handler) SnapRefresh(actions *[]*requests.SnapActionJSON) (*responses.SnapActionResultList, error) {
