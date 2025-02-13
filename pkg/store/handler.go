@@ -238,6 +238,10 @@ func (h *Handler) GetSnapRevisionAssertion(SHA3384Encoded string, rootStoreKey *
       return nil, fmt.Errorf("snap entry not found for revision: %d", revision.ID)
    }
    
+   // TODO: this is wrong i think, i don't think you are supposed to create a new assertion and sign it again
+   // whenever the assertion is created (here for upload) you sign it then and store it somewhere (i think snapd database asserts.Database)
+   // could store it in the database aswel (kinda what already happens? idk why you would sign it again)
+   // here you just fetch the assertion and return it CHECK THIS!!!!
    assertion, err := asserts2.MakeSnapRevisionAssertion(
       storeAuthorityId,
       SHA3384Encoded, 
