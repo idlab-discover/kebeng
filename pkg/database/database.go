@@ -29,6 +29,9 @@ func CreateDatabaseWithDSN(connectionString string) (*gorm.DB, error) {
 	return db, nil
 }
 
+
+// TODO: make this function usefull
+// still need to do 2 checks most of the time where this function is called
 func CheckDBForErrorOrNoRows(db *gorm.DB) (*gorm.DB, bool) {
 	if db.Error != nil {
 		logrus.Error(db.Error)
