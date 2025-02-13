@@ -210,6 +210,7 @@ func (sp *SnapsRepository) AddUpload(snapName string, upDownId string, fileSize 
 func (sp *SnapsRepository) GetRevisionBySHA(SHA3_384 string, encoded bool) (*models.SnapRevision, error) {
 	var revision models.SnapRevision
 	var db *gorm.DB
+
 	if encoded {
 		logrus.Tracef("Getting snap revision by encoded sha3_384: %s", SHA3_384)
 		db = sp.db.Where(&models.SnapRevision{SHA3384Encoded: SHA3_384}).Find(&revision)
@@ -218,14 +219,16 @@ func (sp *SnapsRepository) GetRevisionBySHA(SHA3_384 string, encoded bool) (*mod
 		db = sp.db.Where(&models.SnapRevision{SHA3_384: SHA3_384}).Find(&revision)
 	}
 
-	if _, ok := database.CheckDBForErrorOrNoRows(db); ok {
-		return &revision, nil
-	} else if db.Error == nil {
-		logrus.Warningf("No revisions found for %s, encoded = %t", SHA3_384, encoded)
-		return nil, nil
+	// check for database errors or no rows found
+	if db.Error != nil {
+		logrus.Errorf("Database error: %v", db.Error)
+		return nil, db.Error
 	}
-
-	return nil, db.Error
+	if db.RowsAffected == 0 {
+		logrus.Warnf("No revisions found for %s (encoded=%t)", SHA3_384, encoded)
+		return nil, nil
+   }
+	return &revision, nil
 }
 
 func (sp *SnapsRepository) GetUpload(upDownId string) (*models.SnapUpload, error) {
