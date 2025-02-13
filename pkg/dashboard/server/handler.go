@@ -256,7 +256,7 @@ func (d *DashboardHandler) GetUploadStatus(upDownId string) (*responses.Status, 
 				SnapEntryID:    snapUpload.SnapEntryID,
 				SHA3_384:       actualSha3,
 				SHA3384Encoded: digest,
-				Size:           int64(snapUpload.Filesize),
+				Size:           uint64(snapUpload.Filesize),
 			}
 
 			_, err2 = d.snaps.UpdateRevision(&revision, &bytes)
