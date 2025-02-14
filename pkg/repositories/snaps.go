@@ -220,6 +220,7 @@ func (sp *SnapsRepository) GetRevisionBySHA(SHA3_384 string, encoded bool) (*mod
 	}
 
 	// check for database errors or no rows found
+   // could use the helper function CheckDBForErrorOrNoRows but don't like how it's implemented
 	if db.Error != nil {
 		logrus.Errorf("Database error: %v", db.Error)
 		return nil, db.Error
@@ -284,7 +285,7 @@ func (sp *SnapsRepository) GetSnapById(id uint, preloadAssociations bool) (*mode
 	} else {
 		db = sp.db.Where(whereModel).Find(&existingSnap)
 	}
-
+   
 	if _, ok := database.CheckDBForErrorOrNoRows(db); ok {
 		return &existingSnap, nil
 	}
