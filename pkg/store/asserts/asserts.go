@@ -16,7 +16,7 @@ func MakeSnapDeclarationAssertion(authorityId, publisherId string, snapEntry *mo
 		"publisher-id": publisherId,
 		"snap-name":    snapEntry.Name,
 		"timestamp":    time.Now().Format(time.RFC3339),
-		"revision":     "1",
+	   "revision":     "1",
 	}
 
 	a, err := db.Sign(asserts.SnapDeclarationType, headers, nil, storePrivateKey.PublicKey().ID())
@@ -40,6 +40,7 @@ func MakeSnapRevisionAssertion(authorityId, digest, snapID string, size uint64, 
 		"snap-revision": fmt.Sprintf("%d", revision),
 		"developer-id":  developerID,
 		"timestamp":     time.Now().Format(time.RFC3339),
+      // sign-key-sha3-384: <key-id> // Encoded key id of a signing key (is in the ubuntu docs)
 	}
 	a, err := db.Sign(asserts.SnapRevisionType, headers, nil, keyID)
 	if err != nil {
@@ -47,9 +48,9 @@ func MakeSnapRevisionAssertion(authorityId, digest, snapID string, size uint64, 
 	}
 
 	aaa, ok := a.(*asserts.SnapRevision)
-	if ok {
-		return aaa, nil
+	if !ok {
+	   return nil, errors.New("unable to cast assertion")
 	}
 
-	return nil, errors.New("unable to cast assertion")
+	return aaa, nil
 }
