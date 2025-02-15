@@ -48,7 +48,7 @@ func LoadConfig() {
 		} else {
 			viper.SetConfigName("config")
 			viper.SetConfigType("yaml")
-			viper.AddConfigPath("/opt/kebe-store") // path to look for the config file in
+			viper.AddConfigPath("/tmp/source") // path to look for the config file in
 
 			otherPath := os.Getenv("CONFIG_FILE_PATH")
 			viper.AddConfigPath(otherPath)

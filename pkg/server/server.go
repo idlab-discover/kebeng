@@ -2,7 +2,7 @@ package server
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"strings"
 	"sync"
 
@@ -140,7 +140,7 @@ func GetDatabaseWithRootKeyS3(minioClient *minio.Client) *asserts.Database {
 				if err != nil {
 					panic(err)
 				}
-				bytes, _ := ioutil.ReadAll(objectPtr)
+				bytes, _ := io.ReadAll(objectPtr)
 
 				rsaPK, err := crypto.ParseRSAPrivateKeyFromPEM(bytes)
 				if err != nil {
@@ -183,7 +183,7 @@ func getDatabaseConfig(minioClient *minio.Client) (*asserts.DatabaseConfig, erro
 					panic(err)
 				}
 
-				assertionBytes, _ := ioutil.ReadAll(objectPtr)
+				assertionBytes, _ := io.ReadAll(objectPtr)
 				logrus.Trace("assertion:")
 				logrus.Trace(string(assertionBytes))
 				assertion, err := asserts.Decode(assertionBytes)
