@@ -4,14 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 	"strings"
 
 	"github.com/freetocompute/kebe/config/configkey"
 	"github.com/freetocompute/kebe/pkg/crypto"
 	"github.com/freetocompute/kebe/pkg/database"
-	"github.com/freetocompute/kebe/pkg/models"
+
+	//"github.com/freetocompute/kebe/pkg/models"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/sirupsen/logrus"
@@ -103,66 +104,65 @@ var Initialize = cobra.Command{
 		}
 
 		var initConfig InitializationConfig
-		bytes, _ := ioutil.ReadFile(initializationConfigPath)
+		bytes, _ := os.ReadFile(initializationConfigPath)
 		_ = json.Unmarshal(bytes, &initConfig)
 
 		fmt.Printf("%+v\n", initConfig)
 
 		makeBucketAndAddKey(minioClient, "root", initConfig.RootKeyPath, "private-key.pem")
 		makeBucketAndAddKey(minioClient, "generic", initConfig.GenericKeyPath, "private-key.pem")
-      
-      
-      /* TODO check how this works when we need it 
-         in server.Run() this functionality does work why?
 
-      // TODO: this is a redundant load
-      rootKey := crypto.GetPrivateKeyFromPEMFile(initConfig.RootKeyPath)
+		/* TODO check how this works when we need it
+		         in server.Run() this functionality does work why?
 
-      // create a signing database with the store's root key
-      signingDB := assertstest.NewSigningDB(initConfig.AuthorityId, rootKey)
-      db, _ := database.CreateDatabase()
+		      // TODO: this is a redundant load
+		      rootKey := crypto.GetPrivateKeyFromPEMFile(initConfig.RootKeyPath)
 
-      // generate trusted account and account key
+		      // create a signing database with the store's root key
+		      signingDB := assertstest.NewSigningDB(initConfig.AuthorityId, rootKey)
+		      db, _ := database.CreateDatabase()
 
-		createTrustedAccountExt(minioClient, rootKey, rootKey.PublicKey().ID(), signingDB, initConfig.RootAccountInit.Id, initConfig.RootAccountInit.Username, "root", "default")
-		rootAccount := models.Account{
-			AccountId:   initConfig.RootAccountInit.Id,
-			DisplayName: initConfig.RootAccountInit.DisplayName,
-			Username:    initConfig.RootAccountInit.Username,
-			Email:       initConfig.RootAccountInit.Email,
-		}
-		db.Save(&rootAccount)
-		rootAccountKey := models.Key{
-			Name: "default",
-			//TODO: get actual sha3384, is it needed?
-			SHA3384:          rootKey.PublicKey().ID(),
-			EncodedPublicKey: rootKey.PublicKey().ID(),
-			AccountID:        rootAccount.ID,
-		}
-		db.Save(&rootAccountKey)
+		      // generate trusted account and account key
 
-		//
-		// generate generic account, account-key and mode
-		// TODO: this is a redundant load
-	   genericKey := crypto.GetPrivateKeyFromPEMFile(initConfig.GenericKeyPath)
-      
-		createTrustedAccountExt(minioClient, genericKey, rootKey.PublicKey().ID(), signingDB, initConfig.GenericAccountInit.Id, initConfig.GenericAccountInit.Username, "generic", "default")
-		genericAccount := models.Account{
-			AccountId:   initConfig.GenericAccountInit.Id,
-			DisplayName: initConfig.GenericAccountInit.DisplayName,
-			Username:    initConfig.GenericAccountInit.Username,
-			Email:       initConfig.GenericAccountInit.Email,
-		}
-		db.Save(&genericAccount)
-		genericAccountKey := models.Key{
-			Name: "default",
-			//TODO: get actual sha3384, is it needed?
-			SHA3384:          genericKey.PublicKey().ID(),
-			EncodedPublicKey: genericKey.PublicKey().ID(),
-			AccountID:        genericAccount.ID,
-		}
-		db.Save(&genericAccountKey)
-      */
+				createTrustedAccountExt(minioClient, rootKey, rootKey.PublicKey().ID(), signingDB, initConfig.RootAccountInit.Id, initConfig.RootAccountInit.Username, "root", "default")
+				rootAccount := models.Account{
+					AccountId:   initConfig.RootAccountInit.Id,
+					DisplayName: initConfig.RootAccountInit.DisplayName,
+					Username:    initConfig.RootAccountInit.Username,
+					Email:       initConfig.RootAccountInit.Email,
+				}
+				db.Save(&rootAccount)
+				rootAccountKey := models.Key{
+					Name: "default",
+					//TODO: get actual sha3384, is it needed?
+					SHA3384:          rootKey.PublicKey().ID(),
+					EncodedPublicKey: rootKey.PublicKey().ID(),
+					AccountID:        rootAccount.ID,
+				}
+				db.Save(&rootAccountKey)
+
+				//
+				// generate generic account, account-key and mode
+				// TODO: this is a redundant load
+			   genericKey := crypto.GetPrivateKeyFromPEMFile(initConfig.GenericKeyPath)
+
+				createTrustedAccountExt(minioClient, genericKey, rootKey.PublicKey().ID(), signingDB, initConfig.GenericAccountInit.Id, initConfig.GenericAccountInit.Username, "generic", "default")
+				genericAccount := models.Account{
+					AccountId:   initConfig.GenericAccountInit.Id,
+					DisplayName: initConfig.GenericAccountInit.DisplayName,
+					Username:    initConfig.GenericAccountInit.Username,
+					Email:       initConfig.GenericAccountInit.Email,
+				}
+				db.Save(&genericAccount)
+				genericAccountKey := models.Key{
+					Name: "default",
+					//TODO: get actual sha3384, is it needed?
+					SHA3384:          genericKey.PublicKey().ID(),
+					EncodedPublicKey: genericKey.PublicKey().ID(),
+					AccountID:        genericAccount.ID,
+				}
+				db.Save(&genericAccountKey)
+		*/
 
 		fmt.Println("*******************************")
 		fmt.Printf("ALL DONE. Browse to %s/%s to view your assertions.\n", viper.GetString(configkey.MinioHost), "minio/root/")
@@ -188,7 +188,7 @@ func makeBucketAndAddKey(minioClient *minio.Client, bucketName string, keyPath s
 		logrus.Error(err)
 	}
 
-	bytes, _ := ioutil.ReadFile(keyPath)
+	bytes, _ := os.ReadFile(keyPath)
 	rootPrivateKey, _ := crypto.ParseRSAPrivateKeyFromPEM(bytes)
 	keyString := crypto.ExportRsaPrivateKeyAsPemStr(rootPrivateKey)
 
