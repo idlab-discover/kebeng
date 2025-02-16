@@ -8,33 +8,42 @@ import (
 	"github.com/snapcore/snapd/asserts"
 )
 
+// assertions started working on
+
+// SnapRevision
+// SnapDeclaration
+// Account
+// AccountKey
+
 func (s *Store) getSnapRevisionAssertion(c *gin.Context) {
-	sha3384digest := c.Param("sha3384digest")
-	logrus.Tracef("Requested snap-revision: %s", sha3384digest)
+   sha3384digest := c.Param("sha3384digest") 
+   logrus.Tracef("Requested snap-revision: %s", sha3384digest)
 
-	assertion, err := s.handler.GetSnapRevisionAssertion(sha3384digest, s.rootStoreKey, s.assertsDatabase)
-	if err == nil && assertion != nil {
-		encodedAssertion := asserts.Encode(assertion)
-		logrus.Trace("Sending snap-revision assertion: ")
-		logrus.Trace(string(encodedAssertion))
+   assertions, err := s.handler.GetSnapRevisionAssertion(sha3384digest, s.rootStoreKey, s.assertsDatabase, s.rootAuthorityID)
+   if err != nil {
+      logrus.Errorf("Failed to get snap-revision assertion: %s",err)
+      c.AbortWithStatus(http.StatusInternalServerError)
+      return
+   }
 
-		c.Writer.Header().Set("Content-Type", asserts.MediaType)
-		c.Writer.WriteHeader(200)
-		_, err = c.Writer.Write(asserts.Encode(assertion))
-		if err != nil {
-			logrus.Error(err)
-			c.AbortWithStatus(http.StatusBadRequest)
-			return
-		}
-		return
-	} else if err != nil {
-		logrus.Error(err)
-	} else {
-		logrus.Error("unknown error encountered in getSnapRevisionAssertion")
-	}
-
-	c.AbortWithStatus(http.StatusBadRequest)
+   if assertions == nil {
+      logrus.Errorf("Snap-revision assertion not found")
+      c.AbortWithStatus(http.StatusNotFound)
+      return
+   }
+   
+   encodedAssertion := asserts.Encode(assertions)
+   logrus.Tracef("Sending snap-revision assertion: %s", string(encodedAssertion))
+   
+   c.Writer.Header().Set("Content-Type", asserts.MediaType) // MediaType is the type for encoded assertions
+   c.Writer.WriteHeader(http.StatusOK)
+   
+   if _, err := c.Writer.Write(encodedAssertion); err != nil {
+      logrus.Errorf("Failed to write snap-revision assertion: %s", err)
+      c.AbortWithStatus(http.StatusInternalServerError)
+   }
 }
+
 
 func (s *Store) getSnapDeclarationAssertion(c *gin.Context) {
 	snapId := c.Param("snap-id")
@@ -91,7 +100,7 @@ func (s *Store) getAccountAssertion(c *gin.Context) {
 	c.AbortWithStatus(http.StatusInternalServerError)
 }
 
-func (s *Store) getAccountKey(c *gin.Context) {
+func (s *Store) getAccountKeyAssertion(c *gin.Context) {
 	key := c.Param("key")
 	logrus.Tracef("Requested account-key: %s", key)
 

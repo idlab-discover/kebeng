@@ -21,9 +21,10 @@ type Store struct {
 	genericPrivateKey *rsa.PrivateKey
 	signingDB         *assertstest.SigningDB
 	handler           IStoreHandler
+   rootAuthorityID   string // needed to verify who signed the assertions so it can be checked
 }
 
-func New(handler IStoreHandler, assertsDB *asserts.Database, rootStoreKey *rsa.PrivateKey, genericPrivateKey *rsa.PrivateKey, signingDB *assertstest.SigningDB) *Store {
+func New(handler IStoreHandler, assertsDB *asserts.Database, rootStoreKey *rsa.PrivateKey, genericPrivateKey *rsa.PrivateKey, signingDB *assertstest.SigningDB, rootAuthorityID string) *Store {
 	return &Store{
 		// db:                db,
 		assertsDatabase:   assertsDB,
@@ -31,6 +32,7 @@ func New(handler IStoreHandler, assertsDB *asserts.Database, rootStoreKey *rsa.P
 		signingDB:         signingDB,
 		genericPrivateKey: genericPrivateKey,
 		handler:           handler,
+      rootAuthorityID:   rootAuthorityID,
 	}
 }
 
