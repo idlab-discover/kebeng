@@ -10,30 +10,30 @@ import (
 	"path"
 	"strconv"
 
-	"github.com/freetocompute/kebe/pkg/database"
-	"github.com/freetocompute/kebe/pkg/models"
+	"github.com/idlab-discover/kebeng/pkg/database"
+	"github.com/idlab-discover/kebeng/pkg/models"
 
 	"github.com/google/uuid"
 
 	"github.com/snapcore/snapd/asserts/assertstest"
 
-	asserts2 "github.com/freetocompute/kebe/pkg/store/asserts"
+	asserts2 "github.com/idlab-discover/kebeng/pkg/store/asserts"
 
-	"github.com/freetocompute/kebe/config"
-	"github.com/freetocompute/kebe/config/configkey"
+	"github.com/idlab-discover/kebeng/config"
+	"github.com/idlab-discover/kebeng/config/configkey"
 
 	"github.com/snapcore/snapd/asserts"
 
-	"github.com/freetocompute/kebe/pkg/objectstore"
+	"github.com/idlab-discover/kebeng/pkg/objectstore"
 
-	"github.com/freetocompute/kebe/pkg/store/requests"
+	"github.com/idlab-discover/kebeng/pkg/store/requests"
 
 	"github.com/snapcore/snapd/snap"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/freetocompute/kebe/pkg/repositories"
-	"github.com/freetocompute/kebe/pkg/store/responses"
+	"github.com/idlab-discover/kebeng/pkg/repositories"
+	"github.com/idlab-discover/kebeng/pkg/store/responses"
 )
 
 type IStoreHandler interface {

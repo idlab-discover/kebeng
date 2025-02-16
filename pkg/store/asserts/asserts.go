@@ -3,7 +3,7 @@ package asserts
 import (
 	"errors"
 	"fmt"
-	"github.com/freetocompute/kebe/pkg/models"
+	"github.com/idlab-discover/kebeng/pkg/models"
 	"github.com/snapcore/snapd/asserts"
 	"time"
 )
