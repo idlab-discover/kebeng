@@ -4,7 +4,6 @@ import (
 	"crypto/rsa"
 	"encoding/json"
 	"io"
-	"mime/multipart"
 	"net/http"
 
 	"github.com/freetocompute/kebe/pkg/store/responses"
@@ -40,18 +39,18 @@ func New(handler IStoreHandler, assertsDB *asserts.Database, rootStoreKey *rsa.P
 func (s *Store) snapDownload(c *gin.Context) {
 	snapFilename := c.Param("filename")
 
-   bytes, err := s.handler.SnapDownload(snapFilename)
-   if err != nil {
-      logrus.Error(err)
-      c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-      return
-   }
+	bytes, err := s.handler.SnapDownload(snapFilename)
+	if err != nil {
+		logrus.Error(err)
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
 
-   _, err2 := c.Writer.Write(*bytes)
-   if err2 != nil {
-      logrus.Error(err2)
-	   c.AbortWithStatus(http.StatusInternalServerError)
-   }
+	_, err2 := c.Writer.Write(*bytes)
+	if err2 != nil {
+		logrus.Error(err2)
+		c.AbortWithStatus(http.StatusInternalServerError)
+	}
 
 }
 
@@ -149,28 +148,44 @@ func (s *Store) getSnapNames(c *gin.Context) {
 
 func (s *Store) unscannedUpload(c *gin.Context) {
 	snapFileData, err := c.FormFile("binary")
-
-	// TODO: fix the actual error response to be something expected
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"message": "No snap file is received",
+			"message": "No snap file is received, make sure the path to the binary file is correct",
 		})
 		return
 	}
 
 	file, err := snapFileData.Open()
-	defer func(file multipart.File) {
-		err2 := file.Close()
-		if err2 != nil {
-			logrus.Error(err2)
-		}
-	}(file)
-	if err == nil {
-		id, err2 := s.handler.UnscannedUpload(file)
-		if err2 == nil && id != "" {
-			c.JSON(http.StatusOK, &responses.Unscanned{UploadId: id})
-		}
+	if err != nil {
+		logrus.Error("Error opening file:", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Failed to open the uploaded file",
+		})
+		return
 	}
+	defer func() {
+		if err := file.Close(); err != nil {
+			logrus.Error("Error closing file:", err)
+		}
+	}()
+
+	id, err2 := s.handler.UnscannedUpload(file)
+	if err2 != nil {
+		logrus.Error("Error uploading file:", err2)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Failed to process the uploaded file",
+		})
+		return
+	}
+
+	if id == "" {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "Upload failed: no ID returned",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, &responses.Unscanned{UploadId: id})
 }
 
 func (s *Store) authRequestIdPOST(c *gin.Context) {

@@ -2,7 +2,7 @@ package server
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"strings"
 	"sync"
 
@@ -53,7 +53,7 @@ func (s *Server) Run() {
 
 	db, _ := database.CreateDatabase()
 	assertsDatabase := GetDatabaseWithRootKey()
-   
+
 	obs := objectstore.NewObjectStore()
 	bytes, _ := obs.GetFileFromBucket("root", "private-key.pem")
 	rootPrivateKey, err := crypto.ParseRSAPrivateKeyFromPEM(*bytes)
@@ -61,8 +61,8 @@ func (s *Server) Run() {
 		logrus.Error(err)
 		panic(err)
 	}
-   
-   // TODO: assertions next step
+
+	// TODO: assertions next step
 	rootAuthorityId := config.MustGetString(configkey.RootAuthority)
    if rootAuthorityId == "" {
       panic("Root authority id is not set")
@@ -143,7 +143,7 @@ func GetDatabaseWithRootKeyS3(minioClient *minio.Client) *asserts.Database {
 				if err != nil {
 					panic(err)
 				}
-				bytes, _ := ioutil.ReadAll(objectPtr)
+				bytes, _ := io.ReadAll(objectPtr)
 
 				rsaPK, err := crypto.ParseRSAPrivateKeyFromPEM(bytes)
 				if err != nil {
@@ -186,7 +186,7 @@ func getDatabaseConfig(minioClient *minio.Client) (*asserts.DatabaseConfig, erro
 					panic(err)
 				}
 
-				assertionBytes, _ := ioutil.ReadAll(objectPtr)
+				assertionBytes, _ := io.ReadAll(objectPtr)
 				logrus.Trace("assertion:")
 				logrus.Trace(string(assertionBytes))
 				assertion, err := asserts.Decode(assertionBytes)

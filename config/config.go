@@ -3,12 +3,13 @@ package config
 import (
 	"errors"
 	"fmt"
-	"github.com/freetocompute/kebe/config/configkey"
-	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 	"os"
 	"strings"
 	"sync"
+
+	"github.com/freetocompute/kebe/config/configkey"
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 var loadConfigMutex sync.Mutex
@@ -42,12 +43,12 @@ func LoadConfig() {
 
 		explicitConfigFile := os.Getenv("CONFIG_FILE")
 		if explicitConfigFile != "" {
-			fmt.Printf("CONFIG_FILE not specified: %s\n", explicitConfigFile)
+			fmt.Printf("CONFIG_FILE is specified: %s\n", explicitConfigFile)
 			viper.SetConfigFile(explicitConfigFile)
 		} else {
 			viper.SetConfigName("config")
 			viper.SetConfigType("yaml")
-			viper.AddConfigPath("/opt/kebe-store") // path to look for the config file in
+			viper.AddConfigPath("/tmp/source") // path to look for the config file in
 
 			otherPath := os.Getenv("CONFIG_FILE_PATH")
 			viper.AddConfigPath(otherPath)
