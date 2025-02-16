@@ -1,7 +1,7 @@
 package store
 
 import (
-	"github.com/freetocompute/kebe/config/configkey"
+	"github.com/idlab-discover/kebeng/config/configkey"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

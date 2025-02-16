@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/freetocompute/kebe/config/configkey"
+	"github.com/idlab-discover/kebeng/config/configkey"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )

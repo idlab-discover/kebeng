@@ -9,30 +9,30 @@ import (
 	"io"
 	"strings"
 
-	generatedResponses "github.com/freetocompute/kebe/generated/responses"
+	generatedResponses "github.com/idlab-discover/kebeng/generated/responses"
 
-	store "github.com/freetocompute/kebe/pkg/store/responses"
+	store "github.com/idlab-discover/kebeng/pkg/store/responses"
 
-	"github.com/freetocompute/kebe/pkg/models"
-	"github.com/freetocompute/kebe/pkg/objectstore"
-	"github.com/freetocompute/kebe/pkg/sha"
+	"github.com/idlab-discover/kebeng/pkg/models"
+	"github.com/idlab-discover/kebeng/pkg/objectstore"
+	"github.com/idlab-discover/kebeng/pkg/sha"
 	"github.com/minio/minio-go/v7"
 
-	"github.com/freetocompute/kebe/config"
-	"github.com/freetocompute/kebe/config/configkey"
-	"github.com/freetocompute/kebe/pkg/auth"
+	"github.com/idlab-discover/kebeng/config"
+	"github.com/idlab-discover/kebeng/config/configkey"
+	"github.com/idlab-discover/kebeng/pkg/auth"
 	"github.com/spf13/viper"
 
 	"gopkg.in/macaroon.v2"
 	macaroonv2 "gopkg.in/macaroon.v2"
 
-	"github.com/freetocompute/kebe/pkg/repositories"
+	"github.com/idlab-discover/kebeng/pkg/repositories"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/freetocompute/kebe/pkg/dashboard/requests"
-	"github.com/freetocompute/kebe/pkg/dashboard/responses"
-	"github.com/freetocompute/kebe/pkg/middleware"
+	"github.com/idlab-discover/kebeng/pkg/dashboard/requests"
+	"github.com/idlab-discover/kebeng/pkg/dashboard/responses"
+	"github.com/idlab-discover/kebeng/pkg/middleware"
 )
 
 type IDashboardHandler interface {
