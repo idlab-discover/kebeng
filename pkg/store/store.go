@@ -3,7 +3,6 @@ package store
 import (
 	"crypto/rsa"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 
@@ -38,18 +37,18 @@ func New(handler IStoreHandler, assertsDB *asserts.Database, rootStoreKey *rsa.P
 func (s *Store) snapDownload(c *gin.Context) {
 	snapFilename := c.Param("filename")
 
-   bytes, err := s.handler.SnapDownload(snapFilename)
-   if err != nil {
-      logrus.Error(err)
-      c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-      return
-   }
+	bytes, err := s.handler.SnapDownload(snapFilename)
+	if err != nil {
+		logrus.Error(err)
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
 
-   _, err2 := c.Writer.Write(*bytes)
-   if err2 != nil {
-      logrus.Error(err2)
-	   c.AbortWithStatus(http.StatusInternalServerError)
-   }
+	_, err2 := c.Writer.Write(*bytes)
+	if err2 != nil {
+		logrus.Error(err2)
+		c.AbortWithStatus(http.StatusInternalServerError)
+	}
 
 }
 
@@ -156,7 +155,7 @@ func (s *Store) unscannedUpload(c *gin.Context) {
 
 	file, err := snapFileData.Open()
 	if err != nil {
-		fmt.Println("Error opening file:", err)
+		logrus.Error("Error opening file:", err)
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": "Failed to open the uploaded file",
 		})
@@ -170,7 +169,7 @@ func (s *Store) unscannedUpload(c *gin.Context) {
 
 	id, err2 := s.handler.UnscannedUpload(file)
 	if err2 != nil {
-		fmt.Println("Error uploading file:", err2)
+		logrus.Error("Error uploading file:", err2)
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": "Failed to process the uploaded file",
 		})
