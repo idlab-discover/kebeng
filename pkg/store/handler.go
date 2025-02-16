@@ -42,7 +42,7 @@ type IStoreHandler interface {
 	FindSnap(name string) (*responses.SearchV2Results, error)
 	SnapRefresh(actions *[]*requests.SnapActionJSON) (*responses.SnapActionResultList, error)
 	SnapDownload(snapFilename string) (*[]byte, error)
-	GetSnapRevisionAssertion(SHA3384Encoded string, rootStoreKey *rsa.PrivateKey, assertsDB *asserts.Database) (*asserts.SnapRevision, error)
+	GetSnapRevisionAssertion(SHA3384Encoded string, rootStoreKey *rsa.PrivateKey, assertsDB *asserts.Database, storeAuthorityId string) (*asserts.SnapRevision, error)
 	GetSnapDeclarationAssertion(snapId string, rootStoreKey *rsa.PrivateKey, assertsDB *asserts.Database) (*asserts.SnapDeclaration, error)
 	GetAccountKeyAssertion(keySHA3384 string, rootStoreKey *rsa.PrivateKey, signingDB *assertstest.SigningDB) (*asserts.AccountKey, error)
 	GetAccountAssertion(accountId string, rootStoreKey *rsa.PrivateKey, signingDB *assertstest.SigningDB) (*asserts.Account, error)
@@ -222,36 +222,48 @@ func (h *Handler) GetSnapDeclarationAssertion(snapStoreId string, rootStoreKey *
 	return nil, errUnknown
 }
 
-func (h *Handler) GetSnapRevisionAssertion(SHA3384Encoded string, rootStoreKey *rsa.PrivateKey, assertsDB *asserts.Database) (*asserts.SnapRevision, error) {
-	revision, err := h.snaps.GetRevisionBySHA(SHA3384Encoded, true)
-	if err == nil && revision != nil {
-		snapEntry, err2 := h.snaps.GetSnapById(revision.SnapEntryID, true)
-		logrus.Tracef("Got snap entry: %+v", snapEntry)
+func (h *Handler) GetSnapRevisionAssertion(SHA3384Encoded string, rootStoreKey *rsa.PrivateKey, assertsDB *asserts.Database, storeAuthorityId string) (*asserts.SnapRevision, error){
+   revision, err := h.snaps.GetRevisionBySHA(SHA3384Encoded, true)
+   if err != nil {
+      logrus.Errorf("Failed to get revision by SHA: %s", err)
+      return nil, err
+   }
+   if revision == nil {
+      logrus.Warnf("Revision not found for SHA: %s", SHA3384Encoded)
+      return nil, fmt.Errorf("revision not found for SHA: %s", SHA3384Encoded)
+   }
+   
+   snapEntry, err := h.snaps.GetSnapById(revision.SnapEntryID, true)
+   if err != nil {
+      logrus.Errorf("Failed to get snap by id: %s", err)
+      return nil, err
+   }
+   if snapEntry == nil {
+      logrus.Warnf("Snap entry not found for revision: %d", revision.ID)
+      return nil, fmt.Errorf("snap entry not found for revision: %d", revision.ID)
+   }
+   
+   // TODO: this is wrong i think, i don't think you are supposed to create a new assertion and sign it again
+   // whenever the assertion is created (here for upload) you sign it then and store it somewhere (i think snapd database asserts.Database)
+   // could store it in the database aswel (kinda what already happens? idk why you would sign it again)
+   // here you just fetch the assertion and return it CHECK THIS!!!!
+   assertion, err := asserts2.MakeSnapRevisionAssertion(
+      storeAuthorityId,
+      SHA3384Encoded, 
+      snapEntry.SnapStoreID,
+      revision.Size, 
+      int(revision.ID), 
+      snapEntry.Account.AccountId, 
+      asserts.RSAPrivateKey(rootStoreKey).PublicKey().ID(), 
+      assertsDB,
+      )
 
-		if err2 == nil && snapEntry != nil {
+   if err != nil {
+      logrus.Errorf("Failed to make snap revision assertion: %s", err)
+      return nil, err
+   }
 
-			// TODO: we should get this somewhere sooner, like construction so we can MUST fail at the beginning of time
-			storeAuthorityId := config.MustGetString(configkey.RootAuthority)
-
-			// TODO: we can do better here
-			assertion, err3 := asserts2.MakeSnapRevisionAssertion(storeAuthorityId, SHA3384Encoded, snapEntry.SnapStoreID, uint64(revision.Size), int(revision.ID), snapEntry.Account.AccountId,
-				asserts.RSAPrivateKey(rootStoreKey).PublicKey().ID(), assertsDB)
-			if err3 == nil && assertion != nil {
-				return assertion, nil
-			} else if err3 != nil {
-				logrus.Error(err3)
-				return nil, err3
-			}
-		} else if err2 != nil {
-			logrus.Error(err2)
-			return nil, err2
-		}
-	} else if err != nil {
-		logrus.Error(err)
-		return nil, err
-	}
-
-	return nil, errors.New("unknown error encountered while trying to get snap revision assertion")
+   return assertion, nil
 }
 
 func (h *Handler) SnapDownload(snapFilename string) (*[]byte, error) {
