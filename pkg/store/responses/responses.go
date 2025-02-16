@@ -28,7 +28,7 @@ type StoreSearchResult struct {
 
 type StoreSnapDownload struct {
 	Sha3_384 string           `json:"sha3-384"`
-	Size     int64            `json:"size"`
+	Size     uint64            `json:"size"`
 	URL      string           `json:"url"`
 	Deltas   []StoreSnapDelta `json:"deltas"`
 }

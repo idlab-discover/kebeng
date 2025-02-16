@@ -70,7 +70,7 @@ type SnapRevision struct {
 	SnapEntryID    uint
 	SHA3_384       string
 	SHA3384Encoded string `gorm:"column:sha3_384_encoded"`
-	Size           int64
+	Size           uint64
 }
 
 type SnapUpload struct {
