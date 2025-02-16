@@ -64,6 +64,9 @@ func (s *Server) Run() {
 
 	// TODO: assertions next step
 	rootAuthorityId := config.MustGetString(configkey.RootAuthority)
+   if rootAuthorityId == "" {
+      panic("Root authority id is not set")
+   }
 	signingDB := assertstest.NewSigningDB(rootAuthorityId, asserts.RSAPrivateKey(rootPrivateKey))
 
 	bytes, _ = obs.GetFileFromBucket("generic", "private-key.pem")
@@ -79,7 +82,7 @@ func (s *Server) Run() {
 	}
 
 	handler := store.NewHandler(repositories.NewAccountRepository(db), repositories.NewSnapsRepository(db), obs)
-	store := store.New(handler, assertsDatabase, rootPrivateKey, genericPrivateKey, signingDB)
+	store := store.New(handler, assertsDatabase, rootPrivateKey, genericPrivateKey, signingDB, rootAuthorityId)
 	if store == nil {
 		panic("store was not created, cannot continue")
 	}
