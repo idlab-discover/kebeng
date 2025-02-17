@@ -192,29 +192,37 @@ func (h *Handler) GetAccountAssertion(accountId string, rootStoreKey *rsa.Privat
 	return nil, errors.New("account not found")
 }
 
-func (h *Handler) GetSnapDeclarationAssertion(snapStoreId string, rootStoreKey *rsa.PrivateKey, assertsDB *asserts.Database) (*asserts.SnapDeclaration, error) {
-	logrus.Tracef("Requested snap-declaration: %s", snapStoreId)
+func (h *Handler) GetSnapDeclarationAssertion(snapId string, rootStoreKey *rsa.PrivateKey, assertsDB *asserts.Database, storeAuthorityId string) (*asserts.SnapDeclaration, error) {
+	logrus.Tracef("Requested snap-declaration: %s", snapId)
 
-	snapEntry, err := h.snaps.GetSnapByStoreId(snapStoreId, true)
-	if err == nil && snapEntry != nil {
-		// TODO: do this sooner, like during construction to fail then if not MUST
-		rootAuthorityId := config.MustGetString(configkey.RootAuthority)
-
-		aaa, err2 := asserts2.MakeSnapDeclarationAssertion(rootAuthorityId, snapEntry.Account.AccountId, snapEntry, asserts.RSAPrivateKey(rootStoreKey), assertsDB)
-		if err2 == nil && aaa != nil {
-			return aaa, nil
-		} else if err2 == nil {
-			logrus.Error(err2)
-			return nil, err2
-		}
-	} else if err != nil {
-		logrus.Error(err)
+	snapEntry, err := h.snaps.GetSnapByStoreId(snapId, true)
+	if err != nil {
+		logrus.Errorf("Failed to get snap entry for snap-id %s: %v", snapId, err)
 		return nil, err
 	}
+	if snapEntry == nil {
+		logrus.Warnf("No snap entry found for snap-id: %s", snapId)
+		return nil, errors.New("snap entry not found")
+	}
 
-	errUnknown := errors.New("unknown error in GetSnapDeclarationAssertion")
-	logrus.Error(errUnknown)
-	return nil, errUnknown
+   // TODO: this again seems wrong, you should not create a new assertion and sign it again
+	assertion, err := asserts2.MakeSnapDeclarationAssertion(
+      storeAuthorityId,
+      snapEntry.Account.AccountId,
+      snapEntry,
+      asserts.RSAPrivateKey(rootStoreKey),
+      assertsDB,
+   )
+	if err != nil {
+		logrus.Errorf("Failed to create snap-declaration assertion: %v", err)
+		return nil, err
+	}
+	if assertion == nil {
+		logrus.Warn("Assertion creation returned nil")
+		return nil, errors.New("failed to create snap-declaration assertion")
+	}
+
+	return assertion, nil
 }
 
 func (h *Handler) GetSnapRevisionAssertion(SHA3384Encoded string, rootStoreKey *rsa.PrivateKey, assertsDB *asserts.Database, storeAuthorityId string) (*asserts.SnapRevision, error){
