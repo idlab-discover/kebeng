@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/freetocompute/kebe/cmd/admin"
-	"github.com/freetocompute/kebe/config"
+	"os"
+
+	"github.com/idlab-discover/kebeng/cmd/admin"
+	"github.com/idlab-discover/kebeng/config"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 func init() {

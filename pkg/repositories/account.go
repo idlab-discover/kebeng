@@ -1,8 +1,8 @@
 package repositories
 
 import (
-	"github.com/freetocompute/kebe/pkg/database"
-	"github.com/freetocompute/kebe/pkg/models"
+	"github.com/idlab-discover/kebeng/pkg/database"
+	"github.com/idlab-discover/kebeng/pkg/models"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"

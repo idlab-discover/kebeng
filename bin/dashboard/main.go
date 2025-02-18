@@ -1,12 +1,12 @@
 package main
 
 import (
-	"github.com/freetocompute/kebe/config"
-	"github.com/freetocompute/kebe/config/configkey"
-	"github.com/freetocompute/kebe/pkg/dashboard/server"
-	"github.com/freetocompute/kebe/pkg/database"
-	"github.com/freetocompute/kebe/pkg/middleware"
-	"github.com/freetocompute/kebe/pkg/repositories"
+	"github.com/idlab-discover/kebeng/config"
+	"github.com/idlab-discover/kebeng/config/configkey"
+	"github.com/idlab-discover/kebeng/pkg/dashboard/server"
+	"github.com/idlab-discover/kebeng/pkg/database"
+	"github.com/idlab-discover/kebeng/pkg/middleware"
+	"github.com/idlab-discover/kebeng/pkg/repositories"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
