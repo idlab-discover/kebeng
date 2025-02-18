@@ -57,7 +57,7 @@ func NewDashboardHandler(accts repositories.IAccountRepository, snaps repositori
 }
 
 func (d *DashboardHandler) GetSnapChannelMap(snapName string) (*generatedResponses.Root, error) {
-	snap, err := d.snaps.GetSnap(snapName, false)
+	snap, err := d.snaps.GetSnapByName(snapName, false)
 	if err == nil && snap != nil {
 		var root generatedResponses.Root
 		var channelMapItems []*generatedResponses.ChannelMapItems
@@ -76,7 +76,7 @@ func (d *DashboardHandler) GetSnapChannelMap(snapName string) (*generatedRespons
 
 				logrus.Tracef("Getting risks for track: %s", track.Name)
 
-				risks, err3 := d.snaps.GetRisks(track.ID)
+				risks, err3 := d.snaps.GetChannels(track.ID)
 				if err3 == nil && risks != nil {
 					for _, risk := range *risks {
 						logrus.Tracef("Getting revision for risk: %s", risk.Name)
@@ -135,7 +135,7 @@ func (d *DashboardHandler) GetSnapChannelMap(snapName string) (*generatedRespons
 
 func (d *DashboardHandler) ReleaseSnap(name string, revision uint, channels []string) (bool, error) {
 	if name != "" && revision != 0 && len(channels) > 0 {
-		snapEntry, err := d.snaps.GetSnap(name, false)
+		snapEntry, err := d.snaps.GetSnapByName(name, false)
 		if err == nil && snapEntry != nil {
 			var trackForRelease string
 			var riskForRelease string
@@ -204,7 +204,7 @@ func (d *DashboardHandler) PushSnap(snapName string, upDownId string, fileSize u
 
 func (d *DashboardHandler) GetUploadStatus(upDownId string) (*responses.Status, error) {
 	// We need to move the snap from the unscanned bucket to the snaps bucket
-	snapUpload, err := d.snaps.GetUpload(upDownId)
+	snapUpload, err := d.snaps.GetUploadByUpDownId(upDownId)
 	if err == nil && snapUpload != nil {
 		snapFileName := upDownId + ".snap"
 
@@ -347,7 +347,7 @@ func (d *DashboardHandler) RegisterSnapName(accountEmail string, isDryRun bool, 
 				}
 			} else {
 				logrus.Trace("This is a dry run")
-				snap, err3 := d.snaps.GetSnap(snapName, false)
+				snap, err3 := d.snaps.GetSnapByName(snapName, false)
 				if err3 == nil && snap == nil {
 					resp := responses.RegisterSnap{
 						Name: snapName,

@@ -75,6 +75,6 @@ func MigrateDatabase(db *gorm.DB) {
 	MigrateWithLog("models.SnapRevision", &models.SnapRevision{}, db)
 
 	MigrateWithLog("models.SnapTrack", &models.SnapTrack{}, db)
-	MigrateWithLog("models.SnapRisk", &models.SnapRisk{}, db)
+	MigrateWithLog("models.SnapChannel", &models.SnapChannel{}, db)
 	MigrateWithLog("models.SnapBranch", &models.SnapBranch{}, db)
 }
