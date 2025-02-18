@@ -4,7 +4,7 @@ Kebe intends to be a full replacement for the Snap Store.
 
 # Quickstart
 
-Once you have an environment setup (for instance using https://github.com/freetocompute/kebe-helm)
+Once you have an environment setup (for instance using https://github.com/idlab-discover/kebeng-helm)
 then you are ready to initialize your store.
 
 Run:
@@ -32,7 +32,7 @@ task build-push-redeploy
 
 * [Taskfile.dev](taskfile.dev)
 * Docker
-* Kubernetes w/Minio and Postgres [see kebe-helm](https://github.com/freetocompute/kebe-helm)
+* Kubernetes w/Minio and Postgres [see kebe-helm](https://github.com/idlab-discover/kebeng-helm)
 * Helm
 
 

@@ -2,8 +2,8 @@ package database
 
 import (
 	"fmt"
-	"github.com/freetocompute/kebe/config/configkey"
-	"github.com/freetocompute/kebe/pkg/models"
+	"github.com/idlab-discover/kebeng/config/configkey"
+	"github.com/idlab-discover/kebeng/pkg/models"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"gorm.io/driver/postgres"
