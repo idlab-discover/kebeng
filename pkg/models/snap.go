@@ -22,23 +22,26 @@ type SnapTrack struct {
 	SnapEntryID uint
 	SnapEntry   SnapEntry
 
-	Risks []SnapRisk
+	Risks []SnapChannel
 }
 
-type SnapRisk struct {
+type SnapChannel struct {
 	gorm.Model
 	Name        string
 	SnapTrackID uint
 	SnapEntryID uint
 	SnapEntry   SnapEntry
-
+   
+   // why store RevisionID when we have Revision?
 	// TODO: fix this -- currently this is monotonically incrementing across ALL revisions, it should just be a given snap
 	RevisionID uint
+   // TODO: can have multiple revisions
 	Revision   SnapRevision
 
 	Branches []SnapBranch
 }
 
+// optional so going to leave this out for now
 type SnapBranch struct {
 	gorm.Model
 	Name        string
@@ -73,6 +76,7 @@ type SnapRevision struct {
 	Size           uint64
 }
 
+// created directly when something is uploaded afterwards assertions checks and a snap revision is created
 type SnapUpload struct {
 	gorm.Model
 	Name     string
@@ -82,6 +86,15 @@ type SnapUpload struct {
 	Channels    string
 	SnapEntryID uint
 	SnapEntry   SnapEntry
+}
+
+// used as an object to pass to the GetSnap function to filter snaps on attributes
+type SnapFilter struct {
+	Name        string
+	Type        string
+	Confinement string
+	Base        string
+   // add more attributes if want to filtere on them
 }
 
 func (se *SnapEntry) ToStoreSnap(snapRevision *SnapRevision) (*responses.StoreSnap, error) {
@@ -114,4 +127,26 @@ func (se *SnapEntry) ToStoreSnap(snapRevision *SnapRevision) (*responses.StoreSn
 	}
 
 	return storeSnap, nil
+}
+
+
+func SnapFilterScope(filter *SnapFilter) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if filter == nil {
+			return db
+		}
+		if filter.Name != "" {
+			db = db.Where("name = ?", filter.Name)
+		}
+		if filter.Type != "" {
+			db = db.Where("type = ?", filter.Type)
+		}
+		if filter.Confinement != "" {
+			db = db.Where("confinement = ?", filter.Confinement)
+		}
+		if filter.Base != "" {
+			db = db.Where("base = ?", filter.Base)
+		}
+		return db
+	}
 }
