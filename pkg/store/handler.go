@@ -19,8 +19,8 @@ import (
 
 	asserts2 "github.com/idlab-discover/kebeng/pkg/store/asserts"
 
-	"github.com/idlab-discover/kebeng/config"
-	"github.com/idlab-discover/kebeng/config/configkey"
+//	"github.com/idlab-discover/kebeng/config"
+//	"github.com/idlab-discover/kebeng/config/configkey"
 
 	"github.com/snapcore/snapd/asserts"
 
@@ -43,7 +43,7 @@ type IStoreHandler interface {
 	SnapRefresh(actions *[]*requests.SnapActionJSON) (*responses.SnapActionResultList, error)
 	SnapDownload(snapFilename string) (*[]byte, error)
 	GetSnapRevisionAssertion(SHA3384Encoded string, rootStoreKey *rsa.PrivateKey, assertsDB *asserts.Database, storeAuthorityId string) (*asserts.SnapRevision, error)
-	GetSnapDeclarationAssertion(snapId string, rootStoreKey *rsa.PrivateKey, assertsDB *asserts.Database) (*asserts.SnapDeclaration, error)
+	GetSnapDeclarationAssertion(snapId string, rootStoreKey *rsa.PrivateKey, assertsDB *asserts.Database, storeAuthorityId string) (*asserts.SnapDeclaration, error)
 	GetAccountKeyAssertion(keySHA3384 string, rootStoreKey *rsa.PrivateKey, signingDB *assertstest.SigningDB) (*asserts.AccountKey, error)
 	GetAccountAssertion(accountId string, rootStoreKey *rsa.PrivateKey, signingDB *assertstest.SigningDB) (*asserts.Account, error)
 	UnscannedUpload(snapFile io.Reader) (string, error)

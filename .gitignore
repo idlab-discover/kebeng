@@ -8,3 +8,5 @@ init-config.json
 loginconfig.json
 token.json
 userinfo.json
+keys
+config.yaml

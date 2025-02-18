@@ -172,6 +172,7 @@ var Initialize = cobra.Command{
 
 func makeBucketAndAddKey(minioClient *minio.Client, bucketName string, keyPath string, keyName string) {
 	// Make root bucket
+   fmt.Printf("*************************************\nCreating bucket: %s\n, keyPath: %s\n *************************", bucketName, keyPath)
 	ctx, cancel := context.WithCancel(context.Background())
 
 	defer cancel()
