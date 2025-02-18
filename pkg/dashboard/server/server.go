@@ -8,18 +8,18 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/freetocompute/kebe/pkg/middleware"
+	"github.com/idlab-discover/kebeng/pkg/middleware"
 
-	"github.com/freetocompute/kebe/pkg/assertions"
+	"github.com/idlab-discover/kebeng/pkg/assertions"
 	"github.com/snapcore/snapd/asserts"
 
-	"github.com/freetocompute/kebe/pkg/dashboard/requests"
+	"github.com/idlab-discover/kebeng/pkg/dashboard/requests"
 
-	"github.com/freetocompute/kebe/pkg/auth"
-	"github.com/freetocompute/kebe/pkg/dashboard/responses"
+	"github.com/idlab-discover/kebeng/pkg/auth"
+	"github.com/idlab-discover/kebeng/pkg/dashboard/responses"
 
-	storeRequests "github.com/freetocompute/kebe/pkg/store/requests"
 	"github.com/gin-gonic/gin"
+	storeRequests "github.com/idlab-discover/kebeng/pkg/store/requests"
 	"github.com/sirupsen/logrus"
 )
 

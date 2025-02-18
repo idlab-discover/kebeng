@@ -5,8 +5,8 @@ import (
 	"os"
 	"sort"
 
-	"github.com/freetocompute/kebe/cmd/store"
-	"github.com/freetocompute/kebe/config"
+	"github.com/idlab-discover/kebeng/cmd/store"
+	"github.com/idlab-discover/kebeng/config"
 	"github.com/olekukonko/tablewriter"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
