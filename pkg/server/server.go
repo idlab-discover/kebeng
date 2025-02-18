@@ -55,18 +55,22 @@ func (s *Server) Run() {
 	assertsDatabase := GetDatabaseWithRootKey()
 
 	obs := objectstore.NewObjectStore()
-	bytes, _ := obs.GetFileFromBucket("root", "private-key.pem")
-	rootPrivateKey, err := crypto.ParseRSAPrivateKeyFromPEM(*bytes)
+	bytes, err := obs.GetFileFromBucket("root", "private-key.pem")
 	if err != nil {
 		logrus.Error(err)
 		panic(err)
 	}
+	rootPrivateKey, err1 := crypto.ParseRSAPrivateKeyFromPEM(*bytes)
+	if err1 != nil {
+		logrus.Error(err1)
+		panic(err1)
+	}
 
 	// TODO: assertions next step
 	rootAuthorityId := config.MustGetString(configkey.RootAuthority)
-   if rootAuthorityId == "" {
-      panic("Root authority id is not set")
-   }
+	if rootAuthorityId == "" {
+		panic("Root authority id is not set")
+	}
 	signingDB := assertstest.NewSigningDB(rootAuthorityId, asserts.RSAPrivateKey(rootPrivateKey))
 
 	bytes, _ = obs.GetFileFromBucket("generic", "private-key.pem")
