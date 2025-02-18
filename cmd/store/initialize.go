@@ -172,7 +172,7 @@ var Initialize = cobra.Command{
 
 func makeBucketAndAddKey(minioClient *minio.Client, bucketName string, keyPath string, keyName string) {
 	// Make root bucket
-   fmt.Printf("*************************************\nCreating bucket: %s\n, keyPath: %s\n *************************", bucketName, keyPath)
+	fmt.Printf("*************************************\nCreating bucket: %s\n, keyPath: %s\n *************************", bucketName, keyPath)
 	ctx, cancel := context.WithCancel(context.Background())
 
 	defer cancel()
@@ -189,8 +189,14 @@ func makeBucketAndAddKey(minioClient *minio.Client, bucketName string, keyPath s
 		logrus.Error(err)
 	}
 
-	bytes, _ := os.ReadFile(keyPath)
-	rootPrivateKey, _ := crypto.ParseRSAPrivateKeyFromPEM(bytes)
+	bytes, err := os.ReadFile(keyPath)
+	if err != nil {
+		logrus.Error(err)
+	}
+	rootPrivateKey, err := crypto.ParseRSAPrivateKeyFromPEM(bytes)
+	if err != nil {
+		logrus.Error(err)
+	}
 	keyString := crypto.ExportRsaPrivateKeyAsPemStr(rootPrivateKey)
 
 	_, err = minioClient.PutObject(ctx, bucketName, keyName, strings.NewReader(keyString), int64(len(keyString)), minio.PutObjectOptions{})
