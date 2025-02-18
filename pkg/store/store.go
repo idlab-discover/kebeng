@@ -6,10 +6,10 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/freetocompute/kebe/pkg/store/responses"
+	"github.com/idlab-discover/kebeng/pkg/store/responses"
 
-	"github.com/freetocompute/kebe/pkg/store/requests"
 	"github.com/gin-gonic/gin"
+	"github.com/idlab-discover/kebeng/pkg/store/requests"
 	"github.com/sirupsen/logrus"
 	"github.com/snapcore/snapd/asserts"
 	"github.com/snapcore/snapd/asserts/assertstest"

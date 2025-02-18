@@ -7,13 +7,13 @@ import (
 
 	"gorm.io/gorm/clause"
 
-	"github.com/freetocompute/kebe/pkg/snap"
+	"github.com/idlab-discover/kebeng/pkg/snap"
 	"github.com/sirupsen/logrus"
 
 	"github.com/google/uuid"
 
-	"github.com/freetocompute/kebe/pkg/database"
-	"github.com/freetocompute/kebe/pkg/models"
+	"github.com/idlab-discover/kebeng/pkg/database"
+	"github.com/idlab-discover/kebeng/pkg/models"
 	"gorm.io/gorm"
 )
 

@@ -44,33 +44,34 @@ func (s *Store) getSnapRevisionAssertion(c *gin.Context) {
    }
 }
 
-
 func (s *Store) getSnapDeclarationAssertion(c *gin.Context) {
 	snapId := c.Param("snap-id")
 	logrus.Tracef("Requested snap-declaration: %s", snapId)
 
 	assertion, err := s.handler.GetSnapDeclarationAssertion(snapId, s.rootStoreKey, s.assertsDatabase)
-	if err == nil && assertion != nil {
-		encodedAssertion := asserts.Encode(assertion)
-		logrus.Trace("Sending snap-declaraction assertion: ")
-		logrus.Trace(string(encodedAssertion))
-
-		c.Writer.Header().Set("Content-Type", asserts.MediaType)
-
-		_, err = c.Writer.Write(asserts.Encode(assertion))
-		if err == nil {
-			c.Writer.WriteHeader(200)
-			return
-		}
-
-		logrus.Error(err)
-	} else if err != nil {
-		logrus.Error(err)
-	} else {
-		logrus.Error("unknown error encountered in getSnapDeclarationAssertion")
+	if err != nil {
+		logrus.Errorf("Failed to get snap-declaration assertion: %v", err)
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+	if assertion == nil {
+		logrus.Warnf("Snap-declaration not found for snap-id: %s", snapId)
+		c.AbortWithStatus(http.StatusNotFound)
+		return
 	}
 
-	c.AbortWithStatus(http.StatusBadRequest)
+	encodedAssertion := asserts.Encode(assertion)
+	logrus.Tracef("Sending snap-declaration assertion: %s", string(encodedAssertion))
+
+	// Set response headers and send the assertion
+	c.Writer.Header().Set("Content-Type", asserts.MediaType)
+	if _, err := c.Writer.Write(encodedAssertion); err != nil {
+		logrus.Errorf("Failed to write response: %v", err)
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	c.Writer.WriteHeader(http.StatusOK)
 }
 
 func (s *Store) getAccountAssertion(c *gin.Context) {
