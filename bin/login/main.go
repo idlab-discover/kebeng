@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/freetocompute/kebe/config"
-	"github.com/freetocompute/kebe/pkg/login/server"
+	"github.com/idlab-discover/kebeng/config"
+	"github.com/idlab-discover/kebeng/pkg/login/server"
 	"github.com/spf13/cobra"
 )
 

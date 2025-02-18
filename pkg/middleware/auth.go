@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/freetocompute/kebe/config"
-	"github.com/freetocompute/kebe/config/configkey"
-	"github.com/freetocompute/kebe/pkg/auth"
 	"github.com/gin-gonic/gin"
+	"github.com/idlab-discover/kebeng/config"
+	"github.com/idlab-discover/kebeng/config/configkey"
+	"github.com/idlab-discover/kebeng/pkg/auth"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/macaroon.v2"
 	"gorm.io/gorm"

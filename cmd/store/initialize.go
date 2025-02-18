@@ -8,10 +8,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/freetocompute/kebe/config/configkey"
-	"github.com/freetocompute/kebe/pkg/crypto"
-	"github.com/freetocompute/kebe/pkg/database"
-	//"github.com/freetocompute/kebe/pkg/models"
+	"github.com/idlab-discover/kebeng/config/configkey"
+	"github.com/idlab-discover/kebeng/pkg/crypto"
+	"github.com/idlab-discover/kebeng/pkg/database"
+
+	//"github.com/idlab-discover/kebeng/pkg/models"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/sirupsen/logrus"

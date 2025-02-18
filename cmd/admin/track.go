@@ -7,11 +7,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/freetocompute/kebe/config"
-	"github.com/freetocompute/kebe/config/configkey"
-	"github.com/freetocompute/kebe/pkg/admind"
-	"github.com/freetocompute/kebe/pkg/admind/requests"
 	resty "github.com/go-resty/resty/v2"
+	"github.com/idlab-discover/kebeng/config"
+	"github.com/idlab-discover/kebeng/config/configkey"
+	"github.com/idlab-discover/kebeng/pkg/admind"
+	"github.com/idlab-discover/kebeng/pkg/admind/requests"
 	"github.com/spf13/cobra"
 )
 
