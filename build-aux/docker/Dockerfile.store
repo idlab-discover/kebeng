@@ -1,4 +1,4 @@
-FROM golang:1.16 AS builder
+FROM golang:1.22 AS builder
 
 WORKDIR /app
 COPY . . 
@@ -6,10 +6,11 @@ COPY . .
 RUN go build -o /bin/kebeng-admin bin/admin/main.go
 RUN go build -o /bin/kebeng-store bin/store/main.go
 
-FROM golang:1.16
+FROM golang:1.22
 WORKDIR /app
 
 COPY --from=builder /bin/kebeng-store /app/kebeng-store
 COPY --from=builder /bin/kebeng-admin /app/kebeng-admin
+COPY migrations /app/migrations
 
 EXPOSE 8080
