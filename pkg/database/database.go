@@ -2,6 +2,7 @@ package database
 
 import (
 	"fmt"
+    "time"
 	"github.com/idlab-discover/kebeng/config/configkey"
 	"github.com/idlab-discover/kebeng/pkg/models"
 	"github.com/sirupsen/logrus"
@@ -17,16 +18,24 @@ func CreateDatabase() (*gorm.DB, error) {
 }
 
 func CreateDatabaseWithDSN(connectionString string) (*gorm.DB, error) {
-	dsn := connectionString
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+    var db *gorm.DB
+    var err error
 
-	if err != nil {
-		logrus.Error(err)
-		return nil, err
-	}
+    maxRetries := 10
+    retryInterval := 3 * time.Second
 
-	DB = db
-	return db, nil
+    for try := 0; try < maxRetries; try++ {
+        db, err = gorm.Open(postgres.Open(connectionString), &gorm.Config{})
+        if err == nil {
+            logrus.Info("Connected to database")
+            DB = db
+            return db, nil
+        }
+        logrus.Errorf("Failed to connect to database at try %d: %v",try, err)
+        time.Sleep(retryInterval)
+    }
+    logrus.Errorf("Failed to connect to database after %d retries", maxRetries)
+    return nil, err
 }
 
 
