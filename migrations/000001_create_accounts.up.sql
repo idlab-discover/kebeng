@@ -1,3 +1,13 @@
+-- check if manager role exists, if not create
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'manager') THEN
+       CREATE ROLE manager LOGIN;
+    END IF;
+END
+$$;
+
+
 create sequence public.accounts_id_seq;
 
 CREATE TABLE IF NOT EXISTS public.accounts
