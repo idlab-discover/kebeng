@@ -2,12 +2,16 @@ package database
 
 import (
 	"fmt"
+    "time"
 	"github.com/idlab-discover/kebeng/config/configkey"
 	"github.com/idlab-discover/kebeng/pkg/models"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	gormPostgres "gorm.io/driver/postgres"
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+    _ "github.com/golang-migrate/migrate/v4/source/file" // needed for file source
 )
 
 var DB *gorm.DB
@@ -17,16 +21,29 @@ func CreateDatabase() (*gorm.DB, error) {
 }
 
 func CreateDatabaseWithDSN(connectionString string) (*gorm.DB, error) {
-	dsn := connectionString
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+    var db *gorm.DB
+    var err error
 
-	if err != nil {
-		logrus.Error(err)
-		return nil, err
-	}
+    maxRetries := 10
+    retryInterval := 3 * time.Second
 
-	DB = db
-	return db, nil
+    for try := 0; try < maxRetries; try++ {
+        db, err = gorm.Open(gormPostgres.Open(connectionString), &gorm.Config{})
+        if err == nil {
+            logrus.Info("Connected to database")
+            DB = db
+
+            err = RunMigrations(db)
+            if err != nil {
+                logrus.Errorf("Migration failed: %v", err)
+            }
+            return db, nil
+        }
+        logrus.Errorf("Failed to connect to database at try %d: %v",try, err)
+        time.Sleep(retryInterval)
+    }
+    logrus.Errorf("Failed to connect to database after %d retries", maxRetries)
+    return nil, err
 }
 
 
@@ -59,6 +76,7 @@ func getDSN() string {
 	return dsn
 }
 
+// migrates using GORM framework instead of migration files, not used atm
 func MigrateWithLog(name string, i interface{}, db *gorm.DB) {
 	err := db.AutoMigrate(i)
 	if err != nil {
@@ -77,4 +95,35 @@ func MigrateDatabase(db *gorm.DB) {
 	MigrateWithLog("models.SnapTrack", &models.SnapTrack{}, db)
 	MigrateWithLog("models.SnapChannel", &models.SnapChannel{}, db)
 	MigrateWithLog("models.SnapBranch", &models.SnapBranch{}, db)
+}
+
+// runs the migration files in the /migrations folder
+func RunMigrations(db *gorm.DB) error {
+    logrus.Info("Running database migrations")
+
+    sqlDB, err := db.DB()
+    if err != nil {
+        return fmt.Errorf("failed to get raw database connection: %v", err)
+    }
+    
+    driver, err := postgres.WithInstance(sqlDB, &postgres.Config{})
+    if err != nil {
+        return fmt.Errorf("failed to create migration driver: %v", err)
+    }
+    
+    m, err := migrate.NewWithDatabaseInstance(
+        "file:///app/migrations",
+        "postgres",
+        driver,
+    )
+    if err != nil {   
+        return fmt.Errorf("failed to initialize migrate: %v", err)
+    }
+
+    err = m.Up()
+    if err != nil && err != migrate.ErrNoChange {
+        return fmt.Errorf("failed to run migrations: %v", err)
+    }
+
+    return nil
 }
