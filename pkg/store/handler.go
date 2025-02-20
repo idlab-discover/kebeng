@@ -132,6 +132,12 @@ func (h *Handler) UnscannedUpload(snapFile io.Reader) (string, error) {
 		return "", err
 	}
 
+	// addSnap() gaat nieuwe entry in snap_entries toevoegen
+	// _, err = h.snaps.AddSnap("testSnap", 1)
+	// if err != nil {
+	// 	logrus.Error(err)
+	// }
+
 	return id, nil
 }
 
