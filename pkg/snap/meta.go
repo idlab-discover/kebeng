@@ -36,37 +36,59 @@ func GetSnapMetaFromFile(snapFilePath string, workingDirectory string) (*SnapMet
 
 func GetSnapMetaFromBytes(bytes []byte, workingDirectory string) (*SnapMeta, error) {
 	tmpFilePath := path.Join(workingDirectory, uuid.New().String()+".snap")
-	err := ioutil.WriteFile(tmpFilePath, bytes, 0755)
-	if err == nil {
-		defer func(name string) {
-			errIn := os.Remove(name)
-			if errIn != nil {
-				logrus.Error(errIn)
-			}
-		}(tmpFilePath)
-		err = os.Chdir(workingDirectory)
-		if err == nil {
-			cmd := exec.Command("unsquashfs", tmpFilePath, "-e", "meta/snap.yaml")
-			defer func() {
-				errIn := os.RemoveAll(path.Join(workingDirectory, "squashfs-root"))
-				if errIn != nil {
-					logrus.Error(err)
-				}
-			}()
-			cmd.Stderr = os.Stderr
-			err = cmd.Run()
-			if err == nil {
-				bytes, err = ioutil.ReadFile(path.Join(workingDirectory, "squashfs-root", "meta", "snap.yaml"))
-				if err == nil {
-					var snapMeta SnapMeta
-					err = yaml.Unmarshal(bytes, &snapMeta)
-					if err == nil {
-						return &snapMeta, nil
-					}
-				}
-			}
-		}
+	err := os.WriteFile(tmpFilePath, bytes, 0755)
+	if err != nil {
+		logrus.Errorf("error writing file: %s", err)
+		return nil, err
 	}
 
-	return nil, err
+	logrus.Infof("Temporary file path: %s", tmpFilePath)
+
+	// Log the first few bytes of the file to verify its contents
+	logrus.Infof("File contents (first 10 bytes): %x", bytes[:10])
+
+	defer func(name string) {
+		errIn := os.Remove(name)
+		if errIn != nil {
+			logrus.Errorf("error deleting temporary file, %s", errIn)
+		}
+	}(tmpFilePath)
+
+	err = os.Chdir(workingDirectory)
+	if err != nil {
+		logrus.Errorf("error changing working directory: %s", err)
+		return nil, err
+	}
+
+	logrus.Infof("Working directory: %s", workingDirectory)
+
+	cmd := exec.Command("unsquashfs", tmpFilePath, "-e", "meta/snap.yaml")
+	defer func() {
+		errIn := os.RemoveAll(path.Join(workingDirectory, "squashfs-root"))
+		if errIn != nil {
+			logrus.Errorf("error removing directory: %s", err)
+		}
+	}()
+	cmd.Stderr = os.Stderr
+
+	err = cmd.Run()
+	if err != nil {
+		logrus.Error(err)
+		return nil, err
+	}
+
+	bytes, err = os.ReadFile(path.Join(workingDirectory, "squashfs-root", "meta", "snap.yaml"))
+	if err != nil {
+		logrus.Errorf("error reading file: %s", err)
+		return nil, err
+	}
+
+	var snapMeta SnapMeta
+	err = yaml.Unmarshal(bytes, &snapMeta)
+	if err != nil {
+		logrus.Error(err)
+		return nil, err
+	}
+
+	return &snapMeta, nil
 }
