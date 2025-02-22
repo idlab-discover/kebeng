@@ -247,9 +247,11 @@ func (sp *SnapsRepository) UpdateRevision(revision *models.SnapRevision, revisio
 	db := sp.db.Save(revision)
 	if db.Error == nil {
 		err := sp.updateMeta(revisionBytes)
-		if err == nil {
-			return revision, nil
+		if err != nil {
+			logrus.Error(err)
+			return nil, err
 		}
+		return revision, nil
 	}
 	return nil, db.Error
 }
@@ -320,7 +322,11 @@ func (sp *SnapsRepository) GetSnap(name string, preloadAssociations bool) (*mode
 	return nil, nil
 }
 
-// Used when I new snap gets uploaded for the first time (=registering a snap)
+// Used when a new snap gets uploaded for the first time (=registering a snap)
+
+// AddSnap registers a new snap with the given name, size, and accountId.
+// It ensures the snap does not already exist, creates a new SnapEntry,
+// adds an initial upload, and sets up default tracks and risks.
 func (sp *SnapsRepository) AddSnap(name string, size uint64, accountId uint) (*models.SnapEntry, error) {
 	existingSnap, err := sp.GetSnap(name, false)
 	if err != nil {
@@ -358,7 +364,7 @@ func (sp *SnapsRepository) AddSnap(name string, size uint64, accountId uint) (*m
 
 	newRevision := sp.addRevision(newSnapEntry, size)
 
-	sp.addRisks(newSnapEntry, newRevision, track.ID)
+	sp.addRisks(newSnapEntry, *newRevision, track.ID)
 
 	return &newSnapEntry, nil
 
@@ -408,7 +414,7 @@ func (sp *SnapsRepository) ReleaseSnap(channels []string, snapEntryId uint, revi
 	return nil
 }
 
-func (sp *SnapsRepository) addRevision(snapEntry models.SnapEntry, size uint64) models.SnapRevision {
+func (sp *SnapsRepository) addRevision(snapEntry models.SnapEntry, size uint64) *models.SnapRevision {
 	// TODO: fix the need for an empty revision
 	snapRevision := models.SnapRevision{
 		SnapFilename: snapEntry.Name,
@@ -419,7 +425,7 @@ func (sp *SnapsRepository) addRevision(snapEntry models.SnapEntry, size uint64) 
 
 	sp.db.Save(&snapRevision)
 
-	return snapRevision
+	return &snapRevision
 }
 
 func (sp *SnapsRepository) addRisks(snapEntry models.SnapEntry, snapRevision models.SnapRevision, trackId uint) {
@@ -440,28 +446,29 @@ func (sp *SnapsRepository) addRisks(snapEntry models.SnapEntry, snapRevision mod
 
 func (sp *SnapsRepository) updateMeta(metaBytes *[]byte) error {
 	snapMeta, err2 := snap.GetSnapMetaFromBytes(*metaBytes, "/tmp")
-	if err2 == nil {
-		logrus.Tracef("snapMeta: %+v", snapMeta)
-		var snapEntry models.SnapEntry
-		db := sp.db.Where(&models.SnapEntry{Name: snapMeta.Name}).Find(&snapEntry)
-		if _, ok := database.CheckDBForErrorOrNoRows(db); ok {
-			snapEntry.Type = "app"
-			if snapMeta.Type != "" {
-				snapEntry.Type = snapMeta.Type
-			} else {
-				logrus.Warnf("Snap %s had an emtpy type from its metadata, using default '%s'", snapEntry.Name, snapEntry.Type)
-			}
-
-			snapEntry.Confinement = snapMeta.Confinement
-			snapEntry.Base = snapMeta.Base
-
-			sp.db.Save(&snapEntry)
-		} else {
-			logrus.Errorf("No rows found for: %s", snapMeta.Name)
-		}
+	if err2 != nil {
+		logrus.Error(err2)
+		return err2
 	}
+	logrus.Tracef("snapMeta: %+v", snapMeta)
+	var snapEntry models.SnapEntry
+	db := sp.db.Where(&models.SnapEntry{Name: snapMeta.Name}).Find(&snapEntry)
+	if _, ok := database.CheckDBForErrorOrNoRows(db); ok {
+		snapEntry.Type = "app"
+		if snapMeta.Type != "" {
+			snapEntry.Type = snapMeta.Type
+		} else {
+			logrus.Warnf("Snap %s had an emtpy type from its metadata, using default '%s'", snapEntry.Name, snapEntry.Type)
+		}
 
-	return err2
+		snapEntry.Confinement = snapMeta.Confinement
+		snapEntry.Base = snapMeta.Base
+
+		sp.db.Save(&snapEntry)
+	} else {
+		logrus.Errorf("No rows found for: %s", snapMeta.Name)
+	}
+	return nil
 }
 
 func (sp *SnapsRepository) getSnap(whereModel *models.SnapEntry, preloadAssociations bool) (*models.SnapEntry, error) {
