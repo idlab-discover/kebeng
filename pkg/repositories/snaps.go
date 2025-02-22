@@ -339,9 +339,14 @@ func (sp *SnapsRepository) AddSnap(name string, size uint64, accountId uint) (*m
 	newSnapEntry.Name = name
 	newSnapEntry.AccountID = accountId
 	newSnapEntry.Type = "app"
+	//newSnapEntry.Confinement = "strict"
+	//newSnapEntry.Base = "core18" // default base
 
-	// snap_entries table contains snaps with unique names (doesn't keep track of revisions)
+	// snap_entries table contains snaps with unique names (doesn't keep track of revisions or channels)
 	sp.db.Save(&newSnapEntry)
+
+	// snap_uploads table contains channels where the snap is uploaded
+	sp.AddUpload(name, snapId.String(), uint(size), []string{"latest/stable"})
 
 	// For now when we register a snap we are going to create the default tracks/risks
 	track := models.SnapTrack{
@@ -351,14 +356,16 @@ func (sp *SnapsRepository) AddSnap(name string, size uint64, accountId uint) (*m
 
 	sp.db.Save(&track)
 
-	sp.addRisks(newSnapEntry, track.ID, size)
+	newRevision := sp.addRevision(newSnapEntry, size)
+
+	sp.addRisks(newSnapEntry, newRevision, track.ID)
 
 	return &newSnapEntry, nil
 
 }
 
-func (sp *SnapsRepository) AddDefaultRisks(newSnapEntry models.SnapEntry, trackId uint, size uint64) {
-	sp.addRisks(newSnapEntry, trackId, size)
+func (sp *SnapsRepository) AddDefaultRisks(newSnapEntry models.SnapEntry, newRevision models.SnapRevision, trackId uint) {
+	sp.addRisks(newSnapEntry, newRevision, trackId)
 }
 
 func (sp *SnapsRepository) ReleaseSnap(channels []string, snapEntryId uint, revisionId uint) error {
@@ -401,10 +408,7 @@ func (sp *SnapsRepository) ReleaseSnap(channels []string, snapEntryId uint, revi
 	return nil
 }
 
-func (sp *SnapsRepository) addRisks(snapEntry models.SnapEntry, trackId uint, size uint64) {
-	// TODO: fix me
-	risks := []string{"stable", "candidate", "beta", "edge"}
-
+func (sp *SnapsRepository) addRevision(snapEntry models.SnapEntry, size uint64) models.SnapRevision {
 	// TODO: fix the need for an empty revision
 	snapRevision := models.SnapRevision{
 		SnapFilename: snapEntry.Name,
@@ -414,6 +418,13 @@ func (sp *SnapsRepository) addRisks(snapEntry models.SnapEntry, trackId uint, si
 	}
 
 	sp.db.Save(&snapRevision)
+
+	return snapRevision
+}
+
+func (sp *SnapsRepository) addRisks(snapEntry models.SnapEntry, snapRevision models.SnapRevision, trackId uint) {
+	// TODO: fix me
+	risks := []string{"stable", "candidate", "beta", "edge"}
 
 	for _, risk := range risks {
 		var snapRisk models.SnapRisk
