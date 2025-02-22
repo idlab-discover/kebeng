@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"gorm.io/gorm/clause"
@@ -20,7 +21,7 @@ type ISnapsRepository interface {
 	GetSnap(name string, preloadAssociations bool) (*models.SnapEntry, error)
 	GetSnapById(id uint, preloadAssociations bool) (*models.SnapEntry, error)
 	GetSnapByStoreId(snapStoreId string, preloadAssociations bool) (*models.SnapEntry, error)
-	AddSnap(name string, accountId uint) (*models.SnapEntry, error)
+	AddSnap(name string, size uint64, accountId uint) (*models.SnapEntry, error)
 
 	GetRevisionBySHA(SHA3_384 string, encoded bool) (*models.SnapRevision, error)
 	GetUpload(upDownId string) (*models.SnapUpload, error)
@@ -319,38 +320,45 @@ func (sp *SnapsRepository) GetSnap(name string, preloadAssociations bool) (*mode
 	return nil, nil
 }
 
-// Creates a new snap entry in the snap_entry database when a snap is uploaded
-func (sp *SnapsRepository) AddSnap(name string, accountId uint) (*models.SnapEntry, error) {
+// Used when I new snap gets uploaded for the first time (=registering a snap)
+func (sp *SnapsRepository) AddSnap(name string, size uint64, accountId uint) (*models.SnapEntry, error) {
 	existingSnap, err := sp.GetSnap(name, false)
-	if err == nil && existingSnap == nil {
-		// when adding a snap, not finding one _is_ (!ok) what you want
-		var newSnapEntry models.SnapEntry
-		snapId := uuid.New()
-		newSnapEntry.SnapStoreID = snapId.String()
-		newSnapEntry.Name = name
-		newSnapEntry.AccountID = accountId
-		newSnapEntry.Type = "app"
-
-		sp.db.Save(&newSnapEntry)
-
-		// For now when we register a snap we are going to create the default tracks/risks
-		track := models.SnapTrack{
-			Name:        "latest",
-			SnapEntryID: newSnapEntry.ID,
-		}
-
-		sp.db.Save(&track)
-
-		sp.addRisks(newSnapEntry.ID, track.ID)
-
-		return &newSnapEntry, nil
+	if err != nil {
+		return nil, err
 	}
 
-	return nil, errors.New("error: creating new snap entry")
+	// if the snap already exists, return an error
+	if existingSnap != nil {
+		return nil, fmt.Errorf("snap with name=%s already exists", name)
+	}
+
+	// when registering a snap, not finding one is what you want
+	var newSnapEntry models.SnapEntry
+	snapId := uuid.New()
+	newSnapEntry.SnapStoreID = snapId.String()
+	newSnapEntry.Name = name
+	newSnapEntry.AccountID = accountId
+	newSnapEntry.Type = "app"
+
+	// snap_entries table contains snaps with unique names (doesn't keep track of revisions)
+	sp.db.Save(&newSnapEntry)
+
+	// For now when we register a snap we are going to create the default tracks/risks
+	track := models.SnapTrack{
+		Name:        "latest", // first upload of a snap is always the current latest
+		SnapEntryID: newSnapEntry.ID,
+	}
+
+	sp.db.Save(&track)
+
+	sp.addRisks(newSnapEntry, track.ID, size)
+
+	return &newSnapEntry, nil
+
 }
 
-func (sp *SnapsRepository) AddDefaultRisks(snapEntryId uint, trackId uint) {
-	sp.addRisks(snapEntryId, trackId)
+func (sp *SnapsRepository) AddDefaultRisks(newSnapEntry models.SnapEntry, trackId uint, size uint64) {
+	sp.addRisks(newSnapEntry, trackId, size)
 }
 
 func (sp *SnapsRepository) ReleaseSnap(channels []string, snapEntryId uint, revisionId uint) error {
@@ -393,23 +401,23 @@ func (sp *SnapsRepository) ReleaseSnap(channels []string, snapEntryId uint, revi
 	return nil
 }
 
-func (sp *SnapsRepository) addRisks(snapEntryId uint, trackId uint) {
+func (sp *SnapsRepository) addRisks(snapEntry models.SnapEntry, trackId uint, size uint64) {
 	// TODO: fix me
 	risks := []string{"stable", "candidate", "beta", "edge"}
 
 	// TODO: fix the need for an empty revision
 	snapRevision := models.SnapRevision{
-		SnapFilename: "",
-		SnapEntryID:  snapEntryId,
+		SnapFilename: snapEntry.Name,
+		SnapEntryID:  snapEntry.ID,
 		SHA3_384:     "",
-		Size:         0,
+		Size:         size,
 	}
 
 	sp.db.Save(&snapRevision)
 
 	for _, risk := range risks {
 		var snapRisk models.SnapRisk
-		snapRisk.SnapEntryID = snapEntryId
+		snapRisk.SnapEntryID = snapEntry.ID
 		snapRisk.SnapTrackID = trackId
 		snapRisk.Name = risk
 
