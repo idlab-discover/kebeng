@@ -260,7 +260,7 @@ func (sp *SnapsRepository) GetRevisionBySHA(SHA3_384 string, encoded bool) (*mod
 	}
 
 	// check for database errors or no rows found
-   // could use the helper function CheckDBForErrorOrNoRows but don't like how it's implemented
+	// could use the helper function CheckDBForErrorOrNoRows but don't like how it's implemented
 	if db.Error != nil {
 		logrus.Errorf("Database error: %v", db.Error)
 		return nil, db.Error
@@ -268,7 +268,7 @@ func (sp *SnapsRepository) GetRevisionBySHA(SHA3_384 string, encoded bool) (*mod
 	if db.RowsAffected == 0 {
 		logrus.Warnf("No revisions found for %s (encoded=%t)", SHA3_384, encoded)
 		return nil, nil
-   }
+	}
 	return &revision, nil
 }
 
@@ -353,6 +353,7 @@ func (sp *SnapsRepository) GetSnapByName(name string, preloadAssociations bool) 
 	return &snap, nil
 }
 
+// Creates a new snap entry in the snap_entry database when a snap is uploaded
 func (sp *SnapsRepository) AddSnap(name string, accountId uint) (*models.SnapEntry, error) {
    // check if snap already exists
 	existingSnap, err := sp.GetSnapByName(name, false)
