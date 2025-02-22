@@ -126,17 +126,17 @@ func (h *Handler) UnscannedUpload(snapFile io.Reader) (string, error) {
 	tmpPath := path.Join(os.TempDir(), snapFileName)
 
 	// err = objStore.SaveFileToBucket("unscanned", tmpPath)
-	err = h.obs.SaveFileToBucket("unscanned", tmpPath)
+	size, err := h.obs.SaveFileToBucket("unscanned", tmpPath)
 	if err != nil {
 		logrus.Errorf("Failed to save file to object store: %v", err)
 		return "", err
 	}
 
-	// addSnap() gaat nieuwe entry in snap_entries toevoegen
-	// _, err = h.snaps.AddSnap("testSnap", 1)
-	// if err != nil {
-	// 	logrus.Error(err)
-	// }
+	// addSnap() adds snap to snap_entries table
+	_, err = h.snaps.AddSnap(snapFileName, size, 1)
+	if err != nil {
+		logrus.Error(err)
+	}
 
 	return id, nil
 }

@@ -102,7 +102,7 @@ func (s *Server) addTrack(c *gin.Context) {
 
 			s.db.Save(&track)
 
-			s.snaps.AddDefaultRisks(snapEntry.ID, track.ID)
+			s.snaps.AddDefaultRisks(snapEntry, track.ID, uint64(0)) // FIX: hardcoded value for now (0) -> developing upload functionality
 
 			c.Status(http.StatusCreated)
 			return
