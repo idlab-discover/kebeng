@@ -204,7 +204,11 @@ func (d *DashboardHandler) PushSnap(snapName string, upDownId string, fileSize u
 func (d *DashboardHandler) GetUploadStatus(upDownId string) (*responses.Status, error) {
 	// We need to move the snap from the unscanned bucket to the snaps bucket
 	snapUpload, err := d.snaps.GetUpload(upDownId)
-	if err == nil && snapUpload != nil {
+	if err != nil {
+		logrus.Error(err)
+		return nil, err
+	}
+	if snapUpload != nil {
 		snapFileName := upDownId + ".snap"
 
 		// get the sha3_384 of the file so we can figure out if it already exists as a revision
