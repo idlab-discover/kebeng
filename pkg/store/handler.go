@@ -19,8 +19,8 @@ import (
 
 	asserts2 "github.com/idlab-discover/kebeng/pkg/store/asserts"
 
-	"github.com/idlab-discover/kebeng/config"
-	"github.com/idlab-discover/kebeng/config/configkey"
+	//	"github.com/idlab-discover/kebeng/config"
+	//	"github.com/idlab-discover/kebeng/config/configkey"
 
 	"github.com/snapcore/snapd/asserts"
 
@@ -43,7 +43,7 @@ type IStoreHandler interface {
 	SnapRefresh(actions *[]*requests.SnapActionJSON) (*responses.SnapActionResultList, error)
 	SnapDownload(snapFilename string) (*[]byte, error)
 	GetSnapRevisionAssertion(SHA3384Encoded string, rootStoreKey *rsa.PrivateKey, assertsDB *asserts.Database, storeAuthorityId string) (*asserts.SnapRevision, error)
-	GetSnapDeclarationAssertion(snapId string, rootStoreKey *rsa.PrivateKey, assertsDB *asserts.Database) (*asserts.SnapDeclaration, error)
+	GetSnapDeclarationAssertion(snapId string, rootStoreKey *rsa.PrivateKey, assertsDB *asserts.Database, storeAuthorityId string) (*asserts.SnapDeclaration, error)
 	GetAccountKeyAssertion(keySHA3384 string, rootStoreKey *rsa.PrivateKey, signingDB *assertstest.SigningDB) (*asserts.AccountKey, error)
 	GetAccountAssertion(accountId string, rootStoreKey *rsa.PrivateKey, signingDB *assertstest.SigningDB) (*asserts.Account, error)
 	UnscannedUpload(snapFile io.Reader) (string, error)
@@ -132,6 +132,12 @@ func (h *Handler) UnscannedUpload(snapFile io.Reader) (string, error) {
 		return "", err
 	}
 
+	// addSnap() gaat nieuwe entry in snap_entries toevoegen
+	// _, err = h.snaps.AddSnap("testSnap", 1)
+	// if err != nil {
+	// 	logrus.Error(err)
+	// }
+
 	return id, nil
 }
 
@@ -210,14 +216,14 @@ func (h *Handler) GetSnapDeclarationAssertion(snapId string, rootStoreKey *rsa.P
 		return nil, errors.New("snap entry not found")
 	}
 
-   // TODO: this again seems wrong, you should not create a new assertion and sign it again
+	// TODO: this again seems wrong, you should not create a new assertion and sign it again
 	assertion, err := asserts2.MakeSnapDeclarationAssertion(
-      storeAuthorityId,
-      snapEntry.Account.AccountId,
-      snapEntry,
-      asserts.RSAPrivateKey(rootStoreKey),
-      assertsDB,
-   )
+		storeAuthorityId,
+		snapEntry.Account.AccountId,
+		snapEntry,
+		asserts.RSAPrivateKey(rootStoreKey),
+		assertsDB,
+	)
 	if err != nil {
 		logrus.Errorf("Failed to create snap-declaration assertion: %v", err)
 		return nil, err
@@ -230,48 +236,48 @@ func (h *Handler) GetSnapDeclarationAssertion(snapId string, rootStoreKey *rsa.P
 	return assertion, nil
 }
 
-func (h *Handler) GetSnapRevisionAssertion(SHA3384Encoded string, rootStoreKey *rsa.PrivateKey, assertsDB *asserts.Database, storeAuthorityId string) (*asserts.SnapRevision, error){
-   revision, err := h.snaps.GetRevisionBySHA(SHA3384Encoded, true)
-   if err != nil {
-      logrus.Errorf("Failed to get revision by SHA: %s", err)
-      return nil, err
-   }
-   if revision == nil {
-      logrus.Warnf("Revision not found for SHA: %s", SHA3384Encoded)
-      return nil, fmt.Errorf("revision not found for SHA: %s", SHA3384Encoded)
-   }
-   
-   snapEntry, err := h.snaps.GetSnapById(revision.SnapEntryID, true)
-   if err != nil {
-      logrus.Errorf("Failed to get snap by id: %s", err)
-      return nil, err
-   }
-   if snapEntry == nil {
-      logrus.Warnf("Snap entry not found for revision: %d", revision.ID)
-      return nil, fmt.Errorf("snap entry not found for revision: %d", revision.ID)
-   }
-   
-   // TODO: this is wrong i think, i don't think you are supposed to create a new assertion and sign it again
-   // whenever the assertion is created (here for upload) you sign it then and store it somewhere (i think snapd database asserts.Database)
-   // could store it in the database aswel (kinda what already happens? idk why you would sign it again)
-   // here you just fetch the assertion and return it CHECK THIS!!!!
-   assertion, err := asserts2.MakeSnapRevisionAssertion(
-      storeAuthorityId,
-      SHA3384Encoded, 
-      snapEntry.SnapStoreID,
-      revision.Size, 
-      int(revision.ID), 
-      snapEntry.Account.AccountId, 
-      asserts.RSAPrivateKey(rootStoreKey).PublicKey().ID(), 
-      assertsDB,
-      )
+func (h *Handler) GetSnapRevisionAssertion(SHA3384Encoded string, rootStoreKey *rsa.PrivateKey, assertsDB *asserts.Database, storeAuthorityId string) (*asserts.SnapRevision, error) {
+	revision, err := h.snaps.GetRevisionBySHA(SHA3384Encoded, true)
+	if err != nil {
+		logrus.Errorf("Failed to get revision by SHA: %s", err)
+		return nil, err
+	}
+	if revision == nil {
+		logrus.Warnf("Revision not found for SHA: %s", SHA3384Encoded)
+		return nil, fmt.Errorf("revision not found for SHA: %s", SHA3384Encoded)
+	}
 
-   if err != nil {
-      logrus.Errorf("Failed to make snap revision assertion: %s", err)
-      return nil, err
-   }
+	snapEntry, err := h.snaps.GetSnapById(revision.SnapEntryID, true)
+	if err != nil {
+		logrus.Errorf("Failed to get snap by id: %s", err)
+		return nil, err
+	}
+	if snapEntry == nil {
+		logrus.Warnf("Snap entry not found for revision: %d", revision.ID)
+		return nil, fmt.Errorf("snap entry not found for revision: %d", revision.ID)
+	}
 
-   return assertion, nil
+	// TODO: this is wrong i think, i don't think you are supposed to create a new assertion and sign it again
+	// whenever the assertion is created (here for upload) you sign it then and store it somewhere (i think snapd database asserts.Database)
+	// could store it in the database aswel (kinda what already happens? idk why you would sign it again)
+	// here you just fetch the assertion and return it CHECK THIS!!!!
+	assertion, err := asserts2.MakeSnapRevisionAssertion(
+		storeAuthorityId,
+		SHA3384Encoded,
+		snapEntry.SnapStoreID,
+		revision.Size,
+		int(revision.ID),
+		snapEntry.Account.AccountId,
+		asserts.RSAPrivateKey(rootStoreKey).PublicKey().ID(),
+		assertsDB,
+	)
+
+	if err != nil {
+		logrus.Errorf("Failed to make snap revision assertion: %s", err)
+		return nil, err
+	}
+
+	return assertion, nil
 }
 
 func (h *Handler) SnapDownload(snapFilename string) (*[]byte, error) {

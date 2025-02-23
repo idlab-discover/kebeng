@@ -1,36 +1,87 @@
 module github.com/idlab-discover/kebeng
 
-go 1.16
+go 1.22.0
+
+toolchain go1.22.2
 
 require (
 	github.com/coreos/go-oidc/v3 v3.0.0
-	github.com/frankban/quicktest v1.11.3 // indirect
 	github.com/gin-contrib/static v0.0.1
 	github.com/gin-gonic/gin v1.7.1
 	github.com/go-resty/resty/v2 v2.6.0
-	github.com/godbus/dbus v4.1.0+incompatible // indirect
-	github.com/golang/protobuf v1.4.3 // indirect
-	github.com/google/uuid v1.1.1
-	github.com/juju/ratelimit v1.0.1 // indirect
-	github.com/kr/text v0.2.0 // indirect
+	github.com/golang-migrate/migrate/v4 v4.18.2
+	github.com/google/uuid v1.6.0
 	github.com/minio/minio-go/v7 v7.0.10
 	github.com/olekukonko/tablewriter v0.0.5
-	github.com/sirupsen/logrus v1.8.1
-	github.com/snapcore/bolt v1.3.1 // indirect
-	github.com/snapcore/go-gettext v0.0.0-20201130093759-38740d1bd3d2 // indirect
+	github.com/sirupsen/logrus v1.9.3
 	github.com/snapcore/snapd v0.0.0-20210414202319-30afa15e6dc2
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/viper v1.7.1
-	github.com/stretchr/testify v1.7.0 // indirect
-	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/sys v0.0.0-20210412220455-f1c623a9e750 // indirect
-	google.golang.org/protobuf v1.25.0 // indirect
-	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
-	gopkg.in/macaroon.v1 v1.0.0 // indirect
+	golang.org/x/oauth2 v0.20.0
 	gopkg.in/macaroon.v2 v2.1.0
+	gopkg.in/yaml.v3 v3.0.1
+	gorm.io/driver/postgres v1.5.11
+	gorm.io/gorm v1.25.10
+)
+
+require (
+	github.com/frankban/quicktest v1.11.3 // indirect
+	github.com/fsnotify/fsnotify v1.4.9 // indirect
+	github.com/gin-contrib/sse v0.1.0 // indirect
+	github.com/go-playground/locales v0.13.0 // indirect
+	github.com/go-playground/universal-translator v0.17.0 // indirect
+	github.com/go-playground/validator/v10 v10.4.1 // indirect
+	github.com/godbus/dbus v4.1.0+incompatible // indirect
+	github.com/golang/protobuf v1.5.4 // indirect
+	github.com/google/go-cmp v0.6.0 // indirect
+	github.com/hashicorp/errwrap v1.1.0 // indirect
+	github.com/hashicorp/go-multierror v1.1.1 // indirect
+	github.com/hashicorp/hcl v1.0.0 // indirect
+	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/jackc/pgpassfile v1.0.0 // indirect
+	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
+	github.com/jackc/pgx/v5 v5.5.5 // indirect
+	github.com/jackc/puddle/v2 v2.2.1 // indirect
+	github.com/jinzhu/inflection v1.0.0 // indirect
+	github.com/jinzhu/now v1.1.5 // indirect
+	github.com/json-iterator/go v1.1.12 // indirect
+	github.com/juju/ratelimit v1.0.1 // indirect
+	github.com/klauspost/cpuid v1.3.1 // indirect
+	github.com/kr/pretty v0.3.1 // indirect
+	github.com/leodido/go-urn v1.2.0 // indirect
+	github.com/lib/pq v1.10.9 // indirect
+	github.com/magiconair/properties v1.8.1 // indirect
+	github.com/mattn/go-isatty v0.0.19 // indirect
+	github.com/mattn/go-runewidth v0.0.9 // indirect
+	github.com/minio/md5-simd v1.1.0 // indirect
+	github.com/minio/sha256-simd v0.1.1 // indirect
+	github.com/mitchellh/go-homedir v1.1.0 // indirect
+	github.com/mitchellh/mapstructure v1.1.2 // indirect
+	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
+	github.com/modern-go/reflect2 v1.0.2 // indirect
+	github.com/pelletier/go-toml v1.2.0 // indirect
+	github.com/rs/xid v1.2.1 // indirect
+	github.com/snapcore/bolt v1.3.1 // indirect
+	github.com/snapcore/go-gettext v0.0.0-20201130093759-38740d1bd3d2 // indirect
+	github.com/spf13/afero v1.10.0 // indirect
+	github.com/spf13/cast v1.3.0 // indirect
+	github.com/spf13/jwalterweatherman v1.0.0 // indirect
+	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/subosito/gotenv v1.2.0 // indirect
+	github.com/ugorji/go/codec v1.1.7 // indirect
+	go.uber.org/atomic v1.11.0 // indirect
+	golang.org/x/crypto v0.31.0 // indirect
+	golang.org/x/net v0.33.0 // indirect
+	golang.org/x/sync v0.10.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
+	golang.org/x/term v0.27.0 // indirect
+	golang.org/x/text v0.21.0 // indirect
+	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
+	google.golang.org/protobuf v1.34.2 // indirect
+	gopkg.in/ini.v1 v1.57.0 // indirect
+	gopkg.in/macaroon.v1 v1.0.0 // indirect
 	gopkg.in/retry.v1 v1.0.3 // indirect
+	gopkg.in/square/go-jose.v2 v2.5.1 // indirect
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
-	gorm.io/driver/postgres v1.1.0
-	gorm.io/gorm v1.21.10
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
