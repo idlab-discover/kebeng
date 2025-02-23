@@ -74,11 +74,11 @@ func (d *DashboardHandler) GetSnapChannelMap(snapName string) (*generatedRespons
 					Name: track.Name,
 				})
 
-				logrus.Tracef("Getting risks for track: %s", track.Name)
+				logrus.Tracef("Getting channels for track: %s", track.Name)
 
-				risks, err3 := d.snaps.GetChannels(track.ID)
-				if err3 == nil && risks != nil {
-					for _, risk := range *risks {
+				channels, err3 := d.snaps.GetChannels(track.ID)
+				if err3 == nil && channels != nil {
+					for _, risk := range *channels {
 						logrus.Tracef("Getting revision for risk: %s", risk.Name)
 						revision, err4 := d.snaps.GetRevision(risk.RevisionID)
 						if err4 == nil && revision != nil {
