@@ -12,11 +12,11 @@ create sequence public.accounts_id_seq;
 
 CREATE TABLE IF NOT EXISTS public.accounts
 (
-    id bigint NOT NULL DEFAULT nextval('accounts_id_seq'::regclass),
+    id UUID NOT NULL DEFAULT nextval('accounts_id_seq'::regclass),
     created_at timestamp with time zone,
     updated_at timestamp with time zone,
     deleted_at timestamp with time zone,
-    account_id text COLLATE pg_catalog."default",
+    account_id UUID COLLATE pg_catalog."default",
     display_name text COLLATE pg_catalog."default",
     username text COLLATE pg_catalog."default",
     email text COLLATE pg_catalog."default",

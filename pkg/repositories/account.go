@@ -1,5 +1,7 @@
 package repositories
 
+// THIS LOGIC IS MOVED TO services/accounts/internal/repository/repository.go
+
 import (
 	"github.com/idlab-discover/kebeng/pkg/database"
 	"github.com/idlab-discover/kebeng/pkg/models"

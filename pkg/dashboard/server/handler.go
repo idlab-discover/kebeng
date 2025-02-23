@@ -35,6 +35,8 @@ import (
 	"github.com/idlab-discover/kebeng/pkg/middleware"
 )
 
+
+
 type IDashboardHandler interface {
 	VerifyACL(verify *requests.Verify) (*responses.Verify, error)
 	GetAccount(accountEmail string) (*responses.AccountInfo, error)
@@ -49,7 +51,7 @@ type IDashboardHandler interface {
 
 type DashboardHandler struct {
 	accounts repositories.IAccountRepository
-	snaps    repositories.ISnapsRepository
+    snaps    repositories.ISnapsRepository
 }
 
 func NewDashboardHandler(accts repositories.IAccountRepository, snaps repositories.ISnapsRepository) *DashboardHandler {
