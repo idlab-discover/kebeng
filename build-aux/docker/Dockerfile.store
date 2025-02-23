@@ -1,12 +1,16 @@
-FROM kebe-store-base AS builder
+FROM golang:1.22 AS builder
 
-COPY . /source
-WORKDIR /source
-RUN go build -o /bin/kebe-store bin/store/main.go
+WORKDIR /app
+COPY . . 
 
-FROM golang:1.16
-WORKDIR /bin
-COPY --from=builder /bin/kebe-store .
+RUN go build -o /bin/kebeng-admin bin/admin/main.go
+RUN go build -o /bin/kebeng-store bin/store/main.go
+
+FROM golang:1.22
+WORKDIR /app
+
+COPY --from=builder /bin/kebeng-store /app/kebeng-store
+COPY --from=builder /bin/kebeng-admin /app/kebeng-admin
+COPY migrations /app/migrations
+
 EXPOSE 8080
-
-CMD ["/bin/kebe-store"]

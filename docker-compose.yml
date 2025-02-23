@@ -1,6 +1,3 @@
-FROM golang:1.16 AS builder
-version: "3.8"
-
 services:
   store:
     build: 
@@ -12,21 +9,27 @@ services:
       - db
       - minio
     volumes:
-      - ./config.yml:/app/config.yml  # Mount config file
-      - ./init-config-example.json:/app/init-config-example.json  # Mount init config
-      - ./configkey:/app/configkey  # Mount the keys directory
+      - ./config.yaml:/app/config.yaml  # config file
+      - ./init-config-example.json:/app/init-config-example.json  # init example
+      - ./keys:/app/keys  # keys needed by store
     environment:
-      - CONFIG_FILE=/app/config.yml
+      - CONFIG_FILE=/app/config.yaml
       - CONFIG_FILE_PATH=/app
-    command: ["/bin/kebe-store"]
+    command: >
+      sh -c "
+        /app/kebeng-admin store initialize -i /app/init-config-example.json &&
+        /app/kebeng-store store initialize -i /app/init-config-example.json
+      "
     restart: always
+    networks: 
+      - kebeng-backend
 
   db:
     image: postgres:13
     restart: always
     volumes:
       - db_data:/var/lib/postgresql/data
-      - ./migrations:/docker-entrypoint-initdb.d
+    # - ./migrations:/docker-entrypoint-initdb.d
     environment:
       - POSTGRES_DB=kebe_store
       - POSTGRES_USER=kebe_user
@@ -34,6 +37,8 @@ services:
       - PGDATA=/var/lib/postgresql/data/pgdata
     ports:
       - "5432:5432"
+    networks: 
+      - kebeng-backend
 
   minio:
     image: minio/minio
@@ -47,18 +52,13 @@ services:
     volumes:
       - minio_data:/data
     restart: always
+    networks: 
+      - kebeng-backend
 
 volumes:
   db_data:
   minio_data:
 
-COPY . /source
-WORKDIR /source
-RUN go build -o /bin/kebe-admind bin/admind/admin-backend.go
-
-FROM golang:1.16
-WORKDIR /bin
-COPY --from=builder /bin/kebe-admind .
-EXPOSE 10000
-
-CMD ["/bin/kebe-admind"]
+networks:
+  kebeng-backend:
+    driver: bridge

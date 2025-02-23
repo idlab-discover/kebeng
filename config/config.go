@@ -65,7 +65,7 @@ func LoadConfig() {
 
 		err := viper.ReadInConfig() // Find and read the config file
 		if err != nil {             // Handle errors reading the config file
-			logrus.Warn("Config file not found, using defaults")
+         logrus.Warnf("Config file not found, using defaults: %v", err)
 		}
 	}
 }

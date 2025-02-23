@@ -48,7 +48,7 @@ func (s *Store) getSnapDeclarationAssertion(c *gin.Context) {
 	snapId := c.Param("snap-id")
 	logrus.Tracef("Requested snap-declaration: %s", snapId)
 
-	assertion, err := s.handler.GetSnapDeclarationAssertion(snapId, s.rootStoreKey, s.assertsDatabase)
+	assertion, err := s.handler.GetSnapDeclarationAssertion(snapId, s.rootStoreKey, s.assertsDatabase, s.rootAuthorityID)
 	if err != nil {
 		logrus.Errorf("Failed to get snap-declaration assertion: %v", err)
 		c.AbortWithStatus(http.StatusInternalServerError)

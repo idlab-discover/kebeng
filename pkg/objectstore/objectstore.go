@@ -3,6 +3,7 @@ package objectstore
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"path"
@@ -37,6 +38,9 @@ func (obs *Impl) GetFileFromBucket(bucket string, filePath string) (*[]byte, err
 		return nil, err
 	}
 	bytes, _ := io.ReadAll(objectPtr)
+	if len(bytes) == 0 { // Error if file not found
+		return nil, fmt.Errorf("no such file in bucket \"%s\", file path: %s", bucket, base)
+	}
 	return &bytes, err
 }
 
