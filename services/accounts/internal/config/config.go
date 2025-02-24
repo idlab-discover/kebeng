@@ -12,6 +12,8 @@ type Config struct {
     DBUser int
     DBPassword string
     DBName string
+    GRPCHost string
+    GRPCPort int
 }
 
 // path: path in the container where the config file is

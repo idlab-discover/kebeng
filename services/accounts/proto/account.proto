@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package account;
+option go_package = "github.com/idlab-discover/kebeng/services/accounts/proto;account";
+
+service AccountService {
+    rpc CreateAccount(CreateAccountRequest) returns (CreateAccountResponse);
+}
+
+message CreateAccountRequest {
+    string display_name = 1;
+    string username = 2;
+    string email = 3;
+}
+
+message CreateAccountResponse {
+    string id = 1;
+    string display_name = 2;
+    string username = 3;
+    string email = 4;
+}
+
