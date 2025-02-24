@@ -36,6 +36,7 @@ func main() {
         logrus.Fatalf("Failed to listen: %v", err)
     }
     grpcServer := grpc.NewServer()
+    // this line will match the service functionality to the proto interface
     proto.RegisterAccountServiceServer(grpcServer, accountService)
 
     logrus.Infof("Starting gRPC server on %s:%d", cfg.GRPCHost, cfg.GRPCPort)
