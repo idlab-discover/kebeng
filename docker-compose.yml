@@ -24,7 +24,7 @@ services:
     networks: 
       - kebeng-backend
 
-  db:
+  store_db:
     image: postgres:13
     restart: always
     volumes:
