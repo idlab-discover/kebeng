@@ -1,25 +1,26 @@
-package accounts
+package main
 
 import (
     "net"
     "fmt"
 
-	database "github.com/idlab-discover/kebeng/services/accounts/internal"
-	"github.com/idlab-discover/kebeng/services/accounts/internal/config"
-	"github.com/idlab-discover/kebeng/services/accounts/internal/repository"
-	"github.com/idlab-discover/kebeng/services/accounts/internal/service"
-	proto "github.com/idlab-discover/kebeng/services/accounts/proto"
+	database "github.com/idlab-discover/kebeng/services/account/internal"
+	"github.com/idlab-discover/kebeng/services/account/internal/config"
+	"github.com/idlab-discover/kebeng/services/account/internal/repository"
+	"github.com/idlab-discover/kebeng/services/account/internal/service"
+	proto "github.com/idlab-discover/kebeng/services/account/proto"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
 
 func main() {
-    cfg, err := config.LoadConfig("app/config.yaml")
+    cfg, err := config.LoadConfig()
     if err != nil {
         logrus.Fatalf("Failed to load configuration: %v", err)
     }
+    logrus.Infof("Loaded configuration: %+v", cfg)
 
-    db, err := database.NewDatabase()
+    db, err := database.NewDatabase(cfg)
     if err != nil {
         logrus.Fatalf("Failed to connect to database: %v", err)
     }
@@ -27,7 +28,7 @@ func main() {
     logrus.Infof("Connected to database: %v", db)
 
 
-    // start service
+    // start grpc server
     repo := repository.NewAccountRepository(db)
     accountService := service.NewAccountService(repo)
     

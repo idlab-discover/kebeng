@@ -4,7 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	proto "github.com/idlab-discover/kebeng/services/accounts/proto"
+	"github.com/idlab-discover/kebeng/services/account/internal/config"
+	proto "github.com/idlab-discover/kebeng/services/account/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -14,8 +15,9 @@ type AccountClient struct {
     client proto.AccountServiceClient
 }
 
-func NewAccountClient(address string) (*AccountClient, error) {
-    conn, err := grpc.NewClient(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+func NewAccountClient() (*AccountClient, error) {
+    // kinda ugly the way config is now but don't want to pass a parameter in this function (easier use)
+    conn, err := grpc.NewClient(config.GetAccountServiceAddress(), grpc.WithTransportCredentials(insecure.NewCredentials()))
     if err != nil {
         return nil, fmt.Errorf("could not connect: %v", err)
     }
