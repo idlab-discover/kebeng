@@ -62,7 +62,7 @@ type SnapEntry struct {
 	Base        string
 	Uploads     []SnapUpload
 
-	AccountID uint
+	AccountID uuid.UUID
 	Account   Account
 
 	CreatedAt time.Time

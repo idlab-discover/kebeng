@@ -14,7 +14,7 @@ type Snap struct {
 type AccountInfo struct {
 	Snaps       map[string]map[string]Snap `json:"snaps"`
 	AccountKeys []Key                      `json:"account_keys"`
-	AccountId   string                     `json:"account_id"`
+	AccountId   uuid.UUID                  `json:"account_id"`
 }
 
 type Key struct {

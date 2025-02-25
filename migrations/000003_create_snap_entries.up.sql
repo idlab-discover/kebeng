@@ -9,16 +9,11 @@ CREATE TABLE IF NOT EXISTS public.snap_entries
     updated_at timestamp with time zone,
     deleted_at timestamp with time zone,
     name text COLLATE pg_catalog."default",
-    snap_store_id text COLLATE pg_catalog."default",
     latest_revision_id bigint,
     type text COLLATE pg_catalog."default",
     confinement text COLLATE pg_catalog."default",
-    account_id bigint,
-    CONSTRAINT snap_entries_pkey PRIMARY KEY (id),
-    CONSTRAINT fk_accounts_snap_entries FOREIGN KEY (account_id)
-        REFERENCES public.accounts (id) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION
+    account_id uuid,
+    CONSTRAINT snap_entries_pkey PRIMARY KEY (id)
 )
 
 TABLESPACE pg_default;

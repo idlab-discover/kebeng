@@ -371,7 +371,7 @@ func (d *DashboardHandler) GetAccount(accountEmail string) (*responses.AccountIn
 
 		if err == nil {
 			accountInfoResponse := responses.AccountInfo{
-				AccountId:   account.AccountId,
+				AccountId:   account.ID,
 				Snaps:       map[string]map[string]responses.Snap{},
 				AccountKeys: []responses.Key{},
 			}

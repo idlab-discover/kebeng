@@ -28,7 +28,7 @@ func TestAddSnap(t *testing.T) {
 	t.Run("Add new snap successfully", func(t *testing.T) {
 		name := "test-snap"
 		size := uint64(1024)
-		accountId := uint(1)
+		accountId := uuid.New()
 
 		snapEntry, err := repo.AddSnap(name, size, accountId)
 		assert.NoError(t, err)
@@ -40,7 +40,7 @@ func TestAddSnap(t *testing.T) {
 	t.Run("Add snap that already exists", func(t *testing.T) {
 		name := "existing-snap"
 		size := uint64(2048)
-		accountId := uint(2)
+		accountId := uuid.New()
 
 		// Add the snap first
 		_, err := repo.AddSnap(name, size, accountId)
@@ -71,7 +71,7 @@ func TestGetSnap(t *testing.T) {
 	t.Run("Get snap by name", func(t *testing.T) {
 		name := "test-snap"
 		size := uint64(1024)
-		accountId := uint(1)
+		accountId := uuid.New()
 
 		_, err := repo.AddSnap(name, size, accountId)
 		assert.NoError(t, err)
@@ -107,7 +107,7 @@ func TestGetSnapById(t *testing.T) {
 	t.Run("Get snap by ID", func(t *testing.T) {
 		name := "test-snap"
 		size := uint64(1024)
-		accountId := uint(1)
+		accountId := uuid.New()
 
 		snapEntry, err := repo.AddSnap(name, size, accountId)
 		assert.NoError(t, err)
@@ -144,7 +144,7 @@ func TestGetSnapByStoreId(t *testing.T) {
 	t.Run("Get snap by store ID", func(t *testing.T) {
 		name := "test-snap"
 		size := uint64(1024)
-		accountId := uint(1)
+		accountId := uuid.New()
 
 		snapEntry, err := repo.AddSnap(name, size, accountId)
 		assert.NoError(t, err)
@@ -181,7 +181,7 @@ func TestGetRevisionByChannel(t *testing.T) {
 	t.Run("Get revision by channel", func(t *testing.T) {
 		name := "test-snap"
 		size := uint64(1024)
-		accountId := uint(1)
+		accountId := uuid.New()
 
 		_, err := repo.AddSnap(name, size, accountId)
 		assert.NoError(t, err)
@@ -215,7 +215,7 @@ func TestGetTracks(t *testing.T) {
 	t.Run("Get tracks for existing snap", func(t *testing.T) {
 		name := "test-snap"
 		size := uint64(1024)
-		accountId := uint(1)
+		accountId := uuid.New()
 
 		snapEntry, err := repo.AddSnap(name, size, accountId)
 		assert.NoError(t, err)
@@ -252,7 +252,7 @@ func TestGetRisks(t *testing.T) {
 	t.Run("Get risks for existing track", func(t *testing.T) {
 		name := "test-snap"
 		size := uint64(1024)
-		accountId := uint(1)
+		accountId := uuid.New()
 
 		snapEntry, err := repo.AddSnap(name, size, accountId)
 		assert.NoError(t, err)
@@ -294,7 +294,7 @@ func TestGetRevision(t *testing.T) {
 	t.Run("Get revision by ID", func(t *testing.T) {
 		name := "test-snap"
 		size := uint64(1024)
-		accountId := uint(1)
+		accountId := uuid.New()
 
 		snapEntry, err := repo.AddSnap(name, size, accountId)
 		assert.NoError(t, err)
@@ -332,7 +332,7 @@ func TestSetChannelRevision(t *testing.T) {
 	t.Run("Set channel revision successfully", func(t *testing.T) {
 		name := "test-snap"
 		size := uint64(1024)
-		accountId := uint(1)
+		accountId := uuid.New()
 
 		snapEntry, err := repo.AddSnap(name, size, accountId)
 		assert.NoError(t, err)
@@ -350,7 +350,7 @@ func TestSetChannelRevision(t *testing.T) {
 	t.Run("Set channel revision with non-existent track", func(t *testing.T) {
 		name := "test-snap-2"
 		size := uint64(1024)
-		accountId := uint(1)
+		accountId := uuid.New()
 
 		snapEntry, err := repo.AddSnap(name, size, accountId)
 		assert.NoError(t, err)
@@ -368,7 +368,7 @@ func TestSetChannelRevision(t *testing.T) {
 	t.Run("Set channel revision with non-existent risk", func(t *testing.T) {
 		name := "test-snap-3"
 		size := uint64(1024)
-		accountId := uint(1)
+		accountId := uuid.New()
 
 		snapEntry, err := repo.AddSnap(name, size, accountId)
 		assert.NoError(t, err)
@@ -386,7 +386,7 @@ func TestSetChannelRevision(t *testing.T) {
 	t.Run("Set channel revision with non-existent revision", func(t *testing.T) {
 		name := "test-snap-4"
 		size := uint64(1024)
-		accountId := uint(1)
+		accountId := uuid.New()
 
 		snapEntry, err := repo.AddSnap(name, size, accountId)
 		assert.NoError(t, err)
@@ -419,7 +419,7 @@ func TestGetRevisionBySHA(t *testing.T) {
 	t.Run("Get revision by SHA3_384", func(t *testing.T) {
 		name := "test-snap"
 		size := uint64(1024)
-		accountId := uint(1)
+		accountId := uuid.New()
 		SHA3_384 := "test-sha3-384"
 
 		snapEntry, err := repo.AddSnap(name, size, accountId)
@@ -438,7 +438,7 @@ func TestGetRevisionBySHA(t *testing.T) {
 	t.Run("Get revision by encoded SHA3_384", func(t *testing.T) {
 		name := "test-snap-encoded"
 		size := uint64(1024)
-		accountId := uint(1)
+		accountId := uuid.New()
 		SHA3384Encoded := "test-sha3-384-encoded"
 
 		snapEntry, err := repo.AddSnap(name, size, accountId)
@@ -488,7 +488,7 @@ func TestGetUpload(t *testing.T) {
 	t.Run("Get upload by upDownId", func(t *testing.T) {
 		name := "test-snap"
 		size := uint64(1024)
-		accountId := uint(1)
+		accountId := uuid.New()
 		upDownId := "test-updown-id"
 
 		_, err := repo.AddSnap(name, size, accountId)
@@ -529,7 +529,7 @@ func TestUpdateRevision(t *testing.T) {
 	// t.Run("Update revision successfully", func(t *testing.T) {
 	// 	name := "test-snap"
 	// 	size := uint64(1024)
-	// 	accountId := uint(1)
+	// 	accountId := uuid.New()
 
 	// 	snapEntry, err := repo.AddSnap(name, size, accountId)
 	// 	assert.NoError(t, err)

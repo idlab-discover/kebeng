@@ -69,7 +69,7 @@ func (s *Server) addAccount(c *gin.Context) {
 
 		// TODO:: add validation
 		account := models.Account{
-			AccountId:   addAccountReq.AcccountId,
+			ID:          addAccountReq.AcccountId,
 			DisplayName: addAccountReq.DisplayName,
 			Username:    addAccountReq.Username,
 			Email:       addAccountReq.Email,
