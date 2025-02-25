@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/idlab-discover/kebeng/services/accounts/internal/models"
+	"github.com/idlab-discover/kebeng/services/account/internal/models"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )

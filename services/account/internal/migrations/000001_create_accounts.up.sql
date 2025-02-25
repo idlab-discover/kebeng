@@ -7,22 +7,23 @@ BEGIN
 END
 $$;
 
+-- Enable the uuid-ossp extension for uuid_generate_v4()
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 create sequence public.accounts_id_seq;
 
 CREATE TABLE IF NOT EXISTS public.accounts
 (
-    id UUID NOT NULL DEFAULT nextval('accounts_id_seq'::regclass),
+    id UUID NOT NULL DEFAULT uuid_generate_v4(),
     created_at timestamp with time zone,
     updated_at timestamp with time zone,
     deleted_at timestamp with time zone,
-    account_id UUID COLLATE pg_catalog."default",
     display_name text COLLATE pg_catalog."default",
     username text COLLATE pg_catalog."default",
     email text COLLATE pg_catalog."default",
     password text COLLATE pg_catalog."default",
     CONSTRAINT accounts_pkey PRIMARY KEY (id),
-    CONSTRAINT accounts_account_id_key UNIQUE (account_id),
+    CONSTRAINT accounts_account_id_key UNIQUE (id),
     CONSTRAINT accounts_display_name_key UNIQUE (display_name),
     CONSTRAINT accounts_username_key UNIQUE (username)
 )

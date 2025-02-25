@@ -2,22 +2,23 @@ package database
 
 import (
 	"fmt"
-    "time"
-	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
-	"gorm.io/gorm"
-	gormPostgres "gorm.io/driver/postgres"
+	"time"
+
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
-    _ "github.com/golang-migrate/migrate/v4/source/file" // needed for file source
+	_ "github.com/golang-migrate/migrate/v4/source/file" // needed for file source
+	"github.com/idlab-discover/kebeng/services/account/internal/config"
+	"github.com/sirupsen/logrus"
+	gormPostgres "gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 
-func NewDatabase() (*gorm.DB, error) {
-    return  createDatabaseWithDSN(getDSN())
+func NewDatabase(cfg *config.Config) (*gorm.DB, error) {
+    return  createDatabaseWithDSN(getDSN(cfg),cfg)
 } 
 
-func createDatabaseWithDSN(connectionString string) (*gorm.DB, error) {
+func createDatabaseWithDSN(connectionString string, cfg *config.Config) (*gorm.DB, error) {
     var db *gorm.DB
     var err error
 
@@ -29,7 +30,7 @@ func createDatabaseWithDSN(connectionString string) (*gorm.DB, error) {
         if err == nil {
             logrus.Info("Connected to database")
 
-            err = runMigrations(db)
+            err = runMigrations(db,cfg)
             if err != nil {
                 logrus.Errorf("Migration failed: %v", err)
             }
@@ -42,18 +43,18 @@ func createDatabaseWithDSN(connectionString string) (*gorm.DB, error) {
     return nil, err
 }
 
-func getDSN() string {
+func getDSN(cfg *config.Config) string {
     return fmt.Sprintf("host=%s port=%d user=%s dbname=%s password=%s sslmode=disable TimeZone=UTC",
-        viper.GetString("database.host"),
-        viper.GetInt("database.port"),
-        viper.GetString("database.user"),
-        viper.GetString("database.dbname"),
-        viper.GetString("database.password"),
+        cfg.DBHost,
+        cfg.DBPort,
+        cfg.DBUser,
+        cfg.DBName,
+        cfg.DBPassword,
     )
 }
 
 // runs the migration files in the /migrations folder
-func runMigrations(db *gorm.DB) error {
+func runMigrations(db *gorm.DB, cfg *config.Config) error {
     logrus.Info("Running database migrations")
 
     sqlDB, err := db.DB()
@@ -67,8 +68,9 @@ func runMigrations(db *gorm.DB) error {
     }
     
     // the path here is the path in the container where the migration files are stored
+
     m, err := migrate.NewWithDatabaseInstance(
-        "file:///app/migrations",
+        fmt.Sprintf("file://%s", cfg.MigrationPath),
         "postgres",
         driver,
     )

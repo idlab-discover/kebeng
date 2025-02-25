@@ -1,0 +1,15 @@
+# Build stage
+FROM golang:1.22 AS builder
+WORKDIR /app
+COPY . .
+RUN go mod download
+RUN go build -o /bin/account-service ./main.go
+
+# Final stage
+FROM golang:1.22
+WORKDIR /app
+COPY --from=builder /bin/account-service /app/account-service
+COPY --from=builder /app/internal/config/config.yaml /app/config.yaml
+COPY --from=builder /app/internal/migrations /app/migrations
+
+CMD ["/app/account-service"]

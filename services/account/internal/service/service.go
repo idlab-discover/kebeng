@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 
-	"github.com/idlab-discover/kebeng/services/accounts/internal/models"
-	"github.com/idlab-discover/kebeng/services/accounts/internal/repository"
-	proto "github.com/idlab-discover/kebeng/services/accounts/proto"
+	"github.com/idlab-discover/kebeng/services/account/internal/models"
+	"github.com/idlab-discover/kebeng/services/account/internal/repository"
+	proto "github.com/idlab-discover/kebeng/services/account/proto"
 )
 
 // TODO: maybe call this different?
