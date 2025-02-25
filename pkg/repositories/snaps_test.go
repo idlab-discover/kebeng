@@ -3,6 +3,7 @@ package repositories
 import (
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/idlab-discover/kebeng/pkg/models"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/driver/sqlite"
@@ -118,7 +119,8 @@ func TestGetSnapById(t *testing.T) {
 	})
 
 	t.Run("Get snap by ID that does not exist", func(t *testing.T) {
-		snapEntry, err := repo.GetSnapById(999, false)
+		invalidUUID := uuid.New()
+		snapEntry, err := repo.GetSnapById(invalidUUID, false)
 		assert.NoError(t, err)
 		assert.Nil(t, snapEntry)
 	})
@@ -147,14 +149,15 @@ func TestGetSnapByStoreId(t *testing.T) {
 		snapEntry, err := repo.AddSnap(name, size, accountId)
 		assert.NoError(t, err)
 
-		fetchedSnap, err := repo.GetSnapByStoreId(snapEntry.SnapStoreID, false)
+		fetchedSnap, err := repo.GetSnapId(snapEntry.ID, false)
 		assert.NoError(t, err)
 		assert.NotNil(t, fetchedSnap)
-		assert.Equal(t, snapEntry.SnapStoreID, fetchedSnap.SnapStoreID)
+		assert.Equal(t, snapEntry.ID, fetchedSnap.ID)
 	})
 
 	t.Run("Get snap by store ID that does not exist", func(t *testing.T) {
-		snapEntry, err := repo.GetSnapByStoreId("non-existent-store-id", false)
+		invalidUUID := uuid.New()
+		snapEntry, err := repo.GetSnapById(invalidUUID, false)
 		assert.NoError(t, err)
 		assert.Nil(t, snapEntry)
 	})
@@ -225,7 +228,7 @@ func TestGetTracks(t *testing.T) {
 	})
 
 	t.Run("Get tracks for non-existent snap", func(t *testing.T) {
-		tracks, err := repo.GetTracks(999)
+		tracks, err := repo.GetTracks(uuid.New())
 		assert.Error(t, err)
 		assert.Nil(t, tracks)
 		assert.Equal(t, "unknown error encountered", err.Error())

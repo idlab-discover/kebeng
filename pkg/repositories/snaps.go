@@ -19,20 +19,19 @@ import (
 
 type ISnapsRepository interface {
 	GetSnap(name string, preloadAssociations bool) (*models.SnapEntry, error)
-	GetSnapById(id uint, preloadAssociations bool) (*models.SnapEntry, error)
-	GetSnapByStoreId(snapStoreId string, preloadAssociations bool) (*models.SnapEntry, error)
+	GetSnapById(id uuid.UUID, preloadAssociations bool) (*models.SnapEntry, error)
 	AddSnap(name string, size uint64, accountId uint) (*models.SnapEntry, error)
 
 	GetRevisionBySHA(SHA3_384 string, encoded bool) (*models.SnapRevision, error)
 	GetUpload(upDownId string) (*models.SnapUpload, error)
 	UpdateRevision(revision *models.SnapRevision, revisionBytes *[]byte) (*models.SnapRevision, error)
 
-	ReleaseSnap(channels []string, snapEntryId uint, revisionId uint) error
+	ReleaseSnap(channels []string, snapEntryId uuid.UUID, revisionId uint) error
 	AddUpload(snapName string, upDownId string, size uint, channels []string) (*models.SnapUpload, error)
 
-	SetChannelRevision(trackName string, riskName string, revisionId uint, snapId uint) (*models.SnapTrack, error)
+	SetChannelRevision(trackName string, riskName string, revisionId uint, snapId uuid.UUID) (*models.SnapTrack, error)
 
-	GetTracks(snapId uint) (*[]models.SnapTrack, error)
+	GetTracks(snapId uuid.UUID) (*[]models.SnapTrack, error)
 	GetRisks(trackId uint) (*[]models.SnapRisk, error)
 	GetRevision(id uint) (*models.SnapRevision, error)
 	GetRevisionByChannel(channel string, snapName string) (*models.SnapRevision, error)
@@ -97,7 +96,7 @@ func (sp *SnapsRepository) GetSections() (*[]string, error) {
 	return &sections, nil
 }
 
-func (sp *SnapsRepository) GetTracks(snapId uint) (*[]models.SnapTrack, error) {
+func (sp *SnapsRepository) GetTracks(snapId uuid.UUID) (*[]models.SnapTrack, error) {
 	var tracks []models.SnapTrack
 	db := sp.db.Where(&models.SnapTrack{SnapEntryID: snapId}).Find(&tracks)
 	if _, ok := database.CheckDBForErrorOrNoRows(db); ok {
@@ -141,7 +140,7 @@ func (sp *SnapsRepository) GetRevision(id uint) (*models.SnapRevision, error) {
 	return nil, errors.New("unknown error encountered")
 }
 
-func (sp *SnapsRepository) SetChannelRevision(trackName string, riskName string, revisionId uint, snapId uint) (*models.SnapTrack, error) {
+func (sp *SnapsRepository) SetChannelRevision(trackName string, riskName string, revisionId uint, snapId uuid.UUID) (*models.SnapTrack, error) {
 	// get all the tracks
 	var track models.SnapTrack
 	db := sp.db.Where(&models.SnapTrack{SnapEntryID: snapId, Name: trackName}).Find(&track)
@@ -274,15 +273,15 @@ func (sp *SnapsRepository) GetSnaps() (*[]models.SnapEntry, error) {
 	return nil, db.Error
 }
 
-func (sp *SnapsRepository) GetSnapByStoreId(storeId string, preloadAssociations bool) (*models.SnapEntry, error) {
-	whereModel := &models.SnapEntry{SnapStoreID: storeId}
+func (sp *SnapsRepository) GetSnapId(Id uuid.UUID, preloadAssociations bool) (*models.SnapEntry, error) {
+	whereModel := &models.SnapEntry{ID: Id}
 	return sp.getSnap(whereModel, preloadAssociations)
 }
 
-func (sp *SnapsRepository) GetSnapById(id uint, preloadAssociations bool) (*models.SnapEntry, error) {
+func (sp *SnapsRepository) GetSnapById(id uuid.UUID, preloadAssociations bool) (*models.SnapEntry, error) {
 	var existingSnap models.SnapEntry
 	var db *gorm.DB
-	whereModel := &models.SnapEntry{Model: gorm.Model{ID: id}}
+	whereModel := &models.SnapEntry{ID: id}
 	if preloadAssociations {
 		db = sp.db.Preload(clause.Associations).Where(whereModel).Find(&existingSnap)
 	} else {
@@ -340,8 +339,6 @@ func (sp *SnapsRepository) AddSnap(name string, size uint64, accountId uint) (*m
 
 	// when registering a snap, not finding one is what you want
 	var newSnapEntry models.SnapEntry
-	snapId := uuid.New()
-	newSnapEntry.SnapStoreID = snapId.String()
 	newSnapEntry.Name = name
 	newSnapEntry.AccountID = accountId
 	newSnapEntry.Type = "app"
@@ -352,7 +349,7 @@ func (sp *SnapsRepository) AddSnap(name string, size uint64, accountId uint) (*m
 	sp.db.Save(&newSnapEntry)
 
 	// snap_uploads table contains channels where the snap is uploaded
-	sp.AddUpload(name, snapId.String(), uint(size), []string{"latest/stable"})
+	sp.AddUpload(name, newSnapEntry.ID.String(), uint(size), []string{"latest/stable"})
 
 	// For now when we register a snap we are going to create the default tracks/risks
 	track := models.SnapTrack{
@@ -374,7 +371,7 @@ func (sp *SnapsRepository) AddDefaultRisks(newSnapEntry models.SnapEntry, newRev
 	sp.addRisks(newSnapEntry, newRevision, trackId)
 }
 
-func (sp *SnapsRepository) ReleaseSnap(channels []string, snapEntryId uint, revisionId uint) error {
+func (sp *SnapsRepository) ReleaseSnap(channels []string, snapEntryId uuid.UUID, revisionId uint) error {
 	var trackForRelease string
 	var riskForRelease string
 	for _, cn := range channels {

@@ -1,12 +1,14 @@
 package responses
 
+import "github.com/google/uuid"
+
 type Snap struct {
-	Status  string `json:"status"`
-	SnapId  string `json:"snap-id"`
-	Store   string `json:"store"`
-	Since   string `json:"since"`
-	Private bool   `json:"private"`
-	Price   string `json:"price"`
+	Status  string    `json:"status"`
+	SnapId  uuid.UUID `json:"snap-id"`
+	Store   string    `json:"store"`
+	Since   string    `json:"since"`
+	Private bool      `json:"private"`
+	Price   string    `json:"price"`
 }
 
 type AccountInfo struct {
