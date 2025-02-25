@@ -42,8 +42,8 @@ type IStoreHandler interface {
 	FindSnap(name string) (*responses.SearchV2Results, error)
 	SnapRefresh(actions *[]*requests.SnapActionJSON) (*responses.SnapActionResultList, error)
 	SnapDownload(snapFilename string) (*[]byte, error)
-	GetSnapRevisionAssertion(SHA3384Encoded string, rootStoreKey *rsa.PrivateKey, assertsDB *asserts.Database, storeAuthorityId string) (*asserts.SnapRevision, error)
-	GetSnapDeclarationAssertion(snapId string, rootStoreKey *rsa.PrivateKey, assertsDB *asserts.Database, storeAuthorityId string) (*asserts.SnapDeclaration, error)
+	GetSnapRevisionAssertion(SHA3384Encoded string, rootStoreKey *rsa.PrivateKey, assertsDB *asserts.Database, storeAuthorityId uuid.UUID) (*asserts.SnapRevision, error)
+	GetSnapDeclarationAssertion(snapId uuid.UUID, rootStoreKey *rsa.PrivateKey, assertsDB *asserts.Database, storeAuthorityId string) (*asserts.SnapDeclaration, error)
 	GetAccountKeyAssertion(keySHA3384 string, rootStoreKey *rsa.PrivateKey, signingDB *assertstest.SigningDB) (*asserts.AccountKey, error)
 	GetAccountAssertion(accountId string, rootStoreKey *rsa.PrivateKey, signingDB *assertstest.SigningDB) (*asserts.Account, error)
 	UnscannedUpload(snapFile io.Reader) (string, error)
@@ -203,10 +203,10 @@ func (h *Handler) GetAccountAssertion(accountId string, rootStoreKey *rsa.Privat
 	return nil, errors.New("account not found")
 }
 
-func (h *Handler) GetSnapDeclarationAssertion(snapId string, rootStoreKey *rsa.PrivateKey, assertsDB *asserts.Database, storeAuthorityId string) (*asserts.SnapDeclaration, error) {
+func (h *Handler) GetSnapDeclarationAssertion(snapId uuid.UUID, rootStoreKey *rsa.PrivateKey, assertsDB *asserts.Database, storeAuthorityId string) (*asserts.SnapDeclaration, error) {
 	logrus.Tracef("Requested snap-declaration: %s", snapId)
 
-	snapEntry, err := h.snaps.GetSnapByStoreId(snapId, true)
+	snapEntry, err := h.snaps.GetSnapById(snapId, true)
 	if err != nil {
 		logrus.Errorf("Failed to get snap entry for snap-id %s: %v", snapId, err)
 		return nil, err
@@ -236,7 +236,7 @@ func (h *Handler) GetSnapDeclarationAssertion(snapId string, rootStoreKey *rsa.P
 	return assertion, nil
 }
 
-func (h *Handler) GetSnapRevisionAssertion(SHA3384Encoded string, rootStoreKey *rsa.PrivateKey, assertsDB *asserts.Database, storeAuthorityId string) (*asserts.SnapRevision, error) {
+func (h *Handler) GetSnapRevisionAssertion(SHA3384Encoded string, rootStoreKey *rsa.PrivateKey, assertsDB *asserts.Database, storeAuthorityId uuid.UUID) (*asserts.SnapRevision, error) {
 	revision, err := h.snaps.GetRevisionBySHA(SHA3384Encoded, true)
 	if err != nil {
 		logrus.Errorf("Failed to get revision by SHA: %s", err)
@@ -264,7 +264,7 @@ func (h *Handler) GetSnapRevisionAssertion(SHA3384Encoded string, rootStoreKey *
 	assertion, err := asserts2.MakeSnapRevisionAssertion(
 		storeAuthorityId,
 		SHA3384Encoded,
-		snapEntry.SnapStoreID,
+		snapEntry.ID,
 		revision.Size,
 		int(revision.ID),
 		snapEntry.Account.AccountId,
@@ -302,7 +302,7 @@ func (h *Handler) SnapRefresh(actions *[]*requests.SnapActionJSON) (*responses.S
 		if err == nil && snapEntry != nil {
 			// TODO: support other actions "refresh", etc.
 			if action.Action == "download" {
-				logrus.Infof("We know about this snap %s, its id is %s we we'll try to handle it.", snapEntry.Name, snapEntry.SnapStoreID)
+				logrus.Infof("We know about this snap %s, its id is %s we we'll try to handle it.", snapEntry.Name, snapEntry.ID)
 
 				snapRevision, err2 := h.snaps.GetRevisionByChannel(action.Channel, action.Name)
 				if err2 == nil && snapRevision != nil {
@@ -311,7 +311,7 @@ func (h *Handler) SnapRefresh(actions *[]*requests.SnapActionJSON) (*responses.S
 						actionResult := responses.SnapActionResult{
 							Result:      "download",
 							InstanceKey: "download-1",
-							SnapID:      snapEntry.SnapStoreID,
+							SnapID:      snapEntry.ID,
 							Name:        snapEntry.Name,
 							Snap:        storeSnap,
 						}
@@ -321,7 +321,7 @@ func (h *Handler) SnapRefresh(actions *[]*requests.SnapActionJSON) (*responses.S
 					logrus.Errorf("unable to process action %s for snap %s: %s", action.Action, action.Name, err3)
 				}
 			} else if action.Action == "install" {
-				logrus.Infof("We know about this snap %s, its id is %s we we'll try to handle it.", snapEntry.Name, snapEntry.SnapStoreID)
+				logrus.Infof("We know about this snap %s, its id is %s we we'll try to handle it.", snapEntry.Name, snapEntry.ID)
 				snapRevision, err2 := h.snaps.GetRevisionByChannel(action.Channel, action.Name)
 				if err2 == nil && snapRevision != nil {
 					storeSnap, err3 := snapEntry.ToStoreSnap(snapRevision)
@@ -333,7 +333,7 @@ func (h *Handler) SnapRefresh(actions *[]*requests.SnapActionJSON) (*responses.S
 						actionResult := responses.SnapActionResult{
 							Result:      "install",
 							InstanceKey: "install-1",
-							SnapID:      snapEntry.SnapStoreID,
+							SnapID:      snapEntry.ID,
 							Name:        snapEntry.Name,
 							Snap:        storeSnap,
 						}
@@ -389,7 +389,7 @@ func (h *Handler) FindSnap(name string) (*responses.SearchV2Results, error) {
 						Name:        snapEntry.Name,
 						// TODO: need to fix this properly
 						Revision:  1,
-						SnapID:    snapEntry.SnapStoreID,
+						SnapID:    snapEntry.ID,
 						Type:      snapType,
 						Publisher: snap.StoreAccount{ID: snapEntry.Account.AccountId, Username: snapEntry.Account.Username, DisplayName: snapEntry.Account.DisplayName},
 					},
@@ -400,12 +400,12 @@ func (h *Handler) FindSnap(name string) (*responses.SearchV2Results, error) {
 					Name:        snapEntry.Name,
 					// TODO: need to fix this properly
 					Revision:  1,
-					SnapID:    snapEntry.SnapStoreID,
+					SnapID:    snapEntry.ID,
 					Type:      snapType,
 					Publisher: snap.StoreAccount{ID: snapEntry.Account.AccountId, Username: snapEntry.Account.Username, DisplayName: snapEntry.Account.DisplayName},
 				},
 				Name:   snapEntry.Name,
-				SnapID: snapEntry.SnapStoreID,
+				SnapID: snapEntry.ID,
 			})
 
 			return results

@@ -2,16 +2,17 @@ package database
 
 import (
 	"fmt"
-    "time"
+	"time"
+
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file" // needed for file source
 	"github.com/idlab-discover/kebeng/config/configkey"
 	"github.com/idlab-discover/kebeng/pkg/models"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"gorm.io/gorm"
 	gormPostgres "gorm.io/driver/postgres"
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/postgres"
-    _ "github.com/golang-migrate/migrate/v4/source/file" // needed for file source
+	"gorm.io/gorm"
 )
 
 var DB *gorm.DB
@@ -21,31 +22,30 @@ func CreateDatabase() (*gorm.DB, error) {
 }
 
 func CreateDatabaseWithDSN(connectionString string) (*gorm.DB, error) {
-    var db *gorm.DB
-    var err error
+	var db *gorm.DB
+	var err error
 
-    maxRetries := 10
-    retryInterval := 3 * time.Second
+	maxRetries := 10
+	retryInterval := 3 * time.Second
 
-    for try := 0; try < maxRetries; try++ {
-        db, err = gorm.Open(gormPostgres.Open(connectionString), &gorm.Config{})
-        if err == nil {
-            logrus.Info("Connected to database")
-            DB = db
+	for try := 0; try < maxRetries; try++ {
+		db, err = gorm.Open(gormPostgres.Open(connectionString), &gorm.Config{})
+		if err == nil {
+			logrus.Info("Connected to database")
+			DB = db
 
-            err = RunMigrations(db)
-            if err != nil {
-                logrus.Errorf("Migration failed: %v", err)
-            }
-            return db, nil
-        }
-        logrus.Errorf("Failed to connect to database at try %d: %v",try, err)
-        time.Sleep(retryInterval)
-    }
-    logrus.Errorf("Failed to connect to database after %d retries", maxRetries)
-    return nil, err
+			err = RunMigrations(db)
+			if err != nil {
+				logrus.Errorf("Migration failed: %v", err)
+			}
+			return db, nil
+		}
+		logrus.Errorf("Failed to connect to database at try %d: %v", try, err)
+		time.Sleep(retryInterval)
+	}
+	logrus.Errorf("Failed to connect to database after %d retries", maxRetries)
+	return nil, err
 }
-
 
 // TODO: make this function usefull
 // still need to do 2 checks most of the time where this function is called
@@ -99,31 +99,32 @@ func MigrateDatabase(db *gorm.DB) {
 
 // runs the migration files in the /migrations folder
 func RunMigrations(db *gorm.DB) error {
-    logrus.Info("Running database migrations")
+	logrus.Info("Running database migrations")
 
-    sqlDB, err := db.DB()
-    if err != nil {
-        return fmt.Errorf("failed to get raw database connection: %v", err)
-    }
-    
-    driver, err := postgres.WithInstance(sqlDB, &postgres.Config{})
-    if err != nil {
-        return fmt.Errorf("failed to create migration driver: %v", err)
-    }
-    
-    m, err := migrate.NewWithDatabaseInstance(
-        "file:///app/migrations",
-        "postgres",
-        driver,
-    )
-    if err != nil {   
-        return fmt.Errorf("failed to initialize migrate: %v", err)
-    }
+	sqlDB, err := db.DB()
+	if err != nil {
+		return fmt.Errorf("failed to get raw database connection: %v", err)
+	}
 
-    err = m.Up()
-    if err != nil && err != migrate.ErrNoChange {
-        return fmt.Errorf("failed to run migrations: %v", err)
-    }
+	driver, err := postgres.WithInstance(sqlDB, &postgres.Config{})
+	if err != nil {
+		return fmt.Errorf("failed to create migration driver: %v", err)
+	}
 
-    return nil
+	m, err := migrate.NewWithDatabaseInstance(
+		"file:///app/migrations",
+		"postgres",
+		driver,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to initialize migrate: %v", err)
+	}
+
+	err = m.Up()
+	if err != nil && err != migrate.ErrNoChange {
+		return fmt.Errorf("failed to run migrations: %v", err)
+	}
+
+	logrus.Println("Migrations ran successfully")
+	return nil
 }

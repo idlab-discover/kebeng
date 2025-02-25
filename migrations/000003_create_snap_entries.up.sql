@@ -1,8 +1,10 @@
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 create sequence public.snap_entries_id_seq;
 
 CREATE TABLE IF NOT EXISTS public.snap_entries
 (
-    id bigint NOT NULL DEFAULT nextval('snap_entries_id_seq'::regclass),
+    id uuid NOT NULL DEFAULT uuid_generate_v4(),
     created_at timestamp with time zone,
     updated_at timestamp with time zone,
     deleted_at timestamp with time zone,
@@ -23,6 +25,7 @@ TABLESPACE pg_default;
 
 ALTER TABLE public.snap_entries
     OWNER to manager;
+
 -- Index: idx_snap_entries_deleted_at
 
 -- DROP INDEX public.idx_snap_entries_deleted_at;

@@ -343,7 +343,7 @@ func (d *DashboardHandler) RegisterSnapName(accountEmail string, isDryRun bool, 
 				snap, err3 := d.snaps.AddSnap(snapName, size, account.ID)
 				if err3 == nil && snap != nil {
 					resp := responses.RegisterSnap{
-						Id:   snap.SnapStoreID,
+						Id:   snap.ID,
 						Name: snap.Name,
 					}
 
@@ -388,7 +388,7 @@ func (d *DashboardHandler) GetAccount(accountEmail string) (*responses.AccountIn
 				// TODO: replace with real data
 				snaps[s.Name] = responses.Snap{
 					Status:  "Approved",
-					SnapId:  s.SnapStoreID,
+					SnapId:  s.ID,
 					Store:   "Global",
 					Since:   "2016-07-04T23:37:52Z",
 					Private: false,
