@@ -20,7 +20,7 @@ import (
 type ISnapsRepository interface {
 	GetSnap(name string, preloadAssociations bool) (*models.SnapEntry, error)
 	GetSnapById(id uuid.UUID, preloadAssociations bool) (*models.SnapEntry, error)
-	AddSnap(name string, size uint64, accountId uint) (*models.SnapEntry, error)
+	AddSnap(name string, size uint64, accountId uuid.UUID) (*models.SnapEntry, error)
 
 	GetRevisionBySHA(SHA3_384 string, encoded bool) (*models.SnapRevision, error)
 	GetUpload(upDownId string) (*models.SnapUpload, error)
@@ -177,7 +177,7 @@ func (sp *SnapsRepository) AddUpload(snapName string, upDownId string, fileSize 
 			SnapEntryID: snap.ID,
 		}
 
-		logrus.Infof("Uploading: %+v", snapUpload)
+		logrus.Infof("Uploading: %s", snapName)
 
 		// TODO: fix lazy; this should be converted to a table so that the channels can be stored separately or maybe redis
 		if len(channels) > 0 {
@@ -326,7 +326,7 @@ func (sp *SnapsRepository) GetSnap(name string, preloadAssociations bool) (*mode
 // AddSnap registers a new snap with the given name, size, and accountId.
 // It ensures the snap does not already exist, creates a new SnapEntry,
 // adds an initial upload, and sets up default tracks and risks.
-func (sp *SnapsRepository) AddSnap(name string, size uint64, accountId uint) (*models.SnapEntry, error) {
+func (sp *SnapsRepository) AddSnap(name string, size uint64, accountId uuid.UUID) (*models.SnapEntry, error) {
 	existingSnap, err := sp.GetSnap(name, false)
 	if err != nil {
 		return nil, err

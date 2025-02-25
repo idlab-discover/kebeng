@@ -61,7 +61,13 @@ func (s *Store) getSnapDeclarationAssertion(c *gin.Context) {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
-	assertion, err := s.handler.GetSnapDeclarationAssertion(snapUUID, s.rootStoreKey, s.assertsDatabase, s.rootAuthorityID)
+	rootAuthorityUUID, err := uuid.Parse(s.rootAuthorityID)
+	if err != nil {
+		logrus.Errorf("Invalid root authority ID: %s", s.rootAuthorityID)
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+	assertion, err := s.handler.GetSnapDeclarationAssertion(snapUUID, s.rootStoreKey, s.assertsDatabase, rootAuthorityUUID)
 	if err != nil {
 		logrus.Errorf("Failed to get snap-declaration assertion: %v", err)
 		c.AbortWithStatus(http.StatusInternalServerError)
@@ -91,7 +97,13 @@ func (s *Store) getAccountAssertion(c *gin.Context) {
 	id := c.Param("id")
 	logrus.Tracef("Requested account: %s", id)
 
-	accountAssertion, err := s.handler.GetAccountAssertion(id, s.rootStoreKey, s.signingDB)
+	accountUUID, err := uuid.Parse(id)
+	if err != nil {
+		logrus.Errorf("Invalid account id: %s", id)
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+	accountAssertion, err := s.handler.GetAccountAssertion(accountUUID, s.rootStoreKey, s.signingDB)
 	if err == nil && accountAssertion != nil {
 		assertionBytes := asserts.Encode(accountAssertion)
 		c.Writer.Header().Set("Content-Type", asserts.MediaType)

@@ -10,7 +10,7 @@ import (
 	"github.com/snapcore/snapd/asserts"
 )
 
-func MakeSnapDeclarationAssertion(authorityId, publisherId string, snapEntry *models.SnapEntry, storePrivateKey asserts.PrivateKey, db *asserts.Database) (*asserts.SnapDeclaration, error) {
+func MakeSnapDeclarationAssertion(authorityId uuid.UUID, publisherId uuid.UUID, snapEntry *models.SnapEntry, storePrivateKey asserts.PrivateKey, db *asserts.Database) (*asserts.SnapDeclaration, error) {
 	headers := map[string]interface{}{
 		"authority-id": authorityId,
 		"series":       "16",
@@ -33,7 +33,7 @@ func MakeSnapDeclarationAssertion(authorityId, publisherId string, snapEntry *mo
 	return nil, errors.New("unable to cast assertion")
 }
 
-func MakeSnapRevisionAssertion(authorityId uuid.UUID, digest string, snapID uuid.UUID, size uint64, revision int, developerID, keyID string, db *asserts.Database) (*asserts.SnapRevision, error) {
+func MakeSnapRevisionAssertion(authorityId uuid.UUID, digest string, snapID uuid.UUID, size uint64, revision int, developerID uuid.UUID, keyID string, db *asserts.Database) (*asserts.SnapRevision, error) {
 	headers := map[string]interface{}{
 		"authority-id":  authorityId,
 		"snap-sha3-384": digest,
