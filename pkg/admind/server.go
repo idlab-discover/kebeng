@@ -69,7 +69,7 @@ func (s *Server) addAccount(c *gin.Context) {
 
 		// TODO:: add validation
 		account := models.Account{
-			AccountId:   addAccountReq.AcccountId,
+			ID:          addAccountReq.AcccountId,
 			DisplayName: addAccountReq.DisplayName,
 			Username:    addAccountReq.Username,
 			Email:       addAccountReq.Email,
@@ -102,7 +102,7 @@ func (s *Server) addTrack(c *gin.Context) {
 
 			s.db.Save(&track)
 
-			s.snaps.AddDefaultRisks(snapEntry.ID, track.ID)
+			s.snaps.AddDefaultRisks(snapEntry, models.SnapRevision{}, track.ID) // FIX: hardcoded value for now (models.SnapRevision{}) -> developing upload functionality
 
 			c.Status(http.StatusCreated)
 			return

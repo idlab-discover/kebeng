@@ -1,8 +1,10 @@
 package responses
 
+import "github.com/google/uuid"
+
 type RegisterSnap struct {
-	Id   string `json:"snap_id"`
-	Name string `json:"snap_name"`
+	Id   uuid.UUID `json:"snap_id"`
+	Name string    `json:"snap_name"`
 }
 
 type Status struct {

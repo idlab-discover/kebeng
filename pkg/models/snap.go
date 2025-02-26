@@ -4,6 +4,10 @@ import (
 	"context"
 	"crypto"
 	"fmt"
+	"io"
+	"time"
+
+	"github.com/google/uuid"
 	"github.com/idlab-discover/kebeng/config/configkey"
 	"github.com/idlab-discover/kebeng/pkg/objectstore"
 	"github.com/idlab-discover/kebeng/pkg/store/responses"
@@ -12,14 +16,13 @@ import (
 	"github.com/snapcore/snapd/snap"
 	"github.com/spf13/viper"
 	"gorm.io/gorm"
-	"io"
 )
 
 type SnapTrack struct {
 	gorm.Model
 	Name string
 
-	SnapEntryID uint
+	SnapEntryID uuid.UUID
 	SnapEntry   SnapEntry
 
 	Risks []SnapChannel
@@ -29,7 +32,7 @@ type SnapChannel struct {
 	gorm.Model
 	Name        string
 	SnapTrackID uint
-	SnapEntryID uint
+	SnapEntryID uuid.UUID
 	SnapEntry   SnapEntry
    
    // why store RevisionID when we have Revision?
@@ -46,7 +49,7 @@ type SnapBranch struct {
 	gorm.Model
 	Name        string
 	SnapRiskID  uint
-	SnapEntryID uint
+	SnapEntryID uuid.UUID
 	SnapEntry   SnapEntry
 
 	RevisionID uint
@@ -54,23 +57,24 @@ type SnapBranch struct {
 }
 
 type SnapEntry struct {
-	gorm.Model
-	Name        string `json:"name"`
-	SnapStoreID string `json:"snap-id"`
+	ID          uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	Name        string    `json:"name"`
 	Revisions   []SnapRevision
 	Type        string
 	Confinement string
 	Base        string
 	Uploads     []SnapUpload
 
-	AccountID uint
+	AccountID uuid.UUID
 	Account   Account
+
+	CreatedAt time.Time
 }
 
 type SnapRevision struct {
 	gorm.Model
 	SnapFilename   string
-	SnapEntryID    uint
+	SnapEntryID    uuid.UUID
 	SHA3_384       string
 	SHA3384Encoded string `gorm:"column:sha3_384_encoded"`
 	Size           uint64
@@ -84,7 +88,7 @@ type SnapUpload struct {
 	Filesize uint
 	// Channels is a comma-separated string of channels
 	Channels    string
-	SnapEntryID uint
+	SnapEntryID uuid.UUID
 	SnapEntry   SnapEntry
 }
 
@@ -115,7 +119,7 @@ func (se *SnapEntry) ToStoreSnap(snapRevision *SnapRevision) (*responses.StoreSn
 	storeSnap := &responses.StoreSnap{
 		Name:     se.Name,
 		Type:     snap.Type(se.Type),
-		SnapID:   se.SnapStoreID,
+		SnapID:   se.ID,
 		Revision: int(snapRevision.ID),
 		Download: responses.StoreSnapDownload{
 			Sha3_384: actualSha3,

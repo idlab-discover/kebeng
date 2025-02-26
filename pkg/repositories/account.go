@@ -3,6 +3,7 @@ package repositories
 // THIS LOGIC IS MOVED TO services/accounts/internal/repository/repository.go
 
 import (
+	"github.com/google/uuid"
 	"github.com/idlab-discover/kebeng/pkg/database"
 	"github.com/idlab-discover/kebeng/pkg/models"
 	"github.com/sirupsen/logrus"
@@ -12,7 +13,7 @@ import (
 
 type IAccountRepository interface {
 	GetAccountByEmail(email string, preload bool) (*models.Account, error)
-	GetAccountById(accountId string, preload bool) (*models.Account, error)
+	GetAccountById(accountId uuid.UUID, preload bool) (*models.Account, error)
 	AddKey(name string, SHA3384 string, encodedPublicKey string, accountEmail string) (*models.Key, error)
 	GetKeyBySHA3384(sha3384 string) (*models.Key, error)
 }
@@ -30,8 +31,8 @@ func (a *AccountRepository) GetKeyBySHA3384(sha3384 string) (*models.Key, error)
 	return a.getKeyByWhereModel(whereModel, true)
 }
 
-func (a *AccountRepository) GetAccountById(accountId string, preload bool) (*models.Account, error) {
-	whereModel := &models.Account{AccountId: accountId}
+func (a *AccountRepository) GetAccountById(accountId uuid.UUID, preload bool) (*models.Account, error) {
+	whereModel := &models.Account{ID: accountId}
 	return a.getAccountByWhereModel(whereModel, preload)
 }
 
