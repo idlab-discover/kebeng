@@ -298,13 +298,13 @@ func (h *Handler) SnapDownload(snapFilename string) (*[]byte, error) {
 func (h *Handler) SnapRefresh(actions *[]*requests.SnapActionJSON) (*responses.SnapActionResultList, error) {
 	var actionResults []*responses.SnapActionResult
 	for _, action := range *actions {
-		snapEntry, err := h.snaps.GetSnapByName(action.Name, true)
+		snapEntry, err := h.snaps.GetSnap(action.Name, true)
 		if err == nil && snapEntry != nil {
 			// TODO: support other actions "refresh", etc.
 			if action.Action == "download" {
 				logrus.Infof("We know about this snap %s, its id is %s we we'll try to handle it.", snapEntry.Name, snapEntry.ID)
 
-				snapRevision, err2 := h.snaps.GetRevisionByChannelAndTrack(action.Channel, action.Name)
+				snapRevision, err2 := h.snaps.GetRevisionByChannel(action.Channel, action.Name)
 				if err2 == nil && snapRevision != nil {
 					storeSnap, err3 := snapEntry.ToStoreSnap(snapRevision)
 					if err3 == nil && storeSnap != nil {
@@ -362,7 +362,7 @@ func (h *Handler) FindSnap(name string) (*responses.SearchV2Results, error) {
 		ErrorList: nil,
 	}
 
-	snapEntry, err := h.snaps.GetSnapByName(name, true)
+	snapEntry, err := h.snaps.GetSnap(name, true)
 	if err == nil && snapEntry != nil {
 		results := func() []responses.StoreSearchResult {
 			var results []responses.StoreSearchResult
@@ -422,31 +422,38 @@ func (h *Handler) FindSnap(name string) (*responses.SearchV2Results, error) {
 }
 
 func (h *Handler) GetSnapNames() (*responses.CatalogResults, error) {
-   snaps, err := h.snaps.GetSnaps(&models.SnapFilter{})
-   if err != nil {
-      return nil, err
-   }
+	snaps, err := h.snaps.GetSnaps()
+	if err == nil && snaps != nil {
+		catalogItems := responses.CatalogResults{
+			Payload: responses.CatalogPayload{
+				Items: []responses.CatalogItem{},
+			},
+		}
 
-   items := make([]responses.CatalogItem, len(snaps))
-   for _, snap := range snaps {
-      item := responses.CatalogItem{
-         Name: snap.Name,
-         Version: "none provided",  // TODO: implement version
-         Summary: "none provided",  // TODO: implement summary
-         Aliases: nil,              // TODO: implement aliases
-         Apps: nil,                 // TODO: implement apps
-         Title: "none provided",    // TODO: implement title
-      }
-      items = append(items, item)
-   }
+		for _, sn := range *snaps {
+			catalogItems.Payload.Items = append(catalogItems.Payload.Items, responses.CatalogItem{
+				Name: sn.Name,
+				// TODO: implement version
+				Version: "none provided",
+				// TODO: implement summary
+				Summary: "none provided",
+				// TODO: implement aliases
+				Aliases: nil,
+				// TODO: implement apps
+				Apps: nil,
+				// TODO: implement title
+				Title: "none provided",
+			})
+		}
 
-   result := responses.CatalogResults{
-      Payload: responses.CatalogPayload{
-         Items: items,
-      },
-   }
+		return &catalogItems, nil
+	}
 
-   return &result, nil
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, errors.New("unknown error encountered")
 }
 
 func (h *Handler) GetSections() (*responses.SectionResults, error) {
