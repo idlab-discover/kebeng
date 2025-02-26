@@ -57,7 +57,7 @@ func (s *Server) Run() {
 	assertsDatabase := GetDatabaseWithRootKey()
 
     //TODO: TEST create root account
-    accountClient, err := client.NewAccountClient(configkey.AccountServiceHost, viper.GetInt(configkey.AccountServicePort))
+    accountClient, err := client.NewAccountClient(viper.GetString(configkey.AccountServiceHost), viper.GetInt(configkey.AccountServicePort))
     if err != nil {
         logrus.Errorf("could not create account client: %v", err)
     }
