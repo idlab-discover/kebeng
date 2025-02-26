@@ -1,13 +1,15 @@
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 create sequence public.ssh_keys_id_seq;
 
 CREATE TABLE IF NOT EXISTS public.ssh_keys
 (
-    id bigint NOT NULL DEFAULT nextval('ssh_keys_id_seq'::regclass),
+    id uuid NOT NULL DEFAULT uuid_generate_v4(),
     created_at timestamp with time zone,
     updated_at timestamp with time zone,
     deleted_at timestamp with time zone,
     public_key_string text COLLATE pg_catalog."default",
-    account_id bigint,
+    account_id uuid,
     CONSTRAINT ssh_keys_pkey PRIMARY KEY (id),
     CONSTRAINT fk_accounts_ssh_keys FOREIGN KEY (account_id)
         REFERENCES public.accounts (id) MATCH SIMPLE

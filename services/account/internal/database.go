@@ -82,7 +82,7 @@ func runMigrations(db *gorm.DB, cfg *config.Config) error {
     if err != nil && err != migrate.ErrNoChange {
         return fmt.Errorf("failed to run migrations: %v", err)
     }
-
+    logrus.Info("Database migrations ran successfully")
     return nil
 }
 
