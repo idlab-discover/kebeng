@@ -18,22 +18,21 @@ import (
 )
 
 type ISnapsRepository interface {
-	GetSnapByName(name string, preloadAssociations bool) (*models.SnapEntry, error)
-	GetSnapById(id uint, preloadAssociations bool) (*models.SnapEntry, error)
-	GetSnapByStoreId(snapStoreId string, preloadAssociations bool) (*models.SnapEntry, error)
-	AddSnap(name string, accountId uint) (*models.SnapEntry, error)
+	GetSnap(name string, preloadAssociations bool) (*models.SnapEntry, error)
+	GetSnapById(id uuid.UUID, preloadAssociations bool) (*models.SnapEntry, error)
+	AddSnap(name string, size uint64, accountId uuid.UUID) (*models.SnapEntry, error)
 
 	GetRevisionBySHA(SHA3_384 string, encoded bool) (*models.SnapRevision, error)
 	GetUploadByUpDownId(upDownId string) (*models.SnapUpload, error)
 	UpdateRevision(revision *models.SnapRevision, revisionBytes *[]byte) (*models.SnapRevision, error)
 
-	ReleaseSnap(channels []string, snapEntryId uint, revisionId uint) error
+	ReleaseSnap(channels []string, snapEntryId uuid.UUID, revisionId uint) error
 	AddUpload(snapName string, upDownId string, size uint, channels []string) (*models.SnapUpload, error)
 
-	SetChannelRevision(trackName string, riskName string, revisionId uint, snapId uint) (*models.SnapTrack, error)
+	SetChannelRevision(trackName string, riskName string, revisionId uint, snapId uuid.UUID) (*models.SnapTrack, error)
 
-	GetTracks(snapId uint) (*[]models.SnapTrack, error)
-	GetChannels(trackId uint) (*[]models.SnapChannel, error)
+	GetTracks(snapId uuid.UUID) (*[]models.SnapTrack, error)
+	GetRisks(trackId uint) (*[]models.SnapRisk, error)
 	GetRevision(id uint) (*models.SnapRevision, error)
 	GetRevisionByChannelAndTrack(channel string, snapName string) (*models.SnapRevision, error)
 
@@ -112,7 +111,7 @@ func (sp *SnapsRepository) GetSections() (*[]string, error) {
 	return &sections, nil
 }
 
-func (sp *SnapsRepository) GetTracks(snapId uint) (*[]models.SnapTrack, error) {
+func (sp *SnapsRepository) GetTracks(snapId uuid.UUID) (*[]models.SnapTrack, error) {
 	var tracks []models.SnapTrack
 	db := sp.db.Where(&models.SnapTrack{SnapEntryID: snapId}).Find(&tracks)
 	if _, ok := database.CheckDBForErrorOrNoRows(db); ok {
@@ -156,21 +155,28 @@ func (sp *SnapsRepository) GetRevision(id uint) (*models.SnapRevision, error) {
 	return nil, errors.New("unknown error encountered")
 }
 
-func (sp *SnapsRepository) SetChannelRevision(trackName string, riskName string, revisionId uint, snapId uint) (*models.SnapTrack, error) {
-   // find SnapTrack
-   var snapTrack models.SnapTrack
-   err := sp.db.Where(&models.SnapTrack{
-      SnapEntryID: snapId,
-      Name:        trackName,
-   }).First(&snapTrack).Error
-
-   if err != nil {
-      if errors.Is(err, gorm.ErrRecordNotFound) {
-         return nil, fmt.Errorf("track %s not found for snap %d", trackName, snapId)
-      }
-      logrus.Errorf("Database error fetching snap track: %v", err)
-      return nil, err
-   }
+func (sp *SnapsRepository) SetChannelRevision(trackName string, riskName string, revisionId uint, snapId uuid.UUID) (*models.SnapTrack, error) {
+	// get all the tracks
+	var track models.SnapTrack
+	db := sp.db.Where(&models.SnapTrack{SnapEntryID: snapId, Name: trackName}).Find(&track)
+	if _, ok := database.CheckDBForErrorOrNoRows(db); ok {
+		// get all the risks
+		var risk models.SnapRisk
+		db = sp.db.Where(&models.SnapRisk{SnapEntryID: snapId, Name: riskName, SnapTrackID: track.ID}).Find(&risk)
+		if _, ok := database.CheckDBForErrorOrNoRows(db); ok {
+			var revision models.SnapRevision
+			db = sp.db.Where("id", revisionId).Find(&revision)
+			if _, ok := database.CheckDBForErrorOrNoRows(db); ok {
+				risk.RevisionID = revision.ID
+				sp.db.Save(&risk)
+				return &track, nil
+			}
+		} else {
+			return nil, errors.New("risk does not exist for track")
+		}
+	} else {
+		return nil, errors.New("track does not exist for snap")
+	}
 
    // find SnapChannel
    var snapChannel models.SnapChannel
@@ -223,12 +229,18 @@ func (sp *SnapsRepository) AddUpload(snapName string, upDownId string, fileSize 
       return nil, err
    }
 
-   snapUpload := models.SnapUpload{
-      Name:        snapName,
-      UpDownID:    upDownId,
-      Filesize:    fileSize,
-      SnapEntryID: snap.ID,
-   }
+		logrus.Infof("Uploading: %s", snapName)
+
+		// TODO: fix lazy; this should be converted to a table so that the channels can be stored separately or maybe redis
+		if len(channels) > 0 {
+			channelsString := ""
+			for _, chn := range channels {
+				if channelsString == "" {
+					channelsString = chn
+				} else {
+					channelsString = channelsString + "," + chn
+				}
+			}
 
    logrus.Infof("Uploading: %+v", snapUpload)
 
@@ -260,7 +272,7 @@ func (sp *SnapsRepository) GetRevisionBySHA(SHA3_384 string, encoded bool) (*mod
 	}
 
 	// check for database errors or no rows found
-   // could use the helper function CheckDBForErrorOrNoRows but don't like how it's implemented
+	// could use the helper function CheckDBForErrorOrNoRows but don't like how it's implemented
 	if db.Error != nil {
 		logrus.Errorf("Database error: %v", db.Error)
 		return nil, db.Error
@@ -268,7 +280,7 @@ func (sp *SnapsRepository) GetRevisionBySHA(SHA3_384 string, encoded bool) (*mod
 	if db.RowsAffected == 0 {
 		logrus.Warnf("No revisions found for %s (encoded=%t)", SHA3_384, encoded)
 		return nil, nil
-   }
+	}
 	return &revision, nil
 }
 
@@ -283,17 +295,16 @@ func (sp *SnapsRepository) GetUploadByUpDownId(upDownId string) (*models.SnapUpl
 }
 
 func (sp *SnapsRepository) UpdateRevision(revision *models.SnapRevision, revisionBytes *[]byte) (*models.SnapRevision, error) {
-   if err := sp.db.Save(revision).Error; err != nil {
-      logrus.Errorf("Database error saving snap revision: %v", err)
-      return nil, err
-   }
-
-   if err := sp.updateMeta(revisionBytes); err != nil {
-      logrus.Errorf("Error updating snap metadata: %v", err)
-      return nil, err
-   }
-
-   return revision, nil
+	db := sp.db.Save(revision)
+	if db.Error == nil {
+		err := sp.updateMeta(revisionBytes)
+		if err != nil {
+			logrus.Error(err)
+			return nil, err
+		}
+		return revision, nil
+	}
+	return nil, db.Error
 }
 
 func (sp *SnapsRepository) GetSnaps(filter *models.SnapFilter) ([]models.SnapEntry, error) {
@@ -308,27 +319,28 @@ func (sp *SnapsRepository) GetSnaps(filter *models.SnapFilter) ([]models.SnapEnt
 	return snaps, nil
 }
 
-func (sp *SnapsRepository) GetSnapByStoreId(storeId string, preloadAssociations bool) (*models.SnapEntry, error) {
-	whereModel := &models.SnapEntry{SnapStoreID: storeId}
-	return sp.getSnapBySnapEntry(whereModel, preloadAssociations)
+func (sp *SnapsRepository) GetSnapId(Id uuid.UUID, preloadAssociations bool) (*models.SnapEntry, error) {
+	whereModel := &models.SnapEntry{ID: Id}
+	return sp.getSnap(whereModel, preloadAssociations)
 }
 
-func (sp *SnapsRepository) GetSnapById(id uint, preloadAssociations bool) (*models.SnapEntry, error) {
-   var snap models.SnapEntry
-   
-   query := sp.db
-   if preloadAssociations {
-      query = query.Preload(clause.Associations)
-   }
-   
-   if err := query.First(&snap, id).Error; err != nil {
-      if errors.Is(err, gorm.ErrRecordNotFound) {
-         logrus.Errorf("No snap found for id %d", id)
-         return nil, nil
-      }
-      logrus.Errorf("Error fetching snap by id %d: %v", id, err)
-      return nil, err
-   }
+func (sp *SnapsRepository) GetSnapById(id uuid.UUID, preloadAssociations bool) (*models.SnapEntry, error) {
+	var existingSnap models.SnapEntry
+	var db *gorm.DB
+	whereModel := &models.SnapEntry{ID: id}
+	if preloadAssociations {
+		db = sp.db.Preload(clause.Associations).Where(whereModel).Find(&existingSnap)
+	} else {
+		db = sp.db.Where(whereModel).Find(&existingSnap)
+	}
+
+	if _, ok := database.CheckDBForErrorOrNoRows(db); ok {
+		return &existingSnap, nil
+	}
+
+	if db.Error != nil {
+		return nil, db.Error
+	}
 
    return &snap, nil
 }
@@ -353,50 +365,59 @@ func (sp *SnapsRepository) GetSnapByName(name string, preloadAssociations bool) 
 	return &snap, nil
 }
 
-func (sp *SnapsRepository) AddSnap(name string, accountId uint) (*models.SnapEntry, error) {
-   // check if snap already exists
-	existingSnap, err := sp.GetSnapByName(name, false)
+// Used when a new snap gets uploaded for the first time (=registering a snap)
+
+// AddSnap registers a new snap with the given name, size, and accountId.
+// It ensures the snap does not already exist, creates a new SnapEntry,
+// adds an initial upload, and sets up default tracks and risks.
+func (sp *SnapsRepository) AddSnap(name string, size uint64, accountId uuid.UUID) (*models.SnapEntry, error) {
+	existingSnap, err := sp.GetSnap(name, false)
 	if err != nil {
-		return nil, fmt.Errorf("error checking for existing snap: %w", err)
+		return nil, err
 	}
+
+	// if the snap already exists, return an error
 	if existingSnap != nil {
-		return nil, fmt.Errorf("snap with name %q already exists", name)
+		return nil, fmt.Errorf("snap with name=%s already exists", name)
 	}
 
-	newSnapEntry := models.SnapEntry{
-		SnapStoreID: uuid.New().String(),
-		Name:        name,
-		AccountID:   accountId,
-		Type:        "app",
-	}
+	// when registering a snap, not finding one is what you want
+	var newSnapEntry models.SnapEntry
+	newSnapEntry.Name = name
+	newSnapEntry.AccountID = accountId
+	newSnapEntry.Type = "app"
+	//newSnapEntry.Confinement = "strict"
+	//newSnapEntry.Base = "core18" // default base
 
-	if err := sp.db.Create(&newSnapEntry).Error; err != nil {
-		return nil, fmt.Errorf("failed to create new snap entry: %w", err)
-	}
-   
-   // TODO: add possibilities for different tracks
+	// snap_entries table contains snaps with unique names (doesn't keep track of revisions or channels)
+	sp.db.Save(&newSnapEntry)
+
+	// snap_uploads table contains channels where the snap is uploaded
+	sp.AddUpload(name, newSnapEntry.ID.String(), uint(size), []string{"latest/stable"})
+
+	// For now when we register a snap we are going to create the default tracks/risks
 	track := models.SnapTrack{
-		Name:        "latest",
+		Name:        "latest", // first upload of a snap is always the current latest
 		SnapEntryID: newSnapEntry.ID,
 	}
 
-	if err := sp.db.Create(&track).Error; err != nil {
-		return nil, fmt.Errorf("failed to create default track: %w", err)
-	}
+	sp.db.Save(&track)
 
-	// Add channels for the new snap.
-	if err := sp.addChannels(newSnapEntry.ID, track.ID); err != nil {
-		return nil, fmt.Errorf("failed to add channels: %w", err)
-	}
+	newRevision := sp.addRevision(newSnapEntry, size)
+
+	sp.addRisks(newSnapEntry, *newRevision, track.ID)
 
 	return &newSnapEntry, nil
+
 }
 
-func (sp *SnapsRepository) AddDefaultRisks(snapEntryId uint, trackId uint) {
-	sp.addChannels(snapEntryId, trackId)
+func (sp *SnapsRepository) AddDefaultRisks(newSnapEntry models.SnapEntry, newRevision models.SnapRevision, trackId uint) {
+	sp.addRisks(newSnapEntry, newRevision, trackId)
 }
 
-func (sp *SnapsRepository) ReleaseSnap(channels []string, snapEntryId uint, revisionId uint) error {
+func (sp *SnapsRepository) ReleaseSnap(channels []string, snapEntryId uuid.UUID, revisionId uint) error {
+	var trackForRelease string
+	var riskForRelease string
 	for _, cn := range channels {
 		var trackForRelease, channelForRelease string
 
@@ -463,22 +484,29 @@ func (sp *SnapsRepository) ReleaseSnap(channels []string, snapEntryId uint, revi
 	return nil
 }
 
-func (sp *SnapsRepository) addChannels(snapEntryId uint, trackId uint) error {
-   // don't think we should make a channel for each of the possibilities seems excesive
-	channels := []string{"stable", "candidate", "beta", "edge"}
-
-	// TODO: Evaluate if an empty revision is really needed.
-   // Not supposed to have an empty revision i think
+func (sp *SnapsRepository) addRevision(snapEntry models.SnapEntry, size uint64) *models.SnapRevision {
+	// TODO: fix the need for an empty revision
 	snapRevision := models.SnapRevision{
-		SnapFilename: "",
-		SnapEntryID:  snapEntryId,
+		SnapFilename: snapEntry.Name,
+		SnapEntryID:  snapEntry.ID,
 		SHA3_384:     "",
-		Size:         0,
+		Size:         size,
 	}
 
-	if err := sp.db.Create(&snapRevision).Error; err != nil {
-		return fmt.Errorf("failed to create snap revision: %w", err)
-	}
+	sp.db.Save(&snapRevision)
+
+	return &snapRevision
+}
+
+func (sp *SnapsRepository) addRisks(snapEntry models.SnapEntry, snapRevision models.SnapRevision, trackId uint) {
+	// TODO: fix me
+	risks := []string{"stable", "candidate", "beta", "edge"}
+
+	for _, risk := range risks {
+		var snapRisk models.SnapRisk
+		snapRisk.SnapEntryID = snapEntry.ID
+		snapRisk.SnapTrackID = trackId
+		snapRisk.Name = risk
 
 	for _, channel := range channels {
 		snapChannel := models.SnapChannel{
@@ -496,39 +524,31 @@ func (sp *SnapsRepository) addChannels(snapEntryId uint, trackId uint) error {
 	return nil
 }
 
-func (sp *SnapsRepository) updateMeta(metaBytes *[]byte) error {  
-   snapMeta, err := snap.GetSnapMetaFromBytes(*metaBytes, "/tmp")
-   if err != nil {
-      return err
-   }
-   logrus.Tracef("snapMeta: %+v", snapMeta)
+func (sp *SnapsRepository) updateMeta(metaBytes *[]byte) error {
+	snapMeta, err2 := snap.GetSnapMetaFromBytes(*metaBytes, "/tmp")
+	if err2 != nil {
+		logrus.Error(err2)
+		return err2
+	}
+	logrus.Tracef("snapMeta: %+v", snapMeta)
+	var snapEntry models.SnapEntry
+	db := sp.db.Where(&models.SnapEntry{Name: snapMeta.Name}).Find(&snapEntry)
+	if _, ok := database.CheckDBForErrorOrNoRows(db); ok {
+		snapEntry.Type = "app"
+		if snapMeta.Type != "" {
+			snapEntry.Type = snapMeta.Type
+		} else {
+			logrus.Warnf("Snap %s had an emtpy type from its metadata, using default '%s'", snapEntry.Name, snapEntry.Type)
+		}
 
-   var snapEntry *models.SnapEntry
-   snapEntry, err = sp.GetSnapByName(snapMeta.Name, false)
-   if err != nil {
-      return err
-   }
-   // check if entry was found
-   if snapEntry == nil {
-      return fmt.Errorf("snap %s not found", snapMeta.Name)
-   }
+		snapEntry.Confinement = snapMeta.Confinement
+		snapEntry.Base = snapMeta.Base
 
-   if snapMeta.Type != "" {
-      snapEntry.Type = snapMeta.Type
-   } else {
-      // default app type
-      snapMeta.Type = "app"
-      logrus.Warnf("Snap %s had an emtpy type from its metadata, using default '%s'", snapEntry.Name, snapEntry.Type)
-   }  
-
-   snapEntry.Confinement = snapMeta.Confinement
-   snapEntry.Base = snapMeta.Base
-   
-   if err = sp.db.Save(&snapEntry).Error; err != nil {
-      logrus.Errorf("Failed to update SnapEntry for %s: %v", snapEntry.Name, err)
-      return err
-   }
-   return nil
+		sp.db.Save(&snapEntry)
+	} else {
+		logrus.Errorf("No rows found for: %s", snapMeta.Name)
+	}
+	return nil
 }
 func (sp *SnapsRepository) getSnapBySnapEntry(whereModel *models.SnapEntry, preloadAssociations bool) (*models.SnapEntry, error) {
 	var snap models.SnapEntry

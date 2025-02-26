@@ -10,7 +10,7 @@ create table snap_branches
     snap_risk_id  bigint
         constraint fk_snap_risks_branches
             references snap_risks,
-    snap_entry_id bigint
+    snap_entry_id uuid
         constraint fk_snap_branches_snap_entry
             references snap_entries,
     revision_id   bigint
