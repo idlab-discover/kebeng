@@ -18,8 +18,10 @@ type IAccountRepository interface {
 	GetAccountByEmail(ctx context.Context, email string, preload bool) (*models.Account, error)
 	GetAccountByID(ctx context.Context, accountID uuid.UUID, preload bool) (*models.Account, error)
     GetAccountByUsername(ctx context.Context, username string, preload bool) (*models.Account, error)
+
 	AddKey(ctx context.Context, name, sha3384, encodedPublicKey, accountEmail string) (*models.Key, error)
 	GetKeyBySHA3384(ctx context.Context, sha3384 string) (*models.Key, error)
+
     AddSnapEntryToAccount(ctx context.Context, accountID uuid.UUID, snapEntryID uuid.UUID) error
     RemoveSnapEntryFromAccount(ctx context.Context, accountID uuid.UUID, snapEntryID uuid.UUID) error
     GetSnapEntryIDsByAccountID(ctx context.Context, accountID uuid.UUID) ([]uuid.UUID, error)
