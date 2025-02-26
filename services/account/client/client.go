@@ -8,6 +8,7 @@ import (
 	proto "github.com/idlab-discover/kebeng/services/account/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+    "github.com/sirupsen/logrus"
 )
 
 type AccountClient struct {
@@ -17,6 +18,7 @@ type AccountClient struct {
 
 func NewAccountClient(accountHost string, accountPort int) (*AccountClient, error) {
     // kinda ugly the way config is now but don't want to pass a parameter in this function (easier use)
+    logrus.Infof("Connecting to account service at %s:%d", accountHost, accountPort)
     conn, err := grpc.NewClient(config.GetAccountServiceAddress(accountHost,accountPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
     if err != nil {
         return nil, fmt.Errorf("could not connect: %v", err)
