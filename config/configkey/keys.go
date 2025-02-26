@@ -44,4 +44,7 @@ const (
 	RootAuthority = "root.authority"
 
 	AdminCLILoginPort = "admin.login.port"
+
+    AccountServiceHost = "account_service.host"
+    AccountServicePort = "account_service.port"
 )

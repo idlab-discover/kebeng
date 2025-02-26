@@ -15,9 +15,9 @@ type AccountClient struct {
     client proto.AccountServiceClient
 }
 
-func NewAccountClient() (*AccountClient, error) {
+func NewAccountClient(accountHost string, accountPort int) (*AccountClient, error) {
     // kinda ugly the way config is now but don't want to pass a parameter in this function (easier use)
-    conn, err := grpc.NewClient(config.GetAccountServiceAddress(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+    conn, err := grpc.NewClient(config.GetAccountServiceAddress(accountHost,accountPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
     if err != nil {
         return nil, fmt.Errorf("could not connect: %v", err)
     }

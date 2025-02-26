@@ -30,7 +30,7 @@ type Account struct {
     DisplayName string `gorm:"unique"`
     Username    string `gorm:"unique"`
     Keys        []Key
-    SnapEntryIDs []uuid.UUID `gorm:"type:integer[];column:snap_entry_ids"`
+    //SnapEntryIDs []uuid.UUID `gorm:"type:integer[];column:snap_entry_ids"`
     SSHKeys     []SSHKey
     Email       string
 }
