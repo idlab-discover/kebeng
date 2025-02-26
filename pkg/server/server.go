@@ -21,6 +21,8 @@ import (
 	"github.com/minio/minio-go/v7"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+    
+    client "github.com/idlab-discover/kebeng/services/account/client"
 )
 
 type Server struct {
@@ -28,7 +30,7 @@ type Server struct {
 
 func (s *Server) Run() {
 	logrus.SetLevel(logrus.TraceLevel)
-	config.LoadConfig()
+    config.LoadConfig()
 
 	logLevelConfig := viper.GetString(configkey.LogLevel)
 	l, errLevel := logrus.ParseLevel(logLevelConfig)
@@ -53,6 +55,18 @@ func (s *Server) Run() {
 
 	db, _ := database.CreateDatabase()
 	assertsDatabase := GetDatabaseWithRootKey()
+
+    //TODO: TEST create root account
+    accountClient, err := client.NewAccountClient(configkey.AccountServiceHost, configkey.AccountServicePort)
+    if err != nil {
+        logrus.Errorf("could not create account client: %v", err)
+    }
+    
+    account, err := accountClient.CreateAccount("uwbollema", "uwbollmausername","uwbollema@icloud.com")
+    if err != nil {
+        logrus.Errorf("could not create account: %v", err)
+    }
+    logrus.Infof("created account: %v", account)
 
 	obs := objectstore.NewObjectStore()
 	bytes, _ := obs.GetFileFromBucket("root", "private-key.pem")

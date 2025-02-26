@@ -8,11 +8,6 @@ import (
     "github.com/sirupsen/logrus"
 )
 
-var (
-    config *Config
-)
-
-
 type Config struct {
     DBHost         string `mapstructure:"db_host" yaml:"db_host"`
     DBPort         int    `mapstructure:"db_port" yaml:"db_port"`
@@ -39,7 +34,6 @@ func LoadConfig() (*Config, error) {
     }
     
     cfg := &Config{}
-    config = cfg
     if err := viper.Unmarshal(cfg); err != nil {
         return nil, fmt.Errorf("failed to unmarshal config: %v", err)
     }
@@ -47,13 +41,13 @@ func LoadConfig() (*Config, error) {
     return cfg, nil
 }
 
-func GetAccountServiceAddress() string {
-    if config == nil {
-        logrus.Warn("config is nil, using default address")
+func GetAccountServiceAddress(host string, port int) string {
+    if host == "" || port == 0 {
+        logrus.Warn("host or port is not set, using default address account_service:8080")
         return "account_service:8080"
     }
 
-    return fmt.Sprintf("%s:%d", config.GRPCHost, config.GRPCPort)
+    return fmt.Sprintf("%s:%d", host, port)
 }
 
 
