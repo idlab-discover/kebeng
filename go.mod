@@ -9,7 +9,7 @@ require (
 	github.com/go-resty/resty/v2 v2.6.0
 	github.com/golang-migrate/migrate/v4 v4.18.2
 	github.com/google/uuid v1.6.0
-	github.com/idlab-discover/kebeng/services/account v0.0.0-20250226170635-a62623b6eda4
+	github.com/idlab-discover/kebeng/services/account v0.0.0-20250226200213-1a821d155da0
 	github.com/minio/minio-go/v7 v7.0.10
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/sirupsen/logrus v1.9.3
