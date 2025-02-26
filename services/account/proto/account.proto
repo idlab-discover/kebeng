@@ -1,10 +1,22 @@
 syntax = "proto3";
 
 package account;
-option go_package = "github.com/idlab-discover/kebeng/services/accounts/proto;account";
+option go_package = "github.com/idlab-discover/kebeng/services/account/proto;account";
 
 service AccountService {
-    rpc CreateAccount(CreateAccountRequest) returns (CreateAccountResponse);
+    rpc CreateAccount(CreateAccountRequest) returns (Account);
+    rpc UpdateAccount(UpdateAccountRequest) returns (Account);
+    rpc DeleteAccount(DeleteAccountRequest) returns (DeleteAccountResponse);
+    rpc GetAccountByEmail(GetAccountByEmailRequest) returns (Account);
+    rpc GetAccountByID(GetAccountByIDRequest) returns (Account);
+    rpc GetAccountByUsername(GetAccountByUsernameRequest) returns (Account);
+}
+
+message Account {
+    string id = 1;
+    string display_name = 2;
+    string username = 3;
+    string email = 4;
 }
 
 message CreateAccountRequest {
@@ -13,10 +25,29 @@ message CreateAccountRequest {
     string email = 3;
 }
 
-message CreateAccountResponse {
+message UpdateAccountRequest {
     string id = 1;
     string display_name = 2;
     string username = 3;
     string email = 4;
 }
 
+message DeleteAccountRequest {
+    string id = 1;
+}
+
+message DeleteAccountResponse {
+    bool success = 1;
+}
+
+message GetAccountByEmailRequest {
+    string email = 1;
+}
+
+message GetAccountByIDRequest {
+    string id = 1;
+}
+
+message GetAccountByUsernameRequest {
+    string username = 1;
+}
