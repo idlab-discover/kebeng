@@ -30,18 +30,19 @@ func CreateDatabaseWithDSN(connectionString string) (*gorm.DB, error) {
 
 	for try := 0; try < maxRetries; try++ {
 		db, err = gorm.Open(gormPostgres.Open(connectionString), &gorm.Config{})
-		if err == nil {
-			logrus.Info("Connected to database")
-			DB = db
-
-			err = RunMigrations(db)
-			if err != nil {
-				logrus.Errorf("Migration failed: %v", err)
-			}
-			return db, nil
+		if err != nil {
+			logrus.Errorf("Failed to connect to database at try %d: %v", try, err)
+			time.Sleep(retryInterval)
+            continue
 		}
-		logrus.Errorf("Failed to connect to database at try %d: %v", try, err)
-		time.Sleep(retryInterval)
+        logrus.Info("Connected to database")
+        DB = db
+
+        err = RunMigrations(db)
+        if err != nil {
+            logrus.Errorf("Migration failed: %v", err)
+        }
+        return db, nil
 	}
 	logrus.Errorf("Failed to connect to database after %d retries", maxRetries)
 	return nil, err
@@ -124,7 +125,6 @@ func RunMigrations(db *gorm.DB) error {
 	if err != nil && err != migrate.ErrNoChange {
 		return fmt.Errorf("failed to run migrations: %v", err)
 	}
-
 	logrus.Println("Migrations ran successfully")
 	return nil
 }
