@@ -1,3 +1,13 @@
+-- check if manager role exists, if not create
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'manager') THEN
+       CREATE ROLE manager LOGIN;
+    END IF;
+END
+$$;
+
+
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 create sequence public.snap_entries_id_seq;
