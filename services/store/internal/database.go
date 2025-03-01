@@ -8,7 +8,7 @@ import (
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file" // needed for file source
 	"github.com/idlab-discover/kebeng/services/store/internal/config/configkey"
-	"github.com/idlab-discover/kebeng/services/store/models"
+	"github.com/idlab-discover/kebeng/services/store/internal/models"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	gormPostgres "gorm.io/driver/postgres"
