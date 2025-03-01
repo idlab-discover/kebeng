@@ -6,8 +6,8 @@ import (
 
 	database "github.com/idlab-discover/kebeng/services/store/internal"
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
-	"github.com/idlab-discover/kebeng/services/store/internal/repository"
-	"github.com/idlab-discover/kebeng/services/store/internal/service"
+	logic "github.com/idlab-discover/kebeng/services/store/internal/logic"
+	repositories "github.com/idlab-discover/kebeng/services/store/internal/repositories"
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -28,8 +28,8 @@ func main() {
 	logrus.Infof("Connected to database: %v", db)
 
 	// start grpc server
-	repo := repository.NewStoreRepository(db)
-	storeService := service.NewStoreService(repo)
+	repo := repositories.NewSnapsRepository(db)
+	storeService := logic.NewStoreService(repo)
 
 	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", cfg.GRPCHost, cfg.GRPCPort))
 	if err != nil {
@@ -37,7 +37,7 @@ func main() {
 	}
 	grpcServer := grpc.NewServer()
 	// this line will match the service functionality to the proto interface
-	proto.RegisterstoreServiceServer(grpcServer, storeService)
+	proto.RegisterStoreServiceServer(grpcServer, storeService)
 
 	logrus.Infof("Starting gRPC server on %s:%d", cfg.GRPCHost, cfg.GRPCPort)
 	if err := grpcServer.Serve(lis); err != nil {

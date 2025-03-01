@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/idlab-discover/kebeng/config/configkey"
-	"github.com/idlab-discover/kebeng/pkg/objectstore"
 	"github.com/idlab-discover/kebeng/pkg/store/responses"
+	"github.com/idlab-discover/kebeng/services/store/internal/config/configkey"
+	"github.com/idlab-discover/kebeng/services/store/internal/objectstore"
 	"github.com/minio/minio-go/v7"
 	"github.com/sirupsen/logrus"
 	"github.com/snapcore/snapd/snap"
@@ -63,8 +63,6 @@ type SnapEntry struct {
 	Uploads     []SnapUpload
 
 	AccountID uuid.UUID
-	Account   Account
-
 	CreatedAt time.Time
 }
 
@@ -106,7 +104,7 @@ func (se *SnapEntry) ToStoreSnap(snapRevision *SnapRevision) (*responses.StoreSn
 	storeSnap := &responses.StoreSnap{
 		Name:     se.Name,
 		Type:     snap.Type(se.Type),
-		SnapID:   se.ID,
+		SnapID:   se.ID.String(),
 		Revision: int(snapRevision.ID),
 		Download: responses.StoreSnapDownload{
 			Sha3_384: actualSha3,
