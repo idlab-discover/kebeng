@@ -12,6 +12,7 @@ message UploadSnapRequest {
     string type = 2;
     string confinement = 3;
     string base = 4;
+    bytes file = 5;
 }
 
 message UploadSnapResponse {

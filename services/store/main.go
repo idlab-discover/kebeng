@@ -29,7 +29,7 @@ func main() {
 
 	// start grpc server
 	repo := repositories.NewSnapsRepository(db)
-	storeService := logic.NewStoreService(repo)
+	storeLogic := logic.NewStoreLogic(repo)
 
 	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", cfg.GRPCHost, cfg.GRPCPort))
 	if err != nil {
@@ -37,7 +37,7 @@ func main() {
 	}
 	grpcServer := grpc.NewServer()
 	// this line will match the service functionality to the proto interface
-	proto.RegisterStoreServiceServer(grpcServer, storeService)
+	proto.RegisterStoreServiceServer(grpcServer, storeLogic)
 
 	logrus.Infof("Starting gRPC server on %s:%d", cfg.GRPCHost, cfg.GRPCPort)
 	if err := grpcServer.Serve(lis); err != nil {
