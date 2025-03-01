@@ -18,7 +18,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type StoreServiceClient interface {
-	CreateSnap(ctx context.Context, in *CreateSnapRequest, opts ...grpc.CallOption) (*CreateSnapResponse, error)
+	UploadSnap(ctx context.Context, in *UploadSnapRequest, opts ...grpc.CallOption) (*UploadSnapResponse, error)
 }
 
 type storeServiceClient struct {
@@ -29,9 +29,9 @@ func NewStoreServiceClient(cc grpc.ClientConnInterface) StoreServiceClient {
 	return &storeServiceClient{cc}
 }
 
-func (c *storeServiceClient) CreateSnap(ctx context.Context, in *CreateSnapRequest, opts ...grpc.CallOption) (*CreateSnapResponse, error) {
-	out := new(CreateSnapResponse)
-	err := c.cc.Invoke(ctx, "/store.StoreService/CreateSnap", in, out, opts...)
+func (c *storeServiceClient) UploadSnap(ctx context.Context, in *UploadSnapRequest, opts ...grpc.CallOption) (*UploadSnapResponse, error) {
+	out := new(UploadSnapResponse)
+	err := c.cc.Invoke(ctx, "/store.StoreService/UploadSnap", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func (c *storeServiceClient) CreateSnap(ctx context.Context, in *CreateSnapReque
 // All implementations must embed UnimplementedStoreServiceServer
 // for forward compatibility
 type StoreServiceServer interface {
-	CreateSnap(context.Context, *CreateSnapRequest) (*CreateSnapResponse, error)
+	UploadSnap(context.Context, *UploadSnapRequest) (*UploadSnapResponse, error)
 	mustEmbedUnimplementedStoreServiceServer()
 }
 
@@ -50,8 +50,8 @@ type StoreServiceServer interface {
 type UnimplementedStoreServiceServer struct {
 }
 
-func (UnimplementedStoreServiceServer) CreateSnap(context.Context, *CreateSnapRequest) (*CreateSnapResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CreateSnap not implemented")
+func (UnimplementedStoreServiceServer) UploadSnap(context.Context, *UploadSnapRequest) (*UploadSnapResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UploadSnap not implemented")
 }
 func (UnimplementedStoreServiceServer) mustEmbedUnimplementedStoreServiceServer() {}
 
@@ -66,20 +66,20 @@ func RegisterStoreServiceServer(s grpc.ServiceRegistrar, srv StoreServiceServer)
 	s.RegisterService(&StoreService_ServiceDesc, srv)
 }
 
-func _StoreService_CreateSnap_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateSnapRequest)
+func _StoreService_UploadSnap_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UploadSnapRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(StoreServiceServer).CreateSnap(ctx, in)
+		return srv.(StoreServiceServer).UploadSnap(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/store.StoreService/CreateSnap",
+		FullMethod: "/store.StoreService/UploadSnap",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(StoreServiceServer).CreateSnap(ctx, req.(*CreateSnapRequest))
+		return srv.(StoreServiceServer).UploadSnap(ctx, req.(*UploadSnapRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -92,8 +92,8 @@ var StoreService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*StoreServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "CreateSnap",
-			Handler:    _StoreService_CreateSnap_Handler,
+			MethodName: "UploadSnap",
+			Handler:    _StoreService_UploadSnap_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

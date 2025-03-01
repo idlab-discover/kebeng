@@ -7,21 +7,17 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file" // needed for file source
-	"github.com/idlab-discover/kebeng/services/store/internal/config/configkey"
-	"github.com/idlab-discover/kebeng/services/store/internal/models"
+	"github.com/idlab-discover/kebeng/services/store/internal/config"
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 	gormPostgres "gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-var DB *gorm.DB
-
-func CreateDatabase() (*gorm.DB, error) {
-	return CreateDatabaseWithDSN(getDSN())
+func NewDatabase(cfg *config.Config) (*gorm.DB, error) {
+	return createDatabaseWithDSN(getDSN(cfg), cfg)
 }
 
-func CreateDatabaseWithDSN(connectionString string) (*gorm.DB, error) {
+func createDatabaseWithDSN(connectionString string, cfg *config.Config) (*gorm.DB, error) {
 	var db *gorm.DB
 	var err error
 
@@ -30,19 +26,17 @@ func CreateDatabaseWithDSN(connectionString string) (*gorm.DB, error) {
 
 	for try := 0; try < maxRetries; try++ {
 		db, err = gorm.Open(gormPostgres.Open(connectionString), &gorm.Config{})
-		if err != nil {
-			logrus.Errorf("Failed to connect to database at try %d: %v", try, err)
-			time.Sleep(retryInterval)
-			continue
-		}
-		logrus.Info("Connected to database")
-		DB = db
+		if err == nil {
+			logrus.Info("Connected to database")
 
-		err = RunMigrations(db)
-		if err != nil {
-			logrus.Errorf("Migration failed: %v", err)
+			err = runMigrations(db, cfg)
+			if err != nil {
+				logrus.Errorf("Migration failed: %v", err)
+			}
+			return db, nil
 		}
-		return db, nil
+		logrus.Errorf("Failed to connect to database at try %d: %v", try, err)
+		time.Sleep(retryInterval)
 	}
 	logrus.Errorf("Failed to connect to database after %d retries", maxRetries)
 	return nil, err
@@ -62,44 +56,18 @@ func CheckDBForErrorOrNoRows(db *gorm.DB) (*gorm.DB, bool) {
 	return db, true
 }
 
-func getDSN() string {
-	database := viper.GetString(configkey.DatabaseDatabase)
-	password := viper.GetString(configkey.DatabasePassword)
-	sslMode := viper.GetString(configkey.DatabaseSSLMode)
-	timezone := viper.GetString(configkey.DatabaseTimezone)
-	host := viper.GetString(configkey.DatabaseHost)
-	username := viper.GetString(configkey.DatabaseUsername)
-	port := viper.GetInt(configkey.DatabasePort)
-
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=%s TimeZone=%s",
-		host, username, password, database, port, sslMode, timezone)
-
-	return dsn
-}
-
-// migrates using GORM framework instead of migration files, not used atm
-func MigrateWithLog(name string, i interface{}, db *gorm.DB) {
-	err := db.AutoMigrate(i)
-	if err != nil {
-		logrus.Error(err)
-		panic("Failed to auto migrate: " + name)
-	}
-}
-
-func MigrateDatabase(db *gorm.DB) {
-	logrus.Info("Migrating database")
-	MigrateWithLog("models.Account", &models.Account{}, db)
-	MigrateWithLog("models.Key", &models.Key{}, db)
-	MigrateWithLog("models.SnapEntry", &models.SnapEntry{}, db)
-	MigrateWithLog("models.SnapRevision", &models.SnapRevision{}, db)
-
-	MigrateWithLog("models.SnapTrack", &models.SnapTrack{}, db)
-	MigrateWithLog("models.SnapChannel", &models.SnapRisk{}, db)
-	MigrateWithLog("models.SnapBranch", &models.SnapBranch{}, db)
+func getDSN(cfg *config.Config) string {
+	return fmt.Sprintf("host=%s port=%d user=%s dbname=%s password=%s sslmode=disable TimeZone=UTC",
+		cfg.DBHost,
+		cfg.DBPort,
+		cfg.DBUser,
+		cfg.DBName,
+		cfg.DBPassword,
+	)
 }
 
 // runs the migration files in the /migrations folder
-func RunMigrations(db *gorm.DB) error {
+func runMigrations(db *gorm.DB, cfg *config.Config) error {
 	logrus.Info("Running database migrations")
 
 	sqlDB, err := db.DB()
@@ -112,8 +80,10 @@ func RunMigrations(db *gorm.DB) error {
 		return fmt.Errorf("failed to create migration driver: %v", err)
 	}
 
+	// the path here is the path in the container where the migration files are stored
+
 	m, err := migrate.NewWithDatabaseInstance(
-		"file:///app/migrations",
+		fmt.Sprintf("file://%s", cfg.MigrationPath),
 		"postgres",
 		driver,
 	)
@@ -125,6 +95,6 @@ func RunMigrations(db *gorm.DB) error {
 	if err != nil && err != migrate.ErrNoChange {
 		return fmt.Errorf("failed to run migrations: %v", err)
 	}
-	logrus.Println("Migrations ran successfully")
+	logrus.Info("Database migrations ran successfully")
 	return nil
 }

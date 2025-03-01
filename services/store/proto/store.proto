@@ -4,14 +4,17 @@ package store;
 option go_package = "github.com/idlab-discover/kebeng/services/store/proto;store";
 
 service StoreService {
-    rpc CreateSnap(CreateSnapRequest) returns (CreateSnapResponse);
+    rpc UploadSnap(UploadSnapRequest) returns (UploadSnapResponse);
 }
 
-message CreateSnapRequest {
-    string display_name = 1;
+message UploadSnapRequest {
+    string name = 1;
+    string type = 2;
+    string confinement = 3;
+    string base = 4;
 }
 
-message CreateSnapResponse {
+message UploadSnapResponse {
     string id = 1;
     string display_name = 2;
 }
