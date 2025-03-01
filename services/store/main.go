@@ -6,9 +6,9 @@ import (
 
 	database "github.com/idlab-discover/kebeng/services/store/internal"
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
-	proto "github.com/idlab-discover/kebeng/services/store/internal/proto"
 	"github.com/idlab-discover/kebeng/services/store/internal/repository"
 	"github.com/idlab-discover/kebeng/services/store/internal/service"
+	proto "github.com/idlab-discover/kebeng/services/store/proto"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
