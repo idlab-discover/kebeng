@@ -6,6 +6,7 @@ require (
 	github.com/idlab-discover/kebeng v0.0.0-20250223121437-64303aa26f11
 	github.com/sirupsen/logrus v1.9.3
 	google.golang.org/protobuf v1.35.2
+	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/gorm v1.25.10
 )
 
@@ -57,7 +58,6 @@ require (
 	gopkg.in/retry.v1 v1.0.3 // indirect
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 require (

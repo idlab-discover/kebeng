@@ -1,76 +1,68 @@
 package logic
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"os"
 	"path"
 
 	"github.com/google/uuid"
-	"github.com/idlab-discover/kebeng/services/store/internal/models"
+	"github.com/idlab-discover/kebeng/services/store/internal/objectstore"
 	"github.com/idlab-discover/kebeng/services/store/internal/repositories"
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
 	"github.com/sirupsen/logrus"
 )
 
-// TODO: maybe call this different?
-// this should contain the business logic of the service
-// so doing checks and stuff and calling the database logic
-
-type StoreService struct {
+type StoreLogic struct {
 	proto.UnimplementedStoreServiceServer
 	repo *repositories.SnapsRepository
 }
 
-func NewStoreService(repo *repositories.SnapsRepository) *StoreService {
-	return &StoreService{repo: repo}
+func NewStoreLogic(repo *repositories.SnapsRepository) *StoreLogic {
+	return &StoreLogic{repo: repo}
 }
 
-func (s *StoreService) UploadSnap(ctx context.Context, req *proto.UploadSnapRequest) (*proto.UploadSnapResponse, error) {
-	snapFileName, id, err := saveFileToTemp(snapFile)
+func (s *StoreLogic) UploadSnap(ctx context.Context, req *proto.UploadSnapRequest) (*proto.UploadSnapResponse, error) {
+	snapFileName, id, err := saveFileToTemp(bytes.NewReader(req.File))
 	if err != nil {
 		logrus.Errorf("Failed to save file to temp storage: %v", err)
-		return "", err
-	}
-	
-	snap := &models.SnapEntry{
-		Name: req.DisplayName,
-	}
-
-	createdSnap, err := s.repo.AddSnap(snap.Name, snap.)
-	if err != nil {
 		return nil, err
 	}
 
-	return &proto.UploadSnapResponse{
-		Id:          createdSnap.ID.String(),
-		DisplayName: createdSnap.Name,
-	}, nil
-}
-
-func (h *Handler) UnscannedUpload(snapFile io.Reader) (string, error) {
-	snapFileName, id, err := saveFileToTemp(snapFile)
-	if err != nil {
-		logrus.Errorf("Failed to save file to temp storage: %v", err)
-		return "", err
-	}
-
-	// CHECK: can upload handle reusing the same connection or should there be a new connection for each upload?
-	//objStore := objectstore.NewObjectStore()
+	objectstore := objectstore.NewObjectStore()
 	tmpPath := path.Join(os.TempDir(), snapFileName)
 
-	// err = objStore.SaveFileToBucket("unscanned", tmpPath)
-	size, err := h.obs.SaveFileToBucket("unscanned", tmpPath)
+	size, err := objectstore.SaveFileToBucket("unscanned", tmpPath)
 	if err != nil {
 		logrus.Errorf("Failed to save file to object store: %v", err)
-		return "", err
+		return nil, err
 	}
 
 	// addSnap() adds snap to snap_entries table
-	_, err = h.snaps.AddSnap(snapFileName, size, uuid.New()) // uuid.New() is a placeholder for account id that is going to be added later throught the context
+	_, err = s.repo.AddSnap(snapFileName, size, uuid.New()) // uuid.New() is a placeholder for account id that is going to be added later throught the context
 	if err != nil {
 		logrus.Error(err)
 	}
 
-	return id, nil
+	return &proto.UploadSnapResponse{Id: id}, nil
+}
+
+func saveFileToTemp(snapFile io.Reader) (string, string, error) {
+	// Generate random file name for the new uploaded file so it doesn't override the old file with same name
+	snapFileId := uuid.New().String()
+	newFileName := snapFileId + ".snap"
+
+	out, err := os.Create(path.Join("/tmp", newFileName))
+	if err != nil {
+		return "", "", err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, snapFile)
+	if err != nil {
+		return "", "", err
+	}
+
+	return newFileName, snapFileId, nil
 }

@@ -1,5 +1,5 @@
 services:
-  store:
+  store_service:
     build: 
       context: ./services/store
       dockerfile: Dockerfile.store
@@ -14,11 +14,6 @@ services:
       - ./keys:/app/keys  # keys needed by store
     environment:
       - CONFIG_FILE_PATH=/app/config.yaml
-    command: >
-      sh -c "
-        /app/kebeng-admin store initialize -i /app/init-config-example.json &&
-        /app/kebeng-store store initialize -i /app/init-config-example.json
-      "
     restart: always
     networks: 
       - kebeng-backend
