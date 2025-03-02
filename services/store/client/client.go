@@ -30,6 +30,10 @@ func (c *StoreClient) Close() {
 }
 
 func (c *StoreClient) UploadSnap(name string, type_name string, confinement string, base string, file []byte) (*proto.UploadSnapResponse, error) {
+	if name == "" || type_name == "" || confinement == "" || base == "" {
+		return nil, fmt.Errorf("all string parameters must be non-empty")
+	}
+
 	req := &proto.UploadSnapRequest{
 		Name:        name,
 		Type:        type_name,
