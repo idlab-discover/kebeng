@@ -1,4 +1,4 @@
-package service
+package logic
 
 import (
 	"context"
@@ -8,6 +8,8 @@ import (
 	"github.com/idlab-discover/kebeng/services/account/internal/repository"
 	proto "github.com/idlab-discover/kebeng/services/account/proto"
     "github.com/google/uuid"
+    "github.com/idlab-discover/kebeng/services/account/internal/auth"
+    "github.com/idlab-discover/kebeng/services/account/internal/config"
 )
 
 // TODO: maybe call this different?
@@ -15,12 +17,14 @@ import (
 // so doing checks and stuff and calling the database logic
 
 type AccountService struct {
+    config *config.Config
     proto.UnimplementedAccountServiceServer
     repo *repository.AccountRepository
+
 } 
 
-func NewAccountService(repo *repository.AccountRepository) *AccountService {
-    return &AccountService{repo: repo}
+func NewAccountService(repo *repository.AccountRepository, config *config.Config) *AccountService {
+    return &AccountService{repo: repo, config: config}
 }
 
 
@@ -107,6 +111,47 @@ func (a *AccountService) GetAccountByUsername(ctx context.Context, req *proto.Ge
     return a.convertToProtoAccount(account), nil
 }
 
+func (a *AccountService) AddKey(ctx context.Context, req *proto.AddKeyRequest) (*proto.Key, error) {
+    key, err := a.repo.AddKey(ctx, req.KeyName, req.Sha3384, req.EncodedPublicKey, req.AccountEmail)
+    if err != nil {
+        return nil, err
+    }
+    return &proto.Key{
+        Name: key.Name,
+        Sha3384: key.SHA3384,
+        EncodedPublicKey: key.EncodedPublicKey,
+    }, nil
+}
+
+func (a *AccountService) GetKey(ctx context.Context, req *proto.GetKeyBySHA3384Request) (*proto.Key, error) {
+    key, err := a.repo.GetKeyBySHA3384(ctx, req.Sha3384)
+    if err != nil {
+        return nil, err
+    }
+    return &proto.Key{
+        Name: key.Name,
+        Sha3384: key.SHA3384,
+        EncodedPublicKey: key.EncodedPublicKey,
+    }, nil
+}
+
+// TODO: move this functionality to API gateway
+func (a *AccountService) GenerateMacaroon(ctx context.Context, req *proto.GenerateMacaroonRequest) (*proto.Macaroon, error) {
+    macaroon, err := auth.GetACLMacaroon(ctx, a.config.MacaroonConfig, req.Acl)
+    if err != nil {
+        return nil, fmt.Errorf("failed to generate macaroon: %v", err)
+    }
+    
+    serializedMacaroon, err := auth.MacaroonSerialize(macaroon)
+    if err != nil {
+        return nil, fmt.Errorf("failed to serialize macaroon: %v", err)
+    }
+
+    return &proto.Macaroon{
+        Macaroon: serializedMacaroon,
+    }, nil
+}
+
 func (a *AccountService) convertToProtoAccount(account *models.Account) *proto.Account {
     return &proto.Account{
         Id: account.ID.String(),
@@ -115,3 +160,5 @@ func (a *AccountService) convertToProtoAccount(account *models.Account) *proto.A
         Email: account.Email,
     }
 }
+
+

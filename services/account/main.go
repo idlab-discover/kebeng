@@ -7,7 +7,7 @@ import (
 	database "github.com/idlab-discover/kebeng/services/account/internal"
 	"github.com/idlab-discover/kebeng/services/account/internal/config"
 	"github.com/idlab-discover/kebeng/services/account/internal/repository"
-	"github.com/idlab-discover/kebeng/services/account/internal/service"
+	"github.com/idlab-discover/kebeng/services/account/internal/logic"
 	proto "github.com/idlab-discover/kebeng/services/account/proto"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -30,14 +30,14 @@ func main() {
 
     // start grpc server
     repo := repository.NewAccountRepository(db)
-    accountService := service.NewAccountService(repo)
+    accountService := logic.NewAccountService(repo, cfg)
     
     lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d",cfg.GRPCHost,cfg.GRPCPort))
     if err != nil {
         logrus.Fatalf("Failed to listen: %v", err)
     }
     grpcServer := grpc.NewServer()
-    // this line will match the service functionality to the proto interface
+    // this line will match the logic functionality to the proto interface
     proto.RegisterAccountServiceServer(grpcServer, accountService)
 
     logrus.Infof("Starting gRPC server on %s:%d", cfg.GRPCHost, cfg.GRPCPort)

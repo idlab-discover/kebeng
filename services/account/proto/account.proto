@@ -10,6 +10,11 @@ service AccountService {
     rpc GetAccountByEmail(GetAccountByEmailRequest) returns (Account);
     rpc GetAccountByID(GetAccountByIDRequest) returns (Account);
     rpc GetAccountByUsername(GetAccountByUsernameRequest) returns (Account);
+
+    rpc AddKey(AddKeyRequest) returns (Key);
+    rpc GetKeyBySHA3384(GetKeyBySHA3384Request) returns (Key);
+
+    rpc GenerateMacaroon(GenerateMacaroonRequest) returns (Macaroon);
 }
 
 message Account {
@@ -50,4 +55,32 @@ message GetAccountByIDRequest {
 
 message GetAccountByUsernameRequest {
     string username = 1;
+}
+
+message Key {
+    string name = 1;
+    string sha3384 = 2;
+    string encoded_public_key = 3;
+}
+
+message AddKeyRequest {
+    string account_email = 1;
+    string key_name = 2;
+    string sha3384 = 3;
+    string encoded_public_key = 4;
+}
+
+message GetKeyBySHA3384Request {
+    string sha3384 = 1;
+}
+
+// ACL is the access control list that will be embedded in the macaroon
+message GenerateMacaroonRequest {
+    // The ACL string to be embedded as a first-party caveat
+    string acl = 1;
+}
+
+message Macaroon {
+    // The serialized macaroon string
+    string macaroon = 1;
 }

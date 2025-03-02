@@ -25,6 +25,9 @@ const (
 	AccountService_GetAccountByEmail_FullMethodName    = "/account.AccountService/GetAccountByEmail"
 	AccountService_GetAccountByID_FullMethodName       = "/account.AccountService/GetAccountByID"
 	AccountService_GetAccountByUsername_FullMethodName = "/account.AccountService/GetAccountByUsername"
+	AccountService_AddKey_FullMethodName               = "/account.AccountService/AddKey"
+	AccountService_GetKeyBySHA3384_FullMethodName      = "/account.AccountService/GetKeyBySHA3384"
+	AccountService_GenerateMacaroon_FullMethodName     = "/account.AccountService/GenerateMacaroon"
 )
 
 // AccountServiceClient is the client API for AccountService service.
@@ -37,6 +40,9 @@ type AccountServiceClient interface {
 	GetAccountByEmail(ctx context.Context, in *GetAccountByEmailRequest, opts ...grpc.CallOption) (*Account, error)
 	GetAccountByID(ctx context.Context, in *GetAccountByIDRequest, opts ...grpc.CallOption) (*Account, error)
 	GetAccountByUsername(ctx context.Context, in *GetAccountByUsernameRequest, opts ...grpc.CallOption) (*Account, error)
+	AddKey(ctx context.Context, in *AddKeyRequest, opts ...grpc.CallOption) (*Key, error)
+	GetKeyBySHA3384(ctx context.Context, in *GetKeyBySHA3384Request, opts ...grpc.CallOption) (*Key, error)
+	GenerateMacaroon(ctx context.Context, in *GenerateMacaroonRequest, opts ...grpc.CallOption) (*Macaroon, error)
 }
 
 type accountServiceClient struct {
@@ -107,6 +113,36 @@ func (c *accountServiceClient) GetAccountByUsername(ctx context.Context, in *Get
 	return out, nil
 }
 
+func (c *accountServiceClient) AddKey(ctx context.Context, in *AddKeyRequest, opts ...grpc.CallOption) (*Key, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Key)
+	err := c.cc.Invoke(ctx, AccountService_AddKey_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *accountServiceClient) GetKeyBySHA3384(ctx context.Context, in *GetKeyBySHA3384Request, opts ...grpc.CallOption) (*Key, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Key)
+	err := c.cc.Invoke(ctx, AccountService_GetKeyBySHA3384_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *accountServiceClient) GenerateMacaroon(ctx context.Context, in *GenerateMacaroonRequest, opts ...grpc.CallOption) (*Macaroon, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Macaroon)
+	err := c.cc.Invoke(ctx, AccountService_GenerateMacaroon_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AccountServiceServer is the server API for AccountService service.
 // All implementations must embed UnimplementedAccountServiceServer
 // for forward compatibility.
@@ -117,6 +153,9 @@ type AccountServiceServer interface {
 	GetAccountByEmail(context.Context, *GetAccountByEmailRequest) (*Account, error)
 	GetAccountByID(context.Context, *GetAccountByIDRequest) (*Account, error)
 	GetAccountByUsername(context.Context, *GetAccountByUsernameRequest) (*Account, error)
+	AddKey(context.Context, *AddKeyRequest) (*Key, error)
+	GetKeyBySHA3384(context.Context, *GetKeyBySHA3384Request) (*Key, error)
+	GenerateMacaroon(context.Context, *GenerateMacaroonRequest) (*Macaroon, error)
 	mustEmbedUnimplementedAccountServiceServer()
 }
 
@@ -144,6 +183,15 @@ func (UnimplementedAccountServiceServer) GetAccountByID(context.Context, *GetAcc
 }
 func (UnimplementedAccountServiceServer) GetAccountByUsername(context.Context, *GetAccountByUsernameRequest) (*Account, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAccountByUsername not implemented")
+}
+func (UnimplementedAccountServiceServer) AddKey(context.Context, *AddKeyRequest) (*Key, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddKey not implemented")
+}
+func (UnimplementedAccountServiceServer) GetKeyBySHA3384(context.Context, *GetKeyBySHA3384Request) (*Key, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetKeyBySHA3384 not implemented")
+}
+func (UnimplementedAccountServiceServer) GenerateMacaroon(context.Context, *GenerateMacaroonRequest) (*Macaroon, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GenerateMacaroon not implemented")
 }
 func (UnimplementedAccountServiceServer) mustEmbedUnimplementedAccountServiceServer() {}
 func (UnimplementedAccountServiceServer) testEmbeddedByValue()                        {}
@@ -274,6 +322,60 @@ func _AccountService_GetAccountByUsername_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AccountService_AddKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddKeyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AccountServiceServer).AddKey(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AccountService_AddKey_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AccountServiceServer).AddKey(ctx, req.(*AddKeyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AccountService_GetKeyBySHA3384_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetKeyBySHA3384Request)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AccountServiceServer).GetKeyBySHA3384(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AccountService_GetKeyBySHA3384_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AccountServiceServer).GetKeyBySHA3384(ctx, req.(*GetKeyBySHA3384Request))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AccountService_GenerateMacaroon_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GenerateMacaroonRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AccountServiceServer).GenerateMacaroon(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AccountService_GenerateMacaroon_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AccountServiceServer).GenerateMacaroon(ctx, req.(*GenerateMacaroonRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AccountService_ServiceDesc is the grpc.ServiceDesc for AccountService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -304,6 +406,18 @@ var AccountService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetAccountByUsername",
 			Handler:    _AccountService_GetAccountByUsername_Handler,
+		},
+		{
+			MethodName: "AddKey",
+			Handler:    _AccountService_AddKey_Handler,
+		},
+		{
+			MethodName: "GetKeyBySHA3384",
+			Handler:    _AccountService_GetKeyBySHA3384_Handler,
+		},
+		{
+			MethodName: "GenerateMacaroon",
+			Handler:    _AccountService_GenerateMacaroon_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

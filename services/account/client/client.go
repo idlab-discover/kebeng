@@ -17,7 +17,6 @@ type AccountClient struct {
 }
 
 func NewAccountClient(accountHost string, accountPort int) (*AccountClient, error) {
-    // kinda ugly the way config is now but don't want to pass a parameter in this function (easier use)
     logrus.Infof("Connecting to account service at %s:%d", accountHost, accountPort)
     conn, err := grpc.NewClient(config.GetAccountServiceAddress(accountHost,accountPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
     if err != nil {
@@ -100,4 +99,33 @@ func (c *AccountClient) GetAccountByUsername(username string) (*proto.Account, e
     }
     return resp, nil
 }
+
+func (c *AccountClient) AddKey(accountEmail, keyName, sha3384, encodedPublicKey string) (*proto.Key, error) {
+    req := &proto.AddKeyRequest{
+        AccountEmail:        accountEmail,
+        KeyName:             keyName,
+        Sha3384:          sha3384,
+        EncodedPublicKey: encodedPublicKey,
+    }
+
+    resp, err := c.client.AddKey(context.Background(), req)
+    if err != nil {
+        return nil, fmt.Errorf("could not add key: %v", err)
+    }
+    return resp, nil
+}
+
+func (c *AccountClient) GetAccountKey(Sha3384 string) (*proto.Key, error) {
+    req := &proto.GetKeyBySHA3384Request{Sha3384: Sha3384}
+
+    resp, err := c.client.GetKeyBySHA3384(context.Background(), req)
+    if err != nil {
+        return nil, fmt.Errorf("could not get account keys: %v", err)
+    }
+    return resp, nil
+}
+
+
+
+
 
