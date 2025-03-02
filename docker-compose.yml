@@ -1,15 +1,33 @@
 services:
+  gateway:
+    build: 
+      context: ./services/gateway
+      dockerfile: Dockerfile.gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - store_service
+      - account_service
+    volumes:
+      - ./services/gateway/config.yaml:/app/config.yaml  # config file
+    environment:
+      - CONFIG_FILE_PATH=/app/config.yaml
+    restart: always
+    networks: 
+      - kebeng-backend
+
+
   store_service:
     build: 
       context: ./services/store
       dockerfile: Dockerfile.store
     ports:
-      - "8080:8080"
+      - "8081:8081"
     depends_on:
       - store_db
       - minio
     volumes:
-      - ./services/store/internal/config/config.yaml:/app/config.yaml  # config file
+      - ./services/store/config.yaml:/app/config.yaml  # config file
       - ./init-config-example.json:/app/init-config-example.json  # init example
       - ./services/store/internal/keys/:/app/keys/  # keys needed by store
     environment:
@@ -52,11 +70,11 @@ services:
       context: ./services/account
       dockerfile: Dockerfile.account
     ports:
-      - "8081:8081"
+      - "8082:8082"
     depends_on:
       - account_db
     volumes:
-      - ./services/account/internal/config/config.yaml:/app/config.yaml  # config file
+      - ./services/account/config.yaml:/app/config.yaml  # config file
     environment:
       - CONFIG_FILE_PATH=/app/config.yaml
     restart: always
