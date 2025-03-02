@@ -33,6 +33,8 @@ var DefaultValues = map[string]interface{}{
 	configkey.DatabasePassword:      "password",
 	configkey.LoginPort:             8890,
 	configkey.DashboardPort:         8891,
+    configkey.AccountServiceHost:    "account_service",
+    configkey.AccountServicePort:    8080,
 }
 
 func LoadConfig() {

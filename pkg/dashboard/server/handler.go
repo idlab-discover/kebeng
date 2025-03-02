@@ -293,6 +293,8 @@ func (d *DashboardHandler) GetUploadStatus(upDownId string) (*responses.Status, 
 	return nil, err
 }
 
+/*
+// moving to api gateway
 func (d *DashboardHandler) GetACLMacaroon(acl string) (*macaroon.Macaroon, error) {
 	// TODO: check these sooner, cache the values and ensure they exist on start-up
 	rootKeyString := config.MustGetString(configkey.MacaroonRootKey)
@@ -317,7 +319,10 @@ func (d *DashboardHandler) GetACLMacaroon(acl string) (*macaroon.Macaroon, error
 
 	return m, nil
 }
+*/
 
+/*
+// Already in account service
 func (d *DashboardHandler) AddAccountKey(accountEmail string, keyName string, publicKeyId string, pubKeyEncoded string) (*models.Key, error) {
 	if accountEmail != "" && keyName != "" && publicKeyId != "" && pubKeyEncoded != "" {
 		acct, err2 := d.accounts.AddKey(keyName, publicKeyId, pubKeyEncoded, accountEmail)
@@ -332,6 +337,7 @@ func (d *DashboardHandler) AddAccountKey(accountEmail string, keyName string, pu
 	logrus.Errorf("accountEmail=%s, keyName=%s, publicKeyId=%s and pubKeyEncoded=%s must all be non-empty", accountEmail, keyName, publicKeyId, pubKeyEncoded)
 	return nil, errors.New("email, key name, public key id and public key encoded must all be non-empty")
 }
+*/
 
 func (d *DashboardHandler) RegisterSnapName(accountEmail string, isDryRun bool, snapName string) (*responses.RegisterSnap, error) {
 	if accountEmail != "" {
@@ -365,6 +371,8 @@ func (d *DashboardHandler) RegisterSnapName(accountEmail string, isDryRun bool, 
 	return nil, errors.New("account not found")
 }
 
+/*
+// Already in account service
 func (d *DashboardHandler) GetAccount(accountEmail string) (*responses.AccountInfo, error) {
 	if accountEmail != "" {
 		account, err := d.accounts.GetAccountByEmail(accountEmail, true)
@@ -406,7 +414,9 @@ func (d *DashboardHandler) GetAccount(accountEmail string) (*responses.AccountIn
 
 	return nil, errors.New("not found")
 }
+*/
 
+// TODO: move to API gateway
 func (d *DashboardHandler) VerifyACL(verify *requests.Verify) (*responses.Verify, error) {
 	userEmail, err := middleware.VerifyAndGetEmail(verify.AuthData.Authorization)
 	if err != nil {
