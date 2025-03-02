@@ -34,7 +34,6 @@ func main() {
 
 	logrus.Infof("Connected to database: %v", db)
 
-	logrus.Info("I'M HERE")
 	minioClient := getMinioClient(cfg)
 
 	exists, err := minioClient.BucketExists(context.Background(), "root")
