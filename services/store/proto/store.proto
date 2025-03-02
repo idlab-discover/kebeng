@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package store;
+option go_package = "github.com/idlab-discover/kebeng/services/store/proto;store";
+
+service StoreService {
+    rpc UploadSnap(UploadSnapRequest) returns (UploadSnapResponse);
+}
+
+message UploadSnapRequest {
+    string name = 1;
+    string type = 2;
+    string confinement = 3;
+    string base = 4;
+    bytes file = 5;
+}
+
+message UploadSnapResponse {
+    string id = 1;
+    string display_name = 2;
+}
