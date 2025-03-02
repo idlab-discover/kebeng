@@ -9,7 +9,7 @@ RUN go build -o /bin/store-service ./main.go
 FROM golang:1.22
 WORKDIR /app
 COPY --from=builder /bin/store-service /app/store-service
-COPY --from=builder /app/internal/config/config.yaml /app/config.yaml
+COPY --from=builder /app/config.yaml /app/config.yaml
 COPY --from=builder /app/internal/migrations /app/migrations
 COPY --from=builder /app/internal/keys /app/keys
 
