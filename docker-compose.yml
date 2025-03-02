@@ -11,7 +11,7 @@ services:
     volumes:
       - ./services/store/internal/config/config.yaml:/app/config.yaml  # config file
       - ./init-config-example.json:/app/init-config-example.json  # init example
-      - ./keys:/app/keys  # keys needed by store
+      - ./services/store/internal/keys/:/app/keys/  # keys needed by store
     environment:
       - CONFIG_FILE_PATH=/app/config.yaml
     restart: always
