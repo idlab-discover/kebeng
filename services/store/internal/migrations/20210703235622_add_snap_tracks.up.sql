@@ -7,7 +7,7 @@ create table snap_tracks
     updated_at    timestamp with time zone,
     deleted_at    timestamp with time zone,
     name          text,
-    snap_entry_id bigint
+    snap_entry_id uuid
         constraint fk_snap_tracks_snap_entry
             references snap_entries
 );

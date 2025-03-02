@@ -16,8 +16,6 @@ import (
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/sirupsen/logrus"
-	"github.com/snapcore/snapd/asserts"
-	"github.com/snapcore/snapd/asserts/assertstest"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -109,64 +107,63 @@ var Initialize = cobra.Command{
 
 		fmt.Printf("%+v\n", initConfig)
 
+		logrus.Printf("config= %s", initConfig.RootAccountInit.Username)
+
 		makeBucketAndAddKey(minioClient, "root", initConfig.RootKeyPath, "private-key.pem")
 		makeBucketAndAddKey(minioClient, "generic", initConfig.GenericKeyPath, "private-key.pem")
 
-		/* TODO check how this works when we need it
-		         in server.Run() this functionality does work why?
+		// Creation of the root account should be done in the account service
 
-		      // TODO: this is a redundant load
-		      rootKey := crypto.GetPrivateKeyFromPEMFile(initConfig.RootKeyPath)
+		// TODO: this is a redundant load
+		//rootKey := crypto.GetPrivateKeyFromPEMFile(initConfig.RootKeyPath)
 
-		      // create a signing database with the store's root key
-		      signingDB := assertstest.NewSigningDB(initConfig.AuthorityId, rootKey)
-		      db, _ := database.CreateDatabase()
+		// create a signing database with the store's root key
+		//signingDB := assertstest.NewSigningDB(initConfig.AuthorityId, rootKey)
+		//db, _ := database.CreateDatabase()
 
-		      // generate trusted account and account key
+		// // generate trusted account and account key
+		// createTrustedAccountExt(minioClient, rootKey, rootKey.PublicKey().ID(), signingDB, initConfig.RootAccountInit.Id, initConfig.RootAccountInit.Username, "root", "default")
+		// rootAccount := models.Account{
+		// 	ID:          initConfig.RootAccountInit.Id,
+		// 	DisplayName: initConfig.RootAccountInit.DisplayName,
+		// 	Username:    initConfig.RootAccountInit.Username,
+		// 	Email:       initConfig.RootAccountInit.Email,
+		// }
+		// db.Save(&rootAccount)
+		// rootAccountKey := models.Key{
+		// 	Name: "default",
+		// 	//TODO: get actual sha3384, is it needed?
+		// 	SHA3384:          rootKey.PublicKey().ID(),
+		// 	EncodedPublicKey: rootKey.PublicKey().ID(),
+		// 	AccountID:        rootAccount.ID,
+		// }
+		// db.Save(&rootAccountKey)
 
-				createTrustedAccountExt(minioClient, rootKey, rootKey.PublicKey().ID(), signingDB, initConfig.RootAccountInit.Id, initConfig.RootAccountInit.Username, "root", "default")
-				rootAccount := models.Account{
-					AccountId:   initConfig.RootAccountInit.Id,
-					DisplayName: initConfig.RootAccountInit.DisplayName,
-					Username:    initConfig.RootAccountInit.Username,
-					Email:       initConfig.RootAccountInit.Email,
-				}
-				db.Save(&rootAccount)
-				rootAccountKey := models.Key{
-					Name: "default",
-					//TODO: get actual sha3384, is it needed?
-					SHA3384:          rootKey.PublicKey().ID(),
-					EncodedPublicKey: rootKey.PublicKey().ID(),
-					AccountID:        rootAccount.ID,
-				}
-				db.Save(&rootAccountKey)
+		// //
+		// // generate generic account, account-key and mode
+		// // TODO: this is a redundant load
+		// genericKey := crypto.GetPrivateKeyFromPEMFile(initConfig.GenericKeyPath)
 
-				//
-				// generate generic account, account-key and mode
-				// TODO: this is a redundant load
-			   genericKey := crypto.GetPrivateKeyFromPEMFile(initConfig.GenericKeyPath)
+		// createTrustedAccountExt(minioClient, genericKey, rootKey.PublicKey().ID(), signingDB, initConfig.GenericAccountInit.Id, initConfig.GenericAccountInit.Username, "generic", "default")
+		// genericAccount := models.Account{
+		// 	ID:          initConfig.GenericAccountInit.Id,
+		// 	DisplayName: initConfig.GenericAccountInit.DisplayName,
+		// 	Username:    initConfig.GenericAccountInit.Username,
+		// 	Email:       initConfig.GenericAccountInit.Email,
+		// }
+		// db.Save(&genericAccount)
+		// genericAccountKey := models.Key{
+		// 	Name: "default",
+		// 	//TODO: get actual sha3384, is it needed?
+		// 	SHA3384:          genericKey.PublicKey().ID(),
+		// 	EncodedPublicKey: genericKey.PublicKey().ID(),
+		// 	AccountID:        genericAccount.ID,
+		// }
+		// db.Save(&genericAccountKey)
 
-				createTrustedAccountExt(minioClient, genericKey, rootKey.PublicKey().ID(), signingDB, initConfig.GenericAccountInit.Id, initConfig.GenericAccountInit.Username, "generic", "default")
-				genericAccount := models.Account{
-					AccountId:   initConfig.GenericAccountInit.Id,
-					DisplayName: initConfig.GenericAccountInit.DisplayName,
-					Username:    initConfig.GenericAccountInit.Username,
-					Email:       initConfig.GenericAccountInit.Email,
-				}
-				db.Save(&genericAccount)
-				genericAccountKey := models.Key{
-					Name: "default",
-					//TODO: get actual sha3384, is it needed?
-					SHA3384:          genericKey.PublicKey().ID(),
-					EncodedPublicKey: genericKey.PublicKey().ID(),
-					AccountID:        genericAccount.ID,
-				}
-				db.Save(&genericAccountKey)
-		*/
-
-		fmt.Println("*******************************")
-		fmt.Printf("ALL DONE. Browse to %s/%s to view your assertions.\n", viper.GetString(configkey.MinioHost), "minio/root/")
-		fmt.Println("*******************************")
+		// fmt.Println("*******************************")
+		// fmt.Printf("ALL DONE. Browse to %s/%s to view your assertions.\n", viper.GetString(configkey.MinioHost), "minio/root/")
+		// fmt.Println("*******************************")
 	},
 }
 
@@ -250,54 +247,89 @@ func deleteAllItemsInBucket(minioClient *minio.Client, bucketName string) {
 	}
 }
 
-func createTrustedAccountExt(minioClient *minio.Client, accountKey asserts.PrivateKey, signingKeyId string, signingDB *assertstest.SigningDB,
-	accountId string, accountUsername string, bucketName string, accountKeyName string) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+// createTrustedAccountExt creates and stores trusted account and account key assertions in a specified MinIO bucket.
+// It performs the following steps:
+// 1. Creates an account assertion and adds it to the signing database.
+// 2. Uploads the account assertion to the specified MinIO bucket.
+// 3. Creates an account key assertion and adds it to the signing database.
+// 4. Uploads the account key assertion to the specified MinIO bucket.
+//
+// Parameters:
+// - minioClient: The MinIO client used to interact with the MinIO server.
+// - accountKey: The private key of the account.
+// - signingKeyId: The ID of the signing key used to sign the assertions.
+// - signingDB: The signing database used to store assertions.
+// - accountId: The ID of the account.
+// - accountUsername: The username of the account.
+// - bucketName: The name of the MinIO bucket where assertions will be stored.
+// - accountKeyName: The name of the account key.
+//
+// Errors:
+// Logs errors if any step fails, including adding assertions to the signing database
+// and uploading objects to the MinIO bucket.
+// func createTrustedAccountExt(minioClient *minio.Client, accountKey asserts.PrivateKey, signingKeyId string, signingDB *assertstest.SigningDB,
+// 	accountId uuid.UUID, accountUsername string, bucketName string, accountKeyName string) {
+// 	ctx, cancel := context.WithCancel(context.Background())
+// 	defer cancel()
 
-	accountAssertion, bytes := createAccountAssertion(signingDB, signingKeyId, accountId, accountUsername)
-	err := signingDB.Add(accountAssertion)
-	if err != nil {
-		panic(err)
-	}
+// 	accountAssertion, bytes := createAccountAssertion(signingDB, signingKeyId, accountId, accountUsername)
+// 	err := signingDB.Add(accountAssertion)
+// 	if err != nil {
+// 		logrus.Errorf("Failed to add account assertion: %v", err)
+// 		return
+// 	}
+// 	_, err = minioClient.PutObject(ctx, bucketName, "account.assertion", strings.NewReader(string(bytes)), int64(len(bytes)), minio.PutObjectOptions{})
+// 	if err != nil {
+// 		logrus.Errorf("Failed to put object 'account.assertion' in bucket '%s': %v", bucketName, err)
+// 		return
+// 	}
+// 	accountKeyAssertion, bytes := createAccountKeyAssertion(signingDB, accountKey.PublicKey(), signingKeyId, accountAssertion, accountKeyName)
+// 	if accountKeyAssertion == nil {
+// 		logrus.Error("Failed to create account key assertion")
+// 		return
+// 	}
+// 	_, err = minioClient.PutObject(ctx, bucketName, "account-key.assertion", strings.NewReader(string(bytes)), int64(len(bytes)), minio.PutObjectOptions{})
+// 	if err != nil {
+// 		logrus.Error("Failed to put account key assertion object: ", err)
+// 	}
+// }
 
-	_, err = minioClient.PutObject(ctx, bucketName, "account.assertion", strings.NewReader(string(bytes)), int64(len(bytes)), minio.PutObjectOptions{})
-	if err != nil {
-		logrus.Error(err)
-	}
+// // createAccountKeyAssertion creates an AccountKey assertion and encodes it to bytes.
+// // It takes the following parameters:
+// // - signingDB: a pointer to the SigningDB instance used for signing the assertion.
+// // - publicKey: the public key associated with the account key.
+// // - keyId: the identifier for the key.
+// // - trustedAcct: the trusted account for which the key is being created.
+// // - name: the name associated with the account key.
+// //
+// // It returns:
+// // - a pointer to the created AccountKey assertion.
+// // - a byte slice containing the encoded assertion.
+// func createAccountKeyAssertion(signingDB *assertstest.SigningDB, publicKey asserts.PublicKey, keyId string, trustedAcct *asserts.Account, name string) (*asserts.AccountKey, []byte) {
+// 	trustedAcctKeyHeaders := map[string]interface{}{
+// 		"since":      "2015-11-20T15:04:00Z",
+// 		"until":      "2500-11-20T15:04:00Z",
+// 		"account-id": trustedAcct.AccountID(),
+// 		"name":       name,
+// 	}
 
-	_, bytes = createAccountKeyAssertion(signingDB, accountKey.PublicKey(), signingKeyId, accountAssertion, accountKeyName)
-	_, err = minioClient.PutObject(ctx, bucketName, "account-key.assertion", strings.NewReader(string(bytes)), int64(len(bytes)), minio.PutObjectOptions{})
-	if err != nil {
-		logrus.Error(err)
-	}
-}
+// 	trustedAccKey := assertstest.NewAccountKey(signingDB, trustedAcct, trustedAcctKeyHeaders, publicKey, keyId)
 
-func createAccountKeyAssertion(signingDB *assertstest.SigningDB, publicKey asserts.PublicKey, keyId string, trustedAcct *asserts.Account, name string) (*asserts.AccountKey, []byte) {
-	trustedAcctKeyHeaders := map[string]interface{}{
-		"since":      "2015-11-20T15:04:00Z",
-		"until":      "2500-11-20T15:04:00Z",
-		"account-id": trustedAcct.AccountID(),
-		"name":       name,
-	}
+// 	bytes := asserts.Encode(trustedAccKey)
 
-	trustedAccKey := assertstest.NewAccountKey(signingDB, trustedAcct, trustedAcctKeyHeaders, publicKey, keyId)
+// 	return trustedAccKey, bytes
+// }
 
-	bytes := asserts.Encode(trustedAccKey)
+// func createAccountAssertion(signingDB *assertstest.SigningDB, keyId string, accountId uuid.UUID, storeAccountUsername string) (*asserts.Account, []byte) {
+// 	trustedAcctHeaders := map[string]interface{}{
+// 		"validation": "certified",
+// 		"timestamp":  "2015-11-20T15:04:00Z",
+// 		"account-id": accountId.String(),
+// 	}
 
-	return trustedAccKey, bytes
-}
+// 	trustedAcct := assertstest.NewAccount(signingDB, storeAccountUsername, trustedAcctHeaders, keyId)
 
-func createAccountAssertion(signingDB *assertstest.SigningDB, keyId string, accountId string, storeAccountUsername string) (*asserts.Account, []byte) {
-	trustedAcctHeaders := map[string]interface{}{
-		"validation": "certified",
-		"timestamp":  "2015-11-20T15:04:00Z",
-		"account-id": accountId,
-	}
+// 	bytes := asserts.Encode(trustedAcct)
 
-	trustedAcct := assertstest.NewAccount(signingDB, storeAccountUsername, trustedAcctHeaders, keyId)
-
-	bytes := asserts.Encode(trustedAcct)
-
-	return trustedAcct, bytes
-}
+// 	return trustedAcct, bytes
+// }

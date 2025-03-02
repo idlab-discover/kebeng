@@ -1,8 +1,10 @@
 package requests
 
+import "github.com/google/uuid"
+
 type AddAccount struct {
 	Username    string
-	AcccountId  string
+	AcccountId  uuid.UUID
 	Email       string
 	DisplayName string
 }

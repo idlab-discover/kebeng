@@ -3,20 +3,22 @@ package asserts
 import (
 	"errors"
 	"fmt"
+	"time"
+
+	"github.com/google/uuid"
 	"github.com/idlab-discover/kebeng/pkg/models"
 	"github.com/snapcore/snapd/asserts"
-	"time"
 )
 
-func MakeSnapDeclarationAssertion(authorityId, publisherId string, snapEntry *models.SnapEntry, storePrivateKey asserts.PrivateKey, db *asserts.Database) (*asserts.SnapDeclaration, error) {
+func MakeSnapDeclarationAssertion(authorityId uuid.UUID, publisherId uuid.UUID, snapEntry *models.SnapEntry, storePrivateKey asserts.PrivateKey, db *asserts.Database) (*asserts.SnapDeclaration, error) {
 	headers := map[string]interface{}{
 		"authority-id": authorityId,
 		"series":       "16",
-		"snap-id":      snapEntry.SnapStoreID,
+		"snap-id":      snapEntry.ID,
 		"publisher-id": publisherId,
 		"snap-name":    snapEntry.Name,
 		"timestamp":    time.Now().Format(time.RFC3339),
-	   "revision":     "1",
+		"revision":     "1",
 	}
 
 	a, err := db.Sign(asserts.SnapDeclarationType, headers, nil, storePrivateKey.PublicKey().ID())
@@ -31,7 +33,7 @@ func MakeSnapDeclarationAssertion(authorityId, publisherId string, snapEntry *mo
 	return nil, errors.New("unable to cast assertion")
 }
 
-func MakeSnapRevisionAssertion(authorityId, digest, snapID string, size uint64, revision int, developerID, keyID string, db *asserts.Database) (*asserts.SnapRevision, error) {
+func MakeSnapRevisionAssertion(authorityId uuid.UUID, digest string, snapID uuid.UUID, size uint64, revision int, developerID uuid.UUID, keyID string, db *asserts.Database) (*asserts.SnapRevision, error) {
 	headers := map[string]interface{}{
 		"authority-id":  authorityId,
 		"snap-sha3-384": digest,
@@ -40,7 +42,7 @@ func MakeSnapRevisionAssertion(authorityId, digest, snapID string, size uint64, 
 		"snap-revision": fmt.Sprintf("%d", revision),
 		"developer-id":  developerID,
 		"timestamp":     time.Now().Format(time.RFC3339),
-      // sign-key-sha3-384: <key-id> // Encoded key id of a signing key (is in the ubuntu docs)
+		// sign-key-sha3-384: <key-id> // Encoded key id of a signing key (is in the ubuntu docs)
 	}
 	a, err := db.Sign(asserts.SnapRevisionType, headers, nil, keyID)
 	if err != nil {
@@ -49,7 +51,7 @@ func MakeSnapRevisionAssertion(authorityId, digest, snapID string, size uint64, 
 
 	aaa, ok := a.(*asserts.SnapRevision)
 	if !ok {
-	   return nil, errors.New("unable to cast assertion")
+		return nil, errors.New("unable to cast assertion")
 	}
 
 	return aaa, nil
