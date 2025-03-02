@@ -17,12 +17,14 @@ type IAccountRepository interface {
 	DeleteAccount(ctx context.Context, accountID uuid.UUID) error
 	GetAccountByEmail(ctx context.Context, email string, preload bool) (*models.Account, error)
 	GetAccountByID(ctx context.Context, accountID uuid.UUID, preload bool) (*models.Account, error)
-	GetAccountByUsername(ctx context.Context, username string, preload bool) (*models.Account, error)
+  GetAccountByUsername(ctx context.Context, username string, preload bool) (*models.Account, error)
+
 	AddKey(ctx context.Context, name, sha3384, encodedPublicKey, accountEmail string) (*models.Key, error)
 	GetKeyBySHA3384(ctx context.Context, sha3384 string) (*models.Key, error)
-	AddSnapEntryToAccount(ctx context.Context, accountID uuid.UUID, snapEntryID uuid.UUID) error
-	RemoveSnapEntryFromAccount(ctx context.Context, accountID uuid.UUID, snapEntryID uuid.UUID) error
-	GetSnapEntryIDsByAccountID(ctx context.Context, accountID uuid.UUID) ([]uuid.UUID, error)
+
+  AddSnapEntryToAccount(ctx context.Context, accountID uuid.UUID, snapEntryID uuid.UUID) error
+  RemoveSnapEntryFromAccount(ctx context.Context, accountID uuid.UUID, snapEntryID uuid.UUID) error
+  GetSnapEntryIDsByAccountID(ctx context.Context, accountID uuid.UUID) ([]uuid.UUID, error)
 }
 
 type AccountRepository struct {
@@ -88,6 +90,7 @@ func (a *AccountRepository) GetKeyBySHA3384(ctx context.Context, sha3384 string)
 	return a.getKeyByWhereModel(ctx, &models.Key{SHA3384: sha3384})
 }
 
+/* TODO: not used since SnapEntryID is not stored in this database so remove but comments for now
 func (a *AccountRepository) AddSnapEntryToAccount(ctx context.Context, accountID uuid.UUID, snapEntryID uuid.UUID) error {
 	account, err := a.GetAccountByID(ctx, accountID, true)
 	if err != nil || account == nil {
@@ -122,6 +125,7 @@ func (a *AccountRepository) GetSnapEntryIDsByAccountID(ctx context.Context, acco
 	}
 	return account.SnapEntryIDs, nil
 }
+*/
 
 // getKeyByWhereModel retrieves a key based on a filter
 func (a *AccountRepository) getKeyByWhereModel(ctx context.Context, whereModel *models.Key) (*models.Key, error) {
