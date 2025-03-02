@@ -16,7 +16,7 @@ import (
 )
 
 type ObjectStore interface {
-	SaveFileToBucket(bucket string, filePath string) error
+	SaveFileToBucket(bucket string, filePath string) (uint64, error)
 	GetFileFromBucket(bucket string, filePath string) (*[]byte, error)
 }
 
@@ -68,7 +68,7 @@ func (obs *Impl) Move(sourceBucket, destinationBucket, objectName string) error 
 	return errors.New("something went wrong")
 }
 
-func (obs *Impl) SaveFileToBucket(bucket string, filePath string) error {
+func (obs *Impl) SaveFileToBucket(bucket string, filePath string) (uint64, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	exists, _ := obs.MinioClient.BucketExists(ctx, bucket)
@@ -83,12 +83,12 @@ func (obs *Impl) SaveFileToBucket(bucket string, filePath string) error {
 
 	uploadInfo, err := obs.MinioClient.FPutObject(ctx, bucket, base, filePath, minio.PutObjectOptions{})
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	logrus.Infof("Saved to bucket: %+v", uploadInfo)
 
-	return nil
+	return uint64(uploadInfo.Size), nil
 }
 
 func GetMinioClient() *minio.Client {

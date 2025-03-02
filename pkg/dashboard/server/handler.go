@@ -24,7 +24,6 @@ import (
 	"github.com/spf13/viper"
 
 	"gopkg.in/macaroon.v2"
-	macaroonv2 "gopkg.in/macaroon.v2"
 
 	"github.com/idlab-discover/kebeng/pkg/repositories"
 
@@ -40,7 +39,7 @@ type IDashboardHandler interface {
 	GetAccount(accountEmail string) (*responses.AccountInfo, error)
 	RegisterSnapName(accountEmail string, dryRun bool, snapName string) (*responses.RegisterSnap, error)
 	AddAccountKey(accountEmail string, keyName string, publicKeyId string, pubKeyEncoded string) (*models.Key, error)
-	GetACLMacaroon(acl string) (*macaroonv2.Macaroon, error)
+	GetACLMacaroon(acl string) (*macaroon.Macaroon, error)
 	GetUploadStatus(upDownId string) (*responses.Status, error)
 	PushSnap(snapName string, upDownId string, fileSize uint, channels []string) (*store.Upload, error)
 	ReleaseSnap(name string, revision uint, channels []string) (bool, error)
@@ -205,7 +204,11 @@ func (d *DashboardHandler) PushSnap(snapName string, upDownId string, fileSize u
 func (d *DashboardHandler) GetUploadStatus(upDownId string) (*responses.Status, error) {
 	// We need to move the snap from the unscanned bucket to the snaps bucket
 	snapUpload, err := d.snaps.GetUpload(upDownId)
-	if err == nil && snapUpload != nil {
+	if err != nil {
+		logrus.Error(err)
+		return nil, err
+	}
+	if snapUpload != nil {
 		snapFileName := upDownId + ".snap"
 
 		// get the sha3_384 of the file so we can figure out if it already exists as a revision
@@ -290,7 +293,7 @@ func (d *DashboardHandler) GetUploadStatus(upDownId string) (*responses.Status, 
 	return nil, err
 }
 
-func (d *DashboardHandler) GetACLMacaroon(acl string) (*macaroonv2.Macaroon, error) {
+func (d *DashboardHandler) GetACLMacaroon(acl string) (*macaroon.Macaroon, error) {
 	// TODO: check these sooner, cache the values and ensure they exist on start-up
 	rootKeyString := config.MustGetString(configkey.MacaroonRootKey)
 	rootMacaroonId := config.MustGetString(configkey.MacaroonRootId)
@@ -336,10 +339,11 @@ func (d *DashboardHandler) RegisterSnapName(accountEmail string, isDryRun bool, 
 		if err2 == nil && account != nil {
 			if !isDryRun {
 				logrus.Trace("This is not a dry run")
-				snap, err3 := d.snaps.AddSnap(snapName, account.ID)
+				size := uint64(0) // FIX: temporary fix while developing the upload feature -> snap size should be a parameter somewhere
+				snap, err3 := d.snaps.AddSnap(snapName, size, account.ID)
 				if err3 == nil && snap != nil {
 					resp := responses.RegisterSnap{
-						Id:   snap.SnapStoreID,
+						Id:   snap.ID,
 						Name: snap.Name,
 					}
 
@@ -367,7 +371,7 @@ func (d *DashboardHandler) GetAccount(accountEmail string) (*responses.AccountIn
 
 		if err == nil {
 			accountInfoResponse := responses.AccountInfo{
-				AccountId:   account.AccountId,
+				AccountId:   account.ID,
 				Snaps:       map[string]map[string]responses.Snap{},
 				AccountKeys: []responses.Key{},
 			}
@@ -384,7 +388,7 @@ func (d *DashboardHandler) GetAccount(accountEmail string) (*responses.AccountIn
 				// TODO: replace with real data
 				snaps[s.Name] = responses.Snap{
 					Status:  "Approved",
-					SnapId:  s.SnapStoreID,
+					SnapId:  s.ID,
 					Store:   "Global",
 					Since:   "2016-07-04T23:37:52Z",
 					Private: false,

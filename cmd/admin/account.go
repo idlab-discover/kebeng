@@ -8,6 +8,7 @@ import (
 	"time"
 
 	resty "github.com/go-resty/resty/v2"
+	"github.com/google/uuid"
 	"github.com/idlab-discover/kebeng/config"
 	"github.com/idlab-discover/kebeng/config/configkey"
 	"github.com/idlab-discover/kebeng/pkg/admind"
@@ -121,9 +122,14 @@ var add = &cobra.Command{
 			}
 		}
 
+		accountUUID, err := uuid.Parse(accountId)
+		if err != nil {
+			panic(err)
+		}
+
 		addAccountRequest := requests.AddAccount{
 			Username:    username,
-			AcccountId:  accountId,
+			AcccountId:  accountUUID,
 			Email:       email,
 			DisplayName: displayName,
 		}

@@ -1,6 +1,9 @@
 package responses
 
-import "github.com/snapcore/snapd/snap"
+import (
+	"github.com/google/uuid"
+	"github.com/snapcore/snapd/snap"
+)
 
 // storeSnap holds the information sent as JSON by the store for a snap.
 type StoreSnap struct {
@@ -18,7 +21,7 @@ type StoreSnap struct {
 	Private       bool              `json:"private"`
 	Publisher     snap.StoreAccount `json:"publisher"`
 	Revision      int               `json:"revision"` // store revisions are ints starting at 1
-	SnapID        string            `json:"snap-id"`
+	SnapID        uuid.UUID         `json:"snap-id"`
 	SnapYAML      string            `json:"snap-yaml"` // optional
 	Summary       string            `json:"summary"`
 	Title         string            `json:"title"`

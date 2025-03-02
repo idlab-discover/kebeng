@@ -33,17 +33,16 @@ func CreateDatabaseWithDSN(connectionString string) (*gorm.DB, error) {
 		if err != nil {
 			logrus.Errorf("Failed to connect to database at try %d: %v", try, err)
 			time.Sleep(retryInterval)
-		} else {
-			logrus.Info("Connected to database")
-			DB = db
-
-			err = RunMigrations(db)
-			if err != nil {
-				logrus.Errorf("Migration failed: %v", err)
-				return nil, err // don't return db, as it's not migrated
-			}
-			return db, nil
+            continue
 		}
+        logrus.Info("Connected to database")
+        DB = db
+
+        err = RunMigrations(db)
+        if err != nil {
+            logrus.Errorf("Migration failed: %v", err)
+        }
+        return db, nil
 	}
 	logrus.Errorf("Failed to connect to database after %d retries", maxRetries)
 	return nil, err
@@ -95,7 +94,7 @@ func MigrateDatabase(db *gorm.DB) {
 	MigrateWithLog("models.SnapRevision", &models.SnapRevision{}, db)
 
 	MigrateWithLog("models.SnapTrack", &models.SnapTrack{}, db)
-	MigrateWithLog("models.SnapRisk", &models.SnapRisk{}, db)
+	MigrateWithLog("models.SnapChannel", &models.SnapRisk{}, db)
 	MigrateWithLog("models.SnapBranch", &models.SnapBranch{}, db)
 }
 
@@ -126,6 +125,6 @@ func RunMigrations(db *gorm.DB) error {
 	if err != nil && err != migrate.ErrNoChange {
 		return fmt.Errorf("failed to run migrations: %v", err)
 	}
-
+	logrus.Println("Migrations ran successfully")
 	return nil
 }

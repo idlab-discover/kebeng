@@ -1,6 +1,7 @@
 package responses
 
 import (
+	"github.com/google/uuid"
 	store2 "github.com/snapcore/snapd/store"
 )
 
@@ -23,12 +24,12 @@ type StoreSearchResult struct {
 	Revision StoreSearchChannelSnap `json:"revision"`
 	Snap     StoreSnap              `json:"snap"`
 	Name     string                 `json:"name"`
-	SnapID   string                 `json:"snap-id"`
+	SnapID   uuid.UUID              `json:"snap-id"`
 }
 
 type StoreSnapDownload struct {
 	Sha3_384 string           `json:"sha3-384"`
-	Size     uint64            `json:"size"`
+	Size     uint64           `json:"size"`
 	URL      string           `json:"url"`
 	Deltas   []StoreSnapDelta `json:"deltas"`
 }
@@ -119,7 +120,7 @@ type SnapActionResult struct {
 	Result string `json:"result"`
 	// For snap
 	InstanceKey      string                `json:"instance-key"`
-	SnapID           string                `json:"snap-id,omitempty"`
+	SnapID           uuid.UUID             `json:"snap-id,omitempty"`
 	Name             string                `json:"name,omitempty"`
 	Snap             *StoreSnap            `json:"snap"`
 	EffectiveChannel string                `json:"effective-channel,omitempty"`

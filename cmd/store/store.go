@@ -1,6 +1,7 @@
 package store
 
 import (
+	"github.com/google/uuid"
 	"github.com/idlab-discover/kebeng/config/configkey"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -17,10 +18,10 @@ var databaseDatabaseVar string
 var initializationConfigPath string
 
 type AccountInit struct {
-	Id          string `json:"id"`
-	DisplayName string `json:"display_name"`
-	Username    string `json:"username"`
-	Email       string `json:"email"`
+	Id          uuid.UUID `json:"id"`
+	DisplayName string    `json:"display_name"`
+	Username    string    `json:"username"`
+	Email       string    `json:"email"`
 }
 
 type InitializationConfig struct {

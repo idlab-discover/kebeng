@@ -1,40 +1,32 @@
 services:
-  store:
+  store_service:
     build: 
-      context: .
-      dockerfile: build-aux/docker/Dockerfile.store
+      context: ./services/store
+      dockerfile: Dockerfile.store
     ports:
       - "8080:8080"
     depends_on:
-      - db
+      - store_db
       - minio
     volumes:
-      - ./config.yaml:/app/config.yaml  # config file
+      - ./services/store/internal/config/config.yaml:/app/config.yaml  # config file
       - ./init-config-example.json:/app/init-config-example.json  # init example
-      - ./keys:/app/keys  # keys needed by store
+      - ./services/store/internal/keys/:/app/keys/  # keys needed by store
     environment:
-      - CONFIG_FILE=/app/config.yaml
-      - CONFIG_FILE_PATH=/app
-    command: >
-      sh -c "
-        /app/kebeng-admin store initialize -i /app/init-config-example.json &&
-        /app/kebeng-store store initialize -i /app/init-config-example.json
-      "
+      - CONFIG_FILE_PATH=/app/config.yaml
     restart: always
     networks: 
       - kebeng-backend
 
-  db:
+  store_db:
     image: postgres:13
     restart: always
     volumes:
-      - db_data:/var/lib/postgresql/data
-    # - ./migrations:/docker-entrypoint-initdb.d
+      - store_data:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=kebe_store
+      - POSTGRES_DB=store_db
       - POSTGRES_USER=kebe_user
       - POSTGRES_PASSWORD=kebe
-      - PGDATA=/var/lib/postgresql/data/pgdata
     ports:
       - "5432:5432"
     networks: 
@@ -55,9 +47,40 @@ services:
     networks: 
       - kebeng-backend
 
+  account_service:
+    build: 
+      context: ./services/account
+      dockerfile: Dockerfile.account
+    ports:
+      - "8081:8081"
+    depends_on:
+      - account_db
+    volumes:
+      - ./services/account/internal/config/config.yaml:/app/config.yaml  # config file
+    environment:
+      - CONFIG_FILE_PATH=/app/config.yaml
+    restart: always
+    networks: 
+      - kebeng-backend
+
+  account_db:
+    image: postgres:13
+    restart: always
+    volumes:
+      - account_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=account_db
+      - POSTGRES_USER=kebe_user
+      - POSTGRES_PASSWORD=kebe
+    ports:
+      - "5433:5432"
+    networks: 
+      - kebeng-backend
+
 volumes:
-  db_data:
+  store_data:
   minio_data:
+  account_data:
 
 networks:
   kebeng-backend:

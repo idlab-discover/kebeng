@@ -42,10 +42,10 @@ type IStoreHandler interface {
 	FindSnap(name string) (*responses.SearchV2Results, error)
 	SnapRefresh(actions *[]*requests.SnapActionJSON) (*responses.SnapActionResultList, error)
 	SnapDownload(snapFilename string) (*[]byte, error)
-	GetSnapRevisionAssertion(SHA3384Encoded string, rootStoreKey *rsa.PrivateKey, assertsDB *asserts.Database, storeAuthorityId string) (*asserts.SnapRevision, error)
-	GetSnapDeclarationAssertion(snapId string, rootStoreKey *rsa.PrivateKey, assertsDB *asserts.Database, storeAuthorityId string) (*asserts.SnapDeclaration, error)
+	GetSnapRevisionAssertion(SHA3384Encoded string, rootStoreKey *rsa.PrivateKey, assertsDB *asserts.Database, storeAuthorityId uuid.UUID) (*asserts.SnapRevision, error)
+	GetSnapDeclarationAssertion(snapId uuid.UUID, rootStoreKey *rsa.PrivateKey, assertsDB *asserts.Database, storeAuthorityId uuid.UUID) (*asserts.SnapDeclaration, error)
 	GetAccountKeyAssertion(keySHA3384 string, rootStoreKey *rsa.PrivateKey, signingDB *assertstest.SigningDB) (*asserts.AccountKey, error)
-	GetAccountAssertion(accountId string, rootStoreKey *rsa.PrivateKey, signingDB *assertstest.SigningDB) (*asserts.Account, error)
+	GetAccountAssertion(accountId uuid.UUID, rootStoreKey *rsa.PrivateKey, signingDB *assertstest.SigningDB) (*asserts.Account, error)
 	UnscannedUpload(snapFile io.Reader) (string, error)
 	AuthRequest() *responses.AuthRequestIDResp
 	AuthDevice(serialRequest *asserts.SerialRequest, genericPrivateKey asserts.PrivateKey, signingDB *assertstest.SigningDB) (*asserts.Serial, error)
@@ -126,17 +126,17 @@ func (h *Handler) UnscannedUpload(snapFile io.Reader) (string, error) {
 	tmpPath := path.Join(os.TempDir(), snapFileName)
 
 	// err = objStore.SaveFileToBucket("unscanned", tmpPath)
-	err = h.obs.SaveFileToBucket("unscanned", tmpPath)
+	size, err := h.obs.SaveFileToBucket("unscanned", tmpPath)
 	if err != nil {
 		logrus.Errorf("Failed to save file to object store: %v", err)
 		return "", err
 	}
 
-	// addSnap() gaat nieuwe entry in snap_entries toevoegen
-	// _, err = h.snaps.AddSnap("testSnap", 1)
-	// if err != nil {
-	// 	logrus.Error(err)
-	// }
+	// addSnap() adds snap to snap_entries table
+	_, err = h.snaps.AddSnap(snapFileName, size, uuid.New()) // uuid.New() is a placeholder for account id that is going to be added later throught the context
+	if err != nil {
+		logrus.Error(err)
+	}
 
 	return id, nil
 }
@@ -166,7 +166,7 @@ func (h *Handler) GetAccountKeyAssertion(keySHA3384 string, rootStoreKey *rsa.Pr
 			panic(err2)
 		}
 
-		trustedAcct := getTrustedAccount(accountKey.Account.AccountId, signingDB, accountKey.Account.DisplayName)
+		trustedAcct := getTrustedAccount(accountKey.Account.ID, signingDB, accountKey.Account.DisplayName)
 
 		// TODO: what do do about these dates?
 		trustedAcctKeyHeaders := map[string]interface{}{
@@ -188,12 +188,12 @@ func (h *Handler) GetAccountKeyAssertion(keySHA3384 string, rootStoreKey *rsa.Pr
 	return nil, errors.New("account key could not be found or there was an error")
 }
 
-func (h *Handler) GetAccountAssertion(accountId string, rootStoreKey *rsa.PrivateKey, signingDB *assertstest.SigningDB) (*asserts.Account, error) {
+func (h *Handler) GetAccountAssertion(accountId uuid.UUID, rootStoreKey *rsa.PrivateKey, signingDB *assertstest.SigningDB) (*asserts.Account, error) {
 	account, err := h.accounts.GetAccountById(accountId, false)
 	if err == nil && account != nil {
 		//
 		pk := asserts.RSAPrivateKey(rootStoreKey)
-		acct := createAccountAssertion(signingDB, pk.PublicKey().ID(), account.AccountId, account.Username)
+		acct := createAccountAssertion(signingDB, pk.PublicKey().ID(), account.ID, account.Username)
 		return acct, nil
 	} else if err != nil {
 		return nil, err
@@ -203,10 +203,10 @@ func (h *Handler) GetAccountAssertion(accountId string, rootStoreKey *rsa.Privat
 	return nil, errors.New("account not found")
 }
 
-func (h *Handler) GetSnapDeclarationAssertion(snapId string, rootStoreKey *rsa.PrivateKey, assertsDB *asserts.Database, storeAuthorityId string) (*asserts.SnapDeclaration, error) {
+func (h *Handler) GetSnapDeclarationAssertion(snapId uuid.UUID, rootStoreKey *rsa.PrivateKey, assertsDB *asserts.Database, storeAuthorityId uuid.UUID) (*asserts.SnapDeclaration, error) {
 	logrus.Tracef("Requested snap-declaration: %s", snapId)
 
-	snapEntry, err := h.snaps.GetSnapByStoreId(snapId, true)
+	snapEntry, err := h.snaps.GetSnapById(snapId, true)
 	if err != nil {
 		logrus.Errorf("Failed to get snap entry for snap-id %s: %v", snapId, err)
 		return nil, err
@@ -219,7 +219,7 @@ func (h *Handler) GetSnapDeclarationAssertion(snapId string, rootStoreKey *rsa.P
 	// TODO: this again seems wrong, you should not create a new assertion and sign it again
 	assertion, err := asserts2.MakeSnapDeclarationAssertion(
 		storeAuthorityId,
-		snapEntry.Account.AccountId,
+		snapEntry.Account.ID,
 		snapEntry,
 		asserts.RSAPrivateKey(rootStoreKey),
 		assertsDB,
@@ -236,7 +236,7 @@ func (h *Handler) GetSnapDeclarationAssertion(snapId string, rootStoreKey *rsa.P
 	return assertion, nil
 }
 
-func (h *Handler) GetSnapRevisionAssertion(SHA3384Encoded string, rootStoreKey *rsa.PrivateKey, assertsDB *asserts.Database, storeAuthorityId string) (*asserts.SnapRevision, error) {
+func (h *Handler) GetSnapRevisionAssertion(SHA3384Encoded string, rootStoreKey *rsa.PrivateKey, assertsDB *asserts.Database, storeAuthorityId uuid.UUID) (*asserts.SnapRevision, error) {
 	revision, err := h.snaps.GetRevisionBySHA(SHA3384Encoded, true)
 	if err != nil {
 		logrus.Errorf("Failed to get revision by SHA: %s", err)
@@ -264,10 +264,10 @@ func (h *Handler) GetSnapRevisionAssertion(SHA3384Encoded string, rootStoreKey *
 	assertion, err := asserts2.MakeSnapRevisionAssertion(
 		storeAuthorityId,
 		SHA3384Encoded,
-		snapEntry.SnapStoreID,
+		snapEntry.ID,
 		revision.Size,
 		int(revision.ID),
-		snapEntry.Account.AccountId,
+		snapEntry.Account.ID,
 		asserts.RSAPrivateKey(rootStoreKey).PublicKey().ID(),
 		assertsDB,
 	)
@@ -302,7 +302,7 @@ func (h *Handler) SnapRefresh(actions *[]*requests.SnapActionJSON) (*responses.S
 		if err == nil && snapEntry != nil {
 			// TODO: support other actions "refresh", etc.
 			if action.Action == "download" {
-				logrus.Infof("We know about this snap %s, its id is %s we we'll try to handle it.", snapEntry.Name, snapEntry.SnapStoreID)
+				logrus.Infof("We know about this snap %s, its id is %s we we'll try to handle it.", snapEntry.Name, snapEntry.ID)
 
 				snapRevision, err2 := h.snaps.GetRevisionByChannel(action.Channel, action.Name)
 				if err2 == nil && snapRevision != nil {
@@ -311,7 +311,7 @@ func (h *Handler) SnapRefresh(actions *[]*requests.SnapActionJSON) (*responses.S
 						actionResult := responses.SnapActionResult{
 							Result:      "download",
 							InstanceKey: "download-1",
-							SnapID:      snapEntry.SnapStoreID,
+							SnapID:      snapEntry.ID,
 							Name:        snapEntry.Name,
 							Snap:        storeSnap,
 						}
@@ -321,7 +321,7 @@ func (h *Handler) SnapRefresh(actions *[]*requests.SnapActionJSON) (*responses.S
 					logrus.Errorf("unable to process action %s for snap %s: %s", action.Action, action.Name, err3)
 				}
 			} else if action.Action == "install" {
-				logrus.Infof("We know about this snap %s, its id is %s we we'll try to handle it.", snapEntry.Name, snapEntry.SnapStoreID)
+				logrus.Infof("We know about this snap %s, its id is %s we we'll try to handle it.", snapEntry.Name, snapEntry.ID)
 				snapRevision, err2 := h.snaps.GetRevisionByChannel(action.Channel, action.Name)
 				if err2 == nil && snapRevision != nil {
 					storeSnap, err3 := snapEntry.ToStoreSnap(snapRevision)
@@ -333,7 +333,7 @@ func (h *Handler) SnapRefresh(actions *[]*requests.SnapActionJSON) (*responses.S
 						actionResult := responses.SnapActionResult{
 							Result:      "install",
 							InstanceKey: "install-1",
-							SnapID:      snapEntry.SnapStoreID,
+							SnapID:      snapEntry.ID,
 							Name:        snapEntry.Name,
 							Snap:        storeSnap,
 						}
@@ -389,9 +389,9 @@ func (h *Handler) FindSnap(name string) (*responses.SearchV2Results, error) {
 						Name:        snapEntry.Name,
 						// TODO: need to fix this properly
 						Revision:  1,
-						SnapID:    snapEntry.SnapStoreID,
+						SnapID:    snapEntry.ID,
 						Type:      snapType,
-						Publisher: snap.StoreAccount{ID: snapEntry.Account.AccountId, Username: snapEntry.Account.Username, DisplayName: snapEntry.Account.DisplayName},
+						Publisher: snap.StoreAccount{ID: snapEntry.Account.ID.String(), Username: snapEntry.Account.Username, DisplayName: snapEntry.Account.DisplayName},
 					},
 				},
 				Snap: responses.StoreSnap{
@@ -400,12 +400,12 @@ func (h *Handler) FindSnap(name string) (*responses.SearchV2Results, error) {
 					Name:        snapEntry.Name,
 					// TODO: need to fix this properly
 					Revision:  1,
-					SnapID:    snapEntry.SnapStoreID,
+					SnapID:    snapEntry.ID,
 					Type:      snapType,
-					Publisher: snap.StoreAccount{ID: snapEntry.Account.AccountId, Username: snapEntry.Account.Username, DisplayName: snapEntry.Account.DisplayName},
+					Publisher: snap.StoreAccount{ID: snapEntry.Account.ID.String(), Username: snapEntry.Account.Username, DisplayName: snapEntry.Account.DisplayName},
 				},
 				Name:   snapEntry.Name,
-				SnapID: snapEntry.SnapStoreID,
+				SnapID: snapEntry.ID,
 			})
 
 			return results
@@ -473,7 +473,7 @@ func (h *Handler) GetSections() (*responses.SectionResults, error) {
 	return nil, errors.New("unknown error")
 }
 
-func createAccountAssertion(signingDB *assertstest.SigningDB, keyId string, accountId string, storeAccountUsername string) *asserts.Account {
+func createAccountAssertion(signingDB *assertstest.SigningDB, keyId string, accountId uuid.UUID, storeAccountUsername string) *asserts.Account {
 	trustedAcctHeaders := map[string]interface{}{
 		"validation": "certified",
 		"timestamp":  "2015-11-20T15:04:00Z",
@@ -484,7 +484,7 @@ func createAccountAssertion(signingDB *assertstest.SigningDB, keyId string, acco
 	return trustedAcct
 }
 
-func getTrustedAccount(accountID string, signingDB *assertstest.SigningDB, displayName string) *asserts.Account {
+func getTrustedAccount(accountID uuid.UUID, signingDB *assertstest.SigningDB, displayName string) *asserts.Account {
 	trustedAcctHeaders := map[string]interface{}{
 		"validation": "verified",
 		"timestamp":  "2015-11-20T15:04:00Z",
@@ -495,7 +495,7 @@ func getTrustedAccount(accountID string, signingDB *assertstest.SigningDB, displ
 	}
 
 	trustedAcctHeaders["account-id"] = accountID
-	trustedAcct := assertstest.NewAccount(signingDB, accountID, trustedAcctHeaders, "")
+	trustedAcct := assertstest.NewAccount(signingDB, accountID.String(), trustedAcctHeaders, "")
 
 	return trustedAcct
 }
