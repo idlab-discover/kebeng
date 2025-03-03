@@ -6,18 +6,15 @@ import (
 
     "github.com/spf13/viper"
     "github.com/sirupsen/logrus"
-    "github.com/google/uuid"
 )
 
 type MacaroonConfig struct {
-    RootKey string `mapstructure:"macaroon_root_key" yaml:"macaroon_root_key"`
-    RootId uuid.UUID `mapstructure:"macaroon_root_id" yaml:"macaroon_root_id"`
-    RootLocation string `mapstructure:"macaroon_root_location" yaml:"macaroon_root_location"`
-    
-    // MacaroonDischargeKey is a key used for third-party caveats in the macaroon (secret shared key between service and third party)
-    DischargeKey string `mapstructure:"macaroon_discharge_key" yaml:"macaroon_discharge_key"`
-    ThirdPartyCaveatId uuid.UUID `mapstructure:"macaroon_third_party_caveat_id" yaml:"macaroon_third_party_caveat_id"`
-    ThirdPartyLocation string `mapstructure:"macaroon_third_party_location" yaml:"macaroon_third_party_location"`
+    RootKey             string    `mapstructure:"root_key" yaml:"root_key"`
+    RootId              uint `mapstructure:"root_id" yaml:"root_id"` // can't parse uuid for some reason
+    RootLocation        string    `mapstructure:"root_location" yaml:"root_location"`
+    DischargeKey        string    `mapstructure:"discharge_key" yaml:"discharge_key"`
+    ThirdPartyCaveatId  uint `mapstructure:"third_party_caveat_id" yaml:"third_party_caveat_id"` // can't parse uuid for some reason
+    ThirdPartyLocation  string    `mapstructure:"third_party_location" yaml:"third_party_location"`
 }
 
 type Config struct {
@@ -49,6 +46,20 @@ func LoadConfig() (*Config, error) {
     cfg := &Config{}
     if err := viper.Unmarshal(cfg); err != nil {
         return nil, fmt.Errorf("failed to unmarshal config: %v", err)
+    }
+    
+    if cfg.MacaroonConfig == nil {
+        return nil, fmt.Errorf("macaroon config is required")
+    }
+
+    logrus.Infof("loaded config: %+v, macaroonConfig: %+v", cfg, cfg.MacaroonConfig)
+    
+    if cfg.MacaroonConfig.DischargeKey == "" {
+        return nil, fmt.Errorf("discharge key is required")
+    }
+
+    if cfg.MacaroonConfig.RootKey == "" {
+        return nil, fmt.Errorf("root key is required")
     }
 
     return cfg, nil

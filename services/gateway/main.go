@@ -43,6 +43,7 @@ func main() {
 	r := gin.Default()
 	if cfg.DebugMode {
 		logrus.Info("Debug mode enabled")
+        logrus.SetLevel(logrus.DebugLevel)
 		r.Use(middleware.RequestLoggerMiddleware())
 	} else {
 		logrus.Info("Debug mode disabled")
@@ -54,7 +55,10 @@ func main() {
 
     handler.SetupEndpoints(r)
 
-
+    err = r.Run()
+    if err != nil {
+        logrus.Fatalf("Error running server: %v", err)
+    }
 }
 
 

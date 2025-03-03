@@ -26,13 +26,13 @@ func NewHandler(accountClient *accClient.AccountClient, storeClient *storeClient
 
 
 func (h *Handler) SetupEndpoints(r *gin.Engine) {
-    r.GET("/createAccount",h.createAccount)
+    r.POST("/createAccount",h.createAccount)
 }
  
 func (h *Handler) createAccount(c *gin.Context) {
     var req message.CreateAccountReq
     if err := c.ShouldBindJSON(&req); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"could not bind req to json": err.Error()})
+        c.JSON(http.StatusBadRequest, gin.H{"could not bind request to json": err.Error()})
         return
     }
     account, err := h.AccountClient.CreateAccount(req.DisplayName,req.Username, req.Email)
