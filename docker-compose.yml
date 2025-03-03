@@ -8,6 +8,9 @@ services:
     depends_on:
       - store_service
       - account_service
+      - minio
+      - store_db
+      - account_db
     volumes:
       - ./services/gateway/config.yaml:/app/config.yaml  # config file
     environment:

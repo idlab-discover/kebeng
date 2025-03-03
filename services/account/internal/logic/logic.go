@@ -8,7 +8,6 @@ import (
 	"github.com/idlab-discover/kebeng/services/account/internal/repository"
 	proto "github.com/idlab-discover/kebeng/services/account/proto"
     "github.com/google/uuid"
-    "github.com/idlab-discover/kebeng/services/account/internal/auth"
     "github.com/idlab-discover/kebeng/services/account/internal/config"
 )
 
@@ -135,6 +134,7 @@ func (a *AccountService) GetKey(ctx context.Context, req *proto.GetKeyBySHA3384R
     }, nil
 }
 
+/*
 // TODO: move this functionality to API gateway
 func (a *AccountService) GenerateMacaroon(ctx context.Context, req *proto.GenerateMacaroonRequest) (*proto.Macaroon, error) {
     macaroon, err := auth.GetACLMacaroon(ctx, a.config.MacaroonConfig, req.Acl)
@@ -151,6 +151,8 @@ func (a *AccountService) GenerateMacaroon(ctx context.Context, req *proto.Genera
         Macaroon: serializedMacaroon,
     }, nil
 }
+
+*/
 
 func (a *AccountService) convertToProtoAccount(account *models.Account) *proto.Account {
     return &proto.Account{

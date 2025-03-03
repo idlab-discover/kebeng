@@ -2,10 +2,6 @@ package auth
 
 import (
 	"encoding/base64"
-    "fmt"
-    "context"
-
-	"github.com/idlab-discover/kebeng/services/account/internal/config"
 	macaroon "gopkg.in/macaroon.v2"
 )
 
@@ -32,7 +28,7 @@ func MacaroonDeserialize(serializedMacaroon string) (*macaroon.Macaroon, error) 
 	}
 	return &m, nil
 }
-
+/*
 func GetACLMacaroon(context context.Context, macaroonConfig *config.MacaroonConfig, acl string) (*macaroon.Macaroon, error) {
     m, err := macaroon.New([]byte(macaroonConfig.RootKey), macaroonConfig.RootId[:], macaroonConfig.RootLocation, macaroon.V1)
 	if err != nil {
@@ -50,4 +46,4 @@ func GetACLMacaroon(context context.Context, macaroonConfig *config.MacaroonConf
     }
     return m, nil
 }
-
+*/
