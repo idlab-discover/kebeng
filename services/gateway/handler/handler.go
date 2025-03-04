@@ -26,7 +26,7 @@ func NewHandler(accountClient *accClient.AccountClient, storeClient *storeClient
 
 func (h *Handler) SetupEndpoints(r *gin.Engine) {
 	r.POST("/createAccount", h.createAccount)
-	r.POST("/dev/api/register-name/", h.registerSnapName)
+	r.POST("/dev/api/register-name/", h.RegisterSnapName)
 }
 
 func (h *Handler) createAccount(c *gin.Context) {
@@ -44,13 +44,13 @@ func (h *Handler) createAccount(c *gin.Context) {
 	c.JSON(http.StatusOK, message.CreateAccountRes{Id: account.Id})
 }
 
-func (h *Handler) registerSnapName(c *gin.Context) {
+func (h *Handler) RegisterSnapName(c *gin.Context) {
 	var req message.RegisterSnapNameReq
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error_list": []map[string]string{{"code": errors.BadRequest, "message": err.Error()}}})
 		return
 	}
-	resp := h.StoreClient.registerSnapName(req.SnapName, "snap", "strict", "core18", []byte{})
+	resp := h.StoreClient.RegisterSnapName(req.SnapName, req.IsPrivate, req.Store)
 	if len(resp.Errors) > 0 {
 		c.JSON(http.StatusInternalServerError, gin.H{"error_list": formatErrors(resp.Errors)})
 		return
