@@ -20,8 +20,6 @@ import (
 
 	"github.com/idlab-discover/kebeng/config"
 	"github.com/idlab-discover/kebeng/config/configkey"
-	"github.com/idlab-discover/kebeng/pkg/auth"
-	"github.com/spf13/viper"
 
 	"gopkg.in/macaroon.v2"
 

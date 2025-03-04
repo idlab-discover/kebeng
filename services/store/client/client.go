@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
+	"github.com/idlab-discover/kebeng/services/store/internal/errors"
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -29,11 +30,7 @@ func (c *StoreClient) Close() {
 	c.conn.Close()
 }
 
-func (c *StoreClient) UploadSnap(name string, type_name string, confinement string, base string, file []byte) (*proto.UploadSnapResponse, error) {
-	if name == "" || type_name == "" || confinement == "" || base == "" {
-		return nil, fmt.Errorf("all string parameters must be non-empty")
-	}
-
+func (c *StoreClient) UploadSnap(name string, type_name string, confinement string, base string, file []byte) *proto.UploadSnapResponse {
 	req := &proto.UploadSnapRequest{
 		Name:        name,
 		Type:        type_name,
@@ -44,7 +41,11 @@ func (c *StoreClient) UploadSnap(name string, type_name string, confinement stri
 
 	resp, err := c.client.UploadSnap(context.Background(), req)
 	if err != nil {
-		return nil, fmt.Errorf("could not upload snap: %v", err)
+		resp := &proto.UploadSnapResponse{}
+		resp.Errors = append(resp.Errors, &proto.Error{Code: errors.InternalServerError, Message: err.Error()})
+		return resp
 	}
-	return resp, nil
+	return resp
 }
+
+func (c *StoreClient) registerSnapName(snapName string, isPrivate bool, storeName string)
