@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS public.snap_entries
     created_at timestamp with time zone,
     updated_at timestamp with time zone,
     deleted_at timestamp with time zone,
+    private BOOLEAN,
     name text COLLATE pg_catalog."default",
     latest_revision_id bigint,
     type text COLLATE pg_catalog."default",
