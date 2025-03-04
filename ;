@@ -1,0 +1,17 @@
+package message
+
+import (
+
+)
+
+type CreateAccountReq struct {
+    DisplayName string `json:"display_name"`
+    Email string `json:"email"`
+    Username string `json:"username"`
+}
+
+type GenerateMacaroonReq struct {
+Permissions []string `json:"permissions"`
+Channels []string `json:"channels"`
+    Packages []map{string, string}}
+}

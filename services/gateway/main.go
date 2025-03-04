@@ -37,7 +37,7 @@ func main() {
         logrus.Errorf("could not create store client: %v", err)
     }
     
-    handler := handler.NewHandler(accountClient, storeClient)
+    handler := handler.NewHandler(accountClient, storeClient, cfg)
     
 	// Setup gin and routes
 	r := gin.Default()

@@ -136,21 +136,6 @@ func (a *AccountService) GetKey(ctx context.Context, req *proto.GetKeyBySHA3384R
 
 /*
 // TODO: move this functionality to API gateway
-func (a *AccountService) GenerateMacaroon(ctx context.Context, req *proto.GenerateMacaroonRequest) (*proto.Macaroon, error) {
-    macaroon, err := auth.GetACLMacaroon(ctx, a.config.MacaroonConfig, req.Acl)
-    if err != nil {
-        return nil, fmt.Errorf("failed to generate macaroon: %v", err)
-    }
-    
-    serializedMacaroon, err := auth.MacaroonSerialize(macaroon)
-    if err != nil {
-        return nil, fmt.Errorf("failed to serialize macaroon: %v", err)
-    }
-
-    return &proto.Macaroon{
-        Macaroon: serializedMacaroon,
-    }, nil
-}
 
 */
 
