@@ -18,4 +18,10 @@ message UploadSnapRequest {
 message UploadSnapResponse {
     string id = 1;
     string display_name = 2;
+    repeated Error errors = 3;
+}
+
+message Error {
+    string message = 1;
+    string code = 2;
 }

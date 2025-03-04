@@ -8,6 +8,7 @@ import (
 	"path"
 
 	"github.com/google/uuid"
+	"github.com/idlab-discover/kebeng/services/store/internal/errors"
 	"github.com/idlab-discover/kebeng/services/store/internal/objectstore"
 	"github.com/idlab-discover/kebeng/services/store/internal/repositories"
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
@@ -24,10 +25,13 @@ func NewStoreLogic(repo *repositories.SnapsRepository) *StoreLogic {
 }
 
 func (s *StoreLogic) UploadSnap(ctx context.Context, req *proto.UploadSnapRequest) (*proto.UploadSnapResponse, error) {
+	// TODO: check which fields are required and which are optional in req
+	errList := make([]*proto.Error, 0)
 	snapFileName, id, err := saveFileToTemp(bytes.NewReader(req.File))
 	if err != nil {
 		logrus.Errorf("Failed to save file to temp storage: %v", err)
-		return nil, err
+		errList = append(errList, &proto.Error{Code: errors.InternalServerError, Message: "Failed to save file to temp storage"})
+		return &proto.UploadSnapResponse{Errors: errList}, err
 	}
 
 	objectstore := objectstore.NewObjectStore()
@@ -36,16 +40,19 @@ func (s *StoreLogic) UploadSnap(ctx context.Context, req *proto.UploadSnapReques
 	size, err := objectstore.SaveFileToBucket("unscanned", tmpPath)
 	if err != nil {
 		logrus.Errorf("Failed to save file to object store: %v", err)
-		return nil, err
+		errList = append(errList, &proto.Error{Code: errors.InternalServerError, Message: "Failed to save file to object store"})
+		return &proto.UploadSnapResponse{Errors: errList}, err
 	}
 
 	// addSnap() adds snap to snap_entries table
 	_, err = s.repo.AddSnap(snapFileName, size, uuid.New()) // uuid.New() is a placeholder for account id that is going to be added later throught the context
 	if err != nil {
 		logrus.Error(err)
+		errList = append(errList, &proto.Error{Code: errors.InternalServerError, Message: "Failed to add snap to database"})
+		return &proto.UploadSnapResponse{Errors: errList}, err
 	}
 
-	return &proto.UploadSnapResponse{Id: id}, nil
+	return &proto.UploadSnapResponse{Id: id, DisplayName: snapFileName}, nil
 }
 
 func saveFileToTemp(snapFile io.Reader) (string, string, error) {
