@@ -5,6 +5,7 @@ option go_package = "github.com/idlab-discover/kebeng/services/store/proto;store
 
 service StoreService {
     rpc UploadSnap(UploadSnapRequest) returns (UploadSnapResponse);
+    rpc RegisterSnapName(RegisterSnapNameRequest) returns (RegisterSnapNameResponse);
 }
 
 message UploadSnapRequest {
@@ -18,4 +19,22 @@ message UploadSnapRequest {
 message UploadSnapResponse {
     string id = 1;
     string display_name = 2;
+    repeated Error errors = 3;
+}
+
+message RegisterSnapNameRequest {
+    string snap_name = 1;
+    bool isPrivate = 2;
+    string store = 3;
+}
+
+message RegisterSnapNameResponse {
+    string id = 1;
+    string snap_name = 2;
+    repeated Error errors = 3;
+}
+
+message Error {
+    string message = 1;
+    string code = 2;
 }
