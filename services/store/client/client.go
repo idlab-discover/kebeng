@@ -41,11 +41,31 @@ func (c *StoreClient) UploadSnap(name string, type_name string, confinement stri
 
 	resp, err := c.client.UploadSnap(context.Background(), req)
 	if err != nil {
-		resp := &proto.UploadSnapResponse{}
-		resp.Errors = append(resp.Errors, &proto.Error{Code: errors.InternalServerError, Message: err.Error()})
-		return resp
+		resp = &proto.UploadSnapResponse{
+			Errors: []*proto.Error{{
+				Code:    errors.InternalServerError,
+				Message: err.Error()},
+			},
+		}
 	}
 	return resp
 }
 
-func (c *StoreClient) registerSnapName(snapName string, isPrivate bool, storeName string)
+func (c *StoreClient) RegisterSnapName(snapName string, isPrivate bool, storeName string) *proto.RegisterSnapNameResponse {
+	req := &proto.RegisterSnapNameRequest{
+		SnapName:  snapName,
+		IsPrivate: isPrivate,
+		Store:     storeName,
+	}
+
+	resp, err := c.client.RegisterSnapName(context.Background(), req)
+	if err != nil {
+		resp = &proto.RegisterSnapNameResponse{
+			Errors: []*proto.Error{{
+				Code:    errors.InternalServerError,
+				Message: err.Error()},
+			},
+		}
+	}
+	return resp
+}
