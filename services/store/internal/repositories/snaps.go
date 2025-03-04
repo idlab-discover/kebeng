@@ -18,8 +18,8 @@ import (
 )
 
 type ISnapsRepository interface {
-	GetSnap(name string, preloadAssociations bool) (*models.SnapEntry, error)
-	GetSnapById(id uuid.UUID, preloadAssociations bool) (*models.SnapEntry, error)
+	GetEntryByName(name string, preloadAssociations bool) (*models.SnapEntry, error)
+	GetEntryById(id uuid.UUID, preloadAssociations bool) (*models.SnapEntry, error)
 	RegisterSnap(snapName string, isPrivate bool) (*models.SnapEntry, error)
 	AddSnap(name string, size uint64, accountId uuid.UUID) (*models.SnapEntry, error)
 
@@ -51,7 +51,7 @@ func NewSnapsRepository(db *gorm.DB) *SnapsRepository {
 }
 
 func (sp *SnapsRepository) GetRevisionByChannel(channel string, snapName string) (*models.SnapRevision, error) {
-	snapEntry, err := sp.GetSnapByName(snapName, true)
+	snapEntry, err := sp.GetEntryByName(snapName, true)
 	if err == nil && snapEntry != nil {
 		channelParts := strings.Split(channel, "/")
 		var track string
@@ -315,7 +315,7 @@ func (sp *SnapsRepository) GetSnapId(Id uuid.UUID, preloadAssociations bool) (*m
 	return sp.getSnap(whereModel, preloadAssociations)
 }
 
-func (sp *SnapsRepository) GetSnapById(id uuid.UUID, preloadAssociations bool) (*models.SnapEntry, error) {
+func (sp *SnapsRepository) GetEntryById(id uuid.UUID, preloadAssociations bool) (*models.SnapEntry, error) {
 	var existingSnap models.SnapEntry
 	var db *gorm.DB
 	whereModel := &models.SnapEntry{ID: id}
@@ -337,7 +337,7 @@ func (sp *SnapsRepository) GetSnapById(id uuid.UUID, preloadAssociations bool) (
 	return nil, nil
 }
 
-func (sp *SnapsRepository) GetSnapByName(name string, preloadAssociations bool) (*models.SnapEntry, error) {
+func (sp *SnapsRepository) GetEntryByName(name string, preloadAssociations bool) (*models.SnapEntry, error) {
 	var existingSnap models.SnapEntry
 	var db *gorm.DB
 	if preloadAssociations {
@@ -364,7 +364,7 @@ func (sp *SnapsRepository) GetSnapByName(name string, preloadAssociations bool) 
 // It ensures the snap does not already exist, creates a new SnapEntry,
 // adds an initial upload, and sets up default tracks and risks.
 func (sp *SnapsRepository) AddSnap(name string, size uint64, accountId uuid.UUID) (*models.SnapEntry, error) {
-	existingSnap, err := sp.GetSnapByName(name, false)
+	existingSnap, err := sp.GetEntryByName(name, false)
 	if err != nil {
 		return nil, err
 	}

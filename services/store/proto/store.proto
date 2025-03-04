@@ -7,6 +7,7 @@ service StoreService {
     rpc UploadSnap(UploadSnapRequest) returns (UploadSnapResponse);
     rpc RegisterSnapName(RegisterSnapNameRequest) returns (RegisterSnapNameResponse);
     rpc GetRevisions(GetRevisionsRequest) returns (GetRevisionsResponse);
+    rpc GetEntries(GetEntriesRequest) returns (GetEntriesResponse);
 }
 
 message UploadSnapRequest {
@@ -34,6 +35,30 @@ message RegisterSnapNameResponse {
     string id = 1;
     string snap_name = 2;
     repeated Error errors = 3;
+}
+
+message GetEntryRequest {
+    string id = 1;
+    string snap_name = 2;
+}
+
+message GetEntryResponse {
+    string id = 1;
+    string snap_name = 2;
+    string confinement = 3;
+    string base = 4;
+    string type = 5;
+    bool private = 6;
+    repeated Error errors = 7;
+}
+
+message GetEntriesRequest {
+    repeated GetEntryRequest entries = 1;
+}
+
+message GetEntriesResponse {
+    repeated GetEntryResponse entries = 1;
+    repeated Error errors = 2;
 }
 
 message GetRevisionRequest {
