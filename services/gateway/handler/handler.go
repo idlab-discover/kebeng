@@ -30,7 +30,7 @@ func NewHandler(accountClient *accClient.AccountClient, storeClient *storeClient
 
 func (h *Handler) SetupEndpoints(r *gin.Engine) {
     r.POST("/createAccount",h.createAccount)
-    r.GET("/getMacaroon", h.generateMacaroon)
+    // r.GET("/getMacaroon", h.generateMacaroon)
 	r.POST("/createAccount", h.createAccount)
 	r.POST("/dev/api/register-name/", h.RegisterSnapName)
 }
@@ -73,6 +73,7 @@ func formatErrors(errors []*storepb.Error) []map[string]string {
 	return errs
 }
 
+/*
 // TODO: know what the fuck this receives
 func (h *Handler) generateMacaroon(c *gin.Context) {
     var req message.GenerateMacaroonReq
@@ -95,3 +96,4 @@ func (h *Handler) generateMacaroon(c *gin.Context) {
     }
     c.JSON(http.StatusOK, macaroon)
 }
+*/
