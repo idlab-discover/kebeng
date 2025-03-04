@@ -72,3 +72,16 @@ func (c *StoreClient) RegisterSnapName(snapName string, isPrivate bool, storeNam
 	}
 	return resp
 }
+
+func (c *StoreClient) GetRevisions(revisions *proto.GetRevisionsRequest) *proto.GetRevisionsResponse {
+	resp, err := c.client.GetRevisions(context.Background(), revisions)
+	if err != nil {
+		resp = &proto.GetRevisionsResponse{
+			Errors: []*proto.Error{{
+				Code:    errors.InternalServerError,
+				Message: err.Error()},
+			},
+		}
+	}
+	return resp
+}
