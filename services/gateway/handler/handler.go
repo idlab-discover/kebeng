@@ -9,6 +9,7 @@ import (
 	"github.com/idlab-discover/kebeng/services/gateway/internal/message"
 	storeClient "github.com/idlab-discover/kebeng/services/store/client"
 	storepb "github.com/idlab-discover/kebeng/services/store/proto"
+    "github.com/idlab-discover/kebeng/services/gateway/internal/config"
 )
 
 // this file handles all the http requests and maps it to the correct client
