@@ -7,6 +7,7 @@ import (
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
 	"github.com/idlab-discover/kebeng/services/store/internal/errors"
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -16,8 +17,9 @@ type StoreClient struct {
 	client proto.StoreServiceClient
 }
 
-func NewStoreClient() (*StoreClient, error) {
-	conn, err := grpc.NewClient(config.GetStoreServiceAddress(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+func NewStoreClient(storeHost string, storePort int) (*StoreClient, error) {
+	logrus.Infof("Connecting to account service at %s:%d", storeHost, storePort)
+	conn, err := grpc.NewClient(config.GetStoreServiceAddress(storeHost, storePort), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, fmt.Errorf("could not connect: %v", err)
 	}

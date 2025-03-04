@@ -31,7 +31,6 @@ func NewHandler(accountClient *accClient.AccountClient, storeClient *storeClient
 func (h *Handler) SetupEndpoints(r *gin.Engine) {
 	r.POST("/createAccount", h.createAccount)
 	// r.GET("/getMacaroon", h.generateMacaroon)
-	r.POST("/createAccount", h.createAccount)
 	r.POST("/dev/api/register-name/", h.RegisterSnapName)
 }
 
