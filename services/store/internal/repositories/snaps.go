@@ -33,8 +33,8 @@ type ISnapsRepository interface {
 	SetChannelRevision(trackName string, riskName string, revisionId uint, snapId uuid.UUID) (*models.SnapTrack, error)
 
 	GetTracks(snapId uuid.UUID) (*[]models.SnapTrack, error)
-	GetRisks(trackId uint) (*[]models.SnapRisk, error)
-	GetRevision(id uint) (*models.SnapRevision, error)
+	GetRisks(trackId uint) (*[]models.SnapChannel, error)
+	GetRevisionById(id string) (*models.SnapRevision, error)
 	GetRevisionByChannel(channel string, snapName string) (*models.SnapRevision, error)
 
 	GetSections() (*[]string, error)
@@ -72,10 +72,10 @@ func (sp *SnapsRepository) GetRevisionByChannel(channel string, snapName string)
 		}
 
 		var snapTrack models.SnapTrack
-		var snapRisk models.SnapRisk
+		var snapRisk models.SnapChannel
 		db := sp.db.Where(&models.SnapTrack{SnapEntryID: snapEntry.ID, Name: track}).Find(&snapTrack)
 		if _, ok := database.CheckDBForErrorOrNoRows(db); ok {
-			db2 := sp.db.Preload(clause.Associations).Where(&models.SnapRisk{SnapEntryID: snapEntry.ID, Name: risk, SnapTrackID: snapTrack.ID}).Find(&snapRisk)
+			db2 := sp.db.Preload(clause.Associations).Where(&models.SnapChannel{SnapEntryID: snapEntry.ID, Name: risk, SnapTrackID: snapTrack.ID}).Find(&snapRisk)
 			if _, ok2 := database.CheckDBForErrorOrNoRows(db2); ok2 {
 				return &snapRisk.Revision, nil
 			}
@@ -112,9 +112,9 @@ func (sp *SnapsRepository) GetTracks(snapId uuid.UUID) (*[]models.SnapTrack, err
 	return nil, errors.New("unknown error encountered")
 }
 
-func (sp *SnapsRepository) GetRisks(trackId uint) (*[]models.SnapRisk, error) {
-	var risks []models.SnapRisk
-	db := sp.db.Where(&models.SnapRisk{SnapTrackID: trackId}).Find(&risks)
+func (sp *SnapsRepository) GetRisks(trackId uint) (*[]models.SnapChannel, error) {
+	var risks []models.SnapChannel
+	db := sp.db.Where(&models.SnapChannel{SnapTrackID: trackId}).Find(&risks)
 	if _, ok := database.CheckDBForErrorOrNoRows(db); ok {
 		return &risks, nil
 	}
@@ -127,9 +127,9 @@ func (sp *SnapsRepository) GetRisks(trackId uint) (*[]models.SnapRisk, error) {
 	return nil, errors.New("unknown error encountered")
 }
 
-func (sp *SnapsRepository) GetRevision(id uint) (*models.SnapRevision, error) {
+func (sp *SnapsRepository) GetRevisionById(id string) (*models.SnapRevision, error) {
 	var revision models.SnapRevision
-	db := sp.db.Where(&models.SnapRevision{Model: gorm.Model{ID: id}}).Find(&revision)
+	db := sp.db.Where(&models.SnapRevision{ID: id}).Find(&revision)
 	if _, ok := database.CheckDBForErrorOrNoRows(db); ok {
 		return &revision, nil
 	}
@@ -141,14 +141,32 @@ func (sp *SnapsRepository) GetRevision(id uint) (*models.SnapRevision, error) {
 	return nil, errors.New("unknown error encountered")
 }
 
+func (sp *SnapsRepository) GetRevisionByNameAndSequence(name string, sequence uint) (*models.SnapRevision, error) {
+	var entry models.SnapEntry
+	db := sp.db.Where(&models.SnapEntry{Name: name}).Find(&entry)
+	if db.Error != nil {
+		return nil, db.Error
+	}
+	if entry.ID != uuid.Nil {
+		var revision models.SnapRevision
+		db := sp.db.Where(&models.SnapRevision{SnapEntryID: entry.ID, SequenceNumber: sequence}).Find(&revision)
+		if db.Error != nil {
+			return nil, db.Error
+		}
+		return &revision, nil
+	}
+	return nil, errors.New("revision not found")
+
+}
+
 func (sp *SnapsRepository) SetChannelRevision(trackName string, riskName string, revisionId uint, snapId uuid.UUID) (*models.SnapTrack, error) {
 	// get all the tracks
 	var track models.SnapTrack
 	db := sp.db.Where(&models.SnapTrack{SnapEntryID: snapId, Name: trackName}).Find(&track)
 	if _, ok := database.CheckDBForErrorOrNoRows(db); ok {
 		// get all the risks
-		var risk models.SnapRisk
-		db = sp.db.Where(&models.SnapRisk{SnapEntryID: snapId, Name: riskName, SnapTrackID: track.ID}).Find(&risk)
+		var risk models.SnapChannel
+		db = sp.db.Where(&models.SnapChannel{SnapEntryID: snapId, Name: riskName, SnapTrackID: track.ID}).Find(&risk)
 		if _, ok := database.CheckDBForErrorOrNoRows(db); ok {
 			var revision models.SnapRevision
 			db = sp.db.Where("id", revisionId).Find(&revision)
@@ -414,8 +432,8 @@ func (sp *SnapsRepository) ReleaseSnap(channels []string, snapEntryId uuid.UUID,
 		db := sp.db.Where(&models.SnapTrack{SnapEntryID: snapEntryId, Name: trackForRelease}).Find(&track)
 		if _, ok := database.CheckDBForErrorOrNoRows(db); ok {
 			// get all the risks
-			var risk models.SnapRisk
-			db = sp.db.Where(&models.SnapRisk{SnapEntryID: snapEntryId, Name: riskForRelease, SnapTrackID: track.ID}).Find(&risk)
+			var risk models.SnapChannel
+			db = sp.db.Where(&models.SnapChannel{SnapEntryID: snapEntryId, Name: riskForRelease, SnapTrackID: track.ID}).Find(&risk)
 			if _, ok := database.CheckDBForErrorOrNoRows(db); ok {
 				var revision models.SnapRevision
 				db = sp.db.Where("id", revisionId).Find(&revision)
@@ -449,7 +467,7 @@ func (sp *SnapsRepository) addRisks(snapEntry models.SnapEntry, snapRevision mod
 	risks := []string{"stable", "candidate", "beta", "edge"}
 
 	for _, risk := range risks {
-		var snapRisk models.SnapRisk
+		var snapRisk models.SnapChannel
 		snapRisk.SnapEntryID = snapEntry.ID
 		snapRisk.SnapTrackID = trackId
 		snapRisk.Name = risk
