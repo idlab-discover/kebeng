@@ -51,11 +51,12 @@ func (c *StoreClient) UploadSnap(name string, type_name string, confinement stri
 	return resp
 }
 
-func (c *StoreClient) RegisterSnapName(snapName string, isPrivate bool, storeName string) *proto.RegisterSnapNameResponse {
+func (c *StoreClient) RegisterSnapName(snapName string, isPrivate bool, storeName string, dryRun bool) *proto.RegisterSnapNameResponse {
 	req := &proto.RegisterSnapNameRequest{
 		SnapName:  snapName,
 		IsPrivate: isPrivate,
 		Store:     storeName,
+		DryRun:    dryRun,
 	}
 
 	resp, err := c.client.RegisterSnapName(context.Background(), req)

@@ -60,6 +60,7 @@ type SnapEntry struct {
 	Type        string
 	Confinement string
 	Base        string
+	Private     bool
 	Uploads     []SnapUpload
 
 	AccountID uuid.UUID
