@@ -55,6 +55,41 @@ func (s *StoreLogic) UploadSnap(ctx context.Context, req *proto.UploadSnapReques
 	return &proto.UploadSnapResponse{Id: id, DisplayName: snapFileName}, nil
 }
 
+func (s *StoreLogic) RegisterSnapName(ctx context.Context, req *proto.RegisterSnapNameRequest) (*proto.RegisterSnapNameResponse, error) {
+	errList := make([]*proto.Error, 0)
+
+	if req.SnapName == "" {
+		errList = append(errList, &proto.Error{Code: errors.MissingField, Message: "Snap name is required"})
+		return &proto.RegisterSnapNameResponse{Errors: errList}, nil
+	}
+
+	// First check if the snap name is already registered
+	snapEntry, err := s.repo.GetSnapByName(req.SnapName, false)
+	if err != nil {
+		logrus.Error(err)
+		errList = append(errList, &proto.Error{Code: errors.InternalServerError, Message: "Failed to get snap from database"})
+		return &proto.RegisterSnapNameResponse{Errors: errList}, err
+	}
+	if snapEntry != nil { // if dryRun is true, we only check if the snap name is already registered -> snapEntry != nil
+		errList = append(errList, &proto.Error{Code: errors.AlreadyRegistered, Message: "The snap name '" + req.SnapName + "' is already registered."})
+		return &proto.RegisterSnapNameResponse{Errors: errList}, err
+	}
+
+	if req.DryRun {
+		return &proto.RegisterSnapNameResponse{SnapName: req.SnapName}, nil
+	}
+
+	// If there is no snap with the same name and dry_run == false, register the snap name
+	snapEntry, err = s.repo.RegisterSnap(req.SnapName, req.IsPrivate)
+	if err != nil {
+		logrus.Error(err)
+		errList = append(errList, &proto.Error{Code: errors.InternalServerError, Message: "Failed to register snap name"})
+		return &proto.RegisterSnapNameResponse{Errors: errList}, err
+	}
+
+	return &proto.RegisterSnapNameResponse{Id: snapEntry.ID.String(), SnapName: snapEntry.Name}, nil
+}
+
 func saveFileToTemp(snapFile io.Reader) (string, string, error) {
 	// Generate random file name for the new uploaded file so it doesn't override the old file with same name
 	snapFileId := uuid.New().String()

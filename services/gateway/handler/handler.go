@@ -5,32 +5,32 @@ import (
 
 	"github.com/gin-gonic/gin"
 	accClient "github.com/idlab-discover/kebeng/services/account/client"
+	"github.com/idlab-discover/kebeng/services/gateway/internal/config"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/errors"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/message"
 	storeClient "github.com/idlab-discover/kebeng/services/store/client"
 	storepb "github.com/idlab-discover/kebeng/services/store/proto"
-    "github.com/idlab-discover/kebeng/services/gateway/internal/config"
 )
 
 // this file handles all the http requests and maps it to the correct client
 
 type Handler struct {
-    config *config.Config
-    AccountClient *accClient.AccountClient
-    StoreClient *storeClient.StoreClient
+	config        *config.Config
+	AccountClient *accClient.AccountClient
+	StoreClient   *storeClient.StoreClient
 }
 
 func NewHandler(accountClient *accClient.AccountClient, storeClient *storeClient.StoreClient, config *config.Config) *Handler {
-    return &Handler{
-        config: config,
-        AccountClient: accountClient,
-        StoreClient: storeClient,
-    }
+	return &Handler{
+		config:        config,
+		AccountClient: accountClient,
+		StoreClient:   storeClient,
+	}
 }
 
 func (h *Handler) SetupEndpoints(r *gin.Engine) {
-    r.POST("/createAccount",h.createAccount)
-    // r.GET("/getMacaroon", h.generateMacaroon)
+	r.POST("/createAccount", h.createAccount)
+	// r.GET("/getMacaroon", h.generateMacaroon)
 	r.POST("/createAccount", h.createAccount)
 	r.POST("/dev/api/register-name/", h.RegisterSnapName)
 }
@@ -56,13 +56,20 @@ func (h *Handler) RegisterSnapName(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error_list": []map[string]string{{"code": errors.BadRequest, "message": err.Error()}}})
 		return
 	}
-	resp := h.StoreClient.RegisterSnapName(req.SnapName, req.IsPrivate, req.Store)
+
+	dryRun := c.Query("dry_run") == "true"
+	resp := h.StoreClient.RegisterSnapName(req.SnapName, req.IsPrivate, req.Store, dryRun)
 	if len(resp.Errors) > 0 {
 		c.JSON(http.StatusInternalServerError, gin.H{"error_list": formatErrors(resp.Errors)})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"id": resp.Id, "display_name": resp.SnapName})
+	statusCode := http.StatusCreated
+	if dryRun {
+		statusCode = http.StatusOK
+	}
+
+	c.JSON(statusCode, gin.H{"id": resp.Id, "display_name": resp.SnapName})
 }
 
 func formatErrors(errors []*storepb.Error) []map[string]string {

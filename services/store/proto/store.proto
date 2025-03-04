@@ -26,6 +26,7 @@ message RegisterSnapNameRequest {
     string snap_name = 1;
     bool isPrivate = 2;
     string store = 3;
+    bool dry_run = 4;
 }
 
 message RegisterSnapNameResponse {
