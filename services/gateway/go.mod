@@ -5,7 +5,7 @@ go 1.22.2
 require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/idlab-discover/kebeng/services/account v0.0.0-20250302144916-3c309e42c096
-	github.com/idlab-discover/kebeng/services/store v0.0.0-20250302144916-3c309e42c096
+	github.com/idlab-discover/kebeng/services/store v0.0.0-20250304120112-207131bc6ea8
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/viper v1.19.0
 )

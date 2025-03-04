@@ -8,8 +8,3 @@ const (
 	ResourceNotFound           string = "resource-not-found"
 	ResourceNotReady           string = "resource-not-ready"
 )
-
-type Error interface {
-	GetCode() string
-	GetMessage() string
-}

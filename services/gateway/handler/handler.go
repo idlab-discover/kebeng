@@ -8,6 +8,7 @@ import (
 	"github.com/idlab-discover/kebeng/services/gateway/internal/errors"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/message"
 	storeClient "github.com/idlab-discover/kebeng/services/store/client"
+	storepb "github.com/idlab-discover/kebeng/services/store/proto"
 )
 
 // this file handles all the http requests and maps it to the correct client
@@ -56,10 +57,10 @@ func (h *Handler) RegisterSnapName(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"id": resp.Id, "display_name": resp.DisplayName})
+	c.JSON(http.StatusOK, gin.H{"id": resp.Id, "display_name": resp.SnapName})
 }
 
-func formatErrors(errors []errors.Error) []map[string]string {
+func formatErrors(errors []*storepb.Error) []map[string]string {
 	errs := make([]map[string]string, len(errors))
 	for i, e := range errors {
 		errs[i] = map[string]string{"code": e.GetCode(), "message": e.GetMessage()}
