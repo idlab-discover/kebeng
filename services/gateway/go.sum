@@ -49,6 +49,8 @@ github.com/idlab-discover/kebeng/services/account v0.0.0-20250302144916-3c309e42
 github.com/idlab-discover/kebeng/services/account v0.0.0-20250302144916-3c309e42c096/go.mod h1:S5vOOfjVpuRRZEVR5mUcNqP076sxG8qsVdtxIW+9iWA=
 github.com/idlab-discover/kebeng/services/store v0.0.0-20250304150703-30bb78234131 h1:DU2RU31AzLim6sTE8lS8o3UzJQS1YT9vEf/KXGbh804=
 github.com/idlab-discover/kebeng/services/store v0.0.0-20250304150703-30bb78234131/go.mod h1:UkLSz9Hc6ecuspipVmRj01OQMy6qRPzVxz+VZN0F9jQ=
+github.com/idlab-discover/kebeng/services/store v0.0.0-20250304154123-4d039526d089 h1:3au8/UNlVMWLtyMMh97hr18TZwl4ZiCQYvTQ/Hjgwz0=
+github.com/idlab-discover/kebeng/services/store v0.0.0-20250304154123-4d039526d089/go.mod h1:UkLSz9Hc6ecuspipVmRj01OQMy6qRPzVxz+VZN0F9jQ=
 github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnrnM=
 github.com/json-iterator/go v1.1.12/go.mod h1:e30LSqwooZae/UwlEbR2852Gd8hjQvJoHmT4TnhNGBo=
 github.com/klauspost/cpuid/v2 v2.0.9/go.mod h1:FInQzS24/EEf25PyTYn52gqo7WaD8xa0213Md/qVLRg=
