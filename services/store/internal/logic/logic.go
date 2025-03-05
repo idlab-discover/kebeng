@@ -109,6 +109,7 @@ func (s *StoreLogic) GetEntries(ctx context.Context, req *proto.GetEntriesReques
 	foundEntries := make([]*proto.GetEntryResponse, 0)
 
 	for _, entry := range req.Entries {
+        logrus.Infof("checking for entry: %v, fields are name: %s, id: %s", entry, entry.Name, entry.Id)
 		if entry.Id != "" {
 			id, err := uuid.Parse(entry.Id)
 			if err != nil {
@@ -127,8 +128,8 @@ func (s *StoreLogic) GetEntries(ctx context.Context, req *proto.GetEntriesReques
 			} else {
 				errList = append(errList, &proto.Error{Code: errors.ResourceNotFound, Message: "Entry with id '" + entry.Id + "' not found"})
 			}
-		} else if entry.SnapName != "" {
-			snapEntry, err := s.repo.GetEntryByName(entry.SnapName, false)
+		} else if entry.Name != "" {
+			snapEntry, err := s.repo.GetEntryByName(entry.Name, false)
 			if err != nil {
 				logrus.Error(err)
 				errList = append(errList, &proto.Error{Code: errors.InternalServerError, Message: "Failed to get entry from database"})
@@ -137,10 +138,10 @@ func (s *StoreLogic) GetEntries(ctx context.Context, req *proto.GetEntriesReques
 			if snapEntry != nil {
 				foundEntries = append(foundEntries, &proto.GetEntryResponse{Id: snapEntry.ID.String(), SnapName: snapEntry.Name, Type: snapEntry.Type, Confinement: snapEntry.Confinement, Base: snapEntry.Base, Private: snapEntry.Private})
 			} else {
-				errList = append(errList, &proto.Error{Code: errors.ResourceNotFound, Message: "Entry with name '" + entry.SnapName + "' not found"})
+				errList = append(errList, &proto.Error{Code: errors.ResourceNotFound, Message: "Entry with name '" + entry.Name + "' not found"})
 			}
 		} else {
-			if entry.Id == "" && entry.SnapName == "" {
+			if entry.Id == "" && entry.Name == "" {
 				errList = append(errList, &proto.Error{Code: errors.MissingField, Message: "Id or name is required"})
 			}
 		}
@@ -199,19 +200,19 @@ func (s *StoreLogic) GetEntryById(ctx context.Context, req *proto.GetEntryReques
 //   - error: An error if the operation fails.
 func (s *StoreLogic) GetEntryByName(ctx context.Context, req *proto.GetEntryRequest) (*proto.GetEntryResponse, error) {
 	errList := make([]*proto.Error, 0)
-	if req.SnapName == "" {
+	if req.Name == "" {
 		errList = append(errList, &proto.Error{Code: errors.MissingField, Message: "Name is required"})
 		return &proto.GetEntryResponse{Errors: errList}, fmt.Errorf("name is required")
 	}
 
-	snapEntry, err := s.repo.GetEntryByName(req.SnapName, false)
+	snapEntry, err := s.repo.GetEntryByName(req.Name, false)
 	if err != nil {
 		logrus.Error(err)
 		errList = append(errList, &proto.Error{Code: errors.InternalServerError, Message: "Failed to get snap from database"})
 		return &proto.GetEntryResponse{Errors: errList}, err
 	}
 	if snapEntry == nil {
-		errList = append(errList, &proto.Error{Code: errors.ResourceNotFound, Message: "Snap with name '" + req.SnapName + "' not found"})
+		errList = append(errList, &proto.Error{Code: errors.ResourceNotFound, Message: "Snap with name '" + req.Name + "' not found"})
 		return &proto.GetEntryResponse{Errors: errList}, nil
 	}
 

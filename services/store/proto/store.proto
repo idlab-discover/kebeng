@@ -39,7 +39,7 @@ message RegisterSnapNameResponse {
 
 message GetEntryRequest {
     string id = 1;
-    string snap_name = 2;
+    string name = 2;
 }
 
 message GetEntryResponse {
