@@ -109,7 +109,6 @@ func (s *StoreLogic) GetEntries(ctx context.Context, req *proto.GetEntriesReques
 	foundEntries := make([]*proto.GetEntryResponse, 0)
 
 	for _, entry := range req.Entries {
-        logrus.Infof("checking for entry: %v, fields are name: %s, id: %s", entry, entry.Name, entry.Id)
 		if entry.Id != "" {
 			id, err := uuid.Parse(entry.Id)
 			if err != nil {

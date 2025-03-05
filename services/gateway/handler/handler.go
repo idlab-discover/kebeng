@@ -37,13 +37,16 @@ func (h *Handler) SetupEndpoints(r *gin.Engine) {
 
 func (h *Handler) createAccount(c *gin.Context) {
 	var req message.CreateAccountRequest
+    el := errors.New()
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"could not bind request to json": err.Error()})
+        el.Add(errors.BadRequest, errors.FormatBindError(err))
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
 	account, err := h.AccountClient.CreateAccount(req.DisplayName, req.Username, req.Email)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error creating account": err.Error()})
+        el.Add(errors.InternalServerError, errors.FormatBindError(err))
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
 
@@ -79,36 +82,10 @@ func (h *Handler) generateMacaroon(c *gin.Context) {
 	el := errors.New()
 	if err := c.ShouldBindJSON(&req); err != nil {
 		el.Add(errors.BadRequest, errors.FormatBindError(err))
-		c.JSON(http.StatusBadRequest,
-			gin.H{
-				"error_list": el,
-			})
+		c.JSON(el.GetHTTPStatus(),gin.H{"error_list": el,})
 		return
 	}
 
-	// check whether snapEntry exists else 404 not found
-	// use storeClient pass everything
-	// create EntriesRequest
-	entries := make([]*storepb.GetEntryRequest, len(req.Packages))
-	for _, p := range req.Packages {
-		entries = append(entries, &storepb.GetEntryRequest{
-			SnapName: p.Name,
-			Id:       p.SnapId,
-		})
-	}
-	entriesResponse := h.StoreClient.GetEntries(&storepb.GetEntriesRequest{Entries: entries})
-	if len(entriesResponse.Errors) > 0 {
-		el.ExtendStoreError(entriesResponse.Errors)
-		c.JSON(http.StatusInternalServerError, gin.H{"error_list": el})
-		return
-	}
-	// check whether the entries are valid
-	// if not return 404 not found
-	if len(entriesResponse.Entries) != len(req.Packages) {
-		el.Add(errors.ResourceNotFound, "One or more entries not found")
-		c.JSON(http.StatusNotFound, gin.H{"error_list": el})
-		return
-	}
 	// validate input
 	auth.ValidateGenerateMacaroonRequest(req, el)
 	if len(*el) > 0 {
@@ -120,13 +97,31 @@ func (h *Handler) generateMacaroon(c *gin.Context) {
 	}
 
 	// check whether snapEntry exists else 404 not found
-	// use storeClient pass everything
+	entries := make([]*storepb.GetEntryRequest, len(req.Packages))
+	for i, p := range req.Packages {
+		entries[i] = &storepb.GetEntryRequest{
+			Name: p.Name,
+			Id:       p.SnapId,
+		}
+	}
+    
+	entriesResponse := h.StoreClient.GetEntries(&storepb.GetEntriesRequest{Entries: entries})
+	if len(entriesResponse.Errors) > 0 {
+		el.ExtendStoreError(entriesResponse.Errors)
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
 
-	//   entries := h.StoreClient.GetEntries()
+    // mimic set to prevent duplicate ids in macaroon
+    snapIDs := make(map[string]bool, len(entriesResponse.Entries))
+    for _, e := range entriesResponse.Entries {
+        snapIDs[e.Id] = true
+    }
 
-	macaroon := auth.GenerateMacaroon(c, req, h.config.MacaroonConfig)
+	macaroon := auth.GenerateMacaroon(c, req, snapIDs, h.config.MacaroonConfig)
 	if len(macaroon.Errors) > 0 {
-		c.JSON(http.StatusInternalServerError, gin.H{"error_list": macaroon.Errors})
+        el.Extend(macaroon.Errors)
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"macaroon": macaroon.Macaroon})
