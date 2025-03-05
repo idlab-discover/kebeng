@@ -74,6 +74,7 @@ func (c *StoreClient) RegisterSnapName(snapName string, isPrivate bool, storeNam
 }
 
 func (c *StoreClient) GetEntries(entries *proto.GetEntriesRequest) *proto.GetEntriesResponse {
+    logrus.Infof("GetEntries: %v field name: %s, id: %s", entries, entries.Entries[0].Name, entries.Entries[0].Id)
 	resp, err := c.client.GetEntries(context.Background(), entries)
 	if err != nil {
 		resp = &proto.GetEntriesResponse{
