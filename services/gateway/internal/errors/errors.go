@@ -29,6 +29,7 @@ const (
 	MissingField               string = "missing-field"
 	NameNotAvailableForDispute string = "name-not-available-for-dispute"
 	NameNotRegistered          string = "name-not-registered"
+	NotImplemented             string = "not-implemented"
 	RegisterWindow             string = "register_window"
 	Required                   string = "required"
 	ReservedName               string = "reserved_name"
@@ -70,6 +71,7 @@ func NewError(code, message string) *ErrorList {
 }
 
 func (el *ErrorList) getCode() string {
+	// Take the first error code in the list
 	first := el.getFirst()
 	if first == nil {
 		return ""
@@ -99,7 +101,7 @@ func FormatBindError(err error) string {
 	return err.Error()
 }
 
-func (el *ErrorList) getHTTPStatus() int {
+func (el *ErrorList) GetHTTPStatus() int {
 	switch el.getCode() {
 	case AlreadyClaimed:
 		return http.StatusConflict
@@ -141,6 +143,8 @@ func (el *ErrorList) getHTTPStatus() int {
 		return http.StatusConflict
 	case NameNotRegistered:
 		return http.StatusNotFound
+	case NotImplemented:
+		return http.StatusNotImplemented
 	case RegisterWindow:
 		return http.StatusBadRequest
 	case Required:

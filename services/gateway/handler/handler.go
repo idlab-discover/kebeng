@@ -33,6 +33,7 @@ func (h *Handler) SetupEndpoints(r *gin.Engine) {
 	r.POST("/createAccount", h.createAccount)
 	r.POST("/dev/api/register-name/", h.RegisterSnapName)
 	r.POST("/dev/api/acl/", h.generateMacaroon)
+	r.POST("/dev/api/register-name-dispute/", h.RegisterSnapNameDispute)
 }
 
 func (h *Handler) createAccount(c *gin.Context) {
@@ -55,14 +56,15 @@ func (h *Handler) RegisterSnapName(c *gin.Context) {
 	var req message.RegisterSnapNameReq
 	if err := c.ShouldBindJSON(&req); err != nil {
 		el.Add(errors.BadRequest, errors.FormatBindError(err))
-		c.JSON(http.StatusBadRequest, gin.H{"error_list": el})
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
 
 	dryRun := c.Query("dry_run") == "1"
 	resp := h.StoreClient.RegisterSnapName(req.SnapName, req.IsPrivate, req.Store, dryRun)
 	if len(resp.Errors) > 0 {
-		c.JSON(http.StatusInternalServerError, gin.H{"error_list": formatErrors(resp.Errors)})
+		el.ExtendStoreError(resp.Errors)
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
 
@@ -72,6 +74,17 @@ func (h *Handler) RegisterSnapName(c *gin.Context) {
 	}
 
 	c.JSON(statusCode, message.RegisterSnapNameRes{SnapId: resp.Id, SnapName: req.SnapName})
+}
+
+// TODO: Implement this function
+// Reason for not being implemented yet:
+// There is currently no way to keep track of disputes (in the database),
+// disputes should be handled by a natural person, not by the system,
+// which is not possible at the moment.
+func (h *Handler) RegisterSnapNameDispute(c *gin.Context) {
+	el := errors.New()
+	el.Add(errors.NotImplemented, "Not implemented")
+	c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 }
 
 func (h *Handler) generateMacaroon(c *gin.Context) {
@@ -130,12 +143,4 @@ func (h *Handler) generateMacaroon(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"macaroon": macaroon.Macaroon})
-}
-
-func formatErrors(errors []*storepb.Error) []map[string]string {
-	errs := make([]map[string]string, len(errors))
-	for i, e := range errors {
-		errs[i] = map[string]string{"code": e.GetCode(), "message": e.GetMessage()}
-	}
-	return errs
 }
