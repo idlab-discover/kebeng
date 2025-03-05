@@ -99,7 +99,7 @@ func FormatBindError(err error) string {
 	return err.Error()
 }
 
-func (el *ErrorList) getHTTPStatus() int {
+func (el *ErrorList) GetHTTPStatus() int {
 	switch el.getCode() {
 	case AlreadyClaimed:
 		return http.StatusConflict

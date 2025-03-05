@@ -38,9 +38,8 @@ func MacaroonDeserialize(serializedMacaroon string) (*macaroon.Macaroon, error) 
 	return &m, nil
 }
 
-func  GenerateMacaroon(ctx context.Context, req *message.GenerateMacaroonRequest, macaroonConfig *config.MacaroonConfig) (*message.MacaroonResponse) {
+func  GenerateMacaroon(ctx context.Context, req *message.GenerateMacaroonRequest,snapIDs map[string]bool, macaroonConfig *config.MacaroonConfig) (*message.MacaroonResponse) {
     el := errors.New()
-
     
     // start creating the macaroon
     m, err := macaroon.New(
@@ -78,21 +77,12 @@ func  GenerateMacaroon(ctx context.Context, req *message.GenerateMacaroonRequest
     }
 
     // add packages as caveats
-    // formats should already be checked here so we can assume they are correct
-    for _, pkg := range req.Packages {
-        if pkg.SnapId != "" {
-            caveat := fmt.Sprintf("snap_id=%s", pkg.SnapId)
-            err = m.AddFirstPartyCaveat([]byte(caveat))
-            if err != nil {
-                el.Add(errors.InternalServerError, fmt.Sprintf("failed to add snap_id: %s, err: %v", pkg.SnapId, err))
-            }
-        } else {
-            // Since validation already checked, we assume pkg.Name and pkg.Series are both non-empty.
-            caveat := fmt.Sprintf("name=%s&series=%s", pkg.Name, pkg.Series)
-            err = m.AddFirstPartyCaveat([]byte(caveat))
-            if err != nil {
-                el.Add(errors.InternalServerError, fmt.Sprintf("failed to add package restriction for %s, err: %v", pkg.Name, err))
-            }
+    // we get the snapIDs instead of 2 different formats => allows consistency when decoding macaroon
+    for snapID := range snapIDs {
+        caveat := fmt.Sprintf("snap_id=%s",snapID)
+        err = m.AddFirstPartyCaveat([]byte(caveat))
+        if err != nil {
+            el.Add(errors.InternalServerError, fmt.Sprintf("failed to add snap_id: %s, err: %v", snapID, err))
         }
     }
     // previous actions have to be successful before proceeding
@@ -162,7 +152,7 @@ func ValidateGenerateMacaroonRequest(req *message.GenerateMacaroonRequest, el *e
         if pkg.Name == "" && pkg.Series == "" && pkg.SnapId == "" {
             *el = append(*el, map[string]string{
                 "code":     errors.InvalidField,
-                "message": fmt.Sprintf("package at index %d: must specify either name/series or snap_id", i),
+                "message": fmt.Sprintf("package at index %d: must specify either name/series or snap_id in format: {'name': 'the-name', 'series': '16'} or {'snap_id': 'some-snap-id-1234'}", i),
             })
             continue
         }
