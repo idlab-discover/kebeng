@@ -4,7 +4,7 @@ import (
     "encoding/json"
     "fmt"
 
-
+    storepb "github.com/idlab-discover/kebeng/services/store/proto"
 )
 
 const (
@@ -32,6 +32,12 @@ func (el *ErrorList) Add(code, message string) {
 
 func (el *ErrorList) Extend(other ErrorList) {
     *el = append(*el, other...)
+}
+
+func (el *ErrorList) ExtendStoreError(other []*storepb.Error) {
+    for _, err := range other {
+        el.Add(err.Code, err.Message)
+    }
 }
 
 func New() *ErrorList {
