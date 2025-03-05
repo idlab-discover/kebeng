@@ -65,6 +65,8 @@ func (s *StoreLogic) RegisterSnapName(ctx context.Context, req *proto.RegisterSn
 		return &proto.RegisterSnapNameResponse{Errors: errList}, nil
 	}
 
+	// TODO: check if snap name is valid (it should only have ASCII lowercase letters, numbers, and hyphens, and must have at least one letter)
+
 	// First check if the snap name is already registered
 	snapEntry, err := s.repo.GetEntryByName(req.SnapName, false)
 	if err != nil {
