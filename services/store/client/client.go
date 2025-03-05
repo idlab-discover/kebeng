@@ -7,6 +7,7 @@ import (
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
 	"github.com/idlab-discover/kebeng/services/store/internal/errors"
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -16,8 +17,9 @@ type StoreClient struct {
 	client proto.StoreServiceClient
 }
 
-func NewStoreClient() (*StoreClient, error) {
-	conn, err := grpc.NewClient(config.GetStoreServiceAddress(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+func NewStoreClient(storeHost string, storePort int) (*StoreClient, error) {
+	logrus.Infof("Connecting to account service at %s:%d", storeHost, storePort)
+	conn, err := grpc.NewClient(config.GetStoreServiceAddress(storeHost, storePort), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, fmt.Errorf("could not connect: %v", err)
 	}
@@ -51,16 +53,43 @@ func (c *StoreClient) UploadSnap(name string, type_name string, confinement stri
 	return resp
 }
 
-func (c *StoreClient) RegisterSnapName(snapName string, isPrivate bool, storeName string) *proto.RegisterSnapNameResponse {
+func (c *StoreClient) RegisterSnapName(snapName string, isPrivate bool, storeName string, dryRun bool) *proto.RegisterSnapNameResponse {
 	req := &proto.RegisterSnapNameRequest{
 		SnapName:  snapName,
 		IsPrivate: isPrivate,
 		Store:     storeName,
+		DryRun:    dryRun,
 	}
 
 	resp, err := c.client.RegisterSnapName(context.Background(), req)
 	if err != nil {
 		resp = &proto.RegisterSnapNameResponse{
+			Errors: []*proto.Error{{
+				Code:    errors.InternalServerError,
+				Message: err.Error()},
+			},
+		}
+	}
+	return resp
+}
+
+func (c *StoreClient) GetEntries(entries *proto.GetEntriesRequest) *proto.GetEntriesResponse {
+	resp, err := c.client.GetEntries(context.Background(), entries)
+	if err != nil {
+		resp = &proto.GetEntriesResponse{
+			Errors: []*proto.Error{{
+				Code:    errors.InternalServerError,
+				Message: err.Error()},
+			},
+		}
+	}
+	return resp
+}
+
+func (c *StoreClient) GetRevisions(revisions *proto.GetRevisionsRequest) *proto.GetRevisionsResponse {
+	resp, err := c.client.GetRevisions(context.Background(), revisions)
+	if err != nil {
+		resp = &proto.GetRevisionsResponse{
 			Errors: []*proto.Error{{
 				Code:    errors.InternalServerError,
 				Message: err.Error()},
