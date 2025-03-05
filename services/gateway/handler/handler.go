@@ -5,12 +5,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 	accClient "github.com/idlab-discover/kebeng/services/account/client"
+	"github.com/idlab-discover/kebeng/services/gateway/internal/auth"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/config"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/errors"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/message"
 	storeClient "github.com/idlab-discover/kebeng/services/store/client"
 	storepb "github.com/idlab-discover/kebeng/services/store/proto"
-    "github.com/idlab-discover/kebeng/services/gateway/internal/auth"
 )
 
 // this file handles all the http requests and maps it to the correct client
@@ -30,9 +30,9 @@ func NewHandler(accountClient *accClient.AccountClient, storeClient *storeClient
 }
 
 func (h *Handler) SetupEndpoints(r *gin.Engine) {
-    r.POST("/createAccount",h.createAccount)
+	r.POST("/createAccount", h.createAccount)
 	r.POST("/dev/api/register-name/", h.RegisterSnapName)
-    r.POST("/dev/api/acl/", h.generateMacaroon)
+	r.POST("/dev/api/acl/", h.generateMacaroon)
 }
 
 func (h *Handler) createAccount(c *gin.Context) {
@@ -51,10 +51,11 @@ func (h *Handler) createAccount(c *gin.Context) {
 }
 
 func (h *Handler) RegisterSnapName(c *gin.Context) {
+	el := errors.New()
 	var req message.RegisterSnapNameReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		// TODO: steal code from Joran to print this error better
-		c.JSON(http.StatusBadRequest, gin.H{"error_list": []map[string]string{{"code": errors.BadRequest, "message": err.Error()}}})
+		el.Add(errors.BadRequest, errors.FormatBindError(err))
+		c.JSON(http.StatusBadRequest, gin.H{"error_list": el})
 		return
 	}
 
@@ -74,58 +75,61 @@ func (h *Handler) RegisterSnapName(c *gin.Context) {
 }
 
 func (h *Handler) generateMacaroon(c *gin.Context) {
-    var req *message.GenerateMacaroonRequest
-    el := errors.New()
-    if err := c.ShouldBindJSON(&req); err != nil {
-        el.Add(errors.BadRequest, errors.FormatBindError(err))
-        c.JSON(http.StatusBadRequest, 
-            gin.H{
-                "error_list": el,
-            })
-        return
-    }
-    
-    // validate input
-    auth.ValidateGenerateMacaroonRequest(req,el)
-    if len(*el) > 0 {
-        c.JSON(http.StatusBadRequest, 
-            gin.H{
-                "error_list": el,
-            })
-        return
-    }
+	var req *message.GenerateMacaroonRequest
+	el := errors.New()
+	if err := c.ShouldBindJSON(&req); err != nil {
+		el.Add(errors.BadRequest, errors.FormatBindError(err))
+		c.JSON(http.StatusBadRequest,
+			gin.H{
+				"error_list": el,
+			})
+		return
+	}
 
-    // check whether snapEntry exists else 404 not found
-    // use storeClient pass everything 
-    // create EntriesRequest
-    entries := make([]*storepb.GetEntryRequest, len(req.Packages))
-    for _, p := range req.Packages {
-        entries = append(entries, &storepb.GetEntryRequest{
-            SnapName: p.Name,
-            Id: p.SnapId,
-        })
-    }
-    entriesResponse := h.StoreClient.GetEntries(&storepb.GetEntriesRequest{ Entries: entries})
-    if len(entriesResponse.Errors) > 0 {
-        el.ExtendStoreError(entriesResponse.Errors)
-        c.JSON(http.StatusInternalServerError, gin.H{"error_list": el})
-        return
-    }
-    // check whether the entries are valid
-    // if not return 404 not found
-    if len(entriesResponse.Entries) != len(req.Packages) {
-        el.Add(errors.ResourceNotFound, "One or more entries not found")
-        c.JSON(http.StatusNotFound, gin.H{"error_list": el})
-        return
-    }
+	// check whether snapEntry exists else 404 not found
+	// use storeClient pass everything
+	// create EntriesRequest
+	entries := make([]*storepb.GetEntryRequest, len(req.Packages))
+	for _, p := range req.Packages {
+		entries = append(entries, &storepb.GetEntryRequest{
+			SnapName: p.Name,
+			Id:       p.SnapId,
+		})
+	}
+	entriesResponse := h.StoreClient.GetEntries(&storepb.GetEntriesRequest{Entries: entries})
+	if len(entriesResponse.Errors) > 0 {
+		el.ExtendStoreError(entriesResponse.Errors)
+		c.JSON(http.StatusInternalServerError, gin.H{"error_list": el})
+		return
+	}
+	// check whether the entries are valid
+	// if not return 404 not found
+	if len(entriesResponse.Entries) != len(req.Packages) {
+		el.Add(errors.ResourceNotFound, "One or more entries not found")
+		c.JSON(http.StatusNotFound, gin.H{"error_list": el})
+		return
+	}
+	// validate input
+	auth.ValidateGenerateMacaroonRequest(req, el)
+	if len(*el) > 0 {
+		c.JSON(http.StatusBadRequest,
+			gin.H{
+				"error_list": el,
+			})
+		return
+	}
 
+	// check whether snapEntry exists else 404 not found
+	// use storeClient pass everything
 
-    macaroon := auth.GenerateMacaroon(c, req, h.config.MacaroonConfig)
-    if len(macaroon.Errors) > 0 {
-        c.JSON(http.StatusInternalServerError, gin.H{"error_list": macaroon.Errors})
-        return
-    }
-    c.JSON(http.StatusOK, gin.H{"macaroon":macaroon.Macaroon})
+	//   entries := h.StoreClient.GetEntries()
+
+	macaroon := auth.GenerateMacaroon(c, req, h.config.MacaroonConfig)
+	if len(macaroon.Errors) > 0 {
+		c.JSON(http.StatusInternalServerError, gin.H{"error_list": macaroon.Errors})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"macaroon": macaroon.Macaroon})
 }
 
 func formatErrors(errors []*storepb.Error) []map[string]string {
@@ -135,4 +139,3 @@ func formatErrors(errors []*storepb.Error) []map[string]string {
 	}
 	return errs
 }
-
