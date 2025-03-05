@@ -10,7 +10,6 @@ import (
 	"github.com/idlab-discover/kebeng/services/gateway/internal/message"
 	storeClient "github.com/idlab-discover/kebeng/services/store/client"
 	storepb "github.com/idlab-discover/kebeng/services/store/proto"
-    "github.com/idlab-discover/kebeng/services/gateway/internal/config"
     "github.com/idlab-discover/kebeng/services/gateway/internal/auth"
 )
 
@@ -98,6 +97,9 @@ func (h *Handler) generateMacaroon(c *gin.Context) {
 
     // check whether snapEntry exists else 404 not found
     // use storeClient pass everything 
+
+
+    //   entries := h.StoreClient.GetEntries()
 
     macaroon := auth.GenerateMacaroon(c, req, h.config.MacaroonConfig)
     if len(macaroon.Errors) > 0 {

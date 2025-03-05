@@ -12,16 +12,15 @@ type RegisterSnapNameReq struct {
 	Store     string `json:"store" default:"default_store"`
 }
 
-// the formats are  {"name" : "package_name", "series" : "package_series"}
-//
-//	or   {"snap_id" : "package_snap_id"}
+// the formats  are  {"name" : "package_name", "series" : "package_series"}
+//	            or   {"snap_id" : "package_snap_id"}
 type PackageRestriction struct {
 	Name   string `json:"name"`
 	Series string `json:"series"`
 	SnapId string `json:"snap_id"`
 }
 
-type GenerateMacaroonReq struct {
+type GenerateMacaroonRequest struct {
 	Permissions []string             `json:"permissions"`
 	Channels    []string             `json:"channels"`
 	Packages    []PackageRestriction `json:"packages"`
