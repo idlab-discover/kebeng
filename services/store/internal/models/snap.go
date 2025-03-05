@@ -5,7 +5,6 @@ import (
 	"crypto"
 	"fmt"
 	"io"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/idlab-discover/kebeng/pkg/store/responses"
@@ -20,6 +19,7 @@ import (
 
 // Entry = base information, first entry point, global information...
 type SnapEntry struct {
+	gorm.Model
 	ID          uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
 	Name        string    `json:"name"`
 	Revisions   []SnapRevision
@@ -28,9 +28,7 @@ type SnapEntry struct {
 	Base        string
 	Private     bool
 	Uploads     []SnapUpload
-
-	AccountID uuid.UUID
-	CreatedAt time.Time
+	AccountID   uuid.UUID
 }
 
 // Track = latest, or things like 2.0, 2.1, 2.2
@@ -46,6 +44,7 @@ type SnapTrack struct {
 
 // Channel = stable, beta, edge, candidate
 type SnapChannel struct {
+	gorm.Model
 	ID          string `gorm:"primaryKey"`
 	Name        string
 	SnapTrackID uint
@@ -61,6 +60,7 @@ type SnapChannel struct {
 
 // keep this for later... maybe
 type SnapBranch struct {
+	gorm.Model
 	ID          string `gorm:"primaryKey"`
 	Name        string
 	SnapRiskID  uint
@@ -73,6 +73,7 @@ type SnapBranch struct {
 
 // Revision = a specific version of a snap, not necessarily a release
 type SnapRevision struct {
+	gorm.Model
 	ID             string `gorm:"primaryKey"`
 	SnapFilename   string
 	SnapEntryID    uuid.UUID
@@ -84,6 +85,7 @@ type SnapRevision struct {
 
 // SnapUpload = a specific upload of a snap, with a specific file, info about file, etc
 type SnapUpload struct {
+	gorm.Model
 	ID       string `gorm:"primaryKey"`
 	Name     string
 	UpDownID string
