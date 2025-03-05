@@ -1,6 +1,8 @@
 package message
 
-type CreateAccountRes struct {
+import "github.com/idlab-discover/kebeng/services/gateway/internal/errors"
+
+type CreateAccountResponse struct {
 	Id string `json:"id"`
 }
 
@@ -9,6 +11,7 @@ type RegisterSnapNameRes struct {
 	SnapName string `json:"snap_name"`
 }
 
-type MacaroonRes struct {
+type MacaroonResponse struct {
     Macaroon string `json:"macaroon"`
+    Errors  errors.ErrorList `json:"error_list"`
 }

@@ -10,6 +10,7 @@ import (
 	storeClient "github.com/idlab-discover/kebeng/services/store/client"
 	storepb "github.com/idlab-discover/kebeng/services/store/proto"
     "github.com/idlab-discover/kebeng/services/gateway/internal/config"
+    "github.com/idlab-discover/kebeng/services/gateway/internal/auth"
 )
 
 // this file handles all the http requests and maps it to the correct client
@@ -30,13 +31,12 @@ func NewHandler(accountClient *accClient.AccountClient, storeClient *storeClient
 
 func (h *Handler) SetupEndpoints(r *gin.Engine) {
     r.POST("/createAccount",h.createAccount)
-    // r.GET("/getMacaroon", h.generateMacaroon)
-	r.POST("/createAccount", h.createAccount)
 	r.POST("/dev/api/register-name/", h.RegisterSnapName)
+    r.POST("/dev/api/acl/", h.generateMacaroon)
 }
 
 func (h *Handler) createAccount(c *gin.Context) {
-	var req message.CreateAccountReq
+	var req message.CreateAccountRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"could not bind request to json": err.Error()})
 		return
@@ -47,7 +47,7 @@ func (h *Handler) createAccount(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, message.CreateAccountRes{Id: account.Id})
+	c.JSON(http.StatusOK, message.CreateAccountResponse{Id: account.Id})
 }
 
 func (h *Handler) RegisterSnapName(c *gin.Context) {
@@ -65,6 +65,39 @@ func (h *Handler) RegisterSnapName(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"id": resp.Id, "display_name": resp.SnapName})
 }
 
+func (h *Handler) generateMacaroon(c *gin.Context) {
+    var req *message.GenerateMacaroonRequest
+    el := errors.New()
+    if err := c.ShouldBindJSON(&req); err != nil {
+        el.Add(errors.BadRequest, errors.FormatBindError(err))
+        c.JSON(http.StatusBadRequest, 
+            gin.H{
+                "error_list": el,
+            })
+        return
+    }
+    
+    // validate input
+    auth.ValidateGenerateMacaroonRequest(req,el)
+    if len(*el) > 0 {
+        c.JSON(http.StatusBadRequest, 
+            gin.H{
+                "error_list": el,
+            })
+        return
+    }
+
+    // check whether snapEntry exists else 404 not found
+    // use storeClient pass everything 
+
+    macaroon := auth.GenerateMacaroon(c, req, h.config.MacaroonConfig)
+    if len(macaroon.Errors) > 0 {
+        c.JSON(http.StatusInternalServerError, gin.H{"error_list": macaroon.Errors})
+        return
+    }
+    c.JSON(http.StatusOK, gin.H{"macaroon":macaroon.Macaroon})
+}
+
 func formatErrors(errors []*storepb.Error) []map[string]string {
 	errs := make([]map[string]string, len(errors))
 	for i, e := range errors {
@@ -73,27 +106,3 @@ func formatErrors(errors []*storepb.Error) []map[string]string {
 	return errs
 }
 
-/*
-// TODO: know what the fuck this receives
-func (h *Handler) generateMacaroon(c *gin.Context) {
-    var req message.GenerateMacaroonReq
-    if err := c.ShouldBindJSON(&req); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"could not bind request to json": err.Error()})
-        return
-    }
-
-    account, err := h.AccountClient.GetAccountByID(req.AccountId)
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error getting account": err.Error()})
-        return
-    }
-
-    acl := account.Username
-    macaroon, err := auth.GenerateMacaroon(c, acl, h.config.MacaroonConfig)
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error generating macaroon": err.Error()})
-        return
-    }
-    c.JSON(http.StatusOK, macaroon)
-}
-*/

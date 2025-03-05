@@ -1,6 +1,6 @@
 package message
 
-type CreateAccountReq struct {
+type CreateAccountRequest struct {
 	DisplayName string `json:"display_name"`
 	Email       string `json:"email"`
 	Username    string `json:"username"`
@@ -12,7 +12,6 @@ type RegisterSnapNameReq struct {
 	Store     string `json:"store"`
 }
 
-
 // the formats are  {"name" : "package_name", "series" : "package_series"}
 //             or   {"snap_id" : "package_snap_id"}
 type PackageRestriction struct {
@@ -21,7 +20,7 @@ type PackageRestriction struct {
     SnapId string `json:"snap_id"`
 }
 
-type GenerateMacaroonReq struct {
+type GenerateMacaroonRequest struct {
     Permissions []string `json:"permissions"`
     Channels []string `json:"channels"`
     Packages []PackageRestriction `json:"packages"`
