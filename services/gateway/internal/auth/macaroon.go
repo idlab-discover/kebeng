@@ -3,12 +3,14 @@ package auth
 import (
 	"context"
 	"fmt"
+    "time"
 
 	"encoding/base64"
     "encoding/binary"
 
 	"github.com/idlab-discover/kebeng/services/gateway/internal/config"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/message"
+    "github.com/idlab-discover/kebeng/services/gateway/internal/errors"
 	macaroon "gopkg.in/macaroon.v2"
 )
 
@@ -36,7 +38,11 @@ func MacaroonDeserialize(serializedMacaroon string) (*macaroon.Macaroon, error) 
 	return &m, nil
 }
 
-func  GenerateMacaroon(ctx context.Context, req *message.GenerateMacaroonReq, macaroonConfig *config.MacaroonConfig) (*message.MacaroonRes, error) {
+func  GenerateMacaroon(ctx context.Context, req *message.GenerateMacaroonRequest, macaroonConfig *config.MacaroonConfig) (*message.MacaroonResponse) {
+    el := errors.New()
+
+    
+    // start creating the macaroon
     m, err := macaroon.New(
         []byte(macaroonConfig.RootKey), 
         uint64ToBytes(macaroonConfig.RootId),
@@ -44,11 +50,13 @@ func  GenerateMacaroon(ctx context.Context, req *message.GenerateMacaroonReq, ma
         macaroon.V1,
     )
 	if err != nil {
-        return nil, fmt.Errorf("failed to create macaroon: %v", err)
+        el.Add(errors.InternalServerError, fmt.Sprintf("failed to create macaroon: %v", err))
+        return &message.MacaroonResponse{Errors: *el}
 	}
+
     err = m.AddThirdPartyCaveat([]byte(macaroonConfig.DischargeKey), uint64ToBytes(macaroonConfig.ThirdPartyCaveatId), macaroonConfig.ThirdPartyLocation)
     if err != nil {
-        return nil, fmt.Errorf("failed to add third party caveat: %v", err)
+        el.Add(errors.InternalServerError, fmt.Sprintf("failed to add third party caveat: %v", err))
     }
     
     // add permissions as caveats
@@ -56,7 +64,7 @@ func  GenerateMacaroon(ctx context.Context, req *message.GenerateMacaroonReq, ma
         caveat := fmt.Sprintf("permission=%s", perm)
         err = m.AddFirstPartyCaveat([]byte(caveat))
         if err != nil {
-            return nil, fmt.Errorf("failed to add first party caveat: %v", err)
+            el.Add(errors.InternalServerError, fmt.Sprintf("failed to add permission: %v, err:%v",perm, err))
         }
     }
 
@@ -65,38 +73,130 @@ func  GenerateMacaroon(ctx context.Context, req *message.GenerateMacaroonReq, ma
         caveat := fmt.Sprintf("channel=%s", channel)
         err = m.AddFirstPartyCaveat([]byte(caveat))
         if err != nil {
-            return nil, fmt.Errorf("failed to add first party caveat: %v", err)
+            el.Add(errors.InternalServerError, fmt.Sprintf("failed to add channel: %v, err:%v",channel, err))
         }
     }
 
     // add packages as caveats
-    // note: we need to check that either one of the formats is valid
+    // formats should already be checked here so we can assume they are correct
     for _, pkg := range req.Packages {
-        if pkg.Name != "" && pkg.Series != "" {
-            caveat := fmt.Sprintf("package=%s&series=%s", pkg.Name, pkg.Series)
-            err = m.AddFirstPartyCaveat([]byte(caveat))
-            if err != nil {
-                return nil, fmt.Errorf("failed to add first party caveat: %v", err)
-            }
-        } else if pkg.SnapId != "" {
+        if pkg.SnapId != "" {
             caveat := fmt.Sprintf("snap_id=%s", pkg.SnapId)
             err = m.AddFirstPartyCaveat([]byte(caveat))
             if err != nil {
-                return nil, fmt.Errorf("failed to add first party caveat: %v", err)
+                el.Add(errors.InternalServerError, fmt.Sprintf("failed to add snap_id: %s, err: %v", pkg.SnapId, err))
             }
         } else {
-            return nil, fmt.Errorf("invalid package restriction format")
+            // Since validation already checked, we assume pkg.Name and pkg.Series are both non-empty.
+            caveat := fmt.Sprintf("name=%s&series=%s", pkg.Name, pkg.Series)
+            err = m.AddFirstPartyCaveat([]byte(caveat))
+            if err != nil {
+                el.Add(errors.InternalServerError, fmt.Sprintf("failed to add package restriction for %s, err: %v", pkg.Name, err))
+            }
         }
     }
-        
+    // previous actions have to be successful before proceeding
+    if len(*el) > 0 {   
+        return &message.MacaroonResponse{Errors: *el}
+    }
 
-    
     serializedMacaroon, err := MacaroonSerialize(m)
     if err != nil {
-        return nil, fmt.Errorf("failed to serialize macaroon: %v", err)
+        el.Add(errors.InternalServerError, fmt.Sprintf("failed to serialize macaroon: %v", err))
+        return &message.MacaroonResponse{Errors: *el}
     }
     
-    return &message.MacaroonRes{Macaroon: serializedMacaroon}, nil
+    return &message.MacaroonResponse{
+        Macaroon: serializedMacaroon,
+        Errors: *el,
+    }
+}
+
+func ValidateGenerateMacaroonRequest(req *message.GenerateMacaroonRequest, el *errors.ErrorList) {
+
+	// Allowed permissions.
+	validPermissions := map[string]struct{}{
+		"edit_account":              {},
+		"modify_account_key":        {},
+		"package_access":            {},
+		"package_register":          {},
+		"package_push":              {},
+		"package_release":           {},
+		"package_update":            {},
+		"package_metrics":           {},
+		"package_manage":            {},
+		"package_upload":            {},
+		"package_upload_request":    {},
+	}
+
+    validChannels := map[string]struct{}{
+        "edge": {},
+        "beta": {},
+        "candidate": {},
+        "stable": {},
+    }
+
+
+	for _, perm := range req.Permissions {
+		if _, ok := validPermissions[perm]; !ok {
+			*el = append(*el, map[string]string{
+				"code":    errors.InvalidField,
+				"message": fmt.Sprintf("permission '%s' is not valid", perm),
+			})
+		}
+	}
+
+	for _, ch := range req.Channels {
+        if _, ok := validChannels[ch]; !ok {
+			*el = append(*el, map[string]string{
+				"code":    errors.InvalidField,
+				"message": "channel value cannot be empty",
+			})
+        }
+    }
+
+    // Validate Packages: each package must have either name/series or snap_id.
+    // we don't allow both since this might cause internal conflicts if each of them refer to a different package
+    for i, pkg := range req.Packages {
+        // Case 1: Nothing provided.
+        if pkg.Name == "" && pkg.Series == "" && pkg.SnapId == "" {
+            *el = append(*el, map[string]string{
+                "code":     errors.InvalidField,
+                "message": fmt.Sprintf("package at index %d: must specify either name/series or snap_id", i),
+            })
+            continue
+        }
+        // Case 2: snap_id is provided.
+        if pkg.SnapId != "" {
+            // If snap_id is provided, name and series should be empty.
+            if pkg.Name != "" || pkg.Series != "" {
+                *el = append(*el, map[string]string{
+                    "code":    errors.InvalidField,
+                    "message": fmt.Sprintf("package at index %d: cannot provide both snap_id and name/series", i),
+                })
+            }
+            // This package is valid, so we can continue.
+            continue
+        }
+        // Case 3: snap_id is not provided, so name and series must both be provided.
+        if pkg.Name == "" || pkg.Series == "" {
+            *el = append(*el, map[string]string{
+                "code":    errors.InvalidField,
+                "message": fmt.Sprintf("package at index %d: both name and series must be provided if snap_id is not specified", i),
+            })
+        }
+    }
+
+    // validate expires: if provided, must be in valid ISO8601 (RFC3339) format.
+    if req.Expires != "" {
+        if _, err := time.Parse(time.RFC3339, req.Expires); err != nil {
+			*el = append(*el, map[string]string{
+				"code":    errors.InvalidField,
+				"message": fmt.Sprintf("expires field is not a valid ISO8601 timestamp: %v", err),
+			})
+		}
+	}
+    return 
 }
 
 func uint64ToBytes(u uint) []byte {
