@@ -8,10 +8,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-var (
-	config *Config
-)
-
 type Config struct {
 	DBHost         string `mapstructure:"db_host" yaml:"db_host"`
 	DBPort         int    `mapstructure:"db_port" yaml:"db_port"`
@@ -44,19 +40,20 @@ func LoadConfig() (*Config, error) {
 	}
 
 	cfg := &Config{}
-	config = cfg
 	if err := viper.Unmarshal(cfg); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %v", err)
 	}
 
+	logrus.Infof("loaded config: %+v", cfg)
+
 	return cfg, nil
 }
 
-func GetStoreServiceAddress() string {
-	if config == nil {
-		logrus.Warn("config is nil, using default address")
-		return "store_service:8080"
+func GetStoreServiceAddress(host string, port int) string {
+	if host == "" || port == 0 {
+		logrus.Warn("host or port is not set, using default address store_service:8081")
+		return "store_service:8081"
 	}
 
-	return fmt.Sprintf("%s:%d", config.GRPCHost, config.GRPCPort)
+	return fmt.Sprintf("%s:%d", host, port)
 }

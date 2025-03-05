@@ -6,6 +6,8 @@ option go_package = "github.com/idlab-discover/kebeng/services/store/proto;store
 service StoreService {
     rpc UploadSnap(UploadSnapRequest) returns (UploadSnapResponse);
     rpc RegisterSnapName(RegisterSnapNameRequest) returns (RegisterSnapNameResponse);
+    rpc GetRevisions(GetRevisionsRequest) returns (GetRevisionsResponse);
+    rpc GetEntries(GetEntriesRequest) returns (GetEntriesResponse);
 }
 
 message UploadSnapRequest {
@@ -26,12 +28,59 @@ message RegisterSnapNameRequest {
     string snap_name = 1;
     bool isPrivate = 2;
     string store = 3;
+    bool dry_run = 4;
 }
 
 message RegisterSnapNameResponse {
     string id = 1;
     string snap_name = 2;
     repeated Error errors = 3;
+}
+
+message GetEntryRequest {
+    string id = 1;
+    string snap_name = 2;
+}
+
+message GetEntryResponse {
+    string id = 1;
+    string snap_name = 2;
+    string confinement = 3;
+    string base = 4;
+    string type = 5;
+    bool private = 6;
+    repeated Error errors = 7;
+}
+
+message GetEntriesRequest {
+    repeated GetEntryRequest entries = 1;
+}
+
+message GetEntriesResponse {
+    repeated GetEntryResponse entries = 1;
+    repeated Error errors = 2;
+}
+
+message GetRevisionRequest {
+    string id = 1;
+    string snap_name = 2;
+    uint64 sequence = 3;
+}
+
+message GetRevisionResponse {
+    string id = 1;
+    string snap_name = 2;
+    uint64 sequence = 3;
+    repeated Error errors = 4;
+}
+
+message GetRevisionsRequest {
+    repeated GetRevisionRequest revisions = 1;
+}
+
+message GetRevisionsResponse {
+    repeated GetRevisionResponse revisions = 1;
+    repeated Error errors = 2;
 }
 
 message Error {
