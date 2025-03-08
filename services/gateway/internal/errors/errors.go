@@ -14,8 +14,8 @@ const (
 	AlreadyRegistered          string = "already_registered"
 	AssertionCreationFailed    string = "assertion-creation-failed"
 	BadRequest                 string = "bad-request"
+    FailedToRegister           string = "failed-to-register"
 	InternalServerError        string = "internal-server-error"
-	FailedToRegister           string = "failed-to-register"
 	Invalid                    string = "invalid"
 	InvalidChoice              string = "invalid_choice"
 	InvalidField               string = "invalid-field"
@@ -29,6 +29,7 @@ const (
 	MissingField               string = "missing-field"
 	NameNotAvailableForDispute string = "name-not-available-for-dispute"
 	NameNotRegistered          string = "name-not-registered"
+    NotImplemented             string = "not-implemented"
 	RegisterWindow             string = "register_window"
 	Required                   string = "required"
 	ReservedName               string = "reserved_name"
@@ -36,6 +37,7 @@ const (
 	ResourceNotFound           string = "resource-not-found"
 	ResourceNotReady           string = "resource-not-ready"
 	RevokedName                string = "revoked_name"
+    Unauthorized               string = "unauthorized"
 	UserNotReady               string = "user-not-ready"
 )
 
@@ -111,9 +113,9 @@ func (el *ErrorList) GetHTTPStatus() int {
 		return http.StatusInternalServerError
 	case BadRequest:
 		return http.StatusBadRequest
+    case FailedToRegister:
+        return http.StatusInternalServerError
 	case InternalServerError:
-		return http.StatusInternalServerError
-	case FailedToRegister:
 		return http.StatusInternalServerError
 	case Invalid:
 		return http.StatusBadRequest
@@ -141,6 +143,8 @@ func (el *ErrorList) GetHTTPStatus() int {
 		return http.StatusConflict
 	case NameNotRegistered:
 		return http.StatusNotFound
+    case NotImplemented:
+        return http.StatusNotImplemented
 	case RegisterWindow:
 		return http.StatusBadRequest
 	case Required:
@@ -155,6 +159,8 @@ func (el *ErrorList) GetHTTPStatus() int {
 		return http.StatusServiceUnavailable
 	case RevokedName:
 		return http.StatusGone
+    case Unauthorized:
+        return http.StatusUnauthorized
 	case UserNotReady:
 		return http.StatusBadRequest
 	default:

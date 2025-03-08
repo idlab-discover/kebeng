@@ -26,3 +26,11 @@ type GenerateMacaroonRequest struct {
 	Packages    []PackageRestriction `json:"packages"`
 	Expires     string               `json:"expires"`
 }
+
+type AuthData struct {
+	Authorization string `json:"authorization"`
+}
+
+type VerifyRequest struct {
+	AuthData AuthData `json:"auth_data"`
+}
