@@ -34,19 +34,20 @@ func (h *Handler) SetupEndpoints(r *gin.Engine) {
 	r.POST("/dev/api/register-name/", h.RegisterSnapName)
 	r.POST("/dev/api/acl/", h.generateMacaroon)
 	r.POST("/dev/api/register-name-dispute/", h.RegisterSnapNameDispute)
+	r.POST("/dev/api/snaps/:snap_id/builds", h.ProcessSnapBuildAssertion)
 }
 
 func (h *Handler) createAccount(c *gin.Context) {
 	var req message.CreateAccountRequest
-    el := errors.New()
+	el := errors.New()
 	if err := c.ShouldBindJSON(&req); err != nil {
-        el.Add(errors.BadRequest, errors.FormatBindError(err))
+		el.Add(errors.BadRequest, errors.FormatBindError(err))
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
 	account, err := h.AccountClient.CreateAccount(req.DisplayName, req.Username, req.Email)
 	if err != nil {
-        el.Add(errors.InternalServerError, errors.FormatBindError(err))
+		el.Add(errors.InternalServerError, errors.FormatBindError(err))
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
@@ -95,7 +96,7 @@ func (h *Handler) generateMacaroon(c *gin.Context) {
 	el := errors.New()
 	if err := c.ShouldBindJSON(&req); err != nil {
 		el.Add(errors.BadRequest, errors.FormatBindError(err))
-		c.JSON(el.GetHTTPStatus(),gin.H{"error_list": el,})
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
 
@@ -114,10 +115,10 @@ func (h *Handler) generateMacaroon(c *gin.Context) {
 	for i, p := range req.Packages {
 		entries[i] = &storepb.GetEntryRequest{
 			Name: p.Name,
-			Id:       p.SnapId,
+			Id:   p.SnapId,
 		}
 	}
-    
+
 	entriesResponse := h.StoreClient.GetEntries(&storepb.GetEntriesRequest{Entries: entries})
 	if len(entriesResponse.Errors) > 0 {
 		el.ExtendStoreError(entriesResponse.Errors)
@@ -125,17 +126,21 @@ func (h *Handler) generateMacaroon(c *gin.Context) {
 		return
 	}
 
-    // mimic set to prevent duplicate ids in macaroon
-    snapIDs := make(map[string]bool, len(entriesResponse.Entries))
-    for _, e := range entriesResponse.Entries {
-        snapIDs[e.Id] = true
-    }
+	// mimic set to prevent duplicate ids in macaroon
+	snapIDs := make(map[string]bool, len(entriesResponse.Entries))
+	for _, e := range entriesResponse.Entries {
+		snapIDs[e.Id] = true
+	}
 
 	macaroon := auth.GenerateMacaroon(c, req, snapIDs, h.config.MacaroonConfig)
 	if len(macaroon.Errors) > 0 {
-        el.Extend(macaroon.Errors)
+		el.Extend(macaroon.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"macaroon": macaroon.Macaroon})
+}
+
+func (h *Handler) ProcessSnapBuildAssertion(c *gin.Context) {
+	
 }
