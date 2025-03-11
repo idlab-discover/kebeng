@@ -10,10 +10,10 @@ import (
 
 type MacaroonConfig struct {
 	RootKey            string `mapstructure:"root_key" yaml:"root_key"`
-	RootId             uint   `mapstructure:"root_id" yaml:"root_id"` // can't parse uuid for some reason
+	RootId             string   `mapstructure:"root_id" yaml:"root_id"`
 	RootLocation       string `mapstructure:"root_location" yaml:"root_location"`
 	DischargeKey       string `mapstructure:"discharge_key" yaml:"discharge_key"`
-	ThirdPartyCaveatId uint   `mapstructure:"third_party_caveat_id" yaml:"third_party_caveat_id"` // can't parse uuid for some reason
+	ThirdPartyCaveatId string   `mapstructure:"third_party_caveat_id" yaml:"third_party_caveat_id"`
 	ThirdPartyLocation string `mapstructure:"third_party_location" yaml:"third_party_location"`
 }
 

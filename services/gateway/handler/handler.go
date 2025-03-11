@@ -2,7 +2,6 @@ package handler
 
 import (
 	"net/http"
-    "fmt"
 
 	"github.com/gin-gonic/gin"
 	accClient "github.com/idlab-discover/kebeng/services/account/client"
@@ -30,11 +29,15 @@ func NewHandler(accountClient *accClient.AccountClient, storeClient *storeClient
 	}
 }
 
+// TODO: add middelware function that checks authentication with discharge macaroon (can't get discharge macaroon as of now, so don't know the format/what it contains)
 func (h *Handler) SetupEndpoints(r *gin.Engine) {
 	r.POST("/createAccount", h.createAccount)
 	r.POST("/dev/api/register-name/", h.RegisterSnapName)
 	r.POST("/dev/api/acl/", h.generateMacaroon)
     r.POST("/dev/api/acl/verify/", h.verifyMacaroon) //TODO: implement correctly to many unknows of what has to be included and what not, need good source
+    
+    // TODO: needs authentication
+    r.GET("/dev/api/account/", h.getAccount)
 }
 
 func (h *Handler) createAccount(c *gin.Context) {
@@ -87,7 +90,7 @@ func (h *Handler) generateMacaroon(c *gin.Context) {
 		return
 	}
 
-	// validate input
+    // validate input
 	auth.ValidateGenerateMacaroonRequest(req, el)
 	if len(*el) > 0 {
 		c.JSON(http.StatusBadRequest,
@@ -96,31 +99,31 @@ func (h *Handler) generateMacaroon(c *gin.Context) {
 			})
 		return
 	}
+        
+    // check whether snapEntry exists else 404 not found
+    entries := make([]*storepb.GetEntryRequest, len(req.Packages))
+    for i, p := range req.Packages {
+        entries[i] = &storepb.GetEntryRequest{
+            Name: p.Name,
+            Id:       p.SnapId,
+        }
+    }
 
-	// check whether snapEntry exists else 404 not found
-	entries := make([]*storepb.GetEntryRequest, len(req.Packages))
-	for i, p := range req.Packages {
-		entries[i] = &storepb.GetEntryRequest{
-			Name: p.Name,
-			Id:       p.SnapId,
-		}
-	}
-    
-	entriesResponse := h.StoreClient.GetEntries(&storepb.GetEntriesRequest{Entries: entries})
-	if len(entriesResponse.Errors) > 0 {
-		el.ExtendStoreError(entriesResponse.Errors)
-		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
-		return
-	}
-
+    entriesResponse := h.StoreClient.GetEntries(&storepb.GetEntriesRequest{Entries: entries})
+    if len(entriesResponse.Errors) > 0 {
+        el.ExtendStoreError(entriesResponse.Errors)
+        c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+        return
+    }
     // mimic set to prevent duplicate ids in macaroon
     snapIDs := make(map[string]bool, len(entriesResponse.Entries))
     for _, e := range entriesResponse.Entries {
         snapIDs[e.Id] = true
     }
 
-	macaroon := auth.GenerateMacaroon(c, req, snapIDs, h.config.MacaroonConfig)
-	if len(macaroon.Errors) > 0 {
+
+    macaroon := auth.GenerateMacaroon(c, req, snapIDs, h.config.MacaroonConfig)
+    if len(macaroon.Errors) > 0 {
         el.Extend(macaroon.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
@@ -179,6 +182,10 @@ func (h *Handler) verifyMacaroon(c *gin.Context) {
     }
     return    
     */
+}
+
+func (h *Handler) getAccount(c *gin.Context) {
+    
 }
 
 func formatErrors(errors []*storepb.Error) []map[string]string {
