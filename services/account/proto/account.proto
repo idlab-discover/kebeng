@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "google/protobuf/timestamp.proto";
+
 package account;
 option go_package = "github.com/idlab-discover/kebeng/services/account/proto;account";
 
@@ -13,6 +15,7 @@ service AccountService {
 
     rpc AddKey(AddKeyRequest) returns (KeyResponse);
     rpc GetKeyBySHA3384(GetKeyBySHA3384Request) returns (KeyResponse);
+    rpc GetKeysByAccountID(GetKeysByAccountIDRequest) returns (KeysResponse);
 }
 
 message Error {
@@ -26,6 +29,11 @@ message AccountResponse {
     string username = 3;
     string email = 4;
     repeated Error errors = 5;
+}
+
+message KeysResponse {
+    repeated KeyResponse keys = 1;
+    repeated Error errors = 2;
 }
 
 message CreateAccountRequest {
@@ -66,6 +74,8 @@ message KeyResponse {
     string name = 1;
     string sha3384 = 2;
     string encoded_public_key = 3;
+    google.protobuf.Timestamp since = 5;
+    google.protobuf.Timestamp until = 6;   
     repeated Error errors = 4;
 }
 
@@ -80,3 +90,7 @@ message GetKeyBySHA3384Request {
     string sha3384 = 1;
 }
 
+
+message GetKeysByAccountIDRequest {
+    string account_id = 1;
+}

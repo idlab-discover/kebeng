@@ -171,7 +171,19 @@ func (c *AccountClient) GetAccountKey(Sha3384 string) (*proto.KeyResponse) {
     return resp
 }
 
+func (c *AccountClient) GetAccountKeysByAccountID(accountID string) (*proto.KeysResponse) {
+    req := &proto.GetKeysByAccountIDRequest{AccountId: accountID}
 
-
+    resp, err := c.client.GetKeysByAccountID(context.Background(), req)
+    if err != nil {
+        // this means proto request failed not the actual logic
+        resp = &proto.KeysResponse{
+            Errors: []*proto.Error{{
+                Code: errors.InternalServerError, Message: err.Error()},
+            },
+        }
+    }
+    return resp
+}
 
 
