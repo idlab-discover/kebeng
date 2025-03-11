@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	accClient "github.com/idlab-discover/kebeng/services/account/client"
+	assertionClient "github.com/idlab-discover/kebeng/services/assertion/client"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/auth"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/config"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/errors"
@@ -16,9 +17,10 @@ import (
 // this file handles all the http requests and maps it to the correct client
 
 type Handler struct {
-	config        *config.Config
-	AccountClient *accClient.AccountClient
-	StoreClient   *storeClient.StoreClient
+	config          *config.Config
+	AccountClient   *accClient.AccountClient
+	StoreClient     *storeClient.StoreClient
+	AssertionClient *assertionClient.AssertionClient
 }
 
 func NewHandler(accountClient *accClient.AccountClient, storeClient *storeClient.StoreClient, config *config.Config) *Handler {
@@ -92,8 +94,8 @@ func (h *Handler) RegisterSnapNameDispute(c *gin.Context) {
 }
 
 func (h *Handler) generateMacaroon(c *gin.Context) {
-	var req *message.GenerateMacaroonRequest
 	el := errors.New()
+	var req *message.GenerateMacaroonRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		el.Add(errors.BadRequest, errors.FormatBindError(err))
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
@@ -142,5 +144,30 @@ func (h *Handler) generateMacaroon(c *gin.Context) {
 }
 
 func (h *Handler) ProcessSnapBuildAssertion(c *gin.Context) {
-	
+	el := errors.New()
+	var req *message.SnapBuildAssertionReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		el.Add(errors.BadRequest, errors.FormatBindError(err))
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
+
+	// SnapID is a path parameter
+	snapID := c.Param("snap_id")
+	if snapID == "" {
+		el.Add(errors.BadRequest, "snap_id is required")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
+
+	// Process the snap build assertion with the snapID and req
+	// Assuming there's a method in StoreClient to handle this
+	resp := h.AssertionClient.ProcessSnapBuildAssertion(snapID, req)
+	if len(resp.Errors) > 0 {
+		el.ExtendStoreError(resp.Errors)
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Snap build assertion processed successfully"})
 }
