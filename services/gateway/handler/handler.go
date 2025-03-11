@@ -54,9 +54,8 @@ func (h *Handler) createAccount(c *gin.Context) {
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
-	account, err := h.AccountClient.CreateAccount(req.DisplayName, req.Username, req.Email)
-	if err != nil {
-        el.Add(errors.InternalServerError, errors.FormatBindError(err))
+	account := h.AccountClient.CreateAccount(req.DisplayName, req.Username, req.Email)
+	if len(account.Errors) > 0 {
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
@@ -199,13 +198,30 @@ func (h *Handler) getAccount(c *gin.Context) {
         return
     }
 
-    accountResponse := h.AccountClient.GetAccountByEmail(email.(string))
-    if len(accountResponse.Errors) > 0 {
-        c.JSON(http.StatusInternalServerError, gin.H{"error_list": formatErrors(accountResponse.Errors)})
+    account := h.AccountClient.GetAccountByEmail(email.(string))
+    if len(account.Errors) > 0 {
+        el.ExtendAccountError(account.Errors)
+        c.JSON(http.StatusInternalServerError, gin.H{"error_list": el})
         return
     }
-    
 
+    
+    keys := h.AccountClient.(account.Id)
+    // not yet implemented
+    // stores := h.AccountClient.GetStores(account.Id)
+    
+    // leaving out the deprecated fields for now
+    resp := message.AccountResponse{
+        ID: account.Id,
+        DisplayName: account.DisplayName,
+        Email: account.Email,
+        Username: account.Username,
+
+        AccountKeys: nil,
+        Stores: nil,
+        Snaps: nil,
+    }
+    c.JSON(http.StatusOK,resp)
 }
 
 func formatErrors(errors []*storepb.Error) []map[string]string {

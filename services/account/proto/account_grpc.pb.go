@@ -27,6 +27,7 @@ const (
 	AccountService_GetAccountByUsername_FullMethodName = "/account.AccountService/GetAccountByUsername"
 	AccountService_AddKey_FullMethodName               = "/account.AccountService/AddKey"
 	AccountService_GetKeyBySHA3384_FullMethodName      = "/account.AccountService/GetKeyBySHA3384"
+	AccountService_GetKeysByAccountID_FullMethodName   = "/account.AccountService/GetKeysByAccountID"
 )
 
 // AccountServiceClient is the client API for AccountService service.
@@ -41,6 +42,7 @@ type AccountServiceClient interface {
 	GetAccountByUsername(ctx context.Context, in *GetAccountByUsernameRequest, opts ...grpc.CallOption) (*AccountResponse, error)
 	AddKey(ctx context.Context, in *AddKeyRequest, opts ...grpc.CallOption) (*KeyResponse, error)
 	GetKeyBySHA3384(ctx context.Context, in *GetKeyBySHA3384Request, opts ...grpc.CallOption) (*KeyResponse, error)
+	GetKeysByAccountID(ctx context.Context, in *GetKeysByAccountIDRequest, opts ...grpc.CallOption) (*KeysResponse, error)
 }
 
 type accountServiceClient struct {
@@ -131,6 +133,16 @@ func (c *accountServiceClient) GetKeyBySHA3384(ctx context.Context, in *GetKeyBy
 	return out, nil
 }
 
+func (c *accountServiceClient) GetKeysByAccountID(ctx context.Context, in *GetKeysByAccountIDRequest, opts ...grpc.CallOption) (*KeysResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(KeysResponse)
+	err := c.cc.Invoke(ctx, AccountService_GetKeysByAccountID_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AccountServiceServer is the server API for AccountService service.
 // All implementations must embed UnimplementedAccountServiceServer
 // for forward compatibility.
@@ -143,6 +155,7 @@ type AccountServiceServer interface {
 	GetAccountByUsername(context.Context, *GetAccountByUsernameRequest) (*AccountResponse, error)
 	AddKey(context.Context, *AddKeyRequest) (*KeyResponse, error)
 	GetKeyBySHA3384(context.Context, *GetKeyBySHA3384Request) (*KeyResponse, error)
+	GetKeysByAccountID(context.Context, *GetKeysByAccountIDRequest) (*KeysResponse, error)
 	mustEmbedUnimplementedAccountServiceServer()
 }
 
@@ -176,6 +189,9 @@ func (UnimplementedAccountServiceServer) AddKey(context.Context, *AddKeyRequest)
 }
 func (UnimplementedAccountServiceServer) GetKeyBySHA3384(context.Context, *GetKeyBySHA3384Request) (*KeyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetKeyBySHA3384 not implemented")
+}
+func (UnimplementedAccountServiceServer) GetKeysByAccountID(context.Context, *GetKeysByAccountIDRequest) (*KeysResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetKeysByAccountID not implemented")
 }
 func (UnimplementedAccountServiceServer) mustEmbedUnimplementedAccountServiceServer() {}
 func (UnimplementedAccountServiceServer) testEmbeddedByValue()                        {}
@@ -342,6 +358,24 @@ func _AccountService_GetKeyBySHA3384_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AccountService_GetKeysByAccountID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetKeysByAccountIDRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AccountServiceServer).GetKeysByAccountID(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AccountService_GetKeysByAccountID_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AccountServiceServer).GetKeysByAccountID(ctx, req.(*GetKeysByAccountIDRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AccountService_ServiceDesc is the grpc.ServiceDesc for AccountService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -380,6 +414,10 @@ var AccountService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetKeyBySHA3384",
 			Handler:    _AccountService_GetKeyBySHA3384_Handler,
+		},
+		{
+			MethodName: "GetKeysByAccountID",
+			Handler:    _AccountService_GetKeysByAccountID_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

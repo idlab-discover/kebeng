@@ -9,6 +9,7 @@ import (
     "github.com/google/uuid"
     "github.com/idlab-discover/kebeng/services/account/internal/config"
     "github.com/idlab-discover/kebeng/services/account/internal/errors"
+    "google.golang.org/protobuf/types/known/timestamppb"
 )
     
 // NOTE: in all the endpoints the errors of the actual logic are included in the response and NOT returned as an error
@@ -186,6 +187,46 @@ func (a *AccountService) GetKey(ctx context.Context, req *proto.GetKeyBySHA3384R
         Name: key.Name,
         Sha3384: key.SHA3384,
         EncodedPublicKey: key.EncodedPublicKey,
+        Errors: el,
+    }, nil
+}
+
+func (a *AccountService) GetKeysByAccountId(ctx context.Context, req *proto.GetKeysByAccountIDRequest) (*proto.KeysResponse, error) {
+    el := make([]*proto.Error, 0)
+    // parse to uuid
+    accountID, err := uuid.Parse(req.AccountId)
+    if err != nil {
+        el = append(el, &proto.Error{
+            Code: errors.BadRequest,
+            Message: "invalid UUID format",
+        })
+        return &proto.KeysResponse{Errors: el}, nil
+    }
+    
+    // get keys
+    keys, err := a.repo.GetKeysByAccountID(ctx, accountID)
+    if err != nil {
+        el = append(el, &proto.Error{
+            Code: errors.InternalServerError,
+            Message: err.Error(),
+        })
+        return &proto.KeysResponse{Errors: el}, nil
+    }
+
+    // convert to proto
+    keyResponses := make([]*proto.KeyResponse, 0)
+    for _, key := range keys {
+        keyResponses = append(keyResponses, &proto.KeyResponse{
+            Name: key.Name,
+            Sha3384: key.SHA3384,
+            EncodedPublicKey: key.EncodedPublicKey,
+            Since: timestamppb.New(key.CreatedAt),
+            Until: timestamppb.New(key.Until),
+        })
+    }
+
+    return &proto.KeysResponse{
+        Keys: keyResponses,
         Errors: el,
     }, nil
 }
