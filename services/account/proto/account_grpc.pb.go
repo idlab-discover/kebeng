@@ -33,14 +33,14 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AccountServiceClient interface {
-	CreateAccount(ctx context.Context, in *CreateAccountRequest, opts ...grpc.CallOption) (*Account, error)
-	UpdateAccount(ctx context.Context, in *UpdateAccountRequest, opts ...grpc.CallOption) (*Account, error)
+	CreateAccount(ctx context.Context, in *CreateAccountRequest, opts ...grpc.CallOption) (*AccountResponse, error)
+	UpdateAccount(ctx context.Context, in *UpdateAccountRequest, opts ...grpc.CallOption) (*AccountResponse, error)
 	DeleteAccount(ctx context.Context, in *DeleteAccountRequest, opts ...grpc.CallOption) (*DeleteAccountResponse, error)
-	GetAccountByEmail(ctx context.Context, in *GetAccountByEmailRequest, opts ...grpc.CallOption) (*Account, error)
-	GetAccountByID(ctx context.Context, in *GetAccountByIDRequest, opts ...grpc.CallOption) (*Account, error)
-	GetAccountByUsername(ctx context.Context, in *GetAccountByUsernameRequest, opts ...grpc.CallOption) (*Account, error)
-	AddKey(ctx context.Context, in *AddKeyRequest, opts ...grpc.CallOption) (*Key, error)
-	GetKeyBySHA3384(ctx context.Context, in *GetKeyBySHA3384Request, opts ...grpc.CallOption) (*Key, error)
+	GetAccountByEmail(ctx context.Context, in *GetAccountByEmailRequest, opts ...grpc.CallOption) (*AccountResponse, error)
+	GetAccountByID(ctx context.Context, in *GetAccountByIDRequest, opts ...grpc.CallOption) (*AccountResponse, error)
+	GetAccountByUsername(ctx context.Context, in *GetAccountByUsernameRequest, opts ...grpc.CallOption) (*AccountResponse, error)
+	AddKey(ctx context.Context, in *AddKeyRequest, opts ...grpc.CallOption) (*KeyResponse, error)
+	GetKeyBySHA3384(ctx context.Context, in *GetKeyBySHA3384Request, opts ...grpc.CallOption) (*KeyResponse, error)
 }
 
 type accountServiceClient struct {
@@ -51,9 +51,9 @@ func NewAccountServiceClient(cc grpc.ClientConnInterface) AccountServiceClient {
 	return &accountServiceClient{cc}
 }
 
-func (c *accountServiceClient) CreateAccount(ctx context.Context, in *CreateAccountRequest, opts ...grpc.CallOption) (*Account, error) {
+func (c *accountServiceClient) CreateAccount(ctx context.Context, in *CreateAccountRequest, opts ...grpc.CallOption) (*AccountResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Account)
+	out := new(AccountResponse)
 	err := c.cc.Invoke(ctx, AccountService_CreateAccount_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -61,9 +61,9 @@ func (c *accountServiceClient) CreateAccount(ctx context.Context, in *CreateAcco
 	return out, nil
 }
 
-func (c *accountServiceClient) UpdateAccount(ctx context.Context, in *UpdateAccountRequest, opts ...grpc.CallOption) (*Account, error) {
+func (c *accountServiceClient) UpdateAccount(ctx context.Context, in *UpdateAccountRequest, opts ...grpc.CallOption) (*AccountResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Account)
+	out := new(AccountResponse)
 	err := c.cc.Invoke(ctx, AccountService_UpdateAccount_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -81,9 +81,9 @@ func (c *accountServiceClient) DeleteAccount(ctx context.Context, in *DeleteAcco
 	return out, nil
 }
 
-func (c *accountServiceClient) GetAccountByEmail(ctx context.Context, in *GetAccountByEmailRequest, opts ...grpc.CallOption) (*Account, error) {
+func (c *accountServiceClient) GetAccountByEmail(ctx context.Context, in *GetAccountByEmailRequest, opts ...grpc.CallOption) (*AccountResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Account)
+	out := new(AccountResponse)
 	err := c.cc.Invoke(ctx, AccountService_GetAccountByEmail_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -91,9 +91,9 @@ func (c *accountServiceClient) GetAccountByEmail(ctx context.Context, in *GetAcc
 	return out, nil
 }
 
-func (c *accountServiceClient) GetAccountByID(ctx context.Context, in *GetAccountByIDRequest, opts ...grpc.CallOption) (*Account, error) {
+func (c *accountServiceClient) GetAccountByID(ctx context.Context, in *GetAccountByIDRequest, opts ...grpc.CallOption) (*AccountResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Account)
+	out := new(AccountResponse)
 	err := c.cc.Invoke(ctx, AccountService_GetAccountByID_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -101,9 +101,9 @@ func (c *accountServiceClient) GetAccountByID(ctx context.Context, in *GetAccoun
 	return out, nil
 }
 
-func (c *accountServiceClient) GetAccountByUsername(ctx context.Context, in *GetAccountByUsernameRequest, opts ...grpc.CallOption) (*Account, error) {
+func (c *accountServiceClient) GetAccountByUsername(ctx context.Context, in *GetAccountByUsernameRequest, opts ...grpc.CallOption) (*AccountResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Account)
+	out := new(AccountResponse)
 	err := c.cc.Invoke(ctx, AccountService_GetAccountByUsername_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -111,9 +111,9 @@ func (c *accountServiceClient) GetAccountByUsername(ctx context.Context, in *Get
 	return out, nil
 }
 
-func (c *accountServiceClient) AddKey(ctx context.Context, in *AddKeyRequest, opts ...grpc.CallOption) (*Key, error) {
+func (c *accountServiceClient) AddKey(ctx context.Context, in *AddKeyRequest, opts ...grpc.CallOption) (*KeyResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Key)
+	out := new(KeyResponse)
 	err := c.cc.Invoke(ctx, AccountService_AddKey_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -121,9 +121,9 @@ func (c *accountServiceClient) AddKey(ctx context.Context, in *AddKeyRequest, op
 	return out, nil
 }
 
-func (c *accountServiceClient) GetKeyBySHA3384(ctx context.Context, in *GetKeyBySHA3384Request, opts ...grpc.CallOption) (*Key, error) {
+func (c *accountServiceClient) GetKeyBySHA3384(ctx context.Context, in *GetKeyBySHA3384Request, opts ...grpc.CallOption) (*KeyResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Key)
+	out := new(KeyResponse)
 	err := c.cc.Invoke(ctx, AccountService_GetKeyBySHA3384_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -135,14 +135,14 @@ func (c *accountServiceClient) GetKeyBySHA3384(ctx context.Context, in *GetKeyBy
 // All implementations must embed UnimplementedAccountServiceServer
 // for forward compatibility.
 type AccountServiceServer interface {
-	CreateAccount(context.Context, *CreateAccountRequest) (*Account, error)
-	UpdateAccount(context.Context, *UpdateAccountRequest) (*Account, error)
+	CreateAccount(context.Context, *CreateAccountRequest) (*AccountResponse, error)
+	UpdateAccount(context.Context, *UpdateAccountRequest) (*AccountResponse, error)
 	DeleteAccount(context.Context, *DeleteAccountRequest) (*DeleteAccountResponse, error)
-	GetAccountByEmail(context.Context, *GetAccountByEmailRequest) (*Account, error)
-	GetAccountByID(context.Context, *GetAccountByIDRequest) (*Account, error)
-	GetAccountByUsername(context.Context, *GetAccountByUsernameRequest) (*Account, error)
-	AddKey(context.Context, *AddKeyRequest) (*Key, error)
-	GetKeyBySHA3384(context.Context, *GetKeyBySHA3384Request) (*Key, error)
+	GetAccountByEmail(context.Context, *GetAccountByEmailRequest) (*AccountResponse, error)
+	GetAccountByID(context.Context, *GetAccountByIDRequest) (*AccountResponse, error)
+	GetAccountByUsername(context.Context, *GetAccountByUsernameRequest) (*AccountResponse, error)
+	AddKey(context.Context, *AddKeyRequest) (*KeyResponse, error)
+	GetKeyBySHA3384(context.Context, *GetKeyBySHA3384Request) (*KeyResponse, error)
 	mustEmbedUnimplementedAccountServiceServer()
 }
 
@@ -153,28 +153,28 @@ type AccountServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedAccountServiceServer struct{}
 
-func (UnimplementedAccountServiceServer) CreateAccount(context.Context, *CreateAccountRequest) (*Account, error) {
+func (UnimplementedAccountServiceServer) CreateAccount(context.Context, *CreateAccountRequest) (*AccountResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateAccount not implemented")
 }
-func (UnimplementedAccountServiceServer) UpdateAccount(context.Context, *UpdateAccountRequest) (*Account, error) {
+func (UnimplementedAccountServiceServer) UpdateAccount(context.Context, *UpdateAccountRequest) (*AccountResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateAccount not implemented")
 }
 func (UnimplementedAccountServiceServer) DeleteAccount(context.Context, *DeleteAccountRequest) (*DeleteAccountResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteAccount not implemented")
 }
-func (UnimplementedAccountServiceServer) GetAccountByEmail(context.Context, *GetAccountByEmailRequest) (*Account, error) {
+func (UnimplementedAccountServiceServer) GetAccountByEmail(context.Context, *GetAccountByEmailRequest) (*AccountResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAccountByEmail not implemented")
 }
-func (UnimplementedAccountServiceServer) GetAccountByID(context.Context, *GetAccountByIDRequest) (*Account, error) {
+func (UnimplementedAccountServiceServer) GetAccountByID(context.Context, *GetAccountByIDRequest) (*AccountResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAccountByID not implemented")
 }
-func (UnimplementedAccountServiceServer) GetAccountByUsername(context.Context, *GetAccountByUsernameRequest) (*Account, error) {
+func (UnimplementedAccountServiceServer) GetAccountByUsername(context.Context, *GetAccountByUsernameRequest) (*AccountResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAccountByUsername not implemented")
 }
-func (UnimplementedAccountServiceServer) AddKey(context.Context, *AddKeyRequest) (*Key, error) {
+func (UnimplementedAccountServiceServer) AddKey(context.Context, *AddKeyRequest) (*KeyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddKey not implemented")
 }
-func (UnimplementedAccountServiceServer) GetKeyBySHA3384(context.Context, *GetKeyBySHA3384Request) (*Key, error) {
+func (UnimplementedAccountServiceServer) GetKeyBySHA3384(context.Context, *GetKeyBySHA3384Request) (*KeyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetKeyBySHA3384 not implemented")
 }
 func (UnimplementedAccountServiceServer) mustEmbedUnimplementedAccountServiceServer() {}

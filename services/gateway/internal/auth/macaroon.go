@@ -331,27 +331,6 @@ func VerifyAndGetEmail(cfg *config.Config,el *errors.ErrorList,authData string) 
     return &email
 }
 
-/*
-func GetRootMacaroons(c *gin.Context) (string, string) {
-	authorizationHeaderValue := c.GetHeader("Authorization")
-	tokensString := strings.TrimPrefix(authorizationHeaderValue, "Macaroon")
-	tokens := strings.Split(tokensString, ",")
-	var root string
-	var discharge string
-	for _, t := range tokens {
-		fmt.Println(t)
-
-		if strings.Contains(t, " root=") {
-			root = strings.TrimPrefix(t, " root=")
-		} else {
-			discharge = strings.TrimPrefix(t, " discharge=")
-		}
-	}
-
-	return root, discharge
-}
-*/
-
 func GetRootMacaroonsFromString(macaroonAuth string) (string, string) {
 	tokensString := strings.TrimPrefix(macaroonAuth, "Macaroon")
 	tokens := strings.Split(tokensString, ",")
@@ -366,6 +345,17 @@ func GetRootMacaroonsFromString(macaroonAuth string) (string, string) {
 	}
 
 	return root, discharge
+}
+
+// TODO: implement
+// returns email or id that is extracted out of discharge macaroon
+func VerifyDischargeMacaroon(dischargeMacaroon string,el *errors.ErrorList) (string, error) {
+    return "", nil
+}
+
+// TODO: implement
+func VerifyRootMacaroon(rootMacaroon string, el *errors.ErrorList) error {
+    return nil
 }
 
 func uint64ToBytes(u uint) []byte {

@@ -9,6 +9,7 @@ import (
 	"github.com/idlab-discover/kebeng/services/gateway/internal/config"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/errors"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/message"
+    "github.com/idlab-discover/kebeng/services/gateway/internal/middleware"
 	storeClient "github.com/idlab-discover/kebeng/services/store/client"
 	storepb "github.com/idlab-discover/kebeng/services/store/proto"
 )
@@ -31,13 +32,18 @@ func NewHandler(accountClient *accClient.AccountClient, storeClient *storeClient
 
 // TODO: add middelware function that checks authentication with discharge macaroon (can't get discharge macaroon as of now, so don't know the format/what it contains)
 func (h *Handler) SetupEndpoints(r *gin.Engine) {
+    // NOTE: doesn't really check macaroons yet just sets email to test value
+    authGroup := r.Group("/dev/api")
+    authGroup.Use(middleware.AuthMiddleware())
+
 	r.POST("/createAccount", h.createAccount)
 	r.POST("/dev/api/register-name/", h.RegisterSnapName)
 	r.POST("/dev/api/acl/", h.generateMacaroon)
-    r.POST("/dev/api/acl/verify/", h.verifyMacaroon) //TODO: implement correctly to many unknows of what has to be included and what not, need good source
-    
-    // TODO: needs authentication
-    r.GET("/dev/api/account/", h.getAccount)
+
+    //TODO: implement correctly to many unknows of what has to be included and what not, need good source
+    r.POST("/dev/api/acl/verify/", h.verifyMacaroon)     
+
+    authGroup.GET("/account/", h.getAccount)
 }
 
 func (h *Handler) createAccount(c *gin.Context) {
@@ -185,7 +191,21 @@ func (h *Handler) verifyMacaroon(c *gin.Context) {
 }
 
 func (h *Handler) getAccount(c *gin.Context) {
+    el := errors.New()
+    email, isThere := c.Get("email")
+    if !isThere {
+        el.Add(errors.BadRequest, "missing email")
+        c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+        return
+    }
+
+    accountResponse := h.AccountClient.GetAccountByEmail(email.(string))
+    if len(accountResponse.Errors) > 0 {
+        c.JSON(http.StatusInternalServerError, gin.H{"error_list": formatErrors(accountResponse.Errors)})
+        return
+    }
     
+
 }
 
 func formatErrors(errors []*storepb.Error) []map[string]string {
