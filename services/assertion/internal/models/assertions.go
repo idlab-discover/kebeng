@@ -6,7 +6,7 @@ import (
 )
 
 type Assertion struct {
-	gorm.Model
+	*gorm.Model
 	ID        uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
 	Assertion string    `json:"assertion"`
 }
