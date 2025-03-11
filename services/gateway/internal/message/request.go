@@ -13,7 +13,8 @@ type RegisterSnapNameReq struct {
 }
 
 // the formats  are  {"name" : "package_name", "series" : "package_series"}
-//	            or   {"snap_id" : "package_snap_id"}
+//
+//	or   {"snap_id" : "package_snap_id"}
 type PackageRestriction struct {
 	Name   string `json:"name"`
 	Series string `json:"series"`
@@ -25,4 +26,8 @@ type GenerateMacaroonRequest struct {
 	Channels    []string             `json:"channels"`
 	Packages    []PackageRestriction `json:"packages"`
 	Expires     string               `json:"expires"`
+}
+
+type SnapBuildAssertionReq struct {
+	Assertion []byte `json:"assertion"`
 }
