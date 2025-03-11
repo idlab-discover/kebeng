@@ -161,9 +161,9 @@ func (h *Handler) ProcessSnapBuildAssertion(c *gin.Context) {
 	}
 
 	// Process the snap build assertion with the snapID and req
-	resp := h.AssertionClient.ProcessSnapBuildAssertion(snapID, req)
+	resp := h.AssertionClient.ProcessSnapBuildAssertion(req.Assertion)
 	if len(resp.Errors) > 0 {
-		el.ExtendStoreError(resp.Errors)
+		el.ExtendAssertionError(resp.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}

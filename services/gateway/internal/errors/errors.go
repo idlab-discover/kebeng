@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	assertionpb "github.com/idlab-discover/kebeng/services/assertion/proto"
 	storepb "github.com/idlab-discover/kebeng/services/store/proto"
 )
 
@@ -56,6 +57,12 @@ func (el *ErrorList) Extend(other ErrorList) {
 }
 
 func (el *ErrorList) ExtendStoreError(other []*storepb.Error) {
+	for _, err := range other {
+		el.Add(err.Code, err.Message)
+	}
+}
+
+func (el *ErrorList) ExtendAssertionError(other []*assertionpb.Error) {
 	for _, err := range other {
 		el.Add(err.Code, err.Message)
 	}
