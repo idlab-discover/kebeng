@@ -31,3 +31,11 @@ type GenerateMacaroonRequest struct {
 type SnapBuildAssertionReq struct {
 	Assertion []byte `json:"assertion"`
 }
+
+type AuthData struct {
+	Authorization string `json:"authorization"`
+}
+
+type VerifyRequest struct {
+	AuthData AuthData `json:"auth_data"`
+}

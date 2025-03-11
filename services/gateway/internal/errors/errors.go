@@ -14,8 +14,8 @@ const (
 	AlreadyRegistered          string = "already_registered"
 	AssertionCreationFailed    string = "assertion-creation-failed"
 	BadRequest                 string = "bad-request"
-	InternalServerError        string = "internal-server-error"
 	FailedToRegister           string = "failed-to-register"
+	InternalServerError        string = "internal-server-error"
 	Invalid                    string = "invalid"
 	InvalidChoice              string = "invalid_choice"
 	InvalidField               string = "invalid-field"
@@ -37,6 +37,7 @@ const (
 	ResourceNotFound           string = "resource-not-found"
 	ResourceNotReady           string = "resource-not-ready"
 	RevokedName                string = "revoked_name"
+	Unauthorized               string = "unauthorized"
 	UserNotReady               string = "user-not-ready"
 )
 
@@ -113,9 +114,9 @@ func (el *ErrorList) GetHTTPStatus() int {
 		return http.StatusInternalServerError
 	case BadRequest:
 		return http.StatusBadRequest
-	case InternalServerError:
-		return http.StatusInternalServerError
 	case FailedToRegister:
+		return http.StatusInternalServerError
+	case InternalServerError:
 		return http.StatusInternalServerError
 	case Invalid:
 		return http.StatusBadRequest
@@ -159,6 +160,8 @@ func (el *ErrorList) GetHTTPStatus() int {
 		return http.StatusServiceUnavailable
 	case RevokedName:
 		return http.StatusGone
+	case Unauthorized:
+		return http.StatusUnauthorized
 	case UserNotReady:
 		return http.StatusBadRequest
 	default:
