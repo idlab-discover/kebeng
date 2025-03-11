@@ -1,9 +1,11 @@
 package client
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/idlab-discover/kebeng/services/assertion/internal/config"
+	"github.com/idlab-discover/kebeng/services/assertion/internal/errors"
 	proto "github.com/idlab-discover/kebeng/services/assertion/proto"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -28,4 +30,21 @@ func NewAssertionClient(assertionHost string, assertionPort int) (*AssertionClie
 
 func (c *AssertionClient) Close() {
 	c.conn.Close()
+}
+
+func (c *AssertionClient) ProcessSnapBuildAssertion(assertion []byte) *proto.SnapBuildAssertionResponse {
+	req := &proto.SnapBuildAssertionRequest{
+		Assertion: assertion,
+	}
+
+	resp, err := c.client.ProcessSnapBuildAssertion(context.Background(), req)
+	if err != nil {
+		resp = &proto.SnapBuildAssertionResponse{
+			Errors: []*proto.Error{{
+				Code:    errors.InternalServerError,
+				Message: err.Error()},
+			},
+		}
+	}
+	return resp
 }
