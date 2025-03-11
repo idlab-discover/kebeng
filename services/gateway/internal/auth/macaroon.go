@@ -46,7 +46,7 @@ func  GenerateMacaroon(ctx context.Context, req *message.GenerateMacaroonRequest
     // start creating the macaroon
     m, err := macaroon.New(
         []byte(macaroonConfig.RootKey), 
-        uint64ToBytes(macaroonConfig.RootId),
+        []byte(macaroonConfig.RootId),
         macaroonConfig.RootLocation, 
         macaroon.V1,
     )
@@ -55,17 +55,25 @@ func  GenerateMacaroon(ctx context.Context, req *message.GenerateMacaroonRequest
         return &message.MacaroonResponse{Errors: *el}
 	}
 
-    err = m.AddThirdPartyCaveat([]byte(macaroonConfig.DischargeKey), uint64ToBytes(macaroonConfig.ThirdPartyCaveatId), macaroonConfig.ThirdPartyLocation)
+    // add valid since is in a macaroon when request from the canonical snapstore
+    validSince := time.Now().Format(time.RFC3339Nano)
+    err = m.AddFirstPartyCaveat([]byte(fmt.Sprintf("%s|valid_since|%s", macaroonConfig.RootLocation, validSince)))
+    if err != nil {
+        el.Add(errors.InternalServerError, fmt.Sprintf("failed to add valid_since caveat: %v", err))
+    }
+
+    // TODO: change version maybe? don't know what the version refers to
+    // TODO: maybe encode secret in real example it looks encoded
+    thirdPartyCaveatID := fmt.Sprintf(`{"version": 1, "secret" : "%s"}`, macaroonConfig.DischargeKey)
+    err = m.AddThirdPartyCaveat(
+        []byte(macaroonConfig.DischargeKey),
+        []byte(thirdPartyCaveatID),
+        macaroonConfig.ThirdPartyLocation,
+    )
     if err != nil {
         el.Add(errors.InternalServerError, fmt.Sprintf("failed to add third party caveat: %v", err))
     }
         
-    // add valid since is in a macaroon when request from the canonical snapstore
-    validSince := time.Now().Format(time.RFC3339Nano)
-    err = m.AddFirstPartyCaveat([]byte(fmt.Sprintf("valid_since=%s", validSince)))
-    if err != nil {
-        el.Add(errors.InternalServerError, fmt.Sprintf("failed to add valid_since caveat: %v", err))
-    }
     
     // check generated macaroon requesting it from API and was in this format
     // (This aggregates the requested permissions into a single JSON array.)
@@ -74,7 +82,7 @@ func  GenerateMacaroon(ctx context.Context, req *message.GenerateMacaroonRequest
         if err != nil {
             el.Add(errors.InternalServerError, fmt.Sprintf("failed to marshal permissions: %v", err))
         } else {
-            err = m.AddFirstPartyCaveat([]byte(fmt.Sprintf("acl=%s", permsJson)))
+            err = m.AddFirstPartyCaveat([]byte(fmt.Sprintf("%s|acl|%s",macaroonConfig.RootLocation, permsJson)))
             if err != nil {
                 el.Add(errors.InternalServerError, fmt.Sprintf("failed to add acl caveat: %v", err))
             }
@@ -83,7 +91,7 @@ func  GenerateMacaroon(ctx context.Context, req *message.GenerateMacaroonRequest
 
     // add channels as caveats
     for _, channel := range req.Channels {
-        caveat := fmt.Sprintf("channel=%s", channel)
+        caveat := fmt.Sprintf("%s|channel|%s",macaroonConfig.RootLocation, channel)
         err = m.AddFirstPartyCaveat([]byte(caveat))
         if err != nil {
             el.Add(errors.InternalServerError, fmt.Sprintf("failed to add channel: %v, err:%v",channel, err))
@@ -93,7 +101,7 @@ func  GenerateMacaroon(ctx context.Context, req *message.GenerateMacaroonRequest
     // add packages as caveats
     // we get the snapIDs instead of 2 different formats => allows consistency when decoding macaroon
     for snapID := range snapIDs {
-        caveat := fmt.Sprintf("snap_id=%s",snapID)
+        caveat := fmt.Sprintf("%s|snap_id|%s",macaroonConfig.RootLocation,snapID)
         err = m.AddFirstPartyCaveat([]byte(caveat))
         if err != nil {
             el.Add(errors.InternalServerError, fmt.Sprintf("failed to add snap_id: %s, err: %v", snapID, err))
@@ -122,7 +130,7 @@ func  GenerateMacaroon(ctx context.Context, req *message.GenerateMacaroonRequest
         }
     }
     if expiryTimestamp != "" {
-        err = m.AddFirstPartyCaveat([]byte(fmt.Sprintf("expires=%s", expiryTimestamp)))
+        err = m.AddFirstPartyCaveat([]byte(fmt.Sprintf("%s|expires|%s",macaroonConfig.RootLocation, expiryTimestamp)))
         if err != nil {
             el.Add(errors.InternalServerError, fmt.Sprintf("failed to add expires caveat: %v", err))
         }
@@ -160,6 +168,7 @@ func ValidateGenerateMacaroonRequest(req *message.GenerateMacaroonRequest, el *e
 		"package_manage":            {},
 		"package_upload":            {},
 		"package_upload_request":    {},
+        "package_purchase":          {},
 	}
 
     validChannels := map[string]struct{}{
