@@ -5,6 +5,7 @@ go 1.22.2
 require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/idlab-discover/kebeng/services/account v0.0.0-20250302144916-3c309e42c096
+	github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250311175206-def23c15f474
 	github.com/idlab-discover/kebeng/services/store v0.0.0-20250305130157-043912efac25
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/viper v1.19.0
@@ -25,8 +26,6 @@ require (
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/idlab-discover/kebeng v0.0.0-20250311131443-8818520a6192 // indirect
-	github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250311131443-8818520a6192 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.9 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
