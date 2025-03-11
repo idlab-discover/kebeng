@@ -19,8 +19,8 @@ message SnapBuildAssertionResponse {
     string snap_sha3_384 = 5;
     string snap_size = 6;
     string timestamp = 7;
-    string revision = 8;
-    string type = 9;
+    string type = 8;
+    string developer_id = 9;
     repeated Error errors = 10;
 }
 

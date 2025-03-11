@@ -2,12 +2,14 @@ package logic
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/idlab-discover/kebeng/services/assertion/internal/config"
 	"github.com/idlab-discover/kebeng/services/assertion/internal/errors"
 	"github.com/idlab-discover/kebeng/services/assertion/internal/repositories"
 	proto "github.com/idlab-discover/kebeng/services/assertion/proto"
+	"github.com/sirupsen/logrus"
 )
 
 // TODO: maybe call this different?
@@ -32,6 +34,9 @@ func (s *AssertionService) ProcessSnapBuildAssertion(ctx context.Context, req *p
 			Code:    errors.MissingField,
 			Message: "Assertion field is required",
 		})
+		return &proto.SnapBuildAssertionResponse{
+			Errors: errList,
+		}, nil
 	}
 
 	assertion := parseAssertion(string(req.Assertion))
@@ -40,11 +45,8 @@ func (s *AssertionService) ProcessSnapBuildAssertion(ctx context.Context, req *p
 	if err != nil {
 		errList = append(errList, &proto.Error{
 			Code:    errors.Invalid,
-			Message: "Not a valid snap-build assertion",
+			Message: "not a valid snap-build assertion: " + err.Error(),
 		})
-	}
-
-	if len(errList) > 0 {
 		return &proto.SnapBuildAssertionResponse{
 			Errors: errList,
 		}, nil
@@ -52,6 +54,7 @@ func (s *AssertionService) ProcessSnapBuildAssertion(ctx context.Context, req *p
 
 	_, err = s.repo.AddAssertion(string(req.Assertion))
 	if err != nil {
+		logrus.Errorf("Failed to create assertion: %v", err)
 		errList = append(errList, &proto.Error{
 			Code:    errors.AssertionCreationFailed,
 			Message: "Failed to create assertion",
@@ -64,23 +67,45 @@ func (s *AssertionService) ProcessSnapBuildAssertion(ctx context.Context, req *p
 	// TODO: add logic to fill in the fields in the response
 	// This info will be present in the assertion object
 	return &proto.SnapBuildAssertionResponse{
-		AuthorityId:     assertion["AuthorityId"],
-		Grade:           assertion["Grade"],
-		SignKeySha3_384: assertion["SignKeySha3_384"],
-		SnapId:          assertion["SnapId"],
-		SnapSha3_384:    assertion["SnapSha3_384"],
-		SnapSize:        assertion["SnapSize"],
-		Timestamp:       assertion["Timestamp"],
-		Revision:        assertion["Revision"],
-		Type:            assertion["Type"],
-		Errors: errList,
+		AuthorityId:     assertion["authority-id"],
+		Grade:           assertion["grade"],
+		SignKeySha3_384: assertion["sign-key-sha3-384"],
+		SnapId:          assertion["snap-id"],
+		SnapSha3_384:    assertion["snap-sha3-384"],
+		SnapSize:        assertion["snap-size"],
+		Timestamp:       assertion["timestamp"],
+		Type:            assertion["type"],
+		DeveloperId:     assertion["developer-id"],
+		Errors:          errList,
 	}, nil
 }
 
 // TODO: implement this function to check if the assertion is a valid snap-build assertion
 // this is a placeholder for now
 // because currently no idea how to validate this
-func validateSnapBuildAssertion(map[string]string) error {
+func validateSnapBuildAssertion(assertion map[string]string) error {
+	requiredFields := []string{
+		"type",
+		"authority-id",
+		"snap-sha3-384",
+		"developer-id",
+		"grade",
+		"snap-id",
+		"snap-size",
+		"timestamp",
+		"sign-key-sha3-384",
+	}
+
+	for _, field := range requiredFields {
+		if _, ok := assertion[field]; !ok {
+			return fmt.Errorf("missing required field: %s", field)
+		}
+	}
+
+	if assertion["type"] != "snap-build" {
+		return fmt.Errorf("invalid type: %s", assertion["type"])
+	}
+
 	return nil
 }
 
@@ -94,8 +119,9 @@ func validateSnapBuildAssertion(map[string]string) error {
 //   - data: A string containing the key-value pairs to be parsed.
 //
 // Returns:
-//   A map[string]string where the keys are the parsed keys and the values are
-//   the parsed values.
+//
+//	A map[string]string where the keys are the parsed keys and the values are
+//	the parsed values.
 func parseAssertion(data string) map[string]string {
 	lines := strings.Split(data, "\n")
 	result := make(map[string]string)
