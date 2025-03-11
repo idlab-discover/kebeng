@@ -7,7 +7,7 @@ import (
 	database "github.com/idlab-discover/kebeng/services/assertion/internal"
 	"github.com/idlab-discover/kebeng/services/assertion/internal/config"
 	"github.com/idlab-discover/kebeng/services/assertion/internal/logic"
-	"github.com/idlab-discover/kebeng/services/assertion/internal/repository"
+	"github.com/idlab-discover/kebeng/services/assertion/internal/repositories"
 	proto "github.com/idlab-discover/kebeng/services/assertion/proto"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -28,7 +28,7 @@ func main() {
 	logrus.Infof("Connected to database: %v", db)
 
 	// start grpc server
-	repo := repository.NewAssertionRepository(db)
+	repo := repositories.NewAssertionRepository(db)
 	assertionService := logic.NewAssertionService(repo, cfg)
 
 	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", cfg.GRPCHost, cfg.GRPCPort))

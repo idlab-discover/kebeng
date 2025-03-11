@@ -2,7 +2,7 @@ package logic
 
 import (
 	"github.com/idlab-discover/kebeng/services/assertion/internal/config"
-	"github.com/idlab-discover/kebeng/services/assertion/internal/repository"
+	"github.com/idlab-discover/kebeng/services/assertion/internal/repositories"
 	proto "github.com/idlab-discover/kebeng/services/assertion/proto"
 )
 
@@ -12,10 +12,10 @@ import (
 
 type AssertionService struct {
 	config *config.Config
-	repo   *repository.AssertionRepository
+	repo   *repositories.AssertionRepository
 	proto.UnimplementedAssertionServiceServer
 }
 
-func NewAssertionService(repo *repository.AssertionRepository, config *config.Config) *AssertionService {
+func NewAssertionService(repo *repositories.AssertionRepository, config *config.Config) *AssertionService {
 	return &AssertionService{repo: repo, config: config}
 }
