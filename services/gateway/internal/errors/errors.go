@@ -67,6 +67,8 @@ func (el *ErrorList) ExtendAccountError(other []*accountpb.Error) {
     for _, err := range other {
         el.Add(err.Code, err.Message)
     }
+}
+
 func (el *ErrorList) ExtendAssertionError(other []*assertionpb.Error) {
 	for _, err := range other {
 		el.Add(err.Code, err.Message)

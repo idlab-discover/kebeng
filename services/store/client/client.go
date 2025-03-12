@@ -18,6 +18,8 @@ type StoreClientInterface interface {
 	RegisterSnapName(snapName string, isPrivate bool, storeName string, dryRun bool) *proto.RegisterSnapNameResponse
 	GetEntries(entries *proto.GetEntriesRequest) *proto.GetEntriesResponse
 	GetRevisions(revisions *proto.GetRevisionsRequest) *proto.GetRevisionsResponse
+    GetEntriesByAccountID(accountID string) *proto.GetEntriesResponse
+    GetRevisionsByEntryIds(entryIds *proto.GetRevisionsByEntryIdRequests) *proto.GetRevisionsByEntryIdResponses
 }
 
 var _ StoreClientInterface = (*StoreClient)(nil)
