@@ -11,6 +11,7 @@ service AccountService {
     rpc DeleteAccount(DeleteAccountRequest) returns (DeleteAccountResponse);
     rpc GetAccountByEmail(GetAccountByEmailRequest) returns (AccountResponse);
     rpc GetAccountByID(GetAccountByIDRequest) returns (AccountResponse);
+    rpc GetAccountsByIds(GetAccountsByIdsRequest) returns (GetAccountsByIdsResponse);
     rpc GetAccountByUsername(GetAccountByUsernameRequest) returns (AccountResponse);
 
     rpc AddKey(AddKeyRequest) returns (KeyResponse);
@@ -28,7 +29,8 @@ message AccountResponse {
     string display_name = 2;
     string username = 3;
     string email = 4;
-    repeated Error errors = 5;
+    string validation = 5;
+    repeated Error errors = 6;
 }
 
 message KeysResponse {
@@ -94,3 +96,13 @@ message GetKeyBySHA3384Request {
 message GetKeysByAccountIDRequest {
     string account_id = 1;
 }
+
+message GetAccountsByIdsRequest {
+    repeated string ids = 1;
+}
+
+message GetAccountsByIdsResponse {
+    repeated AccountResponse accounts = 1;
+    repeated Error errors = 2;
+}
+

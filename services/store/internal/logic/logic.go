@@ -354,6 +354,7 @@ func (s *StoreLogic) GetEntriesByAccountId(req *proto.GetEntriesByAccountIdReque
                 Confinement: entry.Confinement, 
                 Base: entry.Base, 
                 Private: entry.Private,
+                PublisherId: entry.AccountID.String(),
             }
     }
 

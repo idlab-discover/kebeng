@@ -232,37 +232,42 @@ func (h *Handler) getAccount(c *gin.Context) {
     }
 
     // Get snaps
+    // TODO: fill in snaps object
+    snaps := make(map[string]map[string]*message.Snap)
+
     entries := h.StoreClient.GetEntriesByAccountID(account.Id)
     if len(entries.Errors) > 0 {
         el.ExtendStoreError(entries.Errors)
         c.JSON(http.StatusInternalServerError, gin.H{"error_list": el})
         return
     }
+    
     // Get all revisions for every snapEntry
-    snapEntries := make([]*storepb.GetRevisions, len(entries.Entries))
+    snapEntries := make([]*storepb.GetRevisionsByEntryIdRequest, len(entries.Entries))
     for i, e := range entries.Entries {
-        snapEntries[i] = &storepb.GetRevisionsByEntryIdRequest{Id: e}
+        snapEntries[i] = &storepb.GetRevisionsByEntryIdRequest{EntryId: e.Id}
     }
 
     // do 1 request where we get all the snapRevisions for every snapEntry
-    revisions := h.StoreClient.GetRevisionsByEntryIds(&storepb.GetRevisionsByEntryIdRequests{Entries: snapEntries})
+    revisions := h.StoreClient.GetRevisionsByEntryIds(
+        &storepb.GetRevisionsByEntryIdRequests{
+            Requests: snapEntries,
+        })
     if len(revisions.Errors) > 0 {
         el.ExtendStoreError(revisions.Errors)
         c.JSON(http.StatusInternalServerError, gin.H{"error_list": el})
         return
     }
-
-    // do 1 request where we get all the Publishers for every snapEntry
-    publisherRequests := make([]*storepb.GetPublisherRequest, len(snapEntries))
-    for i, e := range snapEntries {
-        publisherRequests[i] = &storepb.GetPublisherRequest{Entry: e.Id}
+    
+    // according to the docs a Publisher is only linked to a snapEntry
+    // get all publishers per snap 
+    // get all accountId's from the snapEntries
+    accountIds := make([]string, len(entries.Entries))
+    for i, e := range entries.Entries {
+        accountIds[i] = e.PublisherId
     }
-    publishers := h.StoreClient.GetPublishers(&storepb.GetPublishersRequest{publishers: publisherRequests})
-    if len(publishers.Errors) > 0 {
-        el.ExtendStoreError(publishers.Errors)
-        c.JSON(http.StatusInternalServerError, gin.H{"error_list": el})
-        return
-    }
+    publishers := h.AccountClient.GetAccountsByIds(accountIds)
+    
 
 
 

@@ -121,6 +121,20 @@ func (c *AccountClient) GetAccountByID(id string) (*proto.AccountResponse) {
     return resp
 }
 
+func (c *AccountClient) GetAccountsByIds(ids []string) (*proto.GetAccountsByIdsResponse) {
+    req := &proto.GetAccountsByIdsRequest{Ids: ids}
+    resp , err := c.client.GetAccountsByIds(context.Background(), req)
+    if err != nil {
+        // this means proto request failed not the actual logic
+        resp = &proto.GetAccountsByIdsResponse{
+            Errors: []*proto.Error{{
+                Code: errors.InternalServerError, Message: err.Error()},
+            },
+        }
+    }
+    return resp
+}
+
 func (c *AccountClient) GetAccountByUsername(username string) (*proto.AccountResponse) {
     req := &proto.GetAccountByUsernameRequest{Username: username}
 
