@@ -49,8 +49,8 @@ github.com/idlab-discover/kebeng/services/account v0.0.0-20250302144916-3c309e42
 github.com/idlab-discover/kebeng/services/account v0.0.0-20250302144916-3c309e42c096/go.mod h1:S5vOOfjVpuRRZEVR5mUcNqP076sxG8qsVdtxIW+9iWA=
 github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250311175206-def23c15f474 h1:Gq0kJyvLg5jrN5Kb3zlzZ0SNmz1JhEAcewcBq8wdOyk=
 github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250311175206-def23c15f474/go.mod h1:xjzZl/MqcJcdOGKty3+0TaEcXEDHfxL6ZoE9FLg2PyU=
-github.com/idlab-discover/kebeng/services/store v0.0.0-20250305130157-043912efac25 h1:j7h+2eGqBWzzrx9TZu6Cy+Rh8V34dj3y4sOi+6wAX0g=
-github.com/idlab-discover/kebeng/services/store v0.0.0-20250305130157-043912efac25/go.mod h1:UkLSz9Hc6ecuspipVmRj01OQMy6qRPzVxz+VZN0F9jQ=
+github.com/idlab-discover/kebeng/services/store v0.0.0-20250312142441-2ce079156b73 h1:fG5+JilI6EUGDrFLDqWrq2hoXLH598xPcbD1gAXgFXU=
+github.com/idlab-discover/kebeng/services/store v0.0.0-20250312142441-2ce079156b73/go.mod h1:UkLSz9Hc6ecuspipVmRj01OQMy6qRPzVxz+VZN0F9jQ=
 github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnrnM=
 github.com/json-iterator/go v1.1.12/go.mod h1:e30LSqwooZae/UwlEbR2852Gd8hjQvJoHmT4TnhNGBo=
 github.com/klauspost/cpuid/v2 v2.0.9/go.mod h1:FInQzS24/EEf25PyTYn52gqo7WaD8xa0213Md/qVLRg=
@@ -104,7 +104,6 @@ github.com/spf13/viper v1.19.0/go.mod h1:GQUN9bilAbhU/jgc1bKs99f/suXKeUMct8Adx5+
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.4.0/go.mod h1:YvHI0jy2hoMjB+UWwv71VJQ9isScKT/TqJzVSSt89Yw=
 github.com/stretchr/objx v0.5.0/go.mod h1:Yh+to48EsGEfYuaHDzXPcE3xhTkx73EhmCGUpEOglKo=
-github.com/stretchr/objx v0.5.2 h1:xuMeJ0Sdp5ZMRXx/aWO6RZxdr3beISkG5/G/aIRr3pY=
 github.com/stretchr/objx v0.5.2/go.mod h1:FRsXN1f5AsAjCGJKqEizvkpNtU+EGNCLh3NxZ/8L+MA=
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
