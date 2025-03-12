@@ -104,11 +104,13 @@ type SnapUpload struct {
 
 type SnapComment struct {
 	gorm.Model
-	ID       uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	AuthorID uuid.UUID
-	Since    time.Time
-	Reason   string
-	Comment  string
+	ID          uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	AuthorID    uuid.UUID
+	Since       time.Time
+	Reason      string
+	Comment     string
+	SnapEntryID uuid.UUID
+	SnapEntry   SnapEntry
 }
 
 func (se *SnapEntry) ToStoreSnap(snapRevision *SnapRevision) (*responses.StoreSnap, error) {

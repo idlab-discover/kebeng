@@ -19,11 +19,11 @@ import (
 type Handler struct {
 	config          *config.Config
 	AccountClient   *accClient.AccountClient
-	StoreClient     *storeClient.StoreClientInterface
+	StoreClient     storeClient.StoreClientInterface
 	AssertionClient *assertionClient.AssertionClient
 }
 
-func NewHandler(accountClient *accClient.AccountClient, storeClient *storeClient.StoreClientInterface, config *config.Config) *Handler {
+func NewHandler(accountClient *accClient.AccountClient, storeClient storeClient.StoreClientInterface, config *config.Config) *Handler {
 	return &Handler{
 		config:        config,
 		AccountClient: accountClient,
