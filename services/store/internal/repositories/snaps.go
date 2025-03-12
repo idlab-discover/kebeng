@@ -527,6 +527,21 @@ func (sp *SnapsRepository) GetEntriesByAccountId(accountId uuid.UUID, preloadAss
     return nil, nil
 }
 
+func (sp *SnapsRepository) GetRevisionsByEntryId(entryId uuid.UUID) ([]*models.SnapRevision, error) {
+    var revisions []*models.SnapRevision
+    db := sp.db.Where(&models.SnapRevision{SnapEntryID: entryId}).Find(&revisions)
+    if _, ok := database.CheckDBForErrorOrNoRows(db); ok {
+        return revisions, nil
+    }
+
+    if db.Error != nil {
+        return nil, db.Error
+    }
+
+    logrus.Errorf("Could not find revisions for snapEntryId: %s", entryId)
+    return nil, nil
+}
+
 func (sp *SnapsRepository) getSnap(whereModel *models.SnapEntry, preloadAssociations bool) (*models.SnapEntry, error) {
 	var existingSnap models.SnapEntry
 	var db *gorm.DB

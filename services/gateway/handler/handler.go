@@ -239,7 +239,7 @@ func (h *Handler) getAccount(c *gin.Context) {
         return
     }
     // Get all revisions for every snapEntry
-    snapEntries := make([]*storepb.GetRevisionsByEntryIdRequest, len(entries.Entries))
+    snapEntries := make([]*storepb.GetRevisions, len(entries.Entries))
     for i, e := range entries.Entries {
         snapEntries[i] = &storepb.GetRevisionsByEntryIdRequest{Id: e}
     }
