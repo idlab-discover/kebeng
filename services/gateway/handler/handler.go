@@ -233,7 +233,6 @@ func (h *Handler) getAccount(c *gin.Context) {
 
     // Get snaps
     // TODO: fill in snaps object
-    snaps := make(map[string]map[string]*message.Snap)
 
     entries := h.StoreClient.GetEntriesByAccountID(account.Id)
     if len(entries.Errors) > 0 {
@@ -267,11 +266,87 @@ func (h *Handler) getAccount(c *gin.Context) {
         accountIds[i] = e.PublisherId
     }
     publishers := h.AccountClient.GetAccountsByIds(accountIds)
+    if len(publishers.Errors) > 0 {
+        el.ExtendAccountError(publishers.Errors)
+        c.JSON(http.StatusInternalServerError, gin.H{"error_list": el})
+        return
+    }
     
+    // Now we have all the data we need to fill in the snaps object
+    // start filling in
+    snaps := make(map[string]map[string]message.Snap)
 
+    // Map publishers by ID for quick lookup
+    publisherMap := make(map[string]*message.Publisher)
+    for _, p := range publishers.Accounts {
+        publisherMap[p.Id] = &message.Publisher{
+            ID:          p.Id,
+            DisplayName: p.DisplayName,
+            Username:    p.Username,
+            Validation:  p.Validation,
+        }
+    }
 
+    // Map revisions by entry ID for quick lookup
+    revisionMap := make(map[string][]message.SnapRevision)
+    for _, revs := range revisions.Responses {
+        entryID := revs.EntryId
+        for _, rev := range revs.Revisions {
+            revisionMap[entryID] = append(revisionMap[entryID], message.SnapRevision{
+                Revision:      int(rev.Sequence),
+                // Since:         rev.CreatedAt.AsTime(), // need to add this to the proto 
+                // Version:       rev.Version, // need to add this to the proto and maybe store it in the db
+                // Status:        rev.Status, // need to add this to the proto and maybe store it in the db
+                // Architectures: rev.Architectures, // need to add this to the proto and maybe stor it in the db
+                // Channels:      rev.Channels, // add this to proto
+            })
+        }
+    }
 
     
+    // Iterate over entries and fill snaps map
+    for _, e := range entries.Entries {
+        series := e.Base         // Example: "16" //TODO: check if this is series normally but i think its the same as base?
+        snapName := e.SnapName        // Example: "hello-published"
+
+        // Ensure series exists in the map
+        if snaps[series] == nil {
+            snaps[series] = make(map[string]message.Snap)
+        }
+
+        // Get publisher
+        publisher, exists := publisherMap[e.PublisherId]
+        if !exists {
+            // should always exist normally otherwise something went wrong in previous processes
+            publisher = &message.Publisher{
+                ID:          e.PublisherId, // Fallback to ID only
+                DisplayName: "Unknown Publisher",
+                Username:    "unknown",
+                Validation:  "unverified",
+            }
+        }
+
+        // Get revisions for this snap entry
+        latestRevisions := revisionMap[e.Id]
+
+        // Construct Snap object
+        snap := message.Snap{
+            // Status:          e.Status,        // added to db but noyet proto and query i think? ask Bram
+            // Price:           e.Price,         // idem
+            // Since:           e.Since.AsTime(),// idem
+            SnapID:          e.Id,
+            // Store:           e.Store, // not yet implemented
+            Private:         e.Private,
+            IconURL:         nil, // idem
+            Publisher:       *publisher,
+            LatestComments:  []message.SnapComment{}, // No comments available yet
+            LatestRevisions: latestRevisions,
+        }
+
+        // Assign snap to the correct series and snap name
+        snaps[series][snapName] = snap
+    }
+
     // not yet implemented don't support brandstores yet
     // stores := h.AccountClient.GetStores(account.Id)
     
@@ -283,7 +358,7 @@ func (h *Handler) getAccount(c *gin.Context) {
         Username: account.Username,
 
         AccountKeys: messageKeys,
-        Snaps: nil,
+        Snaps: snaps,
         Stores: nil,
     }
     c.JSON(http.StatusOK,resp)
