@@ -61,7 +61,7 @@ func (s *StoreLogic) RegisterSnapName(ctx context.Context, req *proto.RegisterSn
 	errList := make([]*proto.Error, 0)
 
 	if req.SnapName == "" {
-		errList = append(errList, &proto.Error{Code: errors.MissingField, Message: "Snap name is required"})
+		errList = append(errList, &proto.Error{Code: errors.MissingField, Message: "snap_name is required"})
 		return &proto.RegisterSnapNameResponse{Errors: errList}, nil
 	}
 
