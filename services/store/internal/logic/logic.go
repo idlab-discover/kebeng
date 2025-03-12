@@ -325,7 +325,7 @@ func (s *StoreLogic) GetRevisionByNameAndSequence(ctx context.Context, req *prot
 	return &proto.GetRevisionResponse{Id: revision.ID, SnapName: snapEntry.Name, Sequence: uint64(revision.SequenceNumber)}, nil
 }
 
-func (s *StoreLogic) GetEntriesByAccountId(req *proto.GetEntriesByAccountIdRequest) (*proto.GetEntriesResponse, error) {
+func (s *StoreLogic) GetEntriesByAccountId(ctx context.Context, req *proto.GetEntriesByAccountIdRequest) (*proto.GetEntriesResponse, error) {
     el := make([]*proto.Error, 0)
     if req.AccountId == "" {
         el = append(el, &proto.Error{Code: errors.MissingField, Message: "Account id is required"})
@@ -363,7 +363,7 @@ func (s *StoreLogic) GetEntriesByAccountId(req *proto.GetEntriesByAccountIdReque
 
 // returns multiple Revisions by their entry ids 
 // if a revision is not found a response with EntryId filled in and len(Errors) > 0 is put in the response
-func (s *StoreLogic) GetRevisionsByEntryIds(req *proto.GetRevisionsByEntryIdRequests) (*proto.GetRevisionsByEntryIdResponses, error) {
+func (s *StoreLogic) GetRevisionsByEntryIds(ctx context.Context, req *proto.GetRevisionsByEntryIdRequests) (*proto.GetRevisionsByEntryIdResponses, error) {
     el := make([]*proto.Error, 0)
     responses := make([]*proto.GetRevisionsByEntryIdResponse, 0)
     for _, entryIdReq := range req.GetRequests() {
