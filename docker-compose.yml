@@ -98,10 +98,42 @@ services:
     networks: 
       - kebeng-backend
 
+
+  assertion_service:
+      build: 
+        context: ./services/assertion
+        dockerfile: Dockerfile.assertion
+      ports:
+        - "8083:8083"
+      depends_on:
+        - assertion_db
+      volumes:
+        - ./services/assertion/config.yaml:/app/config.yaml  # config file
+      environment:
+        - CONFIG_FILE_PATH=/app/config.yaml
+      restart: always
+      networks: 
+        - kebeng-backend
+
+  assertion_db:
+    image: postgres:13
+    restart: always
+    volumes:
+      - assertion_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=assertion_db
+      - POSTGRES_USER=kebe_user
+      - POSTGRES_PASSWORD=kebe
+    ports:
+      - "5434:5432"
+    networks: 
+      - kebeng-backend
+
 volumes:
   store_data:
   minio_data:
   account_data:
+  assertion_data:
 
 networks:
   kebeng-backend:
