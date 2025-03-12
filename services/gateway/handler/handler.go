@@ -4,12 +4,13 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	accClient "github.com/idlab-discover/kebeng/services/account/client"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/auth"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/config"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/errors"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/message"
-    "github.com/idlab-discover/kebeng/services/gateway/internal/middleware"
+	"github.com/idlab-discover/kebeng/services/gateway/internal/middleware"
 	storeClient "github.com/idlab-discover/kebeng/services/store/client"
 	storepb "github.com/idlab-discover/kebeng/services/store/proto"
 )
@@ -204,22 +205,81 @@ func (h *Handler) getAccount(c *gin.Context) {
         c.JSON(http.StatusInternalServerError, gin.H{"error_list": el})
         return
     }
+    accId, err := uuid.Parse(account.Id)
+    if err != nil {
+        // should never happen really
+        el.Add(errors.InternalServerError, err.Error())
+        c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+        return
+    }
 
     
-    keys := h.AccountClient.(account.Id)
-    // not yet implemented
+    keys := h.AccountClient.GetAccountKeysByAccountID(account.Id)
+    if len(keys.Errors) > 0 {
+        el.ExtendAccountError(keys.Errors)
+        c.JSON(http.StatusInternalServerError, gin.H{"error_list": el})
+        return
+    }
+    // convert to message.AccountKey
+    messageKeys := make([]message.AccountKey, len(keys.Keys))
+    for i, k := range keys.Keys {
+        messageKeys[i] = message.AccountKey{
+            Name: k.Name,
+            PublicKeySHA384: k.Sha3384,
+            Since: k.Since.AsTime(),
+            Until: k.Until.AsTime(),
+        }
+    }
+
+    // Get snaps
+    entries := h.StoreClient.GetEntriesByAccountID(account.Id)
+    if len(entries.Errors) > 0 {
+        el.ExtendStoreError(entries.Errors)
+        c.JSON(http.StatusInternalServerError, gin.H{"error_list": el})
+        return
+    }
+    // Get all revisions for every snapEntry
+    snapEntries := make([]*storepb.GetRevisionsByEntryIdRequest, len(entries.Entries))
+    for i, e := range entries.Entries {
+        snapEntries[i] = &storepb.GetRevisionsByEntryIdRequest{Id: e}
+    }
+
+    // do 1 request where we get all the snapRevisions for every snapEntry
+    revisions := h.StoreClient.GetRevisionsByEntryIds(&storepb.GetRevisionsByEntryIdRequests{Entries: snapEntries})
+    if len(revisions.Errors) > 0 {
+        el.ExtendStoreError(revisions.Errors)
+        c.JSON(http.StatusInternalServerError, gin.H{"error_list": el})
+        return
+    }
+
+    // do 1 request where we get all the Publishers for every snapEntry
+    publisherRequests := make([]*storepb.GetPublisherRequest, len(snapEntries))
+    for i, e := range snapEntries {
+        publisherRequests[i] = &storepb.GetPublisherRequest{Entry: e.Id}
+    }
+    publishers := h.StoreClient.GetPublishers(&storepb.GetPublishersRequest{publishers: publisherRequests})
+    if len(publishers.Errors) > 0 {
+        el.ExtendStoreError(publishers.Errors)
+        c.JSON(http.StatusInternalServerError, gin.H{"error_list": el})
+        return
+    }
+
+
+
+    
+    // not yet implemented don't support brandstores yet
     // stores := h.AccountClient.GetStores(account.Id)
     
     // leaving out the deprecated fields for now
     resp := message.AccountResponse{
-        ID: account.Id,
+        ID: accId,
         DisplayName: account.DisplayName,
         Email: account.Email,
         Username: account.Username,
 
-        AccountKeys: nil,
-        Stores: nil,
+        AccountKeys: messageKeys,
         Snaps: nil,
+        Stores: nil,
     }
     c.JSON(http.StatusOK,resp)
 }

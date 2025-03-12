@@ -19,10 +19,11 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	StoreService_UploadSnap_FullMethodName       = "/store.StoreService/UploadSnap"
-	StoreService_RegisterSnapName_FullMethodName = "/store.StoreService/RegisterSnapName"
-	StoreService_GetRevisions_FullMethodName     = "/store.StoreService/GetRevisions"
-	StoreService_GetEntries_FullMethodName       = "/store.StoreService/GetEntries"
+	StoreService_UploadSnap_FullMethodName            = "/store.StoreService/UploadSnap"
+	StoreService_RegisterSnapName_FullMethodName      = "/store.StoreService/RegisterSnapName"
+	StoreService_GetRevisions_FullMethodName          = "/store.StoreService/GetRevisions"
+	StoreService_GetEntries_FullMethodName            = "/store.StoreService/GetEntries"
+	StoreService_GetEntriesByAccountId_FullMethodName = "/store.StoreService/GetEntriesByAccountId"
 )
 
 // StoreServiceClient is the client API for StoreService service.
@@ -33,6 +34,7 @@ type StoreServiceClient interface {
 	RegisterSnapName(ctx context.Context, in *RegisterSnapNameRequest, opts ...grpc.CallOption) (*RegisterSnapNameResponse, error)
 	GetRevisions(ctx context.Context, in *GetRevisionsRequest, opts ...grpc.CallOption) (*GetRevisionsResponse, error)
 	GetEntries(ctx context.Context, in *GetEntriesRequest, opts ...grpc.CallOption) (*GetEntriesResponse, error)
+	GetEntriesByAccountId(ctx context.Context, in *GetEntriesByAccountIdRequest, opts ...grpc.CallOption) (*GetEntriesResponse, error)
 }
 
 type storeServiceClient struct {
@@ -83,6 +85,16 @@ func (c *storeServiceClient) GetEntries(ctx context.Context, in *GetEntriesReque
 	return out, nil
 }
 
+func (c *storeServiceClient) GetEntriesByAccountId(ctx context.Context, in *GetEntriesByAccountIdRequest, opts ...grpc.CallOption) (*GetEntriesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetEntriesResponse)
+	err := c.cc.Invoke(ctx, StoreService_GetEntriesByAccountId_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // StoreServiceServer is the server API for StoreService service.
 // All implementations must embed UnimplementedStoreServiceServer
 // for forward compatibility.
@@ -91,6 +103,7 @@ type StoreServiceServer interface {
 	RegisterSnapName(context.Context, *RegisterSnapNameRequest) (*RegisterSnapNameResponse, error)
 	GetRevisions(context.Context, *GetRevisionsRequest) (*GetRevisionsResponse, error)
 	GetEntries(context.Context, *GetEntriesRequest) (*GetEntriesResponse, error)
+	GetEntriesByAccountId(context.Context, *GetEntriesByAccountIdRequest) (*GetEntriesResponse, error)
 	mustEmbedUnimplementedStoreServiceServer()
 }
 
@@ -112,6 +125,9 @@ func (UnimplementedStoreServiceServer) GetRevisions(context.Context, *GetRevisio
 }
 func (UnimplementedStoreServiceServer) GetEntries(context.Context, *GetEntriesRequest) (*GetEntriesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetEntries not implemented")
+}
+func (UnimplementedStoreServiceServer) GetEntriesByAccountId(context.Context, *GetEntriesByAccountIdRequest) (*GetEntriesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetEntriesByAccountId not implemented")
 }
 func (UnimplementedStoreServiceServer) mustEmbedUnimplementedStoreServiceServer() {}
 func (UnimplementedStoreServiceServer) testEmbeddedByValue()                      {}
@@ -206,6 +222,24 @@ func _StoreService_GetEntries_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _StoreService_GetEntriesByAccountId_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetEntriesByAccountIdRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StoreServiceServer).GetEntriesByAccountId(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StoreService_GetEntriesByAccountId_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StoreServiceServer).GetEntriesByAccountId(ctx, req.(*GetEntriesByAccountIdRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // StoreService_ServiceDesc is the grpc.ServiceDesc for StoreService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -228,6 +262,10 @@ var StoreService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetEntries",
 			Handler:    _StoreService_GetEntries_Handler,
+		},
+		{
+			MethodName: "GetEntriesByAccountId",
+			Handler:    _StoreService_GetEntriesByAccountId_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
