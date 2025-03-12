@@ -36,4 +36,5 @@ type Account struct {
     //SnapEntryIDs []uuid.UUID `gorm:"type:integer[];column:snap_entry_ids"`
     SSHKeys     []SSHKey
     Email       string
+    Validation string
 }

@@ -141,6 +141,40 @@ func (a *AccountService) GetAccountByID(ctx context.Context, req *proto.GetAccou
     return a.convertToProtoAccount(account,el), nil
 }
 
+func (a *AccountService) GetAccountsByIds (ctx context.Context, req *proto.GetAccountsByIdsRequest) (*proto.GetAccountsByIdsResponse, error) {
+    el := make([]*proto.Error, 0)
+    response := &proto.GetAccountsByIdsResponse{}
+    accountIDs := make([]uuid.UUID, len(req.Ids))
+    for _, id := range req.Ids {
+        accountID, err := uuid.Parse(id)
+        if err != nil {
+            el = append(el, &proto.Error{
+                Code: errors.BadRequest,
+                Message: "invalid UUID format",
+            })
+        }
+        accountIDs = append(accountIDs, accountID)
+    }
+    // first parse everything than only return if there are errors so we check all ids
+    if len(el) > 0 {
+        return &proto.GetAccountsByIdsResponse{Errors: el}, nil
+    }
+    
+    for _, id := range accountIDs {
+        account, err := a.repo.GetAccountByID(ctx, id, true)
+        if err != nil {
+            el = append(el, &proto.Error{
+                Code: errors.InternalServerError,
+                Message: err.Error(),
+            })
+        }
+        // convert to proto
+        a.convertToProtoAccount(account,el)
+        response.Accounts = append(response.Accounts, a.convertToProtoAccount(account,el))
+    }
+    return response, nil
+}
+
 func (a *AccountService) GetAccountByUsername(ctx context.Context, req *proto.GetAccountByUsernameRequest) (*proto.AccountResponse, error) {
     el := make([]*proto.Error, 0)
     account, err := a.repo.GetAccountByUsername(ctx, req.Username, true)
@@ -237,6 +271,7 @@ func (a *AccountService) convertToProtoAccount(account *models.Account, el []*pr
         DisplayName: account.DisplayName,
         Username: account.Username,
         Email: account.Email,
+        Validation: account.Validation,
         Errors: el,
     }
 }

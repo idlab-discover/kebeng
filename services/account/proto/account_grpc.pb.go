@@ -24,6 +24,7 @@ const (
 	AccountService_DeleteAccount_FullMethodName        = "/account.AccountService/DeleteAccount"
 	AccountService_GetAccountByEmail_FullMethodName    = "/account.AccountService/GetAccountByEmail"
 	AccountService_GetAccountByID_FullMethodName       = "/account.AccountService/GetAccountByID"
+	AccountService_GetAccountsByIds_FullMethodName     = "/account.AccountService/GetAccountsByIds"
 	AccountService_GetAccountByUsername_FullMethodName = "/account.AccountService/GetAccountByUsername"
 	AccountService_AddKey_FullMethodName               = "/account.AccountService/AddKey"
 	AccountService_GetKeyBySHA3384_FullMethodName      = "/account.AccountService/GetKeyBySHA3384"
@@ -39,6 +40,7 @@ type AccountServiceClient interface {
 	DeleteAccount(ctx context.Context, in *DeleteAccountRequest, opts ...grpc.CallOption) (*DeleteAccountResponse, error)
 	GetAccountByEmail(ctx context.Context, in *GetAccountByEmailRequest, opts ...grpc.CallOption) (*AccountResponse, error)
 	GetAccountByID(ctx context.Context, in *GetAccountByIDRequest, opts ...grpc.CallOption) (*AccountResponse, error)
+	GetAccountsByIds(ctx context.Context, in *GetAccountsByIdsRequest, opts ...grpc.CallOption) (*GetAccountsByIdsResponse, error)
 	GetAccountByUsername(ctx context.Context, in *GetAccountByUsernameRequest, opts ...grpc.CallOption) (*AccountResponse, error)
 	AddKey(ctx context.Context, in *AddKeyRequest, opts ...grpc.CallOption) (*KeyResponse, error)
 	GetKeyBySHA3384(ctx context.Context, in *GetKeyBySHA3384Request, opts ...grpc.CallOption) (*KeyResponse, error)
@@ -103,6 +105,16 @@ func (c *accountServiceClient) GetAccountByID(ctx context.Context, in *GetAccoun
 	return out, nil
 }
 
+func (c *accountServiceClient) GetAccountsByIds(ctx context.Context, in *GetAccountsByIdsRequest, opts ...grpc.CallOption) (*GetAccountsByIdsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetAccountsByIdsResponse)
+	err := c.cc.Invoke(ctx, AccountService_GetAccountsByIds_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *accountServiceClient) GetAccountByUsername(ctx context.Context, in *GetAccountByUsernameRequest, opts ...grpc.CallOption) (*AccountResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(AccountResponse)
@@ -152,6 +164,7 @@ type AccountServiceServer interface {
 	DeleteAccount(context.Context, *DeleteAccountRequest) (*DeleteAccountResponse, error)
 	GetAccountByEmail(context.Context, *GetAccountByEmailRequest) (*AccountResponse, error)
 	GetAccountByID(context.Context, *GetAccountByIDRequest) (*AccountResponse, error)
+	GetAccountsByIds(context.Context, *GetAccountsByIdsRequest) (*GetAccountsByIdsResponse, error)
 	GetAccountByUsername(context.Context, *GetAccountByUsernameRequest) (*AccountResponse, error)
 	AddKey(context.Context, *AddKeyRequest) (*KeyResponse, error)
 	GetKeyBySHA3384(context.Context, *GetKeyBySHA3384Request) (*KeyResponse, error)
@@ -180,6 +193,9 @@ func (UnimplementedAccountServiceServer) GetAccountByEmail(context.Context, *Get
 }
 func (UnimplementedAccountServiceServer) GetAccountByID(context.Context, *GetAccountByIDRequest) (*AccountResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAccountByID not implemented")
+}
+func (UnimplementedAccountServiceServer) GetAccountsByIds(context.Context, *GetAccountsByIdsRequest) (*GetAccountsByIdsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAccountsByIds not implemented")
 }
 func (UnimplementedAccountServiceServer) GetAccountByUsername(context.Context, *GetAccountByUsernameRequest) (*AccountResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAccountByUsername not implemented")
@@ -304,6 +320,24 @@ func _AccountService_GetAccountByID_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AccountService_GetAccountsByIds_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAccountsByIdsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AccountServiceServer).GetAccountsByIds(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AccountService_GetAccountsByIds_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AccountServiceServer).GetAccountsByIds(ctx, req.(*GetAccountsByIdsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AccountService_GetAccountByUsername_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetAccountByUsernameRequest)
 	if err := dec(in); err != nil {
@@ -402,6 +436,10 @@ var AccountService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetAccountByID",
 			Handler:    _AccountService_GetAccountByID_Handler,
+		},
+		{
+			MethodName: "GetAccountsByIds",
+			Handler:    _AccountService_GetAccountsByIds_Handler,
 		},
 		{
 			MethodName: "GetAccountByUsername",

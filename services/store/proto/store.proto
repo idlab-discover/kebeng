@@ -51,7 +51,8 @@ message GetEntryResponse {
     string base = 4;
     string type = 5;
     bool private = 6;
-    repeated Error errors = 7;
+    string publisher_id = 7;
+    repeated Error errors = 8;
 }
 
 message GetEntriesRequest {
@@ -112,4 +113,3 @@ message GetRevisionsByEntryIdResponses {
     repeated GetRevisionsByEntryIdResponse responses = 1;
     repeated Error errors = 2;
 }
-
