@@ -19,11 +19,11 @@ import (
 type Handler struct {
 	config          *config.Config
 	AccountClient   *accClient.AccountClient
-	StoreClient     *storeClient.StoreClient
+	StoreClient     *storeClient.StoreClientInterface
 	AssertionClient *assertionClient.AssertionClient
 }
 
-func NewHandler(accountClient *accClient.AccountClient, storeClient *storeClient.StoreClient, config *config.Config) *Handler {
+func NewHandler(accountClient *accClient.AccountClient, storeClient *storeClient.StoreClientInterface, config *config.Config) *Handler {
 	return &Handler{
 		config:        config,
 		AccountClient: accountClient,
@@ -164,11 +164,24 @@ func (h *Handler) ProcessSnapBuildAssertion(c *gin.Context) {
 	resp := h.AssertionClient.ProcessSnapBuildAssertion(req.Assertion)
 	if len(resp.Errors) > 0 {
 		el.ExtendAssertionError(resp.Errors)
-		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		//c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el}) // This would be the prefered way to return the error, but the documentation handles this error differently
+		c.JSON(http.StatusBadRequest, gin.H{"succes": false, "errors": el})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Snap build assertion processed successfully"})
+	c.JSON(http.StatusOK, gin.H{
+		"headers": gin.H{
+			"authority-id":      resp.AuthorityId,
+			"grade":             resp.Grade,
+			"sign-key-sha3-384": resp.SignKeySha3_384,
+			"snap-id":           resp.SnapId,
+			"snap-sha3-384":     resp.SnapSha3_384,
+			"snap-size":         resp.SnapSize,
+			"timestamp":         resp.Timestamp,
+			"revision":          resp.Revision,
+			"type":              resp.Type,
+		},
+	})
 }
 
 // TODO: implement correctly to many unknows of what has to be included and what not, need good source
