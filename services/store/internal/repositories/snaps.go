@@ -20,6 +20,7 @@ import (
 type ISnapsRepository interface {
 	GetEntryByName(name string, preloadAssociations bool) (*models.SnapEntry, error)
 	GetEntryById(id uuid.UUID, preloadAssociations bool) (*models.SnapEntry, error)
+    GetEntriesByAccountId(accountId uuid.UUID, preloadAssociations bool) (*[]models.SnapEntry, error)
 	RegisterSnap(snapName string, isPrivate bool) (*models.SnapEntry, error)
 	AddSnap(name string, size uint64, accountId uuid.UUID) (*models.SnapEntry, error)
 
@@ -503,6 +504,27 @@ func (sp *SnapsRepository) updateMeta(metaBytes *[]byte) error {
 		logrus.Errorf("No rows found for: %s", snapMeta.Name)
 	}
 	return nil
+}
+
+func (sp *SnapsRepository) GetEntriesByAccountId(accountId uuid.UUID, preloadAssociations bool) ([]*models.SnapEntry, error) {
+    var snaps []*models.SnapEntry
+    var db *gorm.DB
+    if preloadAssociations {
+        db = sp.db.Preload(clause.Associations).Where(&models.SnapEntry{AccountID: accountId}).Find(&snaps)
+    } else {
+        db = sp.db.Where(&models.SnapEntry{AccountID: accountId}).Find(&snaps)
+    }
+
+    if _, ok := database.CheckDBForErrorOrNoRows(db); ok {
+        return snaps, nil
+    }
+
+    if db.Error != nil {
+        return nil, db.Error
+    }
+
+    logrus.Errorf("Could not find snaps for accountId: %s", accountId)
+    return nil, nil
 }
 
 func (sp *SnapsRepository) getSnap(whereModel *models.SnapEntry, preloadAssociations bool) (*models.SnapEntry, error) {

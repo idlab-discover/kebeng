@@ -2,6 +2,7 @@ package message
 
 import(
     "time"
+    "github.com/google/uuid"
     "github.com/idlab-discover/kebeng/services/gateway/internal/errors"
 )
 
@@ -70,7 +71,7 @@ type SnapRevision struct {
 // SnapComment represents a comment in the context of an under-review or revoked name
 type SnapComment struct {
 	Author struct {
-		ID          string `json:"id"`
+		ID          uuid.UUID `json:"id"`
 		DisplayName string `json:"display-name"`
 		Username    string `json:"username"`
 		Validation  string `json:"validation"`
@@ -83,7 +84,7 @@ type SnapComment struct {
 // Snap represents a snap owned or collaborated on by the user
 type Snap struct {
 	Status          string         `json:"status"`
-	Price           *float64       `json:"price,omitempty"`
+	Price           float64       `json:"price,omitempty"`
 	Since           time.Time      `json:"since"`
 	SnapID          string         `json:"snap-id"`
 	Store           string         `json:"store"`
@@ -97,7 +98,7 @@ type Snap struct {
 // Store represents a store object accessible by the user
 type Store struct {
 	Name  string   `json:"name"`
-	ID    string   `json:"id"`
+	ID    uuid.UUID   `json:"id"`
 	Roles []string `json:"roles"`
 }
 
@@ -106,7 +107,7 @@ type AccountResponse struct {
 	AccountKeys []AccountKey                 `json:"account-keys"`
 	DisplayName string                        `json:"display-name"` // user's full name
 	Email       string                        `json:"email"`
-	ID          string                        `json:"id"`
+	ID          uuid.UUID                        `json:"id"`
 	Validation  string                        `json:"validation"` // validation status
 	Snaps       map[string]map[string]Snap    `json:"snaps"`      // Properly nested structure (Series -> Snap Name -> Snap)
 	Stores      []Store                        `json:"stores"`

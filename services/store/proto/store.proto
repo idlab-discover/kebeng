@@ -8,6 +8,7 @@ service StoreService {
     rpc RegisterSnapName(RegisterSnapNameRequest) returns (RegisterSnapNameResponse);
     rpc GetRevisions(GetRevisionsRequest) returns (GetRevisionsResponse);
     rpc GetEntries(GetEntriesRequest) returns (GetEntriesResponse);
+    rpc GetEntriesByAccountId(GetEntriesByAccountIdRequest) returns (GetEntriesResponse);
 }
 
 message UploadSnapRequest {
@@ -86,4 +87,8 @@ message GetRevisionsResponse {
 message Error {
     string message = 1;
     string code = 2;
+}
+
+message GetEntriesByAccountIdRequest {
+    string account_id = 1;
 }

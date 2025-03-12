@@ -98,3 +98,34 @@ func (c *StoreClient) GetRevisions(revisions *proto.GetRevisionsRequest) *proto.
 	}
 	return resp
 }
+
+func (c *StoreClient) GetEntriesByAccountID(accountID string) *proto.GetEntriesResponse {
+    req := &proto.GetEntriesByAccountIdRequest{AccountId: accountID}
+    resp, err := c.client.GetEntriesByAccountId(context.Background(), req)
+    if err != nil {
+        resp = &proto.GetEntriesResponse{
+            Errors: []*proto.Error{{
+                Code:    errors.InternalServerError,
+                Message: err.Error()},
+            },
+        }
+    }
+    return resp
+}
+
+func (c *StoreClient) GetRevisionsByEntryIds(entryIds *proto.GetRevisionsByEntryIdRequests) *proto.GetRevisionsResponse {
+    resp, err := c.client.GetRevisionsByEntryIds(context.Background(), entryIds)
+    if err != nil {
+        resp = &proto.GetRevisionsResponse{
+            Errors: []*proto.Error{{
+                Code:    errors.InternalServerError,
+                Message: err.Error()},
+            },
+        }
+    }
+    return resp
+}
+
+
+
+

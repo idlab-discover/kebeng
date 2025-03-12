@@ -4,10 +4,12 @@ go 1.22.2
 
 require (
 	github.com/gin-gonic/gin v1.10.0
-	github.com/idlab-discover/kebeng/services/account v0.0.0-20250311115442-dd113bfe0265
+	github.com/google/uuid v1.6.0
+	github.com/idlab-discover/kebeng/services/account v0.0.0-20250311154753-8199d8a8bc52
 	github.com/idlab-discover/kebeng/services/store v0.0.0-20250305133629-005179e842c6
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/viper v1.19.0
+	google.golang.org/protobuf v1.36.5
 	gopkg.in/macaroon.v2 v2.1.0
 )
 
@@ -53,7 +55,6 @@ require (
 	golang.org/x/text v0.22.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241202173237-19429a94021a // indirect
 	google.golang.org/grpc v1.70.0 // indirect
-	google.golang.org/protobuf v1.36.5 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

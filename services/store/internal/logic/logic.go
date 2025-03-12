@@ -325,6 +325,41 @@ func (s *StoreLogic) GetRevisionByNameAndSequence(ctx context.Context, req *prot
 	return &proto.GetRevisionResponse{Id: revision.ID, SnapName: snapEntry.Name, Sequence: uint64(revision.SequenceNumber)}, nil
 }
 
+func (s *StoreLogic) GetEntriesByAccountId(req *proto.GetEntriesByAccountIdRequest) (*proto.GetEntriesResponse, error) {
+    errList := make([]*proto.Error, 0)
+    if req.AccountId == "" {
+        errList = append(errList, &proto.Error{Code: errors.MissingField, Message: "Account id is required"})
+        return &proto.GetEntriesResponse{Errors: errList}, nil
+    }
+    accId, err := uuid.Parse(req.AccountId)
+    if err != nil {
+        logrus.Error(err)
+        errList = append(errList, &proto.Error{Code: errors.InvalidField, Message: "Invalid UUID format"})
+        return &proto.GetEntriesResponse{Errors: errList}, nil
+    }
+
+    entries, err := s.repo.GetEntriesByAccountId(accId,true)
+    if err != nil {
+        logrus.Debugf("Failed to get entries from database: %v", err)
+        errList = append(errList, &proto.Error{Code: errors.InternalServerError, Message: "Failed to get entries from database"})
+        return &proto.GetEntriesResponse{Errors: errList}, err
+    }
+
+    foundEntries := make([]*proto.GetEntryResponse, len(entries))
+    for i, entry := range entries {
+        foundEntries[i] = &proto.GetEntryResponse{
+                Id: entry.ID.String(), 
+                SnapName: entry.Name, 
+                Type: entry.Type, 
+                Confinement: entry.Confinement, 
+                Base: entry.Base, 
+                Private: entry.Private,
+            }
+    }
+
+    return &proto.GetEntriesResponse{Entries: foundEntries}, nil
+}
+
 func saveFileToTemp(snapFile io.Reader) (string, string, error) {
 	// Generate random file name for the new uploaded file so it doesn't override the old file with same name
 	snapFileId := uuid.New().String()
