@@ -38,6 +38,8 @@ func (c *AssertionClient) ProcessSnapBuildAssertion(assertion []byte) *proto.Sna
 	}
 
 	resp, err := c.client.ProcessSnapBuildAssertion(context.Background(), req)
+	// err is not nil if something goes wrong with the client
+	// errors regarding the request are in the response
 	if err != nil {
 		resp = &proto.SnapBuildAssertionResponse{
 			Errors: []*proto.Error{{
