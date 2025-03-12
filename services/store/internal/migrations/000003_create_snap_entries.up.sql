@@ -24,6 +24,10 @@ CREATE TABLE IF NOT EXISTS public.snap_entries
     type text COLLATE pg_catalog."default",
     confinement text COLLATE pg_catalog."default",
     account_id uuid,
+    status text COLLATE pg_catalog."default",
+    price numeric,
+    store text COLLATE pg_catalog."default",
+    icon_url text COLLATE pg_catalog."default",
     CONSTRAINT snap_entries_pkey PRIMARY KEY (id)
 )
 

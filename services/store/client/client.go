@@ -12,6 +12,16 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+type StoreClientInterface interface {
+	Close()
+	UploadSnap(name string, type_name string, confinement string, base string, file []byte) *proto.UploadSnapResponse
+	RegisterSnapName(snapName string, isPrivate bool, storeName string, dryRun bool) *proto.RegisterSnapNameResponse
+	GetEntries(entries *proto.GetEntriesRequest) *proto.GetEntriesResponse
+	GetRevisions(revisions *proto.GetRevisionsRequest) *proto.GetRevisionsResponse
+}
+
+var _ StoreClientInterface = (*StoreClient)(nil)
+
 type StoreClient struct {
 	conn   *grpc.ClientConn
 	client proto.StoreServiceClient

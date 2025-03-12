@@ -61,9 +61,11 @@ func (s *StoreLogic) RegisterSnapName(ctx context.Context, req *proto.RegisterSn
 	el := make([]*proto.Error, 0)
 
 	if req.SnapName == "" {
-		el = append(el, &proto.Error{Code: errors.MissingField, Message: "Snap name is required"})
-		return &proto.RegisterSnapNameResponse{Errors: el}, nil
+		errList = append(errList, &proto.Error{Code: errors.MissingField, Message: "snap_name is required"})
+		return &proto.RegisterSnapNameResponse{Errors: errList}, nil
 	}
+
+	// TODO: check if snap name is valid (it should only have ASCII lowercase letters, numbers, and hyphens, and must have at least one letter)
 
 	// First check if the snap name is already registered
 	snapEntry, err := s.repo.GetEntryByName(req.SnapName, false)
@@ -103,45 +105,74 @@ func (s *StoreLogic) RegisterSnapName(ctx context.Context, req *proto.RegisterSn
 //
 // Returns:
 //   - *proto.GetEntriesResponse: The response containing the list of found entries and any errors encountered.
-//   - error: An error if the operation fails.
+//   - error: This error is only not nil of proto fails. Errors while retrieving entries are added to the GetEntriesResponse.
 func (s *StoreLogic) GetEntries(ctx context.Context, req *proto.GetEntriesRequest) (*proto.GetEntriesResponse, error) {
 	el := make([]*proto.Error, 0)
 	foundEntries := make([]*proto.GetEntryResponse, 0)
 
 	for _, entry := range req.Entries {
+		// First try to retrieve the entry by its ID
 		if entry.Id != "" {
 			id, err := uuid.Parse(entry.Id)
 			if err != nil {
 				logrus.Error(err)
-				el = append(el, &proto.Error{Code: errors.InvalidField, Message: "Invalid UUID format"})
+				errList = append(errList, &proto.Error{
+					Code:    errors.InvalidField,
+					Message: "Invalid UUID format"})
 				continue
 			}
 			snapEntry, err := s.repo.GetEntryById(id, false)
 			if err != nil {
 				logrus.Error(err)
-				el = append(el, &proto.Error{Code: errors.InternalServerError, Message: "Failed to get entry from database"})
+				errList = append(errList, &proto.Error{
+					Code:    errors.InternalServerError,
+					Message: "Failed to get entry from database"})
 				continue
 			}
 			if snapEntry != nil {
-				foundEntries = append(foundEntries, &proto.GetEntryResponse{Id: snapEntry.ID.String(), SnapName: snapEntry.Name, Type: snapEntry.Type, Confinement: snapEntry.Confinement, Base: snapEntry.Base, Private: snapEntry.Private})
+				foundEntries = append(foundEntries, &proto.GetEntryResponse{
+					Id:          snapEntry.ID.String(),
+					SnapName:    snapEntry.Name,
+					Type:        snapEntry.Type,
+					Confinement: snapEntry.Confinement,
+					Base:        snapEntry.Base,
+					Private:     snapEntry.Private,
+				})
 			} else {
-				el = append(el, &proto.Error{Code: errors.ResourceNotFound, Message: "Entry with id '" + entry.Id + "' not found"})
+				errList = append(errList, &proto.Error{
+					Code:    errors.ResourceNotFound,
+					Message: "Entry with id '" + entry.Id + "' not found"})
 			}
+
+			// If ID is not given, try to retrieve the entry by its name
 		} else if entry.Name != "" {
 			snapEntry, err := s.repo.GetEntryByName(entry.Name, false)
 			if err != nil {
 				logrus.Error(err)
-				el = append(el, &proto.Error{Code: errors.InternalServerError, Message: "Failed to get entry from database"})
+				errList = append(errList, &proto.Error{
+					Code:    errors.InternalServerError,
+					Message: "Failed to get entry from database"})
 				continue
 			}
 			if snapEntry != nil {
-				foundEntries = append(foundEntries, &proto.GetEntryResponse{Id: snapEntry.ID.String(), SnapName: snapEntry.Name, Type: snapEntry.Type, Confinement: snapEntry.Confinement, Base: snapEntry.Base, Private: snapEntry.Private})
+				foundEntries = append(foundEntries, &proto.GetEntryResponse{
+					Id:          snapEntry.ID.String(),
+					SnapName:    snapEntry.Name,
+					Type:        snapEntry.Type,
+					Confinement: snapEntry.Confinement,
+					Base:        snapEntry.Base,
+					Private:     snapEntry.Private,
+				})
 			} else {
-				el = append(el, &proto.Error{Code: errors.ResourceNotFound, Message: "Entry with name '" + entry.Name + "' not found"})
+				errList = append(errList, &proto.Error{
+					Code:    errors.ResourceNotFound,
+					Message: "Entry with name '" + entry.Name + "' not found"})
 			}
 		} else {
 			if entry.Id == "" && entry.Name == "" {
-				el = append(el, &proto.Error{Code: errors.MissingField, Message: "Id or name is required"})
+				errList = append(errList, &proto.Error{
+					Code:    errors.MissingField,
+					Message: "Id or name is required"})
 			}
 		}
 	}
@@ -158,7 +189,7 @@ func (s *StoreLogic) GetEntries(ctx context.Context, req *proto.GetEntriesReques
 //
 // Returns:
 //   - *proto.GetEntryResponse: The response containing the found snap entry and any errors encountered.
-//   - error: An error if the operation fails.
+//   - error: This error is only not nil of proto fails. Errors while retrieving entry are added to the GetEntriesResponse.
 func (s *StoreLogic) GetEntryById(ctx context.Context, req *proto.GetEntryRequest) (*proto.GetEntryResponse, error) {
 	el := make([]*proto.Error, 0)
 	if req.Id == "" {
@@ -229,7 +260,7 @@ func (s *StoreLogic) GetEntryByName(ctx context.Context, req *proto.GetEntryRequ
 //
 // Returns:
 //   - *proto.GetRevisionsResponse: The response containing the list of found revisions and any errors encountered.
-//   - error: An error if the operation fails.
+//   - error: This error is only not nil of proto fails. Errors while retrieving revisions are added to the GetEntriesResponse.
 func (s *StoreLogic) GetRevisions(ctx context.Context, req *proto.GetRevisionsRequest) (*proto.GetRevisionsResponse, error) {
 	el := make([]*proto.Error, 0)
 	foundRevisions := make([]*proto.GetRevisionResponse, 0)

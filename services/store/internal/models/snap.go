@@ -5,6 +5,7 @@ import (
 	"crypto"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/idlab-discover/kebeng/pkg/store/responses"
@@ -20,15 +21,20 @@ import (
 // Entry = base information, first entry point, global information...
 type SnapEntry struct {
 	gorm.Model
-	ID          uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	Name        string    `json:"name"`
-	Revisions   []SnapRevision
-	Type        string
-	Confinement string
-	Base        string
-	Private     bool
-	Uploads     []SnapUpload
-	AccountID   uuid.UUID
+	ID             uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	Name           string    `json:"name"`
+	Revisions      []SnapRevision
+	Type           string
+	Confinement    string
+	Base           string
+	Private        bool
+	Uploads        []SnapUpload
+	AccountID      uuid.UUID
+	Status         string        // NOT YET IMPLEMENTED
+	Price          float64       // NOT YET IMPLEMENTED
+	Store          string        // NOT YET IMPLEMENTED
+	IconURL        string        // NOT YET IMPLEMENTED
+	LatestComments []SnapComment // NOT YET IMPLEMENTED
 }
 
 // Track = latest, or things like 2.0, 2.1, 2.2
@@ -92,6 +98,17 @@ type SnapUpload struct {
 	Filesize uint
 	// Channels is a comma-separated string of channels
 	Channels    string
+	SnapEntryID uuid.UUID
+	SnapEntry   SnapEntry
+}
+
+type SnapComment struct {
+	gorm.Model
+	ID          uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	AuthorID    uuid.UUID
+	Since       time.Time
+	Reason      string
+	Comment     string
 	SnapEntryID uuid.UUID
 	SnapEntry   SnapEntry
 }
