@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package assertion;
+option go_package = "github.com/idlab-discover/kebeng/services/assertion/proto;assertion";
+
+service AssertionService {
+    rpc ProcessSnapBuildAssertion(SnapBuildAssertionRequest) returns (SnapBuildAssertionResponse);
+}
+
+message SnapBuildAssertionRequest {
+    bytes assertion = 1;
+}
+
+message SnapBuildAssertionResponse {
+    string authority_id = 1;
+    string grade = 2;
+    string sign_key_sha3_384 = 3;
+    string snap_id = 4;
+    string snap_sha3_384 = 5;
+    string snap_size = 6;
+    string timestamp = 7;
+    string type = 8;
+    string developer_id = 9;
+    repeated Error errors = 10;
+}
+
+message Error {
+    string message = 1;
+    string code = 2;
+}

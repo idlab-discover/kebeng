@@ -18,11 +18,16 @@ CREATE TABLE IF NOT EXISTS public.snap_entries
     created_at timestamp with time zone,
     updated_at timestamp with time zone,
     deleted_at timestamp with time zone,
+    private BOOLEAN,
     name text COLLATE pg_catalog."default",
     latest_revision_id bigint,
     type text COLLATE pg_catalog."default",
     confinement text COLLATE pg_catalog."default",
     account_id uuid,
+    status text COLLATE pg_catalog."default",
+    price numeric,
+    store text COLLATE pg_catalog."default",
+    icon_url text COLLATE pg_catalog."default",
     CONSTRAINT snap_entries_pkey PRIMARY KEY (id)
 )
 

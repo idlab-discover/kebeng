@@ -13,8 +13,6 @@ service AccountService {
 
     rpc AddKey(AddKeyRequest) returns (Key);
     rpc GetKeyBySHA3384(GetKeyBySHA3384Request) returns (Key);
-
-    rpc GenerateMacaroon(GenerateMacaroonRequest) returns (Macaroon);
 }
 
 message Account {
@@ -72,15 +70,4 @@ message AddKeyRequest {
 
 message GetKeyBySHA3384Request {
     string sha3384 = 1;
-}
-
-// ACL is the access control list that will be embedded in the macaroon
-message GenerateMacaroonRequest {
-    // The ACL string to be embedded as a first-party caveat
-    string acl = 1;
-}
-
-message Macaroon {
-    // The serialized macaroon string
-    string macaroon = 1;
 }

@@ -1,0 +1,14 @@
+FROM golang:1.22 AS builder
+
+WORKDIR /app
+COPY . .
+
+RUN go mod download
+RUN go build -o /bin/kebeng-gateway  ./main.go
+
+FROM golang:1.22
+WORKDIR /app
+COPY --from=builder /bin/kebeng-gateway /app/kebeng-gateway
+COPY --from=builder /app/config.yaml /app/config.yaml
+
+CMD ["/app/kebeng-gateway"]
