@@ -19,6 +19,9 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type StoreServiceClient interface {
 	UploadSnap(ctx context.Context, in *UploadSnapRequest, opts ...grpc.CallOption) (*UploadSnapResponse, error)
+	RegisterSnapName(ctx context.Context, in *RegisterSnapNameRequest, opts ...grpc.CallOption) (*RegisterSnapNameResponse, error)
+	GetRevisions(ctx context.Context, in *GetRevisionsRequest, opts ...grpc.CallOption) (*GetRevisionsResponse, error)
+	GetEntries(ctx context.Context, in *GetEntriesRequest, opts ...grpc.CallOption) (*GetEntriesResponse, error)
 }
 
 type storeServiceClient struct {
@@ -38,11 +41,41 @@ func (c *storeServiceClient) UploadSnap(ctx context.Context, in *UploadSnapReque
 	return out, nil
 }
 
+func (c *storeServiceClient) RegisterSnapName(ctx context.Context, in *RegisterSnapNameRequest, opts ...grpc.CallOption) (*RegisterSnapNameResponse, error) {
+	out := new(RegisterSnapNameResponse)
+	err := c.cc.Invoke(ctx, "/store.StoreService/RegisterSnapName", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *storeServiceClient) GetRevisions(ctx context.Context, in *GetRevisionsRequest, opts ...grpc.CallOption) (*GetRevisionsResponse, error) {
+	out := new(GetRevisionsResponse)
+	err := c.cc.Invoke(ctx, "/store.StoreService/GetRevisions", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *storeServiceClient) GetEntries(ctx context.Context, in *GetEntriesRequest, opts ...grpc.CallOption) (*GetEntriesResponse, error) {
+	out := new(GetEntriesResponse)
+	err := c.cc.Invoke(ctx, "/store.StoreService/GetEntries", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // StoreServiceServer is the server API for StoreService service.
 // All implementations must embed UnimplementedStoreServiceServer
 // for forward compatibility
 type StoreServiceServer interface {
 	UploadSnap(context.Context, *UploadSnapRequest) (*UploadSnapResponse, error)
+	RegisterSnapName(context.Context, *RegisterSnapNameRequest) (*RegisterSnapNameResponse, error)
+	GetRevisions(context.Context, *GetRevisionsRequest) (*GetRevisionsResponse, error)
+	GetEntries(context.Context, *GetEntriesRequest) (*GetEntriesResponse, error)
 	mustEmbedUnimplementedStoreServiceServer()
 }
 
@@ -52,6 +85,15 @@ type UnimplementedStoreServiceServer struct {
 
 func (UnimplementedStoreServiceServer) UploadSnap(context.Context, *UploadSnapRequest) (*UploadSnapResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UploadSnap not implemented")
+}
+func (UnimplementedStoreServiceServer) RegisterSnapName(context.Context, *RegisterSnapNameRequest) (*RegisterSnapNameResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RegisterSnapName not implemented")
+}
+func (UnimplementedStoreServiceServer) GetRevisions(context.Context, *GetRevisionsRequest) (*GetRevisionsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetRevisions not implemented")
+}
+func (UnimplementedStoreServiceServer) GetEntries(context.Context, *GetEntriesRequest) (*GetEntriesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetEntries not implemented")
 }
 func (UnimplementedStoreServiceServer) mustEmbedUnimplementedStoreServiceServer() {}
 
@@ -84,6 +126,60 @@ func _StoreService_UploadSnap_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _StoreService_RegisterSnapName_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RegisterSnapNameRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StoreServiceServer).RegisterSnapName(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/store.StoreService/RegisterSnapName",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StoreServiceServer).RegisterSnapName(ctx, req.(*RegisterSnapNameRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _StoreService_GetRevisions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetRevisionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StoreServiceServer).GetRevisions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/store.StoreService/GetRevisions",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StoreServiceServer).GetRevisions(ctx, req.(*GetRevisionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _StoreService_GetEntries_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetEntriesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StoreServiceServer).GetEntries(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/store.StoreService/GetEntries",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StoreServiceServer).GetEntries(ctx, req.(*GetEntriesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // StoreService_ServiceDesc is the grpc.ServiceDesc for StoreService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -94,6 +190,18 @@ var StoreService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UploadSnap",
 			Handler:    _StoreService_UploadSnap_Handler,
+		},
+		{
+			MethodName: "RegisterSnapName",
+			Handler:    _StoreService_RegisterSnapName_Handler,
+		},
+		{
+			MethodName: "GetRevisions",
+			Handler:    _StoreService_GetRevisions_Handler,
+		},
+		{
+			MethodName: "GetEntries",
+			Handler:    _StoreService_GetEntries_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

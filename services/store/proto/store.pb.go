@@ -104,8 +104,9 @@ type UploadSnapResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Id          string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	DisplayName string `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	Id          string   `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	DisplayName string   `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	Errors      []*Error `protobuf:"bytes,3,rep,name=errors,proto3" json:"errors,omitempty"`
 }
 
 func (x *UploadSnapResponse) Reset() {
@@ -154,6 +155,864 @@ func (x *UploadSnapResponse) GetDisplayName() string {
 	return ""
 }
 
+func (x *UploadSnapResponse) GetErrors() []*Error {
+	if x != nil {
+		return x.Errors
+	}
+	return nil
+}
+
+type RegisterSnapNameRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	SnapName  string `protobuf:"bytes,1,opt,name=snap_name,json=snapName,proto3" json:"snap_name,omitempty"`
+	IsPrivate bool   `protobuf:"varint,2,opt,name=isPrivate,proto3" json:"isPrivate,omitempty"`
+	Store     string `protobuf:"bytes,3,opt,name=store,proto3" json:"store,omitempty"`
+	DryRun    bool   `protobuf:"varint,4,opt,name=dry_run,json=dryRun,proto3" json:"dry_run,omitempty"`
+}
+
+func (x *RegisterSnapNameRequest) Reset() {
+	*x = RegisterSnapNameRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_store_proto_msgTypes[2]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *RegisterSnapNameRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RegisterSnapNameRequest) ProtoMessage() {}
+
+func (x *RegisterSnapNameRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_store_proto_msgTypes[2]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RegisterSnapNameRequest.ProtoReflect.Descriptor instead.
+func (*RegisterSnapNameRequest) Descriptor() ([]byte, []int) {
+	return file_store_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *RegisterSnapNameRequest) GetSnapName() string {
+	if x != nil {
+		return x.SnapName
+	}
+	return ""
+}
+
+func (x *RegisterSnapNameRequest) GetIsPrivate() bool {
+	if x != nil {
+		return x.IsPrivate
+	}
+	return false
+}
+
+func (x *RegisterSnapNameRequest) GetStore() string {
+	if x != nil {
+		return x.Store
+	}
+	return ""
+}
+
+func (x *RegisterSnapNameRequest) GetDryRun() bool {
+	if x != nil {
+		return x.DryRun
+	}
+	return false
+}
+
+type RegisterSnapNameResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Id       string   `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	SnapName string   `protobuf:"bytes,2,opt,name=snap_name,json=snapName,proto3" json:"snap_name,omitempty"`
+	Errors   []*Error `protobuf:"bytes,3,rep,name=errors,proto3" json:"errors,omitempty"`
+}
+
+func (x *RegisterSnapNameResponse) Reset() {
+	*x = RegisterSnapNameResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_store_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *RegisterSnapNameResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RegisterSnapNameResponse) ProtoMessage() {}
+
+func (x *RegisterSnapNameResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_store_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RegisterSnapNameResponse.ProtoReflect.Descriptor instead.
+func (*RegisterSnapNameResponse) Descriptor() ([]byte, []int) {
+	return file_store_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *RegisterSnapNameResponse) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *RegisterSnapNameResponse) GetSnapName() string {
+	if x != nil {
+		return x.SnapName
+	}
+	return ""
+}
+
+func (x *RegisterSnapNameResponse) GetErrors() []*Error {
+	if x != nil {
+		return x.Errors
+	}
+	return nil
+}
+
+type GetEntryRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Id   string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+}
+
+func (x *GetEntryRequest) Reset() {
+	*x = GetEntryRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_store_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *GetEntryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetEntryRequest) ProtoMessage() {}
+
+func (x *GetEntryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_store_proto_msgTypes[4]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetEntryRequest.ProtoReflect.Descriptor instead.
+func (*GetEntryRequest) Descriptor() ([]byte, []int) {
+	return file_store_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *GetEntryRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *GetEntryRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type GetEntryResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Id          string   `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	SnapName    string   `protobuf:"bytes,2,opt,name=snap_name,json=snapName,proto3" json:"snap_name,omitempty"`
+	Confinement string   `protobuf:"bytes,3,opt,name=confinement,proto3" json:"confinement,omitempty"`
+	Base        string   `protobuf:"bytes,4,opt,name=base,proto3" json:"base,omitempty"`
+	Type        string   `protobuf:"bytes,5,opt,name=type,proto3" json:"type,omitempty"`
+	Private     bool     `protobuf:"varint,6,opt,name=private,proto3" json:"private,omitempty"`
+	Errors      []*Error `protobuf:"bytes,7,rep,name=errors,proto3" json:"errors,omitempty"`
+}
+
+func (x *GetEntryResponse) Reset() {
+	*x = GetEntryResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_store_proto_msgTypes[5]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *GetEntryResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetEntryResponse) ProtoMessage() {}
+
+func (x *GetEntryResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_store_proto_msgTypes[5]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetEntryResponse.ProtoReflect.Descriptor instead.
+func (*GetEntryResponse) Descriptor() ([]byte, []int) {
+	return file_store_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *GetEntryResponse) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *GetEntryResponse) GetSnapName() string {
+	if x != nil {
+		return x.SnapName
+	}
+	return ""
+}
+
+func (x *GetEntryResponse) GetConfinement() string {
+	if x != nil {
+		return x.Confinement
+	}
+	return ""
+}
+
+func (x *GetEntryResponse) GetBase() string {
+	if x != nil {
+		return x.Base
+	}
+	return ""
+}
+
+func (x *GetEntryResponse) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *GetEntryResponse) GetPrivate() bool {
+	if x != nil {
+		return x.Private
+	}
+	return false
+}
+
+func (x *GetEntryResponse) GetErrors() []*Error {
+	if x != nil {
+		return x.Errors
+	}
+	return nil
+}
+
+type GetEntriesRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Entries []*GetEntryRequest `protobuf:"bytes,1,rep,name=entries,proto3" json:"entries,omitempty"`
+}
+
+func (x *GetEntriesRequest) Reset() {
+	*x = GetEntriesRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_store_proto_msgTypes[6]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *GetEntriesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetEntriesRequest) ProtoMessage() {}
+
+func (x *GetEntriesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_store_proto_msgTypes[6]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetEntriesRequest.ProtoReflect.Descriptor instead.
+func (*GetEntriesRequest) Descriptor() ([]byte, []int) {
+	return file_store_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *GetEntriesRequest) GetEntries() []*GetEntryRequest {
+	if x != nil {
+		return x.Entries
+	}
+	return nil
+}
+
+type GetEntriesResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Entries []*GetEntryResponse `protobuf:"bytes,1,rep,name=entries,proto3" json:"entries,omitempty"`
+	Errors  []*Error            `protobuf:"bytes,2,rep,name=errors,proto3" json:"errors,omitempty"`
+}
+
+func (x *GetEntriesResponse) Reset() {
+	*x = GetEntriesResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_store_proto_msgTypes[7]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *GetEntriesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetEntriesResponse) ProtoMessage() {}
+
+func (x *GetEntriesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_store_proto_msgTypes[7]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetEntriesResponse.ProtoReflect.Descriptor instead.
+func (*GetEntriesResponse) Descriptor() ([]byte, []int) {
+	return file_store_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *GetEntriesResponse) GetEntries() []*GetEntryResponse {
+	if x != nil {
+		return x.Entries
+	}
+	return nil
+}
+
+func (x *GetEntriesResponse) GetErrors() []*Error {
+	if x != nil {
+		return x.Errors
+	}
+	return nil
+}
+
+type GetRevisionRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Id       string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	SnapName string `protobuf:"bytes,2,opt,name=snap_name,json=snapName,proto3" json:"snap_name,omitempty"`
+	Sequence uint64 `protobuf:"varint,3,opt,name=sequence,proto3" json:"sequence,omitempty"`
+}
+
+func (x *GetRevisionRequest) Reset() {
+	*x = GetRevisionRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_store_proto_msgTypes[8]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *GetRevisionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetRevisionRequest) ProtoMessage() {}
+
+func (x *GetRevisionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_store_proto_msgTypes[8]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetRevisionRequest.ProtoReflect.Descriptor instead.
+func (*GetRevisionRequest) Descriptor() ([]byte, []int) {
+	return file_store_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *GetRevisionRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *GetRevisionRequest) GetSnapName() string {
+	if x != nil {
+		return x.SnapName
+	}
+	return ""
+}
+
+func (x *GetRevisionRequest) GetSequence() uint64 {
+	if x != nil {
+		return x.Sequence
+	}
+	return 0
+}
+
+type GetRevisionResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Id       string   `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	SnapName string   `protobuf:"bytes,2,opt,name=snap_name,json=snapName,proto3" json:"snap_name,omitempty"`
+	Sequence uint64   `protobuf:"varint,3,opt,name=sequence,proto3" json:"sequence,omitempty"`
+	Errors   []*Error `protobuf:"bytes,4,rep,name=errors,proto3" json:"errors,omitempty"`
+}
+
+func (x *GetRevisionResponse) Reset() {
+	*x = GetRevisionResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_store_proto_msgTypes[9]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *GetRevisionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetRevisionResponse) ProtoMessage() {}
+
+func (x *GetRevisionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_store_proto_msgTypes[9]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetRevisionResponse.ProtoReflect.Descriptor instead.
+func (*GetRevisionResponse) Descriptor() ([]byte, []int) {
+	return file_store_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *GetRevisionResponse) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *GetRevisionResponse) GetSnapName() string {
+	if x != nil {
+		return x.SnapName
+	}
+	return ""
+}
+
+func (x *GetRevisionResponse) GetSequence() uint64 {
+	if x != nil {
+		return x.Sequence
+	}
+	return 0
+}
+
+func (x *GetRevisionResponse) GetErrors() []*Error {
+	if x != nil {
+		return x.Errors
+	}
+	return nil
+}
+
+type GetRevisionsRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Revisions []*GetRevisionRequest `protobuf:"bytes,1,rep,name=revisions,proto3" json:"revisions,omitempty"`
+}
+
+func (x *GetRevisionsRequest) Reset() {
+	*x = GetRevisionsRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_store_proto_msgTypes[10]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *GetRevisionsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetRevisionsRequest) ProtoMessage() {}
+
+func (x *GetRevisionsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_store_proto_msgTypes[10]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetRevisionsRequest.ProtoReflect.Descriptor instead.
+func (*GetRevisionsRequest) Descriptor() ([]byte, []int) {
+	return file_store_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *GetRevisionsRequest) GetRevisions() []*GetRevisionRequest {
+	if x != nil {
+		return x.Revisions
+	}
+	return nil
+}
+
+type GetRevisionsResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Revisions []*GetRevisionResponse `protobuf:"bytes,1,rep,name=revisions,proto3" json:"revisions,omitempty"`
+	Errors    []*Error               `protobuf:"bytes,2,rep,name=errors,proto3" json:"errors,omitempty"`
+}
+
+func (x *GetRevisionsResponse) Reset() {
+	*x = GetRevisionsResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_store_proto_msgTypes[11]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *GetRevisionsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetRevisionsResponse) ProtoMessage() {}
+
+func (x *GetRevisionsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_store_proto_msgTypes[11]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetRevisionsResponse.ProtoReflect.Descriptor instead.
+func (*GetRevisionsResponse) Descriptor() ([]byte, []int) {
+	return file_store_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *GetRevisionsResponse) GetRevisions() []*GetRevisionResponse {
+	if x != nil {
+		return x.Revisions
+	}
+	return nil
+}
+
+func (x *GetRevisionsResponse) GetErrors() []*Error {
+	if x != nil {
+		return x.Errors
+	}
+	return nil
+}
+
+type SnapBuildAssertionRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	SnapId    string `protobuf:"bytes,1,opt,name=snap_id,json=snapId,proto3" json:"snap_id,omitempty"`
+	Assertion string `protobuf:"bytes,2,opt,name=assertion,proto3" json:"assertion,omitempty"`
+}
+
+func (x *SnapBuildAssertionRequest) Reset() {
+	*x = SnapBuildAssertionRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_store_proto_msgTypes[12]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *SnapBuildAssertionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SnapBuildAssertionRequest) ProtoMessage() {}
+
+func (x *SnapBuildAssertionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_store_proto_msgTypes[12]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SnapBuildAssertionRequest.ProtoReflect.Descriptor instead.
+func (*SnapBuildAssertionRequest) Descriptor() ([]byte, []int) {
+	return file_store_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *SnapBuildAssertionRequest) GetSnapId() string {
+	if x != nil {
+		return x.SnapId
+	}
+	return ""
+}
+
+func (x *SnapBuildAssertionRequest) GetAssertion() string {
+	if x != nil {
+		return x.Assertion
+	}
+	return ""
+}
+
+type SnapBuildAssertionResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	AuthorityId     string   `protobuf:"bytes,1,opt,name=authority_id,json=authorityId,proto3" json:"authority_id,omitempty"`
+	Grade           string   `protobuf:"bytes,2,opt,name=grade,proto3" json:"grade,omitempty"`
+	SignKeySha3_384 string   `protobuf:"bytes,3,opt,name=sign_key_sha3_384,json=signKeySha3384,proto3" json:"sign_key_sha3_384,omitempty"`
+	SnapId          string   `protobuf:"bytes,4,opt,name=snap_id,json=snapId,proto3" json:"snap_id,omitempty"`
+	SnapSha3_384    string   `protobuf:"bytes,5,opt,name=snap_sha3_384,json=snapSha3384,proto3" json:"snap_sha3_384,omitempty"`
+	SnapSize        string   `protobuf:"bytes,6,opt,name=snap_size,json=snapSize,proto3" json:"snap_size,omitempty"`
+	Timestamp       string   `protobuf:"bytes,7,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Revision        string   `protobuf:"bytes,8,opt,name=revision,proto3" json:"revision,omitempty"`
+	Type            string   `protobuf:"bytes,9,opt,name=type,proto3" json:"type,omitempty"`
+	Errors          []*Error `protobuf:"bytes,10,rep,name=errors,proto3" json:"errors,omitempty"`
+}
+
+func (x *SnapBuildAssertionResponse) Reset() {
+	*x = SnapBuildAssertionResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_store_proto_msgTypes[13]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *SnapBuildAssertionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SnapBuildAssertionResponse) ProtoMessage() {}
+
+func (x *SnapBuildAssertionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_store_proto_msgTypes[13]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SnapBuildAssertionResponse.ProtoReflect.Descriptor instead.
+func (*SnapBuildAssertionResponse) Descriptor() ([]byte, []int) {
+	return file_store_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *SnapBuildAssertionResponse) GetAuthorityId() string {
+	if x != nil {
+		return x.AuthorityId
+	}
+	return ""
+}
+
+func (x *SnapBuildAssertionResponse) GetGrade() string {
+	if x != nil {
+		return x.Grade
+	}
+	return ""
+}
+
+func (x *SnapBuildAssertionResponse) GetSignKeySha3_384() string {
+	if x != nil {
+		return x.SignKeySha3_384
+	}
+	return ""
+}
+
+func (x *SnapBuildAssertionResponse) GetSnapId() string {
+	if x != nil {
+		return x.SnapId
+	}
+	return ""
+}
+
+func (x *SnapBuildAssertionResponse) GetSnapSha3_384() string {
+	if x != nil {
+		return x.SnapSha3_384
+	}
+	return ""
+}
+
+func (x *SnapBuildAssertionResponse) GetSnapSize() string {
+	if x != nil {
+		return x.SnapSize
+	}
+	return ""
+}
+
+func (x *SnapBuildAssertionResponse) GetTimestamp() string {
+	if x != nil {
+		return x.Timestamp
+	}
+	return ""
+}
+
+func (x *SnapBuildAssertionResponse) GetRevision() string {
+	if x != nil {
+		return x.Revision
+	}
+	return ""
+}
+
+func (x *SnapBuildAssertionResponse) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *SnapBuildAssertionResponse) GetErrors() []*Error {
+	if x != nil {
+		return x.Errors
+	}
+	return nil
+}
+
+type Error struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Message string `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
+	Code    string `protobuf:"bytes,2,opt,name=code,proto3" json:"code,omitempty"`
+}
+
+func (x *Error) Reset() {
+	*x = Error{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_store_proto_msgTypes[14]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Error) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Error) ProtoMessage() {}
+
+func (x *Error) ProtoReflect() protoreflect.Message {
+	mi := &file_store_proto_msgTypes[14]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Error.ProtoReflect.Descriptor instead.
+func (*Error) Descriptor() ([]byte, []int) {
+	return file_store_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *Error) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *Error) GetCode() string {
+	if x != nil {
+		return x.Code
+	}
+	return ""
+}
+
 var File_store_proto protoreflect.FileDescriptor
 
 var file_store_proto_rawDesc = []byte{
@@ -166,16 +1025,132 @@ var file_store_proto_rawDesc = []byte{
 	0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0b, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x6e, 0x65,
 	0x6d, 0x65, 0x6e, 0x74, 0x12, 0x12, 0x0a, 0x04, 0x62, 0x61, 0x73, 0x65, 0x18, 0x04, 0x20, 0x01,
 	0x28, 0x09, 0x52, 0x04, 0x62, 0x61, 0x73, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x66, 0x69, 0x6c, 0x65,
-	0x18, 0x05, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x04, 0x66, 0x69, 0x6c, 0x65, 0x22, 0x47, 0x0a, 0x12,
+	0x18, 0x05, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x04, 0x66, 0x69, 0x6c, 0x65, 0x22, 0x6d, 0x0a, 0x12,
 	0x55, 0x70, 0x6c, 0x6f, 0x61, 0x64, 0x53, 0x6e, 0x61, 0x70, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
 	0x73, 0x65, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02,
 	0x69, 0x64, 0x12, 0x21, 0x0a, 0x0c, 0x64, 0x69, 0x73, 0x70, 0x6c, 0x61, 0x79, 0x5f, 0x6e, 0x61,
 	0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0b, 0x64, 0x69, 0x73, 0x70, 0x6c, 0x61,
-	0x79, 0x4e, 0x61, 0x6d, 0x65, 0x32, 0x51, 0x0a, 0x0c, 0x53, 0x74, 0x6f, 0x72, 0x65, 0x53, 0x65,
-	0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x41, 0x0a, 0x0a, 0x55, 0x70, 0x6c, 0x6f, 0x61, 0x64, 0x53,
-	0x6e, 0x61, 0x70, 0x12, 0x18, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x55, 0x70, 0x6c, 0x6f,
-	0x61, 0x64, 0x53, 0x6e, 0x61, 0x70, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x19, 0x2e,
-	0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x55, 0x70, 0x6c, 0x6f, 0x61, 0x64, 0x53, 0x6e, 0x61, 0x70,
+	0x79, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x24, 0x0a, 0x06, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x73, 0x18,
+	0x03, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x0c, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x45, 0x72,
+	0x72, 0x6f, 0x72, 0x52, 0x06, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x73, 0x22, 0x83, 0x01, 0x0a, 0x17,
+	0x52, 0x65, 0x67, 0x69, 0x73, 0x74, 0x65, 0x72, 0x53, 0x6e, 0x61, 0x70, 0x4e, 0x61, 0x6d, 0x65,
+	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1b, 0x0a, 0x09, 0x73, 0x6e, 0x61, 0x70, 0x5f,
+	0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x73, 0x6e, 0x61, 0x70,
+	0x4e, 0x61, 0x6d, 0x65, 0x12, 0x1c, 0x0a, 0x09, 0x69, 0x73, 0x50, 0x72, 0x69, 0x76, 0x61, 0x74,
+	0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x09, 0x69, 0x73, 0x50, 0x72, 0x69, 0x76, 0x61,
+	0x74, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28,
+	0x09, 0x52, 0x05, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x12, 0x17, 0x0a, 0x07, 0x64, 0x72, 0x79, 0x5f,
+	0x72, 0x75, 0x6e, 0x18, 0x04, 0x20, 0x01, 0x28, 0x08, 0x52, 0x06, 0x64, 0x72, 0x79, 0x52, 0x75,
+	0x6e, 0x22, 0x6d, 0x0a, 0x18, 0x52, 0x65, 0x67, 0x69, 0x73, 0x74, 0x65, 0x72, 0x53, 0x6e, 0x61,
+	0x70, 0x4e, 0x61, 0x6d, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x0e, 0x0a,
+	0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x1b, 0x0a,
+	0x09, 0x73, 0x6e, 0x61, 0x70, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09,
+	0x52, 0x08, 0x73, 0x6e, 0x61, 0x70, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x24, 0x0a, 0x06, 0x65, 0x72,
+	0x72, 0x6f, 0x72, 0x73, 0x18, 0x03, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x0c, 0x2e, 0x73, 0x74, 0x6f,
+	0x72, 0x65, 0x2e, 0x45, 0x72, 0x72, 0x6f, 0x72, 0x52, 0x06, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x73,
+	0x22, 0x35, 0x0a, 0x0f, 0x47, 0x65, 0x74, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x52, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x02, 0x69, 0x64, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28,
+	0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x22, 0xc9, 0x01, 0x0a, 0x10, 0x47, 0x65, 0x74, 0x45,
+	0x6e, 0x74, 0x72, 0x79, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x0e, 0x0a, 0x02,
+	0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x1b, 0x0a, 0x09,
+	0x73, 0x6e, 0x61, 0x70, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x08, 0x73, 0x6e, 0x61, 0x70, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x20, 0x0a, 0x0b, 0x63, 0x6f, 0x6e,
+	0x66, 0x69, 0x6e, 0x65, 0x6d, 0x65, 0x6e, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0b,
+	0x63, 0x6f, 0x6e, 0x66, 0x69, 0x6e, 0x65, 0x6d, 0x65, 0x6e, 0x74, 0x12, 0x12, 0x0a, 0x04, 0x62,
+	0x61, 0x73, 0x65, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x62, 0x61, 0x73, 0x65, 0x12,
+	0x12, 0x0a, 0x04, 0x74, 0x79, 0x70, 0x65, 0x18, 0x05, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x74,
+	0x79, 0x70, 0x65, 0x12, 0x18, 0x0a, 0x07, 0x70, 0x72, 0x69, 0x76, 0x61, 0x74, 0x65, 0x18, 0x06,
+	0x20, 0x01, 0x28, 0x08, 0x52, 0x07, 0x70, 0x72, 0x69, 0x76, 0x61, 0x74, 0x65, 0x12, 0x24, 0x0a,
+	0x06, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x73, 0x18, 0x07, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x0c, 0x2e,
+	0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x45, 0x72, 0x72, 0x6f, 0x72, 0x52, 0x06, 0x65, 0x72, 0x72,
+	0x6f, 0x72, 0x73, 0x22, 0x45, 0x0a, 0x11, 0x47, 0x65, 0x74, 0x45, 0x6e, 0x74, 0x72, 0x69, 0x65,
+	0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x30, 0x0a, 0x07, 0x65, 0x6e, 0x74, 0x72,
+	0x69, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x16, 0x2e, 0x73, 0x74, 0x6f, 0x72,
+	0x65, 0x2e, 0x47, 0x65, 0x74, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0x74, 0x52, 0x07, 0x65, 0x6e, 0x74, 0x72, 0x69, 0x65, 0x73, 0x22, 0x6d, 0x0a, 0x12, 0x47, 0x65,
+	0x74, 0x45, 0x6e, 0x74, 0x72, 0x69, 0x65, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
+	0x12, 0x31, 0x0a, 0x07, 0x65, 0x6e, 0x74, 0x72, 0x69, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28,
+	0x0b, 0x32, 0x17, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x47, 0x65, 0x74, 0x45, 0x6e, 0x74,
+	0x72, 0x79, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x52, 0x07, 0x65, 0x6e, 0x74, 0x72,
+	0x69, 0x65, 0x73, 0x12, 0x24, 0x0a, 0x06, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x73, 0x18, 0x02, 0x20,
+	0x03, 0x28, 0x0b, 0x32, 0x0c, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x45, 0x72, 0x72, 0x6f,
+	0x72, 0x52, 0x06, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x73, 0x22, 0x5d, 0x0a, 0x12, 0x47, 0x65, 0x74,
+	0x52, 0x65, 0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12,
+	0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x12,
+	0x1b, 0x0a, 0x09, 0x73, 0x6e, 0x61, 0x70, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x08, 0x73, 0x6e, 0x61, 0x70, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x1a, 0x0a, 0x08,
+	0x73, 0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x04, 0x52, 0x08,
+	0x73, 0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65, 0x22, 0x84, 0x01, 0x0a, 0x13, 0x47, 0x65, 0x74,
+	0x52, 0x65, 0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
+	0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64,
+	0x12, 0x1b, 0x0a, 0x09, 0x73, 0x6e, 0x61, 0x70, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x08, 0x73, 0x6e, 0x61, 0x70, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x1a, 0x0a,
+	0x08, 0x73, 0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x04, 0x52,
+	0x08, 0x73, 0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65, 0x12, 0x24, 0x0a, 0x06, 0x65, 0x72, 0x72,
+	0x6f, 0x72, 0x73, 0x18, 0x04, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x0c, 0x2e, 0x73, 0x74, 0x6f, 0x72,
+	0x65, 0x2e, 0x45, 0x72, 0x72, 0x6f, 0x72, 0x52, 0x06, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x73, 0x22,
+	0x4e, 0x0a, 0x13, 0x47, 0x65, 0x74, 0x52, 0x65, 0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e, 0x73, 0x52,
+	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x37, 0x0a, 0x09, 0x72, 0x65, 0x76, 0x69, 0x73, 0x69,
+	0x6f, 0x6e, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x19, 0x2e, 0x73, 0x74, 0x6f, 0x72,
+	0x65, 0x2e, 0x47, 0x65, 0x74, 0x52, 0x65, 0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x71,
+	0x75, 0x65, 0x73, 0x74, 0x52, 0x09, 0x72, 0x65, 0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e, 0x73, 0x22,
+	0x76, 0x0a, 0x14, 0x47, 0x65, 0x74, 0x52, 0x65, 0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e, 0x73, 0x52,
+	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x38, 0x0a, 0x09, 0x72, 0x65, 0x76, 0x69, 0x73,
+	0x69, 0x6f, 0x6e, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x73, 0x74, 0x6f,
+	0x72, 0x65, 0x2e, 0x47, 0x65, 0x74, 0x52, 0x65, 0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e, 0x52, 0x65,
+	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x52, 0x09, 0x72, 0x65, 0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e,
+	0x73, 0x12, 0x24, 0x0a, 0x06, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28,
+	0x0b, 0x32, 0x0c, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x45, 0x72, 0x72, 0x6f, 0x72, 0x52,
+	0x06, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x73, 0x22, 0x52, 0x0a, 0x19, 0x53, 0x6e, 0x61, 0x70, 0x42,
+	0x75, 0x69, 0x6c, 0x64, 0x41, 0x73, 0x73, 0x65, 0x72, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x71,
+	0x75, 0x65, 0x73, 0x74, 0x12, 0x17, 0x0a, 0x07, 0x73, 0x6e, 0x61, 0x70, 0x5f, 0x69, 0x64, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x73, 0x6e, 0x61, 0x70, 0x49, 0x64, 0x12, 0x1c, 0x0a,
+	0x09, 0x61, 0x73, 0x73, 0x65, 0x72, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09,
+	0x52, 0x09, 0x61, 0x73, 0x73, 0x65, 0x72, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0xce, 0x02, 0x0a, 0x1a,
+	0x53, 0x6e, 0x61, 0x70, 0x42, 0x75, 0x69, 0x6c, 0x64, 0x41, 0x73, 0x73, 0x65, 0x72, 0x74, 0x69,
+	0x6f, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x21, 0x0a, 0x0c, 0x61, 0x75,
+	0x74, 0x68, 0x6f, 0x72, 0x69, 0x74, 0x79, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
+	0x52, 0x0b, 0x61, 0x75, 0x74, 0x68, 0x6f, 0x72, 0x69, 0x74, 0x79, 0x49, 0x64, 0x12, 0x14, 0x0a,
+	0x05, 0x67, 0x72, 0x61, 0x64, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x67, 0x72,
+	0x61, 0x64, 0x65, 0x12, 0x29, 0x0a, 0x11, 0x73, 0x69, 0x67, 0x6e, 0x5f, 0x6b, 0x65, 0x79, 0x5f,
+	0x73, 0x68, 0x61, 0x33, 0x5f, 0x33, 0x38, 0x34, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0e,
+	0x73, 0x69, 0x67, 0x6e, 0x4b, 0x65, 0x79, 0x53, 0x68, 0x61, 0x33, 0x33, 0x38, 0x34, 0x12, 0x17,
+	0x0a, 0x07, 0x73, 0x6e, 0x61, 0x70, 0x5f, 0x69, 0x64, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x06, 0x73, 0x6e, 0x61, 0x70, 0x49, 0x64, 0x12, 0x22, 0x0a, 0x0d, 0x73, 0x6e, 0x61, 0x70, 0x5f,
+	0x73, 0x68, 0x61, 0x33, 0x5f, 0x33, 0x38, 0x34, 0x18, 0x05, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0b,
+	0x73, 0x6e, 0x61, 0x70, 0x53, 0x68, 0x61, 0x33, 0x33, 0x38, 0x34, 0x12, 0x1b, 0x0a, 0x09, 0x73,
+	0x6e, 0x61, 0x70, 0x5f, 0x73, 0x69, 0x7a, 0x65, 0x18, 0x06, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08,
+	0x73, 0x6e, 0x61, 0x70, 0x53, 0x69, 0x7a, 0x65, 0x12, 0x1c, 0x0a, 0x09, 0x74, 0x69, 0x6d, 0x65,
+	0x73, 0x74, 0x61, 0x6d, 0x70, 0x18, 0x07, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x74, 0x69, 0x6d,
+	0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x12, 0x1a, 0x0a, 0x08, 0x72, 0x65, 0x76, 0x69, 0x73, 0x69,
+	0x6f, 0x6e, 0x18, 0x08, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x72, 0x65, 0x76, 0x69, 0x73, 0x69,
+	0x6f, 0x6e, 0x12, 0x12, 0x0a, 0x04, 0x74, 0x79, 0x70, 0x65, 0x18, 0x09, 0x20, 0x01, 0x28, 0x09,
+	0x52, 0x04, 0x74, 0x79, 0x70, 0x65, 0x12, 0x24, 0x0a, 0x06, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x73,
+	0x18, 0x0a, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x0c, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x45,
+	0x72, 0x72, 0x6f, 0x72, 0x52, 0x06, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x73, 0x22, 0x35, 0x0a, 0x05,
+	0x45, 0x72, 0x72, 0x6f, 0x72, 0x12, 0x18, 0x0a, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x12,
+	0x12, 0x0a, 0x04, 0x63, 0x6f, 0x64, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x63,
+	0x6f, 0x64, 0x65, 0x32, 0xb2, 0x02, 0x0a, 0x0c, 0x53, 0x74, 0x6f, 0x72, 0x65, 0x53, 0x65, 0x72,
+	0x76, 0x69, 0x63, 0x65, 0x12, 0x41, 0x0a, 0x0a, 0x55, 0x70, 0x6c, 0x6f, 0x61, 0x64, 0x53, 0x6e,
+	0x61, 0x70, 0x12, 0x18, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x55, 0x70, 0x6c, 0x6f, 0x61,
+	0x64, 0x53, 0x6e, 0x61, 0x70, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x19, 0x2e, 0x73,
+	0x74, 0x6f, 0x72, 0x65, 0x2e, 0x55, 0x70, 0x6c, 0x6f, 0x61, 0x64, 0x53, 0x6e, 0x61, 0x70, 0x52,
+	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x53, 0x0a, 0x10, 0x52, 0x65, 0x67, 0x69, 0x73,
+	0x74, 0x65, 0x72, 0x53, 0x6e, 0x61, 0x70, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x1e, 0x2e, 0x73, 0x74,
+	0x6f, 0x72, 0x65, 0x2e, 0x52, 0x65, 0x67, 0x69, 0x73, 0x74, 0x65, 0x72, 0x53, 0x6e, 0x61, 0x70,
+	0x4e, 0x61, 0x6d, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x1f, 0x2e, 0x73, 0x74,
+	0x6f, 0x72, 0x65, 0x2e, 0x52, 0x65, 0x67, 0x69, 0x73, 0x74, 0x65, 0x72, 0x53, 0x6e, 0x61, 0x70,
+	0x4e, 0x61, 0x6d, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x47, 0x0a, 0x0c,
+	0x47, 0x65, 0x74, 0x52, 0x65, 0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e, 0x73, 0x12, 0x1a, 0x2e, 0x73,
+	0x74, 0x6f, 0x72, 0x65, 0x2e, 0x47, 0x65, 0x74, 0x52, 0x65, 0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e,
+	0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x1b, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65,
+	0x2e, 0x47, 0x65, 0x74, 0x52, 0x65, 0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e, 0x73, 0x52, 0x65, 0x73,
+	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x41, 0x0a, 0x0a, 0x47, 0x65, 0x74, 0x45, 0x6e, 0x74, 0x72,
+	0x69, 0x65, 0x73, 0x12, 0x18, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x47, 0x65, 0x74, 0x45,
+	0x6e, 0x74, 0x72, 0x69, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x19, 0x2e,
+	0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x47, 0x65, 0x74, 0x45, 0x6e, 0x74, 0x72, 0x69, 0x65, 0x73,
 	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x42, 0x3d, 0x5a, 0x3b, 0x67, 0x69, 0x74, 0x68,
 	0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x69, 0x64, 0x6c, 0x61, 0x62, 0x2d, 0x64, 0x69, 0x73,
 	0x63, 0x6f, 0x76, 0x65, 0x72, 0x2f, 0x6b, 0x65, 0x62, 0x65, 0x6e, 0x67, 0x2f, 0x73, 0x65, 0x72,
@@ -195,19 +1170,49 @@ func file_store_proto_rawDescGZIP() []byte {
 	return file_store_proto_rawDescData
 }
 
-var file_store_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_store_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
 var file_store_proto_goTypes = []interface{}{
-	(*UploadSnapRequest)(nil),  // 0: store.UploadSnapRequest
-	(*UploadSnapResponse)(nil), // 1: store.UploadSnapResponse
+	(*UploadSnapRequest)(nil),          // 0: store.UploadSnapRequest
+	(*UploadSnapResponse)(nil),         // 1: store.UploadSnapResponse
+	(*RegisterSnapNameRequest)(nil),    // 2: store.RegisterSnapNameRequest
+	(*RegisterSnapNameResponse)(nil),   // 3: store.RegisterSnapNameResponse
+	(*GetEntryRequest)(nil),            // 4: store.GetEntryRequest
+	(*GetEntryResponse)(nil),           // 5: store.GetEntryResponse
+	(*GetEntriesRequest)(nil),          // 6: store.GetEntriesRequest
+	(*GetEntriesResponse)(nil),         // 7: store.GetEntriesResponse
+	(*GetRevisionRequest)(nil),         // 8: store.GetRevisionRequest
+	(*GetRevisionResponse)(nil),        // 9: store.GetRevisionResponse
+	(*GetRevisionsRequest)(nil),        // 10: store.GetRevisionsRequest
+	(*GetRevisionsResponse)(nil),       // 11: store.GetRevisionsResponse
+	(*SnapBuildAssertionRequest)(nil),  // 12: store.SnapBuildAssertionRequest
+	(*SnapBuildAssertionResponse)(nil), // 13: store.SnapBuildAssertionResponse
+	(*Error)(nil),                      // 14: store.Error
 }
 var file_store_proto_depIdxs = []int32{
-	0, // 0: store.StoreService.UploadSnap:input_type -> store.UploadSnapRequest
-	1, // 1: store.StoreService.UploadSnap:output_type -> store.UploadSnapResponse
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	14, // 0: store.UploadSnapResponse.errors:type_name -> store.Error
+	14, // 1: store.RegisterSnapNameResponse.errors:type_name -> store.Error
+	14, // 2: store.GetEntryResponse.errors:type_name -> store.Error
+	4,  // 3: store.GetEntriesRequest.entries:type_name -> store.GetEntryRequest
+	5,  // 4: store.GetEntriesResponse.entries:type_name -> store.GetEntryResponse
+	14, // 5: store.GetEntriesResponse.errors:type_name -> store.Error
+	14, // 6: store.GetRevisionResponse.errors:type_name -> store.Error
+	8,  // 7: store.GetRevisionsRequest.revisions:type_name -> store.GetRevisionRequest
+	9,  // 8: store.GetRevisionsResponse.revisions:type_name -> store.GetRevisionResponse
+	14, // 9: store.GetRevisionsResponse.errors:type_name -> store.Error
+	14, // 10: store.SnapBuildAssertionResponse.errors:type_name -> store.Error
+	0,  // 11: store.StoreService.UploadSnap:input_type -> store.UploadSnapRequest
+	2,  // 12: store.StoreService.RegisterSnapName:input_type -> store.RegisterSnapNameRequest
+	10, // 13: store.StoreService.GetRevisions:input_type -> store.GetRevisionsRequest
+	6,  // 14: store.StoreService.GetEntries:input_type -> store.GetEntriesRequest
+	1,  // 15: store.StoreService.UploadSnap:output_type -> store.UploadSnapResponse
+	3,  // 16: store.StoreService.RegisterSnapName:output_type -> store.RegisterSnapNameResponse
+	11, // 17: store.StoreService.GetRevisions:output_type -> store.GetRevisionsResponse
+	7,  // 18: store.StoreService.GetEntries:output_type -> store.GetEntriesResponse
+	15, // [15:19] is the sub-list for method output_type
+	11, // [11:15] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_store_proto_init() }
@@ -240,6 +1245,162 @@ func file_store_proto_init() {
 				return nil
 			}
 		}
+		file_store_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*RegisterSnapNameRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_store_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*RegisterSnapNameResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_store_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*GetEntryRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_store_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*GetEntryResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_store_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*GetEntriesRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_store_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*GetEntriesResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_store_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*GetRevisionRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_store_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*GetRevisionResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_store_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*GetRevisionsRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_store_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*GetRevisionsResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_store_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*SnapBuildAssertionRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_store_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*SnapBuildAssertionResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_store_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Error); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -247,7 +1408,7 @@ func file_store_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_store_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   15,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
