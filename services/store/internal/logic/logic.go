@@ -61,8 +61,8 @@ func (s *StoreLogic) RegisterSnapName(ctx context.Context, req *proto.RegisterSn
 	el := make([]*proto.Error, 0)
 
 	if req.SnapName == "" {
-		errList = append(errList, &proto.Error{Code: errors.MissingField, Message: "snap_name is required"})
-		return &proto.RegisterSnapNameResponse{Errors: errList}, nil
+		el = append(el, &proto.Error{Code: errors.MissingField, Message: "snap_name is required"})
+		return &proto.RegisterSnapNameResponse{Errors: el}, nil
 	}
 
 	// TODO: check if snap name is valid (it should only have ASCII lowercase letters, numbers, and hyphens, and must have at least one letter)
@@ -116,7 +116,7 @@ func (s *StoreLogic) GetEntries(ctx context.Context, req *proto.GetEntriesReques
 			id, err := uuid.Parse(entry.Id)
 			if err != nil {
 				logrus.Error(err)
-				errList = append(errList, &proto.Error{
+				el = append(el, &proto.Error{
 					Code:    errors.InvalidField,
 					Message: "Invalid UUID format"})
 				continue
@@ -124,7 +124,7 @@ func (s *StoreLogic) GetEntries(ctx context.Context, req *proto.GetEntriesReques
 			snapEntry, err := s.repo.GetEntryById(id, false)
 			if err != nil {
 				logrus.Error(err)
-				errList = append(errList, &proto.Error{
+				el = append(el, &proto.Error{
 					Code:    errors.InternalServerError,
 					Message: "Failed to get entry from database"})
 				continue
@@ -139,7 +139,7 @@ func (s *StoreLogic) GetEntries(ctx context.Context, req *proto.GetEntriesReques
 					Private:     snapEntry.Private,
 				})
 			} else {
-				errList = append(errList, &proto.Error{
+				el = append(el, &proto.Error{
 					Code:    errors.ResourceNotFound,
 					Message: "Entry with id '" + entry.Id + "' not found"})
 			}
@@ -149,7 +149,7 @@ func (s *StoreLogic) GetEntries(ctx context.Context, req *proto.GetEntriesReques
 			snapEntry, err := s.repo.GetEntryByName(entry.Name, false)
 			if err != nil {
 				logrus.Error(err)
-				errList = append(errList, &proto.Error{
+				el = append(el, &proto.Error{
 					Code:    errors.InternalServerError,
 					Message: "Failed to get entry from database"})
 				continue
@@ -164,13 +164,13 @@ func (s *StoreLogic) GetEntries(ctx context.Context, req *proto.GetEntriesReques
 					Private:     snapEntry.Private,
 				})
 			} else {
-				errList = append(errList, &proto.Error{
+				el = append(el, &proto.Error{
 					Code:    errors.ResourceNotFound,
 					Message: "Entry with name '" + entry.Name + "' not found"})
 			}
 		} else {
 			if entry.Id == "" && entry.Name == "" {
-				errList = append(errList, &proto.Error{
+				el = append(el, &proto.Error{
 					Code:    errors.MissingField,
 					Message: "Id or name is required"})
 			}

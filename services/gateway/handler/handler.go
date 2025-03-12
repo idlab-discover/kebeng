@@ -43,9 +43,6 @@ func (h *Handler) SetupEndpoints(r *gin.Engine) {
 	r.POST("/dev/api/register-name/", h.RegisterSnapName)
 	r.POST("/dev/api/acl/", h.generateMacaroon)
 
-    //TODO: implement correctly to many unknows of what has to be included and what not, need good source
-    r.POST("/dev/api/acl/verify/", h.verifyMacaroon)     
-
     authGroup.GET("/account/", h.getAccount)
 	r.POST("/dev/api/register-name-dispute/", h.RegisterSnapNameDispute)
 	r.POST("/dev/api/snaps/:snap_id/builds", h.ProcessSnapBuildAssertion)
@@ -60,9 +57,9 @@ func (h *Handler) createAccount(c *gin.Context) {
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
-	account, err := h.AccountClient.CreateAccount(req.DisplayName, req.Username, req.Email)
-	if err != nil {
-		el.Add(errors.InternalServerError, errors.FormatBindError(err))
+	account := h.AccountClient.CreateAccount(req.DisplayName, req.Username, req.Email)
+	if len(account.Errors) > 0 {
+        el.ExtendAccountError(account.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
@@ -368,6 +365,58 @@ func (h *Handler) getAccount(c *gin.Context) {
         Stores: nil,
     }
     c.JSON(http.StatusOK,resp)
+}
+
+// TODO: implement correctly to many unknows of what has to be included and what not, need good source
+func (h *Handler) verifyMacaroon(c *gin.Context) {
+	// not implemented for now
+	c.JSON(http.StatusNotImplemented, gin.H{"error_list": errors.NewError(errors.NotImplemented, "not implemented too many unknowns of implementation")})
+	return
+	/*
+			var req *message.VerifyRequest
+			el := errors.New()
+			if err := c.ShouldBindJSON(&req); err != nil {
+				el.Add(errors.BadRequest, errors.FormatBindError(err))
+				c.JSON(el.GetHTTPStatus(),gin.H{"error_list": el,})
+				return
+			}
+
+		    // TODO: Don't know if you can get email from this actually or not (from discharge macaroon normally?)
+			userEmail := auth.VerifyAndGetEmail(h.config, el, req.AuthData.Authorization)
+		    // need userEmail to continue
+			if userEmail == nil {
+		        c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		        return
+			}
+
+		    // TODO: change account client to use errorList
+			user, _ := h.AccountClient.GetAccountByEmail(*userEmail)
+		    if user == nil {
+		        el.Add(errors.ResourceNotFound, fmt.Sprintf("user with email %s not found", *userEmail))
+		        c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		        return
+		    }
+
+		    // TODO: check wtf these values have to be
+		    // probably get them from the macaroon
+		    _ = message.VerifyResponse{
+		        Allowed:               true, // idk what dertemines this
+		        DeviceRefreshRequired: false, // obsolote
+		        RefreshRequired:       false, // check with expiry time of macaroon
+		        Account: &message.VerifyAccount{
+		            Email:       user.Email,
+		            DisplayName: user.DisplayName,
+		            OpenId:      "oid1234", // what id is this?
+		            Verified:    true, // idk what this is
+		        },
+		        Device:      nil, // obsolete
+		        LastAuth:    "2016-05-26T12:53:23Z", // should be from macaroon
+		        Permissions: &[]string{"package_access", "package_manage", "package_push", "package_register", "package_release", "package_update"}, // should be from macaroon
+		        SnapIds:     nil, // should be from macaroon
+		        Channels:    nil, // should be from macaroon
+		    }
+		    return
+	*/
 }
 
 func formatErrors(errors []*storepb.Error) []map[string]string {
