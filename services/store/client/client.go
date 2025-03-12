@@ -113,10 +113,10 @@ func (c *StoreClient) GetEntriesByAccountID(accountID string) *proto.GetEntriesR
     return resp
 }
 
-func (c *StoreClient) GetRevisionsByEntryIds(entryIds *proto.GetRevisionsByEntryIdRequests) *proto.GetRevisionsResponse {
+func (c *StoreClient) GetRevisionsByEntryIds(entryIds *proto.GetRevisionsByEntryIdRequests) *proto.GetRevisionsByEntryIdResponses {
     resp, err := c.client.GetRevisionsByEntryIds(context.Background(), entryIds)
     if err != nil {
-        resp = &proto.GetRevisionsResponse{
+        resp = &proto.GetRevisionsByEntryIdResponses{
             Errors: []*proto.Error{{
                 Code:    errors.InternalServerError,
                 Message: err.Error()},

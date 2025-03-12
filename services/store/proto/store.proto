@@ -9,6 +9,7 @@ service StoreService {
     rpc GetRevisions(GetRevisionsRequest) returns (GetRevisionsResponse);
     rpc GetEntries(GetEntriesRequest) returns (GetEntriesResponse);
     rpc GetEntriesByAccountId(GetEntriesByAccountIdRequest) returns (GetEntriesResponse);
+    rpc GetRevisionsByEntryIds(GetRevisionsByEntryIdRequests) returns (GetRevisionsByEntryIdResponses);
 }
 
 message UploadSnapRequest {
@@ -92,3 +93,23 @@ message Error {
 message GetEntriesByAccountIdRequest {
     string account_id = 1;
 }
+
+message GetRevisionsByEntryIdRequest {
+    string entry_id = 1;
+}
+
+message GetRevisionsByEntryIdRequests {
+    repeated GetRevisionsByEntryIdRequest requests = 1;
+}
+
+message GetRevisionsByEntryIdResponse {
+    string entry_id = 1;
+    repeated GetRevisionResponse revisions = 2;
+    repeated Error errors = 3;
+}
+
+message GetRevisionsByEntryIdResponses {
+    repeated GetRevisionsByEntryIdResponse responses = 1;
+    repeated Error errors = 2;
+}
+
