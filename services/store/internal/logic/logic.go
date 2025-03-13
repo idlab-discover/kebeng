@@ -15,6 +15,7 @@ import (
 	"github.com/idlab-discover/kebeng/services/store/internal/repositories"
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type StoreLogic struct {
@@ -321,7 +322,15 @@ func (s *StoreLogic) GetRevisions(ctx context.Context, req *proto.GetRevisionsRe
 				continue
 			}
 
-			foundRevisions = append(foundRevisions, &proto.GetRevisionResponse{Id: rev.ID, SnapName: entry.Name, Sequence: uint64(rev.SequenceNumber)})
+			foundRevisions = append(foundRevisions, &proto.GetRevisionResponse{
+                Id: rev.ID, 
+                SnapName: entry.Name, 
+                Sequence: uint64(rev.SequenceNumber),
+                Architectures: rev.Architectures,
+                Version: rev.Version,
+                Since: timestamppb.New(rev.Since),
+                Status: rev.Status,
+            })
 
 			// If id is not provided, check if snapName and sequence are provided
 		} else if revision.SnapName != "" && revision.Sequence != 0 {
@@ -342,7 +351,15 @@ func (s *StoreLogic) GetRevisions(ctx context.Context, req *proto.GetRevisionsRe
 				continue
 			}
 
-			foundRevisions = append(foundRevisions, &proto.GetRevisionResponse{Id: rev.ID, SnapName: revision.SnapName, Sequence: uint64(rev.SequenceNumber)})
+			foundRevisions = append(foundRevisions, &proto.GetRevisionResponse{
+                Id: rev.ID, 
+                SnapName: revision.SnapName, 
+                Sequence: uint64(rev.SequenceNumber),
+                Architectures: rev.Architectures,
+                Version: rev.Version,
+                Since: timestamppb.New(rev.Since),
+                Status: rev.Status,
+            })
 
 		} else {
 			if revision.Id == "" && (revision.SnapName == "" || revision.Sequence == 0) {
@@ -405,7 +422,15 @@ func (s *StoreLogic) GetRevisionByNameAndSequence(ctx context.Context, req *prot
 		return &proto.GetRevisionResponse{Errors: el}, err
 	}
 
-	return &proto.GetRevisionResponse{Id: revision.ID, SnapName: snapEntry.Name, Sequence: uint64(revision.SequenceNumber)}, nil
+	return &proto.GetRevisionResponse{
+        Id: revision.ID, 
+        SnapName: snapEntry.Name, 
+        Sequence: uint64(revision.SequenceNumber),
+        Architectures: revision.Architectures,
+        Version: revision.Version,
+        Since: timestamppb.New(revision.Since),
+        Status: revision.Status,
+    }, nil
 }
 
 func (s *StoreLogic) GetEntriesByAccountId(ctx context.Context, req *proto.GetEntriesByAccountIdRequest) (*proto.GetEntriesResponse, error) {
@@ -489,6 +514,10 @@ func (s *StoreLogic) GetRevisionsByEntryIds(ctx context.Context, req *proto.GetR
                 Id: rev.ID,
                 SnapName: rev.SnapFilename,
                 Sequence: uint64(rev.SequenceNumber),
+                Architectures: rev.Architectures,
+                Version: rev.Version,
+                Since: timestamppb.New(rev.Since),
+                Status: rev.Status,
             }
         }
         // add to response

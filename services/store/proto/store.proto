@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "google/protobuf/timestamp.proto";
+
 package store;
 option go_package = "github.com/idlab-discover/kebeng/services/store/proto;store";
 
@@ -74,7 +76,11 @@ message GetRevisionResponse {
     string id = 1;
     string snap_name = 2;
     uint64 sequence = 3;
-    repeated Error errors = 4;
+    repeated string architectures = 4;
+    string status = 5;
+    string version = 6;
+    google.protobuf.Timestamp since = 7;
+    repeated Error errors = 8;
 }
 
 message GetRevisionsRequest {

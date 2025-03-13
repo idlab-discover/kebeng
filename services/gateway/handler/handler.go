@@ -279,7 +279,7 @@ func (h *Handler) getAccount(c *gin.Context) {
     // start filling in
     snaps := make(map[string]map[string]message.Snap)
 
-    // Map publishers by ID for quick lookup
+    // map publishers by ID for quick lookup
     publisherMap := make(map[string]*message.Publisher)
     for _, p := range publishers.Accounts {
         publisherMap[p.Id] = &message.Publisher{
@@ -290,24 +290,23 @@ func (h *Handler) getAccount(c *gin.Context) {
         }
     }
 
-    // Map revisions by entry ID for quick lookup
+    // map revisions by entry ID for quick lookup
     revisionMap := make(map[string][]message.SnapRevision)
     for _, revs := range revisions.Responses {
         entryID := revs.EntryId
         for _, rev := range revs.Revisions {
             revisionMap[entryID] = append(revisionMap[entryID], message.SnapRevision{
                 Revision:      int(rev.Sequence),
-                // Since:         rev.CreatedAt.AsTime(), // need to add this to the proto 
-                // Version:       rev.Version, // need to add this to the proto and maybe store it in the db
-                // Status:        rev.Status, // need to add this to the proto and maybe store it in the db
-                // Architectures: rev.Architectures, // need to add this to the proto and maybe stor it in the db
-                // Channels:      rev.Channels, // add this to proto
+                Since:         rev.Since, 
+                Version:       rev.Version,
+                Status:        rev.Status, 
+                Architectures: rev.Architectures, 
+                // Channels:      rev.Channels, // TODO: see how to get them should not be in revision object
             })
         }
     }
 
     
-    // Iterate over entries and fill snaps map
     for _, e := range entries.Entries {
         series := e.Base         // Example: "16" //TODO: check if this is series normally but i think its the same as base?
         snapName := e.SnapName        // Example: "hello-published"

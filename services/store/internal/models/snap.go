@@ -87,6 +87,10 @@ type SnapRevision struct {
 	SHA3384Encoded string `gorm:"column:sha3_384_encoded"`
 	Size           uint64
 	SequenceNumber uint
+    Architectures  []string // TODO: check if this is supposed to be stored here
+    Status          string
+    Version         string
+    Since          time.Time
 }
 
 // SnapUpload = a specific upload of a snap, with a specific file, info about file, etc
