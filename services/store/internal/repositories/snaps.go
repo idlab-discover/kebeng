@@ -143,19 +143,29 @@ func (sp *SnapsRepository) GetRevisionById(id string) (*models.SnapRevision, err
 
 func (sp *SnapsRepository) GetRevisionByNameAndSequence(name string, sequence uint) (*models.SnapRevision, error) {
 	var entry models.SnapEntry
+
 	db := sp.db.Where(&models.SnapEntry{Name: name}).Find(&entry)
 	if db.Error != nil {
-		return nil, db.Error
+		logrus.Error(db.Error)
+		return nil, errors.New("database-error")
 	}
-	if entry.ID != uuid.Nil {
-		var revision models.SnapRevision
-		db := sp.db.Where(&models.SnapRevision{SnapEntryID: entry.ID, SequenceNumber: sequence}).Find(&revision)
-		if db.Error != nil {
-			return nil, db.Error
-		}
-		return &revision, nil
+	if db.RowsAffected == 0 {
+		logrus.Errorf("No snap entry found for name: %s", name)
+		return nil, errors.New("resource-not-found")
 	}
-	return nil, errors.New("revision not found")
+
+	var revision models.SnapRevision
+	db = sp.db.Where(&models.SnapRevision{SnapEntryID: entry.ID, SequenceNumber: sequence}).Find(&revision)
+	if db.Error != nil {
+		logrus.Error(db.Error)
+		return nil, errors.New("database-error")
+	}
+	if db.RowsAffected == 0 {
+		logrus.Errorf("No revision found for snap: %s with sequence: %d", name, sequence)
+		return nil, errors.New("resource-not-found")
+	}
+
+	return &revision, nil
 
 }
 
