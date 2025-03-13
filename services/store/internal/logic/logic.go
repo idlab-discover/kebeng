@@ -28,12 +28,12 @@ func NewStoreLogic(repo *repositories.SnapsRepository) *StoreLogic {
 
 func (s *StoreLogic) UploadSnap(ctx context.Context, req *proto.UploadSnapRequest) (*proto.UploadSnapResponse, error) {
 	// TODO: check which fields are required and which are optional in req
-	errList := make([]*proto.Error, 0)
+	el := make([]*proto.Error, 0)
 	snapFileName, id, err := saveFileToTemp(bytes.NewReader(req.File))
 	if err != nil {
 		logrus.Errorf("Failed to save file to temp storage: %v", err)
-		errList = append(errList, &proto.Error{Code: cerrors.InternalServerError, Message: "Failed to save file to temp storage"})
-		return &proto.UploadSnapResponse{Errors: errList}, err
+		el = append(el, &proto.Error{Code: cerrors.InternalServerError, Message: "Failed to save file to temp storage"})
+		return &proto.UploadSnapResponse{Errors: el}, err
 	}
 
 	objectstore := objectstore.NewObjectStore()
@@ -42,27 +42,27 @@ func (s *StoreLogic) UploadSnap(ctx context.Context, req *proto.UploadSnapReques
 	size, err := objectstore.SaveFileToBucket("unscanned", tmpPath)
 	if err != nil {
 		logrus.Errorf("Failed to save file to object store: %v", err)
-		errList = append(errList, &proto.Error{Code: cerrors.InternalServerError, Message: "Failed to save file to object store"})
-		return &proto.UploadSnapResponse{Errors: errList}, err
+		el = append(el, &proto.Error{Code: cerrors.InternalServerError, Message: "Failed to save file to object store"})
+		return &proto.UploadSnapResponse{Errors: el}, err
 	}
 
 	// addSnap() adds snap to snap_entries table
 	_, err = s.repo.AddSnap(snapFileName, size, uuid.New()) // uuid.New() is a placeholder for account id that is going to be added later throught the context
 	if err != nil {
 		logrus.Error(err)
-		errList = append(errList, &proto.Error{Code: cerrors.InternalServerError, Message: "Failed to add snap to database"})
-		return &proto.UploadSnapResponse{Errors: errList}, err
+		el = append(el, &proto.Error{Code: cerrors.InternalServerError, Message: "Failed to add snap to database"})
+		return &proto.UploadSnapResponse{Errors: el}, err
 	}
 
 	return &proto.UploadSnapResponse{Id: id, DisplayName: snapFileName}, nil
 }
 
 func (s *StoreLogic) RegisterSnapName(ctx context.Context, req *proto.RegisterSnapNameRequest) (*proto.RegisterSnapNameResponse, error) {
-	errList := make([]*proto.Error, 0)
+	el := make([]*proto.Error, 0)
 
 	if req.SnapName == "" {
-		errList = append(errList, &proto.Error{Code: cerrors.MissingField, Message: "snap_name is required"})
-		return &proto.RegisterSnapNameResponse{Errors: errList}, nil
+		el = append(el, &proto.Error{Code: cerrors.MissingField, Message: "snap_name is required"})
+		return &proto.RegisterSnapNameResponse{Errors: el}, nil
 	}
 
 	// TODO: check if snap name is valid (it should only have ASCII lowercase letters, numbers, and hyphens, and must have at least one letter)
@@ -72,14 +72,14 @@ func (s *StoreLogic) RegisterSnapName(ctx context.Context, req *proto.RegisterSn
 	if err != nil {
 		switch {
 		case cerrors.Is(err, cerrors.DatabaseError):
-			errList = append(errList, &proto.Error{Code: cerrors.DatabaseError, Message: "Failed to get snap from database"})
+			el = append(el, &proto.Error{Code: cerrors.DatabaseError, Message: "Failed to get snap from database"})
 
 		case cerrors.Is(err, cerrors.ResourceNotFound):
 			// If snap name is not found, do nothing -> this is what we want
 			break
 		default:
 			logrus.Error(err)
-			errList = append(errList, &proto.Error{Code: cerrors.InternalServerError, Message: "something went wrong while getting snap"})
+			el = append(el, &proto.Error{Code: cerrors.InternalServerError, Message: "something went wrong while getting snap"})
 		}
 	}
 
@@ -90,16 +90,16 @@ func (s *StoreLogic) RegisterSnapName(ctx context.Context, req *proto.RegisterSn
 
 	// If dryRun is false, but snap name is already registered, return an error
 	if snapEntry != nil {
-		errList = append(errList, &proto.Error{Code: cerrors.AlreadyRegistered, Message: "The snap name '" + req.SnapName + "' is already registered."})
-		return &proto.RegisterSnapNameResponse{Errors: errList}, err
+		el = append(el, &proto.Error{Code: cerrors.AlreadyRegistered, Message: "The snap name '" + req.SnapName + "' is already registered."})
+		return &proto.RegisterSnapNameResponse{Errors: el}, err
 	}
 
 	// If there is no snap with the same name and dry_run == false, register the snap name
 	snapEntry, err = s.repo.RegisterSnap(req.SnapName, req.IsPrivate)
 	if err != nil {
 		logrus.Error(err)
-		errList = append(errList, &proto.Error{Code: cerrors.InternalServerError, Message: "Failed to register snap name"})
-		return &proto.RegisterSnapNameResponse{Errors: errList}, err
+		el = append(el, &proto.Error{Code: cerrors.InternalServerError, Message: "Failed to register snap name"})
+		return &proto.RegisterSnapNameResponse{Errors: el}, err
 	}
 
 	return &proto.RegisterSnapNameResponse{Id: snapEntry.ID.String(), SnapName: snapEntry.Name}, nil
@@ -118,7 +118,7 @@ func (s *StoreLogic) RegisterSnapName(ctx context.Context, req *proto.RegisterSn
 //   - *proto.GetEntriesResponse: The response containing the list of found entries and any errors encountered.
 //   - error: This error is only not nil of proto fails. Errors while retrieving entries are added to the GetEntriesResponse.
 func (s *StoreLogic) GetEntries(ctx context.Context, req *proto.GetEntriesRequest) (*proto.GetEntriesResponse, error) {
-	errList := make([]*proto.Error, 0)
+	el := make([]*proto.Error, 0)
 	foundEntries := make([]*proto.GetEntryResponse, 0)
 
 	for _, entry := range req.Entries {
@@ -127,7 +127,7 @@ func (s *StoreLogic) GetEntries(ctx context.Context, req *proto.GetEntriesReques
 			id, err := uuid.Parse(entry.Id)
 			if err != nil {
 				logrus.Errorf("Failed to parse UUID '%s':", entry.Id)
-				errList = append(errList, &proto.Error{Code: cerrors.InvalidField, Message: fmt.Sprintf("Invalid UUID format for id '%s'", entry.Id)})
+				el = append(el, &proto.Error{Code: cerrors.InvalidField, Message: fmt.Sprintf("Invalid UUID format for id '%s'", entry.Id)})
 				continue
 			}
 
@@ -135,12 +135,12 @@ func (s *StoreLogic) GetEntries(ctx context.Context, req *proto.GetEntriesReques
 			if err != nil {
 				switch {
 				case cerrors.Is(err, cerrors.ResourceNotFound):
-					errList = append(errList, &proto.Error{Code: cerrors.ResourceNotFound, Message: "Entry with id '" + entry.Id + "' not found"})
+					el = append(el, &proto.Error{Code: cerrors.ResourceNotFound, Message: "Entry with id '" + entry.Id + "' not found"})
 				case cerrors.Is(err, cerrors.DatabaseError):
-					errList = append(errList, &proto.Error{Code: cerrors.DatabaseError, Message: "Failed to get entry from database"})
+					el = append(el, &proto.Error{Code: cerrors.DatabaseError, Message: "Failed to get entry from database"})
 				default:
 					logrus.Error(err)
-					errList = append(errList, &proto.Error{Code: cerrors.InternalServerError, Message: "Failed to get entry from database"})
+					el = append(el, &proto.Error{Code: cerrors.InternalServerError, Message: "Failed to get entry from database"})
 				}
 				continue
 			}
@@ -160,12 +160,12 @@ func (s *StoreLogic) GetEntries(ctx context.Context, req *proto.GetEntriesReques
 			if err != nil {
 				switch {
 				case cerrors.Is(err, cerrors.ResourceNotFound):
-					errList = append(errList, &proto.Error{Code: cerrors.ResourceNotFound, Message: "Entry with name '" + entry.Name + "' not found"})
+					el = append(el, &proto.Error{Code: cerrors.ResourceNotFound, Message: "Entry with name '" + entry.Name + "' not found"})
 				case cerrors.Is(err, cerrors.DatabaseError):
-					errList = append(errList, &proto.Error{Code: cerrors.DatabaseError, Message: "Failed to get entry from database"})
+					el = append(el, &proto.Error{Code: cerrors.DatabaseError, Message: "Failed to get entry from database"})
 				default:
 					logrus.Error(err)
-					errList = append(errList, &proto.Error{Code: cerrors.InternalServerError, Message: "Failed to get entry from database"})
+					el = append(el, &proto.Error{Code: cerrors.InternalServerError, Message: "Failed to get entry from database"})
 				}
 				continue
 			}
@@ -180,12 +180,12 @@ func (s *StoreLogic) GetEntries(ctx context.Context, req *proto.GetEntriesReques
 			})
 
 		} else {
-			errList = append(errList, &proto.Error{
+			el = append(el, &proto.Error{
 				Code:    cerrors.MissingField,
 				Message: "Id or name is required"})
 		}
 	}
-	return &proto.GetEntriesResponse{Entries: foundEntries, Errors: errList}, nil
+	return &proto.GetEntriesResponse{Entries: foundEntries, Errors: el}, nil
 }
 
 // GetEntryById retrieves a single snap entry by its ID.
@@ -200,33 +200,33 @@ func (s *StoreLogic) GetEntries(ctx context.Context, req *proto.GetEntriesReques
 //   - *proto.GetEntryResponse: The response containing the found snap entry and any errors encountered.
 //   - error: This error is only not nil of proto fails. Errors while retrieving entry are added to the GetEntriesResponse.
 func (s *StoreLogic) GetEntryById(ctx context.Context, req *proto.GetEntryRequest) (*proto.GetEntryResponse, error) {
-	errList := make([]*proto.Error, 0)
+	el := make([]*proto.Error, 0)
 	if req.Id == "" {
-		errList = append(errList, &proto.Error{Code: cerrors.MissingField, Message: "Id is required"})
-		return &proto.GetEntryResponse{Errors: errList}, fmt.Errorf("id is required")
+		el = append(el, &proto.Error{Code: cerrors.MissingField, Message: "Id is required"})
+		return &proto.GetEntryResponse{Errors: el}, fmt.Errorf("id is required")
 	}
 
 	id, err := uuid.Parse(req.Id)
 	if err != nil {
 		logrus.Error(err)
-		errList = append(errList, &proto.Error{Code: cerrors.InvalidField, Message: "Invalid UUID format"})
-		return &proto.GetEntryResponse{Errors: errList}, nil
+		el = append(el, &proto.Error{Code: cerrors.InvalidField, Message: "Invalid UUID format"})
+		return &proto.GetEntryResponse{Errors: el}, nil
 	}
 
 	snapEntry, err := s.repo.GetEntryById(id, false)
 	if err != nil {
 		switch {
 		case cerrors.Is(err, cerrors.ResourceNotFound):
-			errList = append(errList, &proto.Error{Code: cerrors.ResourceNotFound, Message: "Snap with id '" + req.Id + "' not found"})
+			el = append(el, &proto.Error{Code: cerrors.ResourceNotFound, Message: "Snap with id '" + req.Id + "' not found"})
 
 		case cerrors.Is(err, cerrors.DatabaseError):
-			errList = append(errList, &proto.Error{Code: cerrors.DatabaseError, Message: "Failed to get snap from database"})
+			el = append(el, &proto.Error{Code: cerrors.DatabaseError, Message: "Failed to get snap from database"})
 
 		default:
 			logrus.Error(err)
-			errList = append(errList, &proto.Error{Code: cerrors.InternalServerError, Message: "something went wrong while getting snap"})
+			el = append(el, &proto.Error{Code: cerrors.InternalServerError, Message: "something went wrong while getting snap"})
 		}
-		return &proto.GetEntryResponse{Errors: errList}, err
+		return &proto.GetEntryResponse{Errors: el}, err
 	}
 
 	return &proto.GetEntryResponse{Id: snapEntry.ID.String(), SnapName: snapEntry.Name, Type: snapEntry.Type, Confinement: snapEntry.Confinement, Base: snapEntry.Base, Private: snapEntry.Private}, nil
@@ -244,26 +244,26 @@ func (s *StoreLogic) GetEntryById(ctx context.Context, req *proto.GetEntryReques
 //   - *proto.GetEntryResponse: The response containing the found snap entry and any errors encountered.
 //   - error: An error if the operation fails.
 func (s *StoreLogic) GetEntryByName(ctx context.Context, req *proto.GetEntryRequest) (*proto.GetEntryResponse, error) {
-	errList := make([]*proto.Error, 0)
+	el := make([]*proto.Error, 0)
 	if req.Name == "" {
-		errList = append(errList, &proto.Error{Code: cerrors.MissingField, Message: "Name is required"})
-		return &proto.GetEntryResponse{Errors: errList}, fmt.Errorf("name is required")
+		el = append(el, &proto.Error{Code: cerrors.MissingField, Message: "Name is required"})
+		return &proto.GetEntryResponse{Errors: el}, fmt.Errorf("name is required")
 	}
 
 	snapEntry, err := s.repo.GetEntryByName(req.Name, false)
 	if err != nil {
 		switch {
 		case cerrors.Is(err, cerrors.ResourceNotFound):
-			errList = append(errList, &proto.Error{Code: cerrors.ResourceNotFound, Message: "Snap with name '" + req.Name + "' not found"})
+			el = append(el, &proto.Error{Code: cerrors.ResourceNotFound, Message: "Snap with name '" + req.Name + "' not found"})
 
 		case cerrors.Is(err, cerrors.DatabaseError):
-			errList = append(errList, &proto.Error{Code: cerrors.DatabaseError, Message: "Failed to get snap from database"})
+			el = append(el, &proto.Error{Code: cerrors.DatabaseError, Message: "Failed to get snap from database"})
 
 		default:
 			logrus.Error(err)
-			errList = append(errList, &proto.Error{Code: cerrors.InternalServerError, Message: "something went wrong while getting snap"})
+			el = append(el, &proto.Error{Code: cerrors.InternalServerError, Message: "something went wrong while getting snap"})
 		}
-		return &proto.GetEntryResponse{Errors: errList}, err
+		return &proto.GetEntryResponse{Errors: el}, err
 	}
 
 	return &proto.GetEntryResponse{Id: snapEntry.ID.String(), SnapName: snapEntry.Name, Type: snapEntry.Type, Confinement: snapEntry.Confinement, Base: snapEntry.Base, Private: snapEntry.Private}, nil
@@ -282,7 +282,7 @@ func (s *StoreLogic) GetEntryByName(ctx context.Context, req *proto.GetEntryRequ
 //   - *proto.GetRevisionsResponse: The response containing the list of found revisions and any errors encountered.
 //   - error: This error is only not nil of proto fails. Errors while retrieving revisions are added to the GetEntriesResponse.
 func (s *StoreLogic) GetRevisions(ctx context.Context, req *proto.GetRevisionsRequest) (*proto.GetRevisionsResponse, error) {
-	errList := make([]*proto.Error, 0)
+	el := make([]*proto.Error, 0)
 	foundRevisions := make([]*proto.GetRevisionResponse, 0)
 
 	// Each GetRevisionRequest will contain either id or snapName and sequence
@@ -293,14 +293,14 @@ func (s *StoreLogic) GetRevisions(ctx context.Context, req *proto.GetRevisionsRe
 			if err != nil {
 				switch {
 				case cerrors.Is(err, cerrors.ResourceNotFound):
-					errList = append(errList, &proto.Error{Code: cerrors.ResourceNotFound, Message: "Revision with id '" + revision.Id + "' not found"})
+					el = append(el, &proto.Error{Code: cerrors.ResourceNotFound, Message: "Revision with id '" + revision.Id + "' not found"})
 
 				case cerrors.Is(err, cerrors.DatabaseError):
-					errList = append(errList, &proto.Error{Code: cerrors.DatabaseError, Message: "Failed to get revision from database"})
+					el = append(el, &proto.Error{Code: cerrors.DatabaseError, Message: "Failed to get revision from database"})
 
 				default:
 					logrus.Error(err)
-					errList = append(errList, &proto.Error{Code: cerrors.InternalServerError, Message: "Failed to get revision from database"})
+					el = append(el, &proto.Error{Code: cerrors.InternalServerError, Message: "Failed to get revision from database"})
 				}
 				continue
 			}
@@ -309,14 +309,14 @@ func (s *StoreLogic) GetRevisions(ctx context.Context, req *proto.GetRevisionsRe
 			if err != nil {
 				switch {
 				case cerrors.Is(err, cerrors.ResourceNotFound):
-					errList = append(errList, &proto.Error{Code: cerrors.ResourceNotFound, Message: "Snap entry with id '" + rev.SnapEntryID.String() + "' not found"})
+					el = append(el, &proto.Error{Code: cerrors.ResourceNotFound, Message: "Snap entry with id '" + rev.SnapEntryID.String() + "' not found"})
 
 				case cerrors.Is(err, cerrors.DatabaseError):
-					errList = append(errList, &proto.Error{Code: cerrors.DatabaseError, Message: "Failed to get snap entry from database"})
+					el = append(el, &proto.Error{Code: cerrors.DatabaseError, Message: "Failed to get snap entry from database"})
 
 				default:
 					logrus.Error(err)
-					errList = append(errList, &proto.Error{Code: cerrors.InternalServerError, Message: "Failed to get snap entry from database"})
+					el = append(el, &proto.Error{Code: cerrors.InternalServerError, Message: "Failed to get snap entry from database"})
 				}
 				continue
 			}
@@ -330,14 +330,14 @@ func (s *StoreLogic) GetRevisions(ctx context.Context, req *proto.GetRevisionsRe
 			if err != nil {
 				switch {
 				case cerrors.Is(err, cerrors.ResourceNotFound):
-					errList = append(errList, &proto.Error{Code: cerrors.ResourceNotFound, Message: "Revision with sequence " + fmt.Sprint(revision.Sequence) + " not found"})
+					el = append(el, &proto.Error{Code: cerrors.ResourceNotFound, Message: "Revision with sequence " + fmt.Sprint(revision.Sequence) + " not found"})
 
 				case cerrors.Is(err, cerrors.DatabaseError):
-					errList = append(errList, &proto.Error{Code: cerrors.DatabaseError, Message: "Failed to get revision from database"})
+					el = append(el, &proto.Error{Code: cerrors.DatabaseError, Message: "Failed to get revision from database"})
 
 				default:
 					logrus.Error(err)
-					errList = append(errList, &proto.Error{Code: cerrors.InternalServerError, Message: "something went wrong while getting revision"})
+					el = append(el, &proto.Error{Code: cerrors.InternalServerError, Message: "something went wrong while getting revision"})
 				}
 				continue
 			}
@@ -346,63 +346,63 @@ func (s *StoreLogic) GetRevisions(ctx context.Context, req *proto.GetRevisionsRe
 
 		} else {
 			if revision.Id == "" && (revision.SnapName == "" || revision.Sequence == 0) {
-				errList = append(errList, &proto.Error{Code: cerrors.MissingField, Message: "Id is required"})
+				el = append(el, &proto.Error{Code: cerrors.MissingField, Message: "Id is required"})
 			}
 			if revision.SnapName == "" && revision.Id == "" {
-				errList = append(errList, &proto.Error{Code: cerrors.MissingField, Message: "Snap name is required"})
+				el = append(el, &proto.Error{Code: cerrors.MissingField, Message: "Snap name is required"})
 			}
 			if revision.Sequence == 0 && revision.Id == "" {
-				errList = append(errList, &proto.Error{Code: cerrors.MissingField, Message: "Sequence is required"})
+				el = append(el, &proto.Error{Code: cerrors.MissingField, Message: "Sequence is required"})
 			}
 		}
 	}
-	return &proto.GetRevisionsResponse{Revisions: foundRevisions, Errors: errList}, nil
+	return &proto.GetRevisionsResponse{Revisions: foundRevisions, Errors: el}, nil
 }
 
 // GetRevisionByNameAndSequence returns a single revision by snap name and sequence number
 func (s *StoreLogic) GetRevisionByNameAndSequence(ctx context.Context, req *proto.GetRevisionRequest) (*proto.GetRevisionResponse, error) {
-	errList := make([]*proto.Error, 0)
+	el := make([]*proto.Error, 0)
 
 	if req.SnapName == "" {
-		errList = append(errList, &proto.Error{Code: cerrors.MissingField, Message: "Snap name is required"})
-		return &proto.GetRevisionResponse{Errors: errList}, nil
+		el = append(el, &proto.Error{Code: cerrors.MissingField, Message: "Snap name is required"})
+		return &proto.GetRevisionResponse{Errors: el}, nil
 	}
 
 	if req.Sequence == 0 {
-		errList = append(errList, &proto.Error{Code: cerrors.MissingField, Message: "Sequence is required"})
-		return &proto.GetRevisionResponse{Errors: errList}, nil
+		el = append(el, &proto.Error{Code: cerrors.MissingField, Message: "Sequence is required"})
+		return &proto.GetRevisionResponse{Errors: el}, nil
 	}
 
 	snapEntry, err := s.repo.GetEntryByName(req.SnapName, false)
 	if err != nil {
 		switch {
 		case cerrors.Is(err, cerrors.ResourceNotFound):
-			errList = append(errList, &proto.Error{Code: cerrors.ResourceNotFound, Message: "Snap with name '" + req.SnapName + "' not found"})
+			el = append(el, &proto.Error{Code: cerrors.ResourceNotFound, Message: "Snap with name '" + req.SnapName + "' not found"})
 
 		case cerrors.Is(err, cerrors.DatabaseError):
-			errList = append(errList, &proto.Error{Code: cerrors.DatabaseError, Message: "Failed to get snap from database"})
+			el = append(el, &proto.Error{Code: cerrors.DatabaseError, Message: "Failed to get snap from database"})
 
 		default:
 			logrus.Error(err)
-			errList = append(errList, &proto.Error{Code: cerrors.InternalServerError, Message: "something went wrong while getting snap"})
+			el = append(el, &proto.Error{Code: cerrors.InternalServerError, Message: "something went wrong while getting snap"})
 		}
-		return &proto.GetRevisionResponse{Errors: errList}, err
+		return &proto.GetRevisionResponse{Errors: el}, err
 	}
 
 	revision, err := s.repo.GetRevisionByNameAndSequence(snapEntry.Name, uint(req.Sequence))
 	if err != nil {
 		switch {
 		case cerrors.Is(err, cerrors.ResourceNotFound):
-			errList = append(errList, &proto.Error{Code: cerrors.ResourceNotFound, Message: "Revision with sequence " + fmt.Sprint(req.Sequence) + " not found"})
+			el = append(el, &proto.Error{Code: cerrors.ResourceNotFound, Message: "Revision with sequence " + fmt.Sprint(req.Sequence) + " not found"})
 
 		case cerrors.Is(err, cerrors.DatabaseError):
-			errList = append(errList, &proto.Error{Code: cerrors.DatabaseError, Message: "Failed to get revision from database"})
+			el = append(el, &proto.Error{Code: cerrors.DatabaseError, Message: "Failed to get revision from database"})
 
 		default:
 			logrus.Error(err)
-			errList = append(errList, &proto.Error{Code: cerrors.InternalServerError, Message: "something went wrong while getting revision"})
+			el = append(el, &proto.Error{Code: cerrors.InternalServerError, Message: "something went wrong while getting revision"})
 		}
-		return &proto.GetRevisionResponse{Errors: errList}, err
+		return &proto.GetRevisionResponse{Errors: el}, err
 	}
 
 	return &proto.GetRevisionResponse{Id: revision.ID, SnapName: snapEntry.Name, Sequence: uint64(revision.SequenceNumber)}, nil
