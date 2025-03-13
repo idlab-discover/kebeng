@@ -130,15 +130,16 @@ func (sp *SnapsRepository) GetRisks(trackId uint) (*[]models.SnapChannel, error)
 func (sp *SnapsRepository) GetRevisionById(id string) (*models.SnapRevision, error) {
 	var revision models.SnapRevision
 	db := sp.db.Where(&models.SnapRevision{ID: id}).Find(&revision)
-	if _, ok := database.CheckDBForErrorOrNoRows(db); ok {
-		return &revision, nil
-	}
-
 	if db.Error != nil {
-		return nil, db.Error
+		logrus.Error(db.Error)
+		return nil, errors.New("database-error")
+	}
+	if db.RowsAffected == 0 {
+		logrus.Errorf("No revision found for snap with id: %s", id)
+		return nil, errors.New("resource-not-found")
 	}
 
-	return nil, errors.New("unknown error encountered")
+	return &revision, nil
 }
 
 func (sp *SnapsRepository) GetRevisionByNameAndSequence(name string, sequence uint) (*models.SnapRevision, error) {
@@ -307,7 +308,7 @@ func (sp *SnapsRepository) GetSnaps() (*[]models.SnapEntry, error) {
 
 	// TODO: would need to implement private and filter here
 	db := sp.db.Find(&snaps)
-	if _, ok := database.CheckDBForErrorOrNoRows(db); ok {
+	if _, ok := database.CheckDBForErrorOrNoRows(db); ok { // TODO: add improved error handling
 		return &snaps, nil
 	}
 
@@ -335,16 +336,16 @@ func (sp *SnapsRepository) GetEntryById(id uuid.UUID, preloadAssociations bool) 
 		db = sp.db.Where(whereModel).Find(&existingSnap)
 	}
 
-	if _, ok := database.CheckDBForErrorOrNoRows(db); ok {
-		return &existingSnap, nil
-	}
-
 	if db.Error != nil {
-		return nil, db.Error
+		logrus.Error(db.Error)
+		return nil, errors.New("database-error")
+	}
+	if db.RowsAffected == 0 {
+		logrus.Errorf("No snap entry found for id: %s", id)
+		return nil, errors.New("resource-not-found")
 	}
 
-	logrus.Errorf("Could not find snap id: %d", id)
-	return nil, nil
+	return &existingSnap, nil
 }
 
 func (sp *SnapsRepository) GetEntryByName(name string, preloadAssociations bool) (*models.SnapEntry, error) {
@@ -356,16 +357,16 @@ func (sp *SnapsRepository) GetEntryByName(name string, preloadAssociations bool)
 		db = sp.db.Where(&models.SnapEntry{Name: name}).Find(&existingSnap)
 	}
 
-	if _, ok := database.CheckDBForErrorOrNoRows(db); ok {
-		return &existingSnap, nil
-	}
-
 	if db.Error != nil {
-		return nil, db.Error
+		logrus.Error(db.Error)
+		return nil, errors.New("database-error")
+	}
+	if db.RowsAffected == 0 {
+		logrus.Errorf("No snap entry found for name: %s", name)
+		return nil, errors.New("resource-not-found")
 	}
 
-	logrus.Warningf("Could not find snap %s", name)
-	return nil, nil
+	return &existingSnap, nil
 }
 
 // Used when a new snap gets uploaded for the first time (=registering a snap)
