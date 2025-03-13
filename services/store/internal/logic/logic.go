@@ -115,7 +115,7 @@ func (s *StoreLogic) RegisterSnapName(ctx context.Context, req *proto.RegisterSn
 //   - req: The request struct containing the list of entries to retrieve.
 //
 // Returns:
-//   - *proto.GetEntriesResponse: The response containing the list of found entries and any errors encountered.
+//   - *proto.GetEntriesResponse: The response containing the list of found entries and any cerrors encountered.
 //   - error: This error is only not nil of proto fails. Errors while retrieving entries are added to the GetEntriesResponse.
 func (s *StoreLogic) GetEntries(ctx context.Context, req *proto.GetEntriesRequest) (*proto.GetEntriesResponse, error) {
 	el := make([]*proto.Error, 0)
@@ -197,7 +197,7 @@ func (s *StoreLogic) GetEntries(ctx context.Context, req *proto.GetEntriesReques
 //   - req: The request containing the ID of the snap entry to retrieve.
 //
 // Returns:
-//   - *proto.GetEntryResponse: The response containing the found snap entry and any errors encountered.
+//   - *proto.GetEntryResponse: The response containing the found snap entry and any cerrors encountered.
 //   - error: This error is only not nil of proto fails. Errors while retrieving entry are added to the GetEntriesResponse.
 func (s *StoreLogic) GetEntryById(ctx context.Context, req *proto.GetEntryRequest) (*proto.GetEntryResponse, error) {
 	el := make([]*proto.Error, 0)
@@ -241,7 +241,7 @@ func (s *StoreLogic) GetEntryById(ctx context.Context, req *proto.GetEntryReques
 //   - req: The request containing the name of the snap entry to retrieve.
 //
 // Returns:
-//   - *proto.GetEntryResponse: The response containing the found snap entry and any errors encountered.
+//   - *proto.GetEntryResponse: The response containing the found snap entry and any cerrors encountered.
 //   - error: An error if the operation fails.
 func (s *StoreLogic) GetEntryByName(ctx context.Context, req *proto.GetEntryRequest) (*proto.GetEntryResponse, error) {
 	el := make([]*proto.Error, 0)
@@ -279,7 +279,7 @@ func (s *StoreLogic) GetEntryByName(ctx context.Context, req *proto.GetEntryRequ
 //   - req: The request containing the list of revisions to retrieve.
 //
 // Returns:
-//   - *proto.GetRevisionsResponse: The response containing the list of found revisions and any errors encountered.
+//   - *proto.GetRevisionsResponse: The response containing the list of found revisions and any cerrors encountered.
 //   - error: This error is only not nil of proto fails. Errors while retrieving revisions are added to the GetEntriesResponse.
 func (s *StoreLogic) GetRevisions(ctx context.Context, req *proto.GetRevisionsRequest) (*proto.GetRevisionsResponse, error) {
 	el := make([]*proto.Error, 0)
@@ -411,20 +411,20 @@ func (s *StoreLogic) GetRevisionByNameAndSequence(ctx context.Context, req *prot
 func (s *StoreLogic) GetEntriesByAccountId(ctx context.Context, req *proto.GetEntriesByAccountIdRequest) (*proto.GetEntriesResponse, error) {
     el := make([]*proto.Error, 0)
     if req.AccountId == "" {
-        el = append(el, &proto.Error{Code: errors.MissingField, Message: "Account id is required"})
+        el = append(el, &proto.Error{Code: cerrors.MissingField, Message: "Account id is required"})
         return &proto.GetEntriesResponse{Errors: el}, nil
     }
     accId, err := uuid.Parse(req.AccountId)
     if err != nil {
         logrus.Error(err)
-        el = append(el, &proto.Error{Code: errors.InvalidField, Message: "Invalid UUID format"})
+        el = append(el, &proto.Error{Code: cerrors.InvalidField, Message: "Invalid UUID format"})
         return &proto.GetEntriesResponse{Errors: el}, nil
     }
 
     entries, err := s.repo.GetEntriesByAccountId(accId,true)
     if err != nil {
         logrus.Debugf("Failed to get entries from database: %v", err)
-        el = append(el, &proto.Error{Code: errors.InternalServerError, Message: "Failed to get entries from database"})
+        el = append(el, &proto.Error{Code: cerrors.InternalServerError, Message: "Failed to get entries from database"})
         return &proto.GetEntriesResponse{Errors: el}, err
     }
 
@@ -452,7 +452,7 @@ func (s *StoreLogic) GetRevisionsByEntryIds(ctx context.Context, req *proto.GetR
     for _, entryIdReq := range req.GetRequests() {
         if entryIdReq.EntryId == "" {
             el = append(el, &proto.Error{
-                Code: errors.MissingField, 
+                Code: cerrors.MissingField, 
                 Message: "Entry id is required",
             })
             continue
@@ -462,7 +462,7 @@ func (s *StoreLogic) GetRevisionsByEntryIds(ctx context.Context, req *proto.GetR
         if err != nil {
             logrus.Error(err)
             el = append(el, &proto.Error{
-                Code: errors.InvalidField, 
+                Code: cerrors.InvalidField, 
                 Message: "Invalid UUID format",
             })
             continue
@@ -472,7 +472,7 @@ func (s *StoreLogic) GetRevisionsByEntryIds(ctx context.Context, req *proto.GetR
         if err != nil {
             logrus.Debugf("Failed to get revisions from database: %v", err)
             el = append(el, &proto.Error{
-                Code: errors.InternalServerError, 
+                Code: cerrors.InternalServerError, 
                 Message: "Failed to get revisions from database",
             })
             // add empty response to keep the order of responses
