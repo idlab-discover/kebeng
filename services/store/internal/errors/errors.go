@@ -6,6 +6,7 @@ const (
 	AlreadyRegistered          string = "already_registered"
 	AssertionCreationFailed    string = "assertion-creation-failed"
 	BadRequest                 string = "bad-request"
+	DatabaseError              string = "database-error"
 	InternalServerError        string = "internal-server-error"
 	FailedToRegister           string = "failed-to-register"
 	Invalid                    string = "invalid"
@@ -30,3 +31,25 @@ const (
 	RevokedName                string = "revoked_name"
 	UserNotReady               string = "user-not-ready"
 )
+
+type Error struct {
+	Code    string
+	Message string
+}
+
+// Error implements the error interface for the Error struct.
+func (e *Error) Error() string {
+	return e.Message
+}
+
+func Is(err error, message string) bool {
+	if err == nil {
+		return false
+	}
+
+	if err.Error() == message {
+		return true
+	}
+
+	return false
+}

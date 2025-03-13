@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS public.snap_revisions
     snap_entry_id uuid,  -- Changed from bigint to uuid
     sha3_384 text COLLATE pg_catalog."default",
     size bigint,
+    sequence_number bigint,
     CONSTRAINT snap_revisions_pkey PRIMARY KEY (id),
     CONSTRAINT fk_snap_entries_revisions FOREIGN KEY (snap_entry_id)
         REFERENCES public.snap_entries (id) MATCH SIMPLE
