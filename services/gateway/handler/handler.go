@@ -32,12 +32,27 @@ func NewHandler(accountClient *accClient.AccountClient, storeClient storeClient.
 }
 
 func (h *Handler) SetupEndpoints(r *gin.Engine) {
+	r.POST("api/v1/snaps/auth/nonces", h.RequestStoreDeviceNonce)      // TODO
+	r.POST("api/v1/snaps/auth/sessions", h.RequestStoreDeviceSessions) // TODO
+	r.POST("/v2/snaps/refresh", h.RefreshSnap)                         // TODO
 	r.POST("/createAccount", h.createAccount)
 	r.POST("/dev/api/register-name/", h.RegisterSnapName)
 	r.POST("/dev/api/acl/", h.generateMacaroon)
 	r.POST("/dev/api/register-name-dispute/", h.RegisterSnapNameDispute)
 	r.POST("/dev/api/snaps/:snap_id/builds", h.ProcessSnapBuildAssertion)
 	r.POST("/dev/api/acl/verify/", h.verifyMacaroon) //TODO: implement correctly to many unknows of what has to be included and what not, need good source
+}
+
+func (h *Handler) RequestStoreDeviceNonce(c *gin.Context) {
+	c.JSON(http.StatusOK, message.RequestStoreDeviceNonceRes{Nonce: "this-nonce"})
+}
+
+func (h *Handler) RequestStoreDeviceSessions(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"macaroon": "shakamacaroon"})
+}
+
+func (h *Handler) RefreshSnap(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"status": "success"})
 }
 
 func (h *Handler) createAccount(c *gin.Context) {

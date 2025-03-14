@@ -1,5 +1,12 @@
 package message
 
+type RequestStoreDeviceNonceReq struct {
+}
+
+type RequestStoreDeviceNonceRes struct {
+	Nonce string `json:"nonce"`
+}
+
 type CreateAccountRequest struct {
 	DisplayName string `json:"display_name"`
 	Email       string `json:"email"`
