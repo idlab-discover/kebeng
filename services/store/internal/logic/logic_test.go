@@ -45,7 +45,7 @@ func TestRegisterSnapName(t *testing.T) {
 		panic("Failed to create table")
 	}
 
-	repo := repositories.NewSnapsRepository(db)
+	repo := repositories.NewSnapsRepository(db, nil)
 	service := NewStoreLogic(repo)
 
 	tests := []struct {
@@ -151,7 +151,7 @@ func TestGetEntries(t *testing.T) {
 		panic("Failed to create table")
 	}
 
-	repo := repositories.NewSnapsRepository(db)
+	repo := repositories.NewSnapsRepository(db, nil)
 	service := NewStoreLogic(repo)
 
 	// Seed database with test entry
@@ -306,7 +306,7 @@ func TestGetEntryById(t *testing.T) {
 		panic("Failed to create table")
 	}
 
-	repo := repositories.NewSnapsRepository(db)
+	repo := repositories.NewSnapsRepository(db,nil)
 	service := NewStoreLogic(repo)
 
 	// Seed database with test entry
@@ -419,7 +419,7 @@ func TestGetEntryByName(t *testing.T) {
 		panic("Failed to create table")
 	}
 
-	repo := repositories.NewSnapsRepository(db)
+	repo := repositories.NewSnapsRepository(db,nil)
 	service := NewStoreLogic(repo)
 
 	// Seed database with test entry
@@ -529,7 +529,7 @@ func TestGetRevisions(t *testing.T) {
 		t.Fatalf("Failed to create tables: %v", err)
 	}
 
-	repo := repositories.NewSnapsRepository(db)
+	repo := repositories.NewSnapsRepository(db,nil)
 	service := NewStoreLogic(repo)
 
 	// Seed database with test entry and revision
@@ -663,7 +663,7 @@ func TestGetRevisionByNameAndSequence(t *testing.T) {
 		t.Fatalf("Failed to create tables: %v", err)
 	}
 
-	repo := repositories.NewSnapsRepository(db)
+	repo := repositories.NewSnapsRepository(db, nil)
 	service := NewStoreLogic(repo)
 
 	// Seed test data

@@ -6,10 +6,10 @@ require (
 	github.com/coreos/go-oidc/v3 v3.0.0
 	github.com/gin-contrib/static v0.0.1
 	github.com/gin-gonic/gin v1.7.1
-	github.com/go-resty/resty/v2 v2.6.0
+	github.com/go-resty/resty/v2 v2.16.5
 	github.com/golang-migrate/migrate/v4 v4.18.2
 	github.com/google/uuid v1.6.0
-	github.com/idlab-discover/kebeng/services/account v0.0.0-20250226201022-fbcebdcdcf55
+	github.com/idlab-discover/kebeng/services/account v0.0.0-20250311154753-8199d8a8bc52
 	github.com/minio/minio-go/v7 v7.0.87
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/sirupsen/logrus v1.9.3
