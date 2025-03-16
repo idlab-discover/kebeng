@@ -64,12 +64,16 @@ github.com/idlab-discover/kebeng v0.0.0-20250223121437-64303aa26f11 h1:R+/o9/C6z
 github.com/idlab-discover/kebeng v0.0.0-20250223121437-64303aa26f11/go.mod h1:Mg/UY5qkoI4sPxpTDbbilfSmUDZTy2txR2bqLtw7+U8=
 github.com/idlab-discover/kebeng/services/account v0.0.0-20250312150230-829fa38e31f9 h1:87z2NXRzP9FbAnl9MN/y0RdPdTodExBl89y1djVzNiQ=
 github.com/idlab-discover/kebeng/services/account v0.0.0-20250312150230-829fa38e31f9/go.mod h1:ByDJto9tL5jKXjJFxAXCroYbb6gv+0FR2UHnIdpHA2c=
+github.com/idlab-discover/kebeng/services/account v0.0.0-20250316141200-e2ce1ce2427b h1:GIvqZqMQs09CsWyYbZoUsPvj0jnVlzwTICb4AXlHIqA=
+github.com/idlab-discover/kebeng/services/account v0.0.0-20250316141200-e2ce1ce2427b/go.mod h1:5C0ZwBn6ZoHCQMlviAsVGHZISkJgb2EkKelGGcfvAM0=
 github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250311175206-def23c15f474 h1:Gq0kJyvLg5jrN5Kb3zlzZ0SNmz1JhEAcewcBq8wdOyk=
 github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250311175206-def23c15f474/go.mod h1:xjzZl/MqcJcdOGKty3+0TaEcXEDHfxL6ZoE9FLg2PyU=
 github.com/idlab-discover/kebeng/services/store v0.0.0-20250313211537-d8adf27745f5 h1:mnOuxmuHDpYu2FPcDMS4pyFhPlBJM07rD4Fd0OEnVoo=
 github.com/idlab-discover/kebeng/services/store v0.0.0-20250313211537-d8adf27745f5/go.mod h1:Pqo8WvKlBAhM6JCTSlEN4QGG/GF2p5/EXxYRDoxjQFM=
 github.com/idlab-discover/kebeng/services/store v0.0.0-20250316115049-95c10038e7ad h1:GQk+5mvIro1DF3/TeCXIWqJnQG7Uj4fhCe95c0m7UaQ=
 github.com/idlab-discover/kebeng/services/store v0.0.0-20250316115049-95c10038e7ad/go.mod h1:Pqo8WvKlBAhM6JCTSlEN4QGG/GF2p5/EXxYRDoxjQFM=
+github.com/idlab-discover/kebeng/services/store v0.0.0-20250316141200-e2ce1ce2427b h1:VDmF9GeMORQQIpEHUpLLny2g2IuTwywLpcMTAvzkJyw=
+github.com/idlab-discover/kebeng/services/store v0.0.0-20250316141200-e2ce1ce2427b/go.mod h1:Pqo8WvKlBAhM6JCTSlEN4QGG/GF2p5/EXxYRDoxjQFM=
 github.com/jackc/pgpassfile v1.0.0 h1:/6Hmqy13Ss2zCq62VdNG8tM1wchn8zjSGOBJ6icpsIM=
 github.com/jackc/pgpassfile v1.0.0/go.mod h1:CEx0iS5ambNFdcRtxPj5JhEz+xB6uRky5eyVu/W2HEg=
 github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a h1:bbPeKD0xmW/Y25WS6cokEszi5g+S0QxI/d45PkRi7Nk=
