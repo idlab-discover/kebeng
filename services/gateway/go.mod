@@ -7,7 +7,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/idlab-discover/kebeng/services/account v0.0.0-20250316141200-e2ce1ce2427b
 	github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250311175206-def23c15f474
-	github.com/idlab-discover/kebeng/services/store v0.0.0-20250316142347-f99787efd619
+	github.com/idlab-discover/kebeng/services/store v0.0.0-20250316153922-e4b9b38c3791
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/viper v1.19.0
 	gopkg.in/macaroon.v2 v2.1.0
@@ -39,6 +39,7 @@ require (
 	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
+	github.com/jmoiron/sqlx v1.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/juju/ratelimit v1.0.1 // indirect
 	github.com/klauspost/compress v1.17.11 // indirect
