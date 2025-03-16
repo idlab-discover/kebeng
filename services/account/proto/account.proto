@@ -1,25 +1,41 @@
 syntax = "proto3";
 
+import "google/protobuf/timestamp.proto";
+
 package account;
 option go_package = "github.com/idlab-discover/kebeng/services/account/proto;account";
 
 service AccountService {
-    rpc CreateAccount(CreateAccountRequest) returns (Account);
-    rpc UpdateAccount(UpdateAccountRequest) returns (Account);
+    rpc CreateAccount(CreateAccountRequest) returns (AccountResponse);
+    rpc UpdateAccount(UpdateAccountRequest) returns (AccountResponse);
     rpc DeleteAccount(DeleteAccountRequest) returns (DeleteAccountResponse);
-    rpc GetAccountByEmail(GetAccountByEmailRequest) returns (Account);
-    rpc GetAccountByID(GetAccountByIDRequest) returns (Account);
-    rpc GetAccountByUsername(GetAccountByUsernameRequest) returns (Account);
+    rpc GetAccountByEmail(GetAccountByEmailRequest) returns (AccountResponse);
+    rpc GetAccountByID(GetAccountByIDRequest) returns (AccountResponse);
+    rpc GetAccountsByIds(GetAccountsByIdsRequest) returns (GetAccountsByIdsResponse);
+    rpc GetAccountByUsername(GetAccountByUsernameRequest) returns (AccountResponse);
 
-    rpc AddKey(AddKeyRequest) returns (Key);
-    rpc GetKeyBySHA3384(GetKeyBySHA3384Request) returns (Key);
+    rpc AddKey(AddKeyRequest) returns (KeyResponse);
+    rpc GetKeyBySHA3384(GetKeyBySHA3384Request) returns (KeyResponse);
+    rpc GetKeysByAccountId(GetKeysByAccountIdRequest) returns (KeysResponse);
 }
 
-message Account {
+message Error {
+    string message = 1;
+    string code = 2;
+}
+
+message AccountResponse {
     string id = 1;
     string display_name = 2;
     string username = 3;
     string email = 4;
+    string validation = 5;
+    repeated Error errors = 6;
+}
+
+message KeysResponse {
+    repeated KeyResponse keys = 1;
+    repeated Error errors = 2;
 }
 
 message CreateAccountRequest {
@@ -41,6 +57,7 @@ message DeleteAccountRequest {
 
 message DeleteAccountResponse {
     bool success = 1;
+    repeated Error errors = 2;
 }
 
 message GetAccountByEmailRequest {
@@ -55,10 +72,13 @@ message GetAccountByUsernameRequest {
     string username = 1;
 }
 
-message Key {
+message KeyResponse {
     string name = 1;
     string sha3384 = 2;
     string encoded_public_key = 3;
+    google.protobuf.Timestamp since = 5;
+    google.protobuf.Timestamp until = 6;   
+    repeated Error errors = 4;
 }
 
 message AddKeyRequest {
@@ -71,3 +91,18 @@ message AddKeyRequest {
 message GetKeyBySHA3384Request {
     string sha3384 = 1;
 }
+
+
+message GetKeysByAccountIdRequest {
+    string account_id = 1;
+}
+
+message GetAccountsByIdsRequest {
+    repeated string ids = 1;
+}
+
+message GetAccountsByIdsResponse {
+    repeated AccountResponse accounts = 1;
+    repeated Error errors = 2;
+}
+
