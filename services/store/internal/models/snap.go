@@ -21,20 +21,23 @@ import (
 // Entry = base information, first entry point, global information...
 type SnapEntry struct {
 	gorm.Model
-	ID             uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	Name           string    `json:"name"`
-	Revisions      []SnapRevision
-	Type           string
-	Confinement    string
-	Base           string
-	Private        bool
-	Uploads        []SnapUpload
-	AccountID      uuid.UUID
-	Status         string        // NOT YET IMPLEMENTED
-	Price          float64       // NOT YET IMPLEMENTED
-	Store          string        // NOT YET IMPLEMENTED
-	IconURL        string        // NOT YET IMPLEMENTED
-	LatestComments []SnapComment // NOT YET IMPLEMENTED
+    ID             uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey" db:"id"`
+    CreatedAt       time.Time   `db:"created_at"`
+    UpdatedAt       time.Time   `db:"updated_at"`
+    DeletedAt       *time.Time  `db:"deleted_at"`
+    Name           string    `json:"name" db:"name"`
+    Revisions      []SnapRevision 
+    Type           string   `json:"type" db:"type"`
+    Confinement    string   `json:"confinement" db:"confinement"`
+    Base           string  `json:"base" db:"base"`
+    Private        bool   `json:"private" db:"private"`
+	Uploads        []SnapUpload 
+    AccountID      uuid.UUID `db:"account_id"`
+    Status         string         `db:"status"`  // NOT YET IMPLEMENTED
+	Price          float64        `db:"price"`   // NOT YET IMPLEMENTED
+    Store          string         `db:"store"`   // NOT YET IMPLEMENTED
+    IconURL        string         `db:"icon_url"`// NOT YET IMPLEMENTED
+	LatestComments []SnapComment                 // NOT YET IMPLEMENTED
 }
 
 // Track = latest, or things like 2.0, 2.1, 2.2
