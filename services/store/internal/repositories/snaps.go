@@ -521,9 +521,14 @@ func (sp *SnapsRepository) GetEntriesByAccountId(accountId uuid.UUID, preloadAss
     var snaps []*models.SnapEntry
     var db *gorm.DB
     if preloadAssociations {
-        db = sp.db.Preload(clause.Associations).Where(&models.SnapEntry{AccountID: accountId}).Find(&snaps)
+        db = sp.db.Model(&models.SnapEntry{}).
+            Preload(clause.Associations).
+            Where(&models.SnapEntry{AccountID: accountId}).
+            Find(&snaps)
     } else {
-        db = sp.db.Where(&models.SnapEntry{AccountID: accountId}).Find(&snaps)
+        db = sp.db.Model(&models.SnapEntry{}).
+            Where(&models.SnapEntry{AccountID: accountId}).
+            Find(&snaps)
     }
 
     if _, ok := database.CheckDBForErrorOrNoRows(db); ok {
