@@ -27,7 +27,7 @@ func main() {
 	}
 	logrus.Infof("Loaded configuration: %+v", cfg)
 
-	db, err := database.NewDatabase(cfg)
+	db, dbx, err := database.NewDatabase(cfg)
 	if err != nil {
 		logrus.Fatalf("Failed to connect to database: %v", err)
 	}
@@ -59,7 +59,7 @@ func main() {
 	makeBucketAndAddKey(minioClient, "generic", cfg.GenericKeyPath, "private-key.pem")
 
 	// start grpc server
-	repo := repositories.NewSnapsRepository(db)
+	repo := repositories.NewSnapsRepository(db, dbx)
 	storeLogic := logic.NewStoreLogic(repo)
 
 	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", cfg.GRPCHost, cfg.GRPCPort))

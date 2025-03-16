@@ -74,6 +74,8 @@ github.com/idlab-discover/kebeng/services/store v0.0.0-20250316115049-95c10038e7
 github.com/idlab-discover/kebeng/services/store v0.0.0-20250316115049-95c10038e7ad/go.mod h1:Pqo8WvKlBAhM6JCTSlEN4QGG/GF2p5/EXxYRDoxjQFM=
 github.com/idlab-discover/kebeng/services/store v0.0.0-20250316141200-e2ce1ce2427b h1:VDmF9GeMORQQIpEHUpLLny2g2IuTwywLpcMTAvzkJyw=
 github.com/idlab-discover/kebeng/services/store v0.0.0-20250316141200-e2ce1ce2427b/go.mod h1:Pqo8WvKlBAhM6JCTSlEN4QGG/GF2p5/EXxYRDoxjQFM=
+github.com/idlab-discover/kebeng/services/store v0.0.0-20250316142347-f99787efd619 h1:MVHGrf7M/l4hUqgAP595pVzM/SBbtmY4nBo3WGxOYwE=
+github.com/idlab-discover/kebeng/services/store v0.0.0-20250316142347-f99787efd619/go.mod h1:Pqo8WvKlBAhM6JCTSlEN4QGG/GF2p5/EXxYRDoxjQFM=
 github.com/jackc/pgpassfile v1.0.0 h1:/6Hmqy13Ss2zCq62VdNG8tM1wchn8zjSGOBJ6icpsIM=
 github.com/jackc/pgpassfile v1.0.0/go.mod h1:CEx0iS5ambNFdcRtxPj5JhEz+xB6uRky5eyVu/W2HEg=
 github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a h1:bbPeKD0xmW/Y25WS6cokEszi5g+S0QxI/d45PkRi7Nk=
