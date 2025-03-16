@@ -9,24 +9,23 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file" // needed for file source
 	"github.com/idlab-discover/kebeng/services/account/internal/config"
 	"github.com/sirupsen/logrus"
-	gormPostgres "gorm.io/driver/postgres"
-	"gorm.io/gorm"
+    "github.com/jmoiron/sqlx"
 )
 
 
-func NewDatabase(cfg *config.Config) (*gorm.DB, error) {
+func NewDatabase(cfg *config.Config) (*sqlx.DB, error) {
     return  createDatabaseWithDSN(getDSN(cfg),cfg)
 } 
 
-func createDatabaseWithDSN(connectionString string, cfg *config.Config) (*gorm.DB, error) {
-    var db *gorm.DB
+func createDatabaseWithDSN(connectionString string, cfg *config.Config) (*sqlx.DB, error) {
+    var db *sqlx.DB
     var err error
 
     maxRetries := 10
     retryInterval := 3 * time.Second
 
     for try := 0; try < maxRetries; try++ {
-        db, err = gorm.Open(gormPostgres.Open(connectionString), &gorm.Config{})
+        db, err = sqlx.Connect("postgres", connectionString)
         if err == nil {
             logrus.Info("Connected to database")
 
@@ -54,15 +53,10 @@ func getDSN(cfg *config.Config) string {
 }
 
 // runs the migration files in the /migrations folder
-func runMigrations(db *gorm.DB, cfg *config.Config) error {
+func runMigrations(db *sqlx.DB, cfg *config.Config) error {
     logrus.Info("Running database migrations")
 
-    sqlDB, err := db.DB()
-    if err != nil {
-        return fmt.Errorf("failed to get raw database connection: %v", err)
-    }
-    
-    driver, err := postgres.WithInstance(sqlDB, &postgres.Config{})
+    driver, err := postgres.WithInstance(db.DB, &postgres.Config{})
     if err != nil {
         return fmt.Errorf("failed to create migration driver: %v", err)
     }
