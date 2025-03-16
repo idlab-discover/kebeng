@@ -5,11 +5,17 @@ import (
 	"fmt"
 
 	"github.com/idlab-discover/kebeng/services/account/internal/config"
+	"github.com/idlab-discover/kebeng/services/account/internal/errors"
 	proto "github.com/idlab-discover/kebeng/services/account/proto"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-    "github.com/sirupsen/logrus"
 )
+
+// NOTE: in all the endpoints the errors of the actual logic are included in the response and NOT returned as an error
+// this is because we need every error and not just 1 according to the snapcraft docs
+// there is an err field in the proto functions because proto incists on it so if that is != nil the request failed
+// but the actual error is in the errors field
 
 type AccountClient struct {
     conn *grpc.ClientConn
@@ -31,7 +37,7 @@ func (c *AccountClient) Close() {
     c.conn.Close()
 }
 
-func (c *AccountClient) CreateAccount(displayName, username, email string) (*proto.Account, error) {
+func (c *AccountClient) CreateAccount(displayName, username, email string) (*proto.AccountResponse) {
     req := &proto.CreateAccountRequest{
         DisplayName: displayName,
         Username: username,
@@ -40,12 +46,17 @@ func (c *AccountClient) CreateAccount(displayName, username, email string) (*pro
 
     resp, err := c.client.CreateAccount(context.Background(), req)
     if err != nil {
-        return nil, fmt.Errorf("could not create account: %v", err)
+        // this means proto request failed not the actual logic
+        resp = &proto.AccountResponse{
+            Errors: []*proto.Error{{
+                Code: errors.InternalServerError, Message: err.Error()},
+            },
+        }
     }
-    return resp, nil
+    return resp
 }
 
-func (c *AccountClient) UpdateAccount(id, displayName, username, email string) (*proto.Account, error) {
+func (c *AccountClient) UpdateAccount(id, displayName, username, email string) (*proto.AccountResponse) {
     req := &proto.UpdateAccountRequest{
         Id:          id,
         DisplayName: displayName,
@@ -55,52 +66,91 @@ func (c *AccountClient) UpdateAccount(id, displayName, username, email string) (
 
     resp, err := c.client.UpdateAccount(context.Background(), req)
     if err != nil {
-        return nil, fmt.Errorf("could not update account: %v", err)
+        // this means proto request failed not the actual logic
+        resp = &proto.AccountResponse{
+            Errors: []*proto.Error{{
+                Code: errors.InternalServerError, Message: err.Error()},
+            },
+        }
     }
-    return resp, nil
+    return resp
 }
 
-func (c *AccountClient) DeleteAccount(id string) (bool, error) {
+func (c *AccountClient) DeleteAccount(id string) (*proto.DeleteAccountResponse) {
     req := &proto.DeleteAccountRequest{Id: id}
 
     resp, err := c.client.DeleteAccount(context.Background(), req)
     if err != nil {
-        return false, fmt.Errorf("could not delete account: %v", err)
+        // this means proto request failed not the actual logic
+        resp = &proto.DeleteAccountResponse{
+            Errors: []*proto.Error{{
+                Code: errors.InternalServerError, Message: err.Error()},
+            },
+        }
     }
-    return resp.Success, nil
+    return resp
 }
 
-func (c *AccountClient) GetAccountByEmail(email string) (*proto.Account, error) {
+func (c *AccountClient) GetAccountByEmail(email string) (*proto.AccountResponse) {
     req := &proto.GetAccountByEmailRequest{Email: email}
 
     resp, err := c.client.GetAccountByEmail(context.Background(), req)
     if err != nil {
-        return nil, fmt.Errorf("could not get account by email: %v", err)
+        // this means proto request failed not the actual logic
+        resp = &proto.AccountResponse{
+            Errors: []*proto.Error{{
+                Code: errors.InternalServerError, Message: err.Error()},
+            },
+        }
     }
-    return resp, nil
+    return resp
 }
 
-func (c *AccountClient) GetAccountByID(id string) (*proto.Account, error) {
+func (c *AccountClient) GetAccountByID(id string) (*proto.AccountResponse) {
     req := &proto.GetAccountByIDRequest{Id: id}
 
     resp, err := c.client.GetAccountByID(context.Background(), req)
     if err != nil {
-        return nil, fmt.Errorf("could not get account by ID: %v", err)
+        // this means proto request failed not the actual logic
+        resp = &proto.AccountResponse{
+            Errors: []*proto.Error{{
+                Code: errors.InternalServerError, Message: err.Error()},
+            },
+        }
     }
-    return resp, nil
+    return resp
 }
 
-func (c *AccountClient) GetAccountByUsername(username string) (*proto.Account, error) {
+func (c *AccountClient) GetAccountsByIds(ids []string) (*proto.GetAccountsByIdsResponse) {
+    req := &proto.GetAccountsByIdsRequest{Ids: ids}
+    resp , err := c.client.GetAccountsByIds(context.Background(), req)
+    if err != nil {
+        // this means proto request failed not the actual logic
+        resp = &proto.GetAccountsByIdsResponse{
+            Errors: []*proto.Error{{
+                Code: errors.InternalServerError, Message: err.Error()},
+            },
+        }
+    }
+    return resp
+}
+
+func (c *AccountClient) GetAccountByUsername(username string) (*proto.AccountResponse) {
     req := &proto.GetAccountByUsernameRequest{Username: username}
 
     resp, err := c.client.GetAccountByUsername(context.Background(), req)
     if err != nil {
-        return nil, fmt.Errorf("could not get account by username: %v", err)
+        // this means proto request failed not the actual logic
+        resp = &proto.AccountResponse{
+            Errors: []*proto.Error{{
+                Code: errors.InternalServerError, Message: err.Error()},
+            },
+        }
     }
-    return resp, nil
+    return resp
 }
 
-func (c *AccountClient) AddKey(accountEmail, keyName, sha3384, encodedPublicKey string) (*proto.Key, error) {
+func (c *AccountClient) AddKey(accountEmail, keyName, sha3384, encodedPublicKey string) (*proto.KeyResponse,) {
     req := &proto.AddKeyRequest{
         AccountEmail:        accountEmail,
         KeyName:             keyName,
@@ -110,22 +160,44 @@ func (c *AccountClient) AddKey(accountEmail, keyName, sha3384, encodedPublicKey 
 
     resp, err := c.client.AddKey(context.Background(), req)
     if err != nil {
-        return nil, fmt.Errorf("could not add key: %v", err)
+        // this means proto request failed not the actual logic
+        resp = &proto.KeyResponse{
+            Errors: []*proto.Error{{
+                Code: errors.InternalServerError, Message: err.Error()},
+            },
+        }
     }
-    return resp, nil
+    return resp
 }
 
-func (c *AccountClient) GetAccountKey(Sha3384 string) (*proto.Key, error) {
+func (c *AccountClient) GetAccountKey(Sha3384 string) (*proto.KeyResponse) {
     req := &proto.GetKeyBySHA3384Request{Sha3384: Sha3384}
 
     resp, err := c.client.GetKeyBySHA3384(context.Background(), req)
     if err != nil {
-        return nil, fmt.Errorf("could not get account keys: %v", err)
+        // this means proto request failed not the actual logic
+        resp = &proto.KeyResponse{
+            Errors: []*proto.Error{{
+                Code: errors.InternalServerError, Message: err.Error()},
+            },
+        }
     }
-    return resp, nil
+    return resp
 }
 
+func (c *AccountClient) GetAccountKeysByAccountID(accountID string) (*proto.KeysResponse) {
+    req := &proto.GetKeysByAccountIdRequest{AccountId: accountID}
 
-
+    resp, err := c.client.GetKeysByAccountId(context.Background(), req)
+    if err != nil {
+        // this means proto request failed not the actual logic
+        resp = &proto.KeysResponse{
+            Errors: []*proto.Error{{
+                Code: errors.InternalServerError, Message: err.Error()},
+            },
+        }
+    }
+    return resp
+}
 
 

@@ -4,12 +4,14 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	accClient "github.com/idlab-discover/kebeng/services/account/client"
 	assertionClient "github.com/idlab-discover/kebeng/services/assertion/client"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/auth"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/config"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/errors"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/message"
+	"github.com/idlab-discover/kebeng/services/gateway/internal/middleware"
 	storeClient "github.com/idlab-discover/kebeng/services/store/client"
 	storepb "github.com/idlab-discover/kebeng/services/store/proto"
 )
@@ -31,13 +33,20 @@ func NewHandler(accountClient *accClient.AccountClient, storeClient storeClient.
 	}
 }
 
+// TODO: add middelware function that checks authentication with discharge macaroon (can't get discharge macaroon as of now, so don't know the format/what it contains)
 func (h *Handler) SetupEndpoints(r *gin.Engine) {
-	r.POST("api/v1/snaps/auth/nonces", h.RequestStoreDeviceNonce)      // TODO
+    // NOTE: doesn't really check macaroons yet just sets email to test value
+    authGroup := r.Group("/dev/api")
+    authGroup.Use(middleware.AuthMiddleware())
+  
+  r.POST("api/v1/snaps/auth/nonces", h.RequestStoreDeviceNonce)      // TODO
 	r.POST("api/v1/snaps/auth/sessions", h.RequestStoreDeviceSessions) // TODO
 	r.POST("/v2/snaps/refresh", h.RefreshSnap)                         // TODO
 	r.POST("/createAccount", h.createAccount)
 	r.POST("/dev/api/register-name/", h.RegisterSnapName)
 	r.POST("/dev/api/acl/", h.generateMacaroon)
+
+    authGroup.GET("/account/", h.getAccount)
 	r.POST("/dev/api/register-name-dispute/", h.RegisterSnapNameDispute)
 	r.POST("/dev/api/snaps/:snap_id/builds", h.ProcessSnapBuildAssertion)
 	r.POST("/dev/api/acl/verify/", h.verifyMacaroon) //TODO: implement correctly to many unknows of what has to be included and what not, need good source
@@ -81,9 +90,9 @@ func (h *Handler) createAccount(c *gin.Context) {
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
-	account, err := h.AccountClient.CreateAccount(req.DisplayName, req.Username, req.Email)
-	if err != nil {
-		el.Add(errors.InternalServerError, errors.FormatBindError(err))
+	account := h.AccountClient.CreateAccount(req.DisplayName, req.Username, req.Email)
+	if len(account.Errors) > 0 {
+        el.ExtendAccountError(account.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
@@ -136,7 +145,7 @@ func (h *Handler) generateMacaroon(c *gin.Context) {
 		return
 	}
 
-	// validate input
+    // validate input
 	auth.ValidateGenerateMacaroonRequest(req, el)
 	if len(*el) > 0 {
 		c.JSON(http.StatusBadRequest,
@@ -145,32 +154,32 @@ func (h *Handler) generateMacaroon(c *gin.Context) {
 			})
 		return
 	}
+        
+    // check whether snapEntry exists else 404 not found
+    entries := make([]*storepb.GetEntryRequest, len(req.Packages))
+    for i, p := range req.Packages {
+        entries[i] = &storepb.GetEntryRequest{
+            Name: p.Name,
+            Id:       p.SnapId,
+        }
+    }
 
-	// check whether snapEntry exists else 404 not found
-	entries := make([]*storepb.GetEntryRequest, len(req.Packages))
-	for i, p := range req.Packages {
-		entries[i] = &storepb.GetEntryRequest{
-			Name: p.Name,
-			Id:   p.SnapId,
-		}
-	}
+    entriesResponse := h.StoreClient.GetEntries(&storepb.GetEntriesRequest{Entries: entries})
+    if len(entriesResponse.Errors) > 0 {
+        el.ExtendStoreError(entriesResponse.Errors)
+        c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+        return
+    }
+    // mimic set to prevent duplicate ids in macaroon
+    snapIDs := make(map[string]bool, len(entriesResponse.Entries))
+    for _, e := range entriesResponse.Entries {
+        snapIDs[e.Id] = true
+    }
 
-	entriesResponse := h.StoreClient.GetEntries(&storepb.GetEntriesRequest{Entries: entries})
-	if len(entriesResponse.Errors) > 0 {
-		el.ExtendStoreError(entriesResponse.Errors)
-		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
-		return
-	}
 
-	// mimic set to prevent duplicate ids in macaroon
-	snapIDs := make(map[string]bool, len(entriesResponse.Entries))
-	for _, e := range entriesResponse.Entries {
-		snapIDs[e.Id] = true
-	}
-
-	macaroon := auth.GenerateMacaroon(c, req, snapIDs, h.config.MacaroonConfig)
-	if len(macaroon.Errors) > 0 {
-		el.Extend(macaroon.Errors)
+    macaroon := auth.GenerateMacaroon(c, req, snapIDs, h.config.MacaroonConfig)
+    if len(macaroon.Errors) > 0 {
+        el.Extend(macaroon.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
@@ -215,6 +224,177 @@ func (h *Handler) ProcessSnapBuildAssertion(c *gin.Context) {
 			"type":              resp.Type,
 		},
 	})
+}
+
+func (h *Handler) getAccount(c *gin.Context) {
+    el := errors.New()
+    email, isThere := c.Get("email")
+    if !isThere {
+        el.Add(errors.BadRequest, "missing email")
+        c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+        return
+    }
+
+    account := h.AccountClient.GetAccountByEmail(email.(string))
+    if len(account.Errors) > 0 {
+        el.ExtendAccountError(account.Errors)
+        c.JSON(http.StatusInternalServerError, gin.H{"error_list": el})
+        return
+    }
+    accId, err := uuid.Parse(account.Id)
+    if err != nil {
+        // should never happen really
+        el.Add(errors.InternalServerError, err.Error())
+        c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+        return
+    }
+
+    
+    keys := h.AccountClient.GetAccountKeysByAccountID(account.Id)
+    if len(keys.Errors) > 0 {
+        el.ExtendAccountError(keys.Errors)
+        c.JSON(http.StatusInternalServerError, gin.H{"error_list": el})
+        return
+    }
+    // convert to message.AccountKey
+    messageKeys := make([]message.AccountKey, len(keys.Keys))
+    for i, k := range keys.Keys {
+        messageKeys[i] = message.AccountKey{
+            Name: k.Name,
+            PublicKeySHA384: k.Sha3384,
+            Since: k.Since.AsTime(),
+            Until: k.Until.AsTime(),
+        }
+    }
+
+    // Get snaps
+
+    entries := h.StoreClient.GetEntriesByAccountID(account.Id)
+    if len(entries.Errors) > 0 {
+        el.ExtendStoreError(entries.Errors)
+        c.JSON(http.StatusInternalServerError, gin.H{"error_list": el})
+        return
+    }
+    
+    // Get all revisions for every snapEntry
+    snapEntries := make([]*storepb.GetRevisionsByEntryIdRequest, len(entries.Entries))
+    for i, e := range entries.Entries {
+        snapEntries[i] = &storepb.GetRevisionsByEntryIdRequest{EntryId: e.Id}
+    }
+
+    // do 1 request where we get all the snapRevisions for every snapEntry
+    revisions := h.StoreClient.GetRevisionsByEntryIds(
+        &storepb.GetRevisionsByEntryIdRequests{
+            Requests: snapEntries,
+        })
+    if len(revisions.Errors) > 0 {
+        el.ExtendStoreError(revisions.Errors)
+        c.JSON(http.StatusInternalServerError, gin.H{"error_list": el})
+        return
+    }
+    
+    // according to the docs a Publisher is only linked to a snapEntry
+    // get all publishers per snap 
+    accountIds := make([]string, len(entries.Entries))
+    for i, e := range entries.Entries {
+        accountIds[i] = e.PublisherId
+    }
+    publishers := h.AccountClient.GetAccountsByIds(accountIds)
+    if len(publishers.Errors) > 0 {
+        el.ExtendAccountError(publishers.Errors)
+        c.JSON(http.StatusInternalServerError, gin.H{"error_list": el})
+        return
+    }
+    
+    // Now we have all the data we need to fill in the snaps object
+    // start filling in
+    snaps := make(map[string]map[string]message.Snap)
+
+    // map publishers by ID for quick lookup
+    publisherMap := make(map[string]*message.Publisher)
+    for _, p := range publishers.Accounts {
+        publisherMap[p.Id] = &message.Publisher{
+            ID:          p.Id,
+            DisplayName: p.DisplayName,
+            Username:    p.Username,
+            Validation:  p.Validation,
+        }
+    }
+
+    // map revisions by entry ID for quick lookup
+    revisionMap := make(map[string][]message.SnapRevision)
+    for _, revs := range revisions.Responses {
+        entryID := revs.EntryId
+        for _, rev := range revs.Revisions {
+            revisionMap[entryID] = append(revisionMap[entryID], message.SnapRevision{
+                Revision:      int(rev.Sequence),
+                Since:         rev.Since.AsTime(), 
+                Version:       rev.Version,
+                Status:        rev.Status, 
+                Architectures: rev.Architectures, 
+                // Channels:      rev.Channels, // TODO: see how to get them should not be in revision object
+            })
+        }
+    }
+
+    
+    for _, e := range entries.Entries {
+        series := e.Base         // Example: "16" //TODO: check if this is series normally but i think its the same as base?
+        snapName := e.SnapName        // Example: "hello-published"
+
+        // Ensure series exists in the map
+        if snaps[series] == nil {
+            snaps[series] = make(map[string]message.Snap)
+        }
+
+        // Get publisher
+        publisher, exists := publisherMap[e.PublisherId]
+        if !exists {
+            // should always exist normally otherwise something went wrong in previous processes
+            publisher = &message.Publisher{
+                ID:          e.PublisherId, // Fallback to ID only
+                DisplayName: "Unknown Publisher",
+                Username:    "unknown",
+                Validation:  "unverified",
+            }
+        }
+
+        // Get revisions for this snap entry
+        latestRevisions := revisionMap[e.Id]
+
+        // TODO: fix this
+        snap := message.Snap{
+            Status:          e.Status,
+            Price:           e.Price,        
+            Since:           e.Since.AsTime(),
+            SnapID:          e.Id,
+            // Store:           e.Store, // not yet implemented
+            Private:         e.Private,
+            IconURL:         &e.IconUrl,
+            Publisher:       *publisher,
+            LatestComments:  []message.SnapComment{}, // No comments available yet
+            LatestRevisions: latestRevisions,
+        }
+
+        // Assign snap to the correct series and snap name
+        snaps[series][snapName] = snap
+    }
+
+    // not yet implemented don't support brandstores yet
+    // stores := h.AccountClient.GetStores(account.Id)
+    
+    // leaving out the deprecated fields for now
+    resp := message.AccountResponse{
+        ID: accId,
+        DisplayName: account.DisplayName,
+        Email: account.Email,
+        Username: account.Username,
+
+        AccountKeys: messageKeys,
+        Snaps: snaps,
+        Stores: nil,
+    }
+    c.JSON(http.StatusOK,resp)
 }
 
 // TODO: implement correctly to many unknows of what has to be included and what not, need good source
@@ -267,4 +447,12 @@ func (h *Handler) verifyMacaroon(c *gin.Context) {
 		    }
 		    return
 	*/
+}
+
+func formatErrors(errors []*storepb.Error) []map[string]string {
+	errs := make([]map[string]string, len(errors))
+	for i, e := range errors {
+		errs[i] = map[string]string{"code": e.GetCode(), "message": e.GetMessage()}
+	}
+	return errs
 }

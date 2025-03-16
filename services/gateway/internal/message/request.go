@@ -50,3 +50,7 @@ type AuthData struct {
 type VerifyRequest struct {
 	AuthData AuthData `json:"auth_data"`
 }
+
+type AccountRequest struct {
+	Authorization AuthData `header:"Authorization" binding:"required"`
+}

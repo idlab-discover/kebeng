@@ -1,6 +1,8 @@
 package models
 
 import (
+    "time"
+
     "github.com/google/uuid"
     "gorm.io/gorm"
 )
@@ -13,6 +15,7 @@ type Key struct {
     EncodedPublicKey string
     AccountID        uuid.UUID
     Account          Account
+    Until           time.Time
 }
 
 type SSHKey struct {
@@ -33,4 +36,5 @@ type Account struct {
     //SnapEntryIDs []uuid.UUID `gorm:"type:integer[];column:snap_entry_ids"`
     SSHKeys     []SSHKey
     Email       string
+    Validation string
 }

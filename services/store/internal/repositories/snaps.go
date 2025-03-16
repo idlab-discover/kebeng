@@ -15,11 +15,13 @@ import (
 	database "github.com/idlab-discover/kebeng/services/store/internal"
 	"github.com/idlab-discover/kebeng/services/store/internal/models"
 	"gorm.io/gorm"
+    "github.com/jmoiron/sqlx"
 )
 
 type ISnapsRepository interface {
 	GetEntryByName(name string, preloadAssociations bool) (*models.SnapEntry, error)
 	GetEntryById(id uuid.UUID, preloadAssociations bool) (*models.SnapEntry, error)
+    GetEntriesByAccountId(accountId uuid.UUID, preloadAssociations bool) ([]*models.SnapEntry, error)
 	RegisterSnap(snapName string, isPrivate bool) (*models.SnapEntry, error)
 	AddSnap(name string, size uint64, accountId uuid.UUID) (*models.SnapEntry, error)
 
@@ -44,10 +46,11 @@ type ISnapsRepository interface {
 
 type SnapsRepository struct {
 	db *gorm.DB
+    dbx *sqlx.DB
 }
 
-func NewSnapsRepository(db *gorm.DB) *SnapsRepository {
-	return &SnapsRepository{db: db}
+func NewSnapsRepository(db *gorm.DB, dbx *sqlx.DB) *SnapsRepository {
+    return &SnapsRepository{db: db, dbx: dbx}
 }
 
 func (sp *SnapsRepository) GetRevisionByChannel(channel string, snapName string) (*models.SnapRevision, error) {
@@ -130,32 +133,43 @@ func (sp *SnapsRepository) GetRisks(trackId uint) (*[]models.SnapChannel, error)
 func (sp *SnapsRepository) GetRevisionById(id string) (*models.SnapRevision, error) {
 	var revision models.SnapRevision
 	db := sp.db.Where(&models.SnapRevision{ID: id}).Find(&revision)
-	if _, ok := database.CheckDBForErrorOrNoRows(db); ok {
-		return &revision, nil
-	}
-
 	if db.Error != nil {
-		return nil, db.Error
+		logrus.Error(db.Error)
+		return nil, errors.New("database-error")
+	}
+	if db.RowsAffected == 0 {
+		logrus.Errorf("No revision found for snap with id: %s", id)
+		return nil, errors.New("resource-not-found")
 	}
 
-	return nil, errors.New("unknown error encountered")
+	return &revision, nil
 }
 
 func (sp *SnapsRepository) GetRevisionByNameAndSequence(name string, sequence uint) (*models.SnapRevision, error) {
 	var entry models.SnapEntry
+
 	db := sp.db.Where(&models.SnapEntry{Name: name}).Find(&entry)
 	if db.Error != nil {
-		return nil, db.Error
+		logrus.Error(db.Error)
+		return nil, errors.New("database-error")
 	}
-	if entry.ID != uuid.Nil {
-		var revision models.SnapRevision
-		db := sp.db.Where(&models.SnapRevision{SnapEntryID: entry.ID, SequenceNumber: sequence}).Find(&revision)
-		if db.Error != nil {
-			return nil, db.Error
-		}
-		return &revision, nil
+	if db.RowsAffected == 0 {
+		logrus.Errorf("No snap entry found for name: %s", name)
+		return nil, errors.New("resource-not-found")
 	}
-	return nil, errors.New("revision not found")
+
+	var revision models.SnapRevision
+	db = sp.db.Where(&models.SnapRevision{SnapEntryID: entry.ID, SequenceNumber: sequence}).Find(&revision)
+	if db.Error != nil {
+		logrus.Error(db.Error)
+		return nil, errors.New("database-error")
+	}
+	if db.RowsAffected == 0 {
+		logrus.Errorf("No revision found for snap: %s with sequence: %d", name, sequence)
+		return nil, errors.New("resource-not-found")
+	}
+
+	return &revision, nil
 
 }
 
@@ -297,7 +311,7 @@ func (sp *SnapsRepository) GetSnaps() (*[]models.SnapEntry, error) {
 
 	// TODO: would need to implement private and filter here
 	db := sp.db.Find(&snaps)
-	if _, ok := database.CheckDBForErrorOrNoRows(db); ok {
+	if _, ok := database.CheckDBForErrorOrNoRows(db); ok { // TODO: add improved error handling
 		return &snaps, nil
 	}
 
@@ -325,16 +339,16 @@ func (sp *SnapsRepository) GetEntryById(id uuid.UUID, preloadAssociations bool) 
 		db = sp.db.Where(whereModel).Find(&existingSnap)
 	}
 
-	if _, ok := database.CheckDBForErrorOrNoRows(db); ok {
-		return &existingSnap, nil
-	}
-
 	if db.Error != nil {
-		return nil, db.Error
+		logrus.Error(db.Error)
+		return nil, errors.New("database-error")
+	}
+	if db.RowsAffected == 0 {
+		logrus.Errorf("No snap entry found for id: %s", id)
+		return nil, errors.New("resource-not-found")
 	}
 
-	logrus.Errorf("Could not find snap id: %d", id)
-	return nil, nil
+	return &existingSnap, nil
 }
 
 func (sp *SnapsRepository) GetEntryByName(name string, preloadAssociations bool) (*models.SnapEntry, error) {
@@ -346,16 +360,16 @@ func (sp *SnapsRepository) GetEntryByName(name string, preloadAssociations bool)
 		db = sp.db.Where(&models.SnapEntry{Name: name}).Find(&existingSnap)
 	}
 
-	if _, ok := database.CheckDBForErrorOrNoRows(db); ok {
-		return &existingSnap, nil
-	}
-
 	if db.Error != nil {
-		return nil, db.Error
+		logrus.Error(db.Error)
+		return nil, errors.New("database-error")
+	}
+	if db.RowsAffected == 0 {
+		logrus.Errorf("No snap entry found for name: %s", name)
+		return nil, errors.New("resource-not-found")
 	}
 
-	logrus.Warningf("Could not find snap %s", name)
-	return nil, nil
+	return &existingSnap, nil
 }
 
 // Used when a new snap gets uploaded for the first time (=registering a snap)
@@ -503,6 +517,79 @@ func (sp *SnapsRepository) updateMeta(metaBytes *[]byte) error {
 		logrus.Errorf("No rows found for: %s", snapMeta.Name)
 	}
 	return nil
+}
+
+// sqlx version
+func (sp *SnapsRepository) GetEntriesByAccountId(accountId uuid.UUID, preloadAssociations bool) ([]*models.SnapEntry, error) {
+    var query string
+    // TODO: implement this other way 
+    if preloadAssociations {
+        // Use SELECT * for snap_entries and alias revision columns
+        query = `
+            SELECT * 
+            FROM public.snap_entries 
+            WHERE account_id = $1
+        `
+    } else {
+        // Simple SELECT * for just the snap_entries table
+        query = `
+            SELECT * 
+            FROM public.snap_entries 
+            WHERE account_id = $1
+        `
+    }
+
+    var entries []*models.SnapEntry
+    err := sp.dbx.Select(&entries, query, accountId)
+    if err != nil {
+        return nil, err
+    }
+    return entries, nil
+}
+
+/*
+// This is the grom version trying sqlx version
+func (sp *SnapsRepository) GetEntriesByAccountId(accountId uuid.UUID, preloadAssociations bool) ([]*models.SnapEntry, error) {
+    var snaps []*models.SnapEntry
+    var db *gorm.DB
+    if preloadAssociations {
+        db = sp.db.Model(&models.SnapEntry{}).
+            Preload("").
+            Where(&models.SnapEntry{AccountID: accountId}).
+            Find(&snaps)
+    } else {
+        db = sp.db.Model(&models.SnapEntry{}).
+            Where(&models.SnapEntry{AccountID: accountId}).
+            Find(&snaps)
+    }
+
+    if _, ok := database.CheckDBForErrorOrNoRows(db); ok {
+        return snaps, nil
+    }
+
+    if db.Error != nil {
+        return nil, db.Error
+    }
+
+    logrus.Errorf("Could not find snaps for accountId: %s", accountId)
+    return nil, nil
+}
+
+*/
+
+func (sp *SnapsRepository) GetRevisionsByEntryId(entryId uuid.UUID) ([]*models.SnapRevision, error) {
+    var revisions []*models.SnapRevision
+    db := sp.db.Where(&models.SnapRevision{SnapEntryID: entryId}).Find(&revisions)
+    if _, ok := database.CheckDBForErrorOrNoRows(db); ok {
+        return revisions, nil
+    }
+
+    if db.Error != nil {
+        return nil, db.Error
+    }
+
+    logrus.Errorf("Could not find revisions for snapEntryId: %s", entryId)
+    return nil, nil
 }
 
 func (sp *SnapsRepository) getSnap(whereModel *models.SnapEntry, preloadAssociations bool) (*models.SnapEntry, error) {
