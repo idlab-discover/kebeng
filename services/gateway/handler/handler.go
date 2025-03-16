@@ -331,13 +331,13 @@ func (h *Handler) getAccount(c *gin.Context) {
 
         // TODO: fix this
         snap := message.Snap{
-            // Status:          e.Status,        // added to db but noyet proto and query i think? ask Bram
-            // Price:           e.Price,         // idem
-            // Since:           e.Since.AsTime(),// idem
+            Status:          e.Status,
+            Price:           e.Price,        
+            Since:           e.Since.AsTime(),
             SnapID:          e.Id,
             // Store:           e.Store, // not yet implemented
             Private:         e.Private,
-            IconURL:         nil, // idem
+            IconURL:         &e.IconUrl,
             Publisher:       *publisher,
             LatestComments:  []message.SnapComment{}, // No comments available yet
             LatestRevisions: latestRevisions,
