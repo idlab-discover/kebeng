@@ -235,7 +235,6 @@ func (h *Handler) getAccount(c *gin.Context) {
     }
 
     // Get snaps
-    // TODO: fill in snaps object
 
     entries := h.StoreClient.GetEntriesByAccountID(account.Id)
     if len(entries.Errors) > 0 {
@@ -263,7 +262,6 @@ func (h *Handler) getAccount(c *gin.Context) {
     
     // according to the docs a Publisher is only linked to a snapEntry
     // get all publishers per snap 
-    // get all accountId's from the snapEntries
     accountIds := make([]string, len(entries.Entries))
     for i, e := range entries.Entries {
         accountIds[i] = e.PublisherId
@@ -297,7 +295,7 @@ func (h *Handler) getAccount(c *gin.Context) {
         for _, rev := range revs.Revisions {
             revisionMap[entryID] = append(revisionMap[entryID], message.SnapRevision{
                 Revision:      int(rev.Sequence),
-                Since:         rev.Since, 
+                Since:         rev.Since.AsTime(), 
                 Version:       rev.Version,
                 Status:        rev.Status, 
                 Architectures: rev.Architectures, 
@@ -331,7 +329,7 @@ func (h *Handler) getAccount(c *gin.Context) {
         // Get revisions for this snap entry
         latestRevisions := revisionMap[e.Id]
 
-        // Construct Snap object
+        // TODO: fix this
         snap := message.Snap{
             // Status:          e.Status,        // added to db but noyet proto and query i think? ask Bram
             // Price:           e.Price,         // idem
