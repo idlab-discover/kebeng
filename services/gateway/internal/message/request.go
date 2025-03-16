@@ -1,5 +1,16 @@
 package message
 
+type RequestStoreDeviceNonceReq struct {
+}
+
+type RequestStoreDeviceNonceRes struct {
+	Nonce string `json:"nonce"`
+}
+
+type FindSnapsRequest struct {
+	Name string `json:"name"`
+}
+
 type CreateAccountRequest struct {
 	DisplayName string `json:"display_name"`
 	Email       string `json:"email"`

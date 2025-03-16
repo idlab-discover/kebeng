@@ -38,7 +38,10 @@ func (h *Handler) SetupEndpoints(r *gin.Engine) {
     // NOTE: doesn't really check macaroons yet just sets email to test value
     authGroup := r.Group("/dev/api")
     authGroup.Use(middleware.AuthMiddleware())
-
+  
+  r.POST("api/v1/snaps/auth/nonces", h.RequestStoreDeviceNonce)      // TODO
+	r.POST("api/v1/snaps/auth/sessions", h.RequestStoreDeviceSessions) // TODO
+	r.POST("/v2/snaps/refresh", h.RefreshSnap)                         // TODO
 	r.POST("/createAccount", h.createAccount)
 	r.POST("/dev/api/register-name/", h.RegisterSnapName)
 	r.POST("/dev/api/acl/", h.generateMacaroon)
@@ -47,6 +50,36 @@ func (h *Handler) SetupEndpoints(r *gin.Engine) {
 	r.POST("/dev/api/register-name-dispute/", h.RegisterSnapNameDispute)
 	r.POST("/dev/api/snaps/:snap_id/builds", h.ProcessSnapBuildAssertion)
 	r.POST("/dev/api/acl/verify/", h.verifyMacaroon) //TODO: implement correctly to many unknows of what has to be included and what not, need good source
+
+	r.GET("/v2/snaps/find", h.FindSnaps) // TODO
+}
+
+// TODO: Implement this function properly
+// Right now it's just a placeholder to make sure Snapcraft can be installed in the lxc container
+func (h *Handler) RequestStoreDeviceNonce(c *gin.Context) {
+	c.JSON(http.StatusOK, message.RequestStoreDeviceNonceRes{Nonce: "this-nonce"})
+}
+
+// TODO: Implement this function properly
+// Right now it's just a placeholder to make sure Snapcraft can be installed in the lxc container
+func (h *Handler) RequestStoreDeviceSessions(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"macaroon": "shakamacaroon"})
+}
+
+// TODO: Implement this function properly
+// Right now it's just a placeholder to make sure Snapcraft can be installed in the lxc container
+func (h *Handler) RefreshSnap(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"status": "success"})
+}
+
+func (h *Handler) FindSnaps(c *gin.Context) {
+	el := errors.New()
+	var req message.FindSnapsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		el.Add(errors.BadRequest, errors.FormatBindError(err))
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
 }
 
 func (h *Handler) createAccount(c *gin.Context) {
