@@ -123,7 +123,7 @@ type AccountResponse struct {
 	ID          uuid.UUID                        `json:"id"`
 	Validation  string                        `json:"validation"` // validation status
 	Snaps       map[string]map[string]Snap    `json:"snaps"`      // Properly nested structure (Series -> Snap Name -> Snap)
-	Stores      []Store                        `json:"stores"`
+	Stores      []Store                        `json:"stores"` // list of stores the user has access to
 	Username    string                        `json:"username"` // store username
 
 	// Deprecated Fields, here for backwards compatibility but may not always hold correct values
