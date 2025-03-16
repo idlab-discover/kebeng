@@ -225,7 +225,7 @@ func (a *AccountService) GetKey(ctx context.Context, req *proto.GetKeyBySHA3384R
     }, nil
 }
 
-func (a *AccountService) GetKeysByAccountId(ctx context.Context, req *proto.GetKeysByAccountIDRequest) (*proto.KeysResponse, error) {
+func (a *AccountService) GetKeysByAccountId(ctx context.Context, req *proto.GetKeysByAccountIdRequest) (*proto.KeysResponse, error) {
     el := make([]*proto.Error, 0)
     // parse to uuid
     accountID, err := uuid.Parse(req.AccountId)
