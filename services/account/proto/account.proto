@@ -16,7 +16,7 @@ service AccountService {
 
     rpc AddKey(AddKeyRequest) returns (KeyResponse);
     rpc GetKeyBySHA3384(GetKeyBySHA3384Request) returns (KeyResponse);
-    rpc GetKeysByAccountID(GetKeysByAccountIDRequest) returns (KeysResponse);
+    rpc GetKeysByAccountId(GetKeysByAccountIdRequest) returns (KeysResponse);
 }
 
 message Error {
@@ -93,7 +93,7 @@ message GetKeyBySHA3384Request {
 }
 
 
-message GetKeysByAccountIDRequest {
+message GetKeysByAccountIdRequest {
     string account_id = 1;
 }
 
