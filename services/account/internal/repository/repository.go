@@ -6,36 +6,52 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/idlab-discover/kebeng/services/account/internal/models"
-	"gorm.io/gorm"
+	"github.com/jmoiron/sqlx"
 	"gorm.io/gorm/clause"
 )
 
 // IAccountRepository defines the interface for account-related database operations
 type IAccountRepository interface {
-    CreateAccount(ctx context.Context, account *models.Account) (*models.Account, error)
-    UpdateAccount(ctx context.Context, account *models.Account) (*models.Account, error)
-    DeleteAccount(ctx context.Context, accountID uuid.UUID) error
-    GetAccountByEmail(ctx context.Context, email string, preload bool) (*models.Account, error)
-    GetAccountByID(ctx context.Context, accountID uuid.UUID, preload bool) (*models.Account, error)
-    GetAccountByUsername(ctx context.Context, username string, preload bool) (*models.Account, error)
+	CreateAccount(ctx context.Context, account *models.Account) (*models.Account, error)
+	UpdateAccount(ctx context.Context, account *models.Account) (*models.Account, error)
+	DeleteAccount(ctx context.Context, accountID uuid.UUID) error
+	GetAccountByEmail(ctx context.Context, email string, preload bool) (*models.Account, error)
+	GetAccountByID(ctx context.Context, accountID uuid.UUID, preload bool) (*models.Account, error)
+	GetAccountByUsername(ctx context.Context, username string, preload bool) (*models.Account, error)
 
-    AddKey(ctx context.Context, name, sha3384, encodedPublicKey, accountEmail string) (*models.Key, error)
-    GetKeyBySHA3384(ctx context.Context, sha3384 string) (*models.Key, error)
-    GetKeysByAccountID(ctx context.Context, accountID uuid.UUID) ([]*models.Key, error)
+	AddKey(ctx context.Context, name, sha3384, encodedPublicKey, accountEmail string) (*models.Key, error)
+	GetKeyBySHA3384(ctx context.Context, sha3384 string) (*models.Key, error)
+	GetKeysByAccountID(ctx context.Context, accountID uuid.UUID) ([]*models.Key, error)
 }
 
 type AccountRepository struct {
-	db *gorm.DB
+	db *sqlx.DB
 }
 
-func NewAccountRepository(db *gorm.DB) *AccountRepository {
+func NewAccountRepository(db *sqlx.DB) *AccountRepository {
 	return &AccountRepository{db: db}
 }
 
 func (a *AccountRepository) CreateAccount(ctx context.Context, account *models.Account) (*models.Account, error) {
-	if err := a.db.WithContext(ctx).Create(account).Error; err != nil {
+	query := `
+        INSERT INTO accounts (id, username, email, password_hash, created_at, updated_at)
+        VALUES (:id, :username, :email, :password_hash, :created_at, :updated_at)
+    `
+	rows, err := a.db.NamedQueryContext(ctx, query, account)
+	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
+
+	var newAccount models.Account
+	if rows.Next() {
+		if err := rows.StructScan(&newAccount); err != nil {
+			return nil, err
+		}
+	} else {
+		return nil, fmt.Errorf("could not create account %+v", account)
+	}
+
 	return account, nil
 }
 
@@ -88,11 +104,11 @@ func (a *AccountRepository) GetKeyBySHA3384(ctx context.Context, sha3384 string)
 }
 
 func (a *AccountRepository) GetKeysByAccountID(ctx context.Context, accountID uuid.UUID) ([]*models.Key, error) {
-    var keys []*models.Key
-    if err := a.db.WithContext(ctx).Where(&models.Key{AccountID: accountID}).Find(&keys).Error; err != nil {
-        return nil, err
-    }
-    return keys, nil
+	var keys []*models.Key
+	if err := a.db.WithContext(ctx).Where(&models.Key{AccountID: accountID}).Find(&keys).Error; err != nil {
+		return nil, err
+	}
+	return keys, nil
 }
 
 // getKeyByWhereModel retrieves a key based on a filter
