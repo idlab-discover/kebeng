@@ -14,14 +14,14 @@ import (
 
 	database "github.com/idlab-discover/kebeng/services/store/internal"
 	"github.com/idlab-discover/kebeng/services/store/internal/models"
+	"github.com/jmoiron/sqlx"
 	"gorm.io/gorm"
-    "github.com/jmoiron/sqlx"
 )
 
 type ISnapsRepository interface {
 	GetEntryByName(name string, preloadAssociations bool) (*models.SnapEntry, error)
 	GetEntryById(id uuid.UUID, preloadAssociations bool) (*models.SnapEntry, error)
-    GetEntriesByAccountId(accountId uuid.UUID, preloadAssociations bool) ([]*models.SnapEntry, error)
+	GetEntriesByAccountId(accountId uuid.UUID, preloadAssociations bool) ([]*models.SnapEntry, error)
 	RegisterSnap(snapName string, isPrivate bool) (*models.SnapEntry, error)
 	AddSnap(name string, size uint64, accountId uuid.UUID) (*models.SnapEntry, error)
 
@@ -45,12 +45,11 @@ type ISnapsRepository interface {
 }
 
 type SnapsRepository struct {
-	db *gorm.DB
-    dbx *sqlx.DB
+	db *sqlx.DB
 }
 
-func NewSnapsRepository(db *gorm.DB, dbx *sqlx.DB) *SnapsRepository {
-    return &SnapsRepository{db: db, dbx: dbx}
+func NewSnapsRepository(db *sqlx.DB) *SnapsRepository {
+	return &SnapsRepository{db: db}
 }
 
 func (sp *SnapsRepository) GetRevisionByChannel(channel string, snapName string) (*models.SnapRevision, error) {
@@ -521,30 +520,30 @@ func (sp *SnapsRepository) updateMeta(metaBytes *[]byte) error {
 
 // sqlx version
 func (sp *SnapsRepository) GetEntriesByAccountId(accountId uuid.UUID, preloadAssociations bool) ([]*models.SnapEntry, error) {
-    var query string
-    // TODO: implement this other way 
-    if preloadAssociations {
-        // Use SELECT * for snap_entries and alias revision columns
-        query = `
+	var query string
+	// TODO: implement this other way
+	if preloadAssociations {
+		// Use SELECT * for snap_entries and alias revision columns
+		query = `
             SELECT * 
             FROM public.snap_entries 
             WHERE account_id = $1
         `
-    } else {
-        // Simple SELECT * for just the snap_entries table
-        query = `
+	} else {
+		// Simple SELECT * for just the snap_entries table
+		query = `
             SELECT * 
             FROM public.snap_entries 
             WHERE account_id = $1
         `
-    }
+	}
 
-    var entries []*models.SnapEntry
-    err := sp.dbx.Select(&entries, query, accountId)
-    if err != nil {
-        return nil, err
-    }
-    return entries, nil
+	var entries []*models.SnapEntry
+	err := sp.dbx.Select(&entries, query, accountId)
+	if err != nil {
+		return nil, err
+	}
+	return entries, nil
 }
 
 /*
@@ -578,18 +577,18 @@ func (sp *SnapsRepository) GetEntriesByAccountId(accountId uuid.UUID, preloadAss
 */
 
 func (sp *SnapsRepository) GetRevisionsByEntryId(entryId uuid.UUID) ([]*models.SnapRevision, error) {
-    var revisions []*models.SnapRevision
-    db := sp.db.Where(&models.SnapRevision{SnapEntryID: entryId}).Find(&revisions)
-    if _, ok := database.CheckDBForErrorOrNoRows(db); ok {
-        return revisions, nil
-    }
+	var revisions []*models.SnapRevision
+	db := sp.db.Where(&models.SnapRevision{SnapEntryID: entryId}).Find(&revisions)
+	if _, ok := database.CheckDBForErrorOrNoRows(db); ok {
+		return revisions, nil
+	}
 
-    if db.Error != nil {
-        return nil, db.Error
-    }
+	if db.Error != nil {
+		return nil, db.Error
+	}
 
-    logrus.Errorf("Could not find revisions for snapEntryId: %s", entryId)
-    return nil, nil
+	logrus.Errorf("Could not find revisions for snapEntryId: %s", entryId)
+	return nil, nil
 }
 
 func (sp *SnapsRepository) getSnap(whereModel *models.SnapEntry, preloadAssociations bool) (*models.SnapEntry, error) {
