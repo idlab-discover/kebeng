@@ -152,7 +152,12 @@ func (s *StoreLogic) GetEntries(ctx context.Context, req *proto.GetEntriesReques
 				Type:        snapEntry.Type,
 				Confinement: snapEntry.Confinement,
 				Base:        snapEntry.Base,
-				Private:     snapEntry.Private,
+                Private:     snapEntry.Private,
+                PublisherId: snapEntry.AccountID.String(),
+                Price: snapEntry.Price,
+                Status: snapEntry.Status,
+                Since: timestamppb.New(snapEntry.CreatedAt),
+                IconUrl: snapEntry.IconURL,
 			})
 
 			// If ID is not given, try to retrieve the entry by its name
@@ -178,6 +183,11 @@ func (s *StoreLogic) GetEntries(ctx context.Context, req *proto.GetEntriesReques
 				Confinement: snapEntry.Confinement,
 				Base:        snapEntry.Base,
 				Private:     snapEntry.Private,
+                PublisherId: snapEntry.AccountID.String(),
+                Price: snapEntry.Price,
+                Status: snapEntry.Status,
+                Since: timestamppb.New(snapEntry.CreatedAt),
+                IconUrl: snapEntry.IconURL,
 			})
 
 		} else {
@@ -230,7 +240,19 @@ func (s *StoreLogic) GetEntryById(ctx context.Context, req *proto.GetEntryReques
 		return &proto.GetEntryResponse{Errors: el}, err
 	}
 
-	return &proto.GetEntryResponse{Id: snapEntry.ID.String(), SnapName: snapEntry.Name, Type: snapEntry.Type, Confinement: snapEntry.Confinement, Base: snapEntry.Base, Private: snapEntry.Private}, nil
+	return &proto.GetEntryResponse{
+        Id: snapEntry.ID.String(),
+        SnapName: snapEntry.Name,
+        Type: snapEntry.Type,
+        Confinement: snapEntry.Confinement,
+        Base: snapEntry.Base,
+        Private: snapEntry.Private,
+        PublisherId: snapEntry.AccountID.String(),
+        Price: snapEntry.Price,
+        Status: snapEntry.Status,
+        Since: timestamppb.New(snapEntry.CreatedAt),
+        IconUrl: snapEntry.IconURL,
+    }, nil
 }
 
 // GetEntryByName retrieves a single snap entry by its name.
@@ -267,7 +289,19 @@ func (s *StoreLogic) GetEntryByName(ctx context.Context, req *proto.GetEntryRequ
 		return &proto.GetEntryResponse{Errors: el}, err
 	}
 
-	return &proto.GetEntryResponse{Id: snapEntry.ID.String(), SnapName: snapEntry.Name, Type: snapEntry.Type, Confinement: snapEntry.Confinement, Base: snapEntry.Base, Private: snapEntry.Private}, nil
+	return &proto.GetEntryResponse{
+        Id: snapEntry.ID.String(),
+        SnapName: snapEntry.Name,
+        Type: snapEntry.Type,
+        Confinement: snapEntry.Confinement,
+        Base: snapEntry.Base,
+        Private: snapEntry.Private,
+        PublisherId: snapEntry.AccountID.String(),
+        Price: snapEntry.Price,
+        Status: snapEntry.Status,
+        Since: timestamppb.New(snapEntry.CreatedAt),
+        IconUrl: snapEntry.IconURL,
+    }, nil
 }
 
 // GetRevisions retrieves a list of revisions based on the provided request.
@@ -463,9 +497,12 @@ func (s *StoreLogic) GetEntriesByAccountId(ctx context.Context, req *proto.GetEn
                 Base: entry.Base, 
                 Private: entry.Private,
                 PublisherId: entry.AccountID.String(),
+                Price: entry.Price,           
+                Status: entry.Status,
+                Since: timestamppb.New(entry.CreatedAt),
+                IconUrl: entry.IconURL,
             }
     }
-
     return &proto.GetEntriesResponse{Entries: foundEntries}, nil
 }
 
