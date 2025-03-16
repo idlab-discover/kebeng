@@ -45,7 +45,7 @@ message GetEntryRequest {
     string id = 1;
     string name = 2;
 }
-
+// TODO: add snapComments
 message GetEntryResponse {
     string id = 1;
     string snap_name = 2;
@@ -54,7 +54,11 @@ message GetEntryResponse {
     string type = 5;
     bool private = 6;
     string publisher_id = 7;
-    repeated Error errors = 8;
+    string status = 8;
+    double price = 9;
+    google.protobuf.Timestamp since = 10;
+    string icon_url = 11;
+    repeated Error errors = 12;
 }
 
 message GetEntriesRequest {
