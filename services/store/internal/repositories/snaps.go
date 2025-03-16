@@ -522,21 +522,13 @@ func (sp *SnapsRepository) updateMeta(metaBytes *[]byte) error {
 // sqlx version
 func (sp *SnapsRepository) GetEntriesByAccountId(accountId uuid.UUID, preloadAssociations bool) ([]*models.SnapEntry, error) {
     var query string
+    // TODO: implement this other way 
     if preloadAssociations {
         // Use SELECT * for snap_entries and alias revision columns
         query = `
-            SELECT 
-                e.*, 
-                r.id AS "latest_revision.id",
-                r.snap_filename AS "latest_revision.snap_filename",
-                r.snap_entry_id AS "latest_revision.snap_entry_id",
-                r.sha3_384 AS "latest_revision.sha3_384",
-                r.sha3_384_encoded AS "latest_revision.sha3_384_encoded",
-                r.size AS "latest_revision.size",
-                r.sequence_number AS "latest_revision.sequence_number"
-            FROM public.snap_entries e
-            LEFT JOIN snap_revisions r ON e.latest_revision_id = r.id
-            WHERE e.account_id = $1
+            SELECT * 
+            FROM public.snap_entries 
+            WHERE account_id = $1
         `
     } else {
         // Simple SELECT * for just the snap_entries table
