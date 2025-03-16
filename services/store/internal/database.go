@@ -10,14 +10,19 @@ import (
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
 	"github.com/sirupsen/logrus"
 	gormPostgres "gorm.io/driver/postgres"
+    "github.com/jmoiron/sqlx"
 	"gorm.io/gorm"
 )
 
-func NewDatabase(cfg *config.Config) (*gorm.DB, error) {
-	return createDatabaseWithDSN(getDSN(cfg), cfg)
+// this is really bad for now just to test somehting
+func NewDatabase(cfg *config.Config) (*gorm.DB,*sqlx.DB, error) {
+    connectionString := getDSN(cfg)
+    db, err := createDatabaseWithDSNgorm(connectionString, cfg)
+    dbSqlx, err := createDatabaseWithDSNsqlx(connectionString, cfg)
+    return db, dbSqlx, err
 }
 
-func createDatabaseWithDSN(connectionString string, cfg *config.Config) (*gorm.DB, error) {
+func createDatabaseWithDSNgorm(connectionString string, cfg *config.Config) (*gorm.DB, error) {
 	var db *gorm.DB
 	var err error
 
@@ -33,6 +38,32 @@ func createDatabaseWithDSN(connectionString string, cfg *config.Config) (*gorm.D
 			if err != nil {
 				logrus.Errorf("Migration failed: %v", err)
 			}
+			return db, nil
+		}
+		logrus.Errorf("Failed to connect to database at try %d: %v", try, err)
+		time.Sleep(retryInterval)
+	}
+	logrus.Errorf("Failed to connect to database after %d retries", maxRetries)
+	return nil, err
+}
+
+func createDatabaseWithDSNsqlx(connectionString string, _ *config.Config) (*sqlx.DB, error) {
+	var db *sqlx.DB
+	var err error
+
+	maxRetries := 10
+	retryInterval := 3 * time.Second
+
+	for try := 0; try < maxRetries; try++ {
+        db, err = sqlx.Connect("postgres", connectionString)
+		if err == nil {
+			logrus.Info("Connected to database")
+
+			/* err = runMigrations(db, cfg)
+			if err != nil {
+				logrus.Errorf("Migration failed: %v", err)
+			}
+            */
 			return db, nil
 		}
 		logrus.Errorf("Failed to connect to database at try %d: %v", try, err)

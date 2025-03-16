@@ -7,6 +7,7 @@ import (
 
 	assertionpb "github.com/idlab-discover/kebeng/services/assertion/proto"
 	storepb "github.com/idlab-discover/kebeng/services/store/proto"
+    accountpb "github.com/idlab-discover/kebeng/services/account/proto"
 )
 
 const (
@@ -60,6 +61,12 @@ func (el *ErrorList) ExtendStoreError(other []*storepb.Error) {
 	for _, err := range other {
 		el.Add(err.Code, err.Message)
 	}
+}
+
+func (el *ErrorList) ExtendAccountError(other []*accountpb.Error) {
+    for _, err := range other {
+        el.Add(err.Code, err.Message)
+    }
 }
 
 func (el *ErrorList) ExtendAssertionError(other []*assertionpb.Error) {

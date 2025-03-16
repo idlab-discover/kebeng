@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS public.keys
     created_at timestamp with time zone,
     updated_at timestamp with time zone,
     deleted_at timestamp with time zone,
+    until timestamp with time zone,
     name text COLLATE pg_catalog."default",
     sha3384 text COLLATE pg_catalog."default",
     encoded_public_key text COLLATE pg_catalog."default",
