@@ -46,7 +46,7 @@ func NewAccountRepository(db *sqlx.DB) *AccountRepository {
 
 func (a *AccountRepository) CreateAccount(ctx context.Context, account *models.Account) (*models.Account, error) {
 	query := `
-        INSERT INTO public.accounts (display_name, username, email, password_hash, created_at, updated_at)
+        INSERT INTO accounts (display_name, username, email, password_hash, created_at, updated_at)
         VALUES (:display_name, :username, :email, :password_hash, :created_at, :updated_at)
         RETURNING id, display_name, username, email, password_hash, validation, created_at, updated_at, deleted_at
     `

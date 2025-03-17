@@ -9,8 +9,6 @@ import (
 	"time"
 
 	embeddedpostgres "github.com/fergusstrange/embedded-postgres"
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3" // SQLite driver
@@ -19,6 +17,7 @@ import (
 
 	_ "github.com/golang-migrate/migrate/v4/source/file" // needed for file source
 
+	accountDB "github.com/idlab-discover/kebeng/services/account/internal"
 	"github.com/idlab-discover/kebeng/services/account/internal/config"
 	"github.com/idlab-discover/kebeng/services/account/internal/models"
 	"github.com/idlab-discover/kebeng/services/account/internal/repository"
@@ -30,47 +29,17 @@ var (
 	cleanupDB  func()
 )
 
-func RunMigrations(db *sqlx.DB, cfg *config.Config) error {
-	logrus.Info("Running database migrations")
-
-	driver, err := postgres.WithInstance(db.DB, &postgres.Config{})
-	if err != nil {
-		return fmt.Errorf("failed to create migration driver: %v", err)
-	}
-
-	// the path here is the path in the container where the migration files are stored
-
-	m, err := migrate.NewWithDatabaseInstance(
-		fmt.Sprintf("file://%s", cfg.MigrationPath),
-		"postgres",
-		driver,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to initialize migrate: %v", err)
-	}
-
-	err = m.Up()
-	if err != nil && err != migrate.ErrNoChange {
-		return fmt.Errorf("failed to run migrations: %v", err)
-	}
-	logrus.Info("Database migrations ran successfully")
-	return nil
-}
-
 func setupGlobalTestDB() (*repository.AccountRepository, *sqlx.DB, func()) {
-	// Configure embedded Postgres.
 	postgres := embeddedpostgres.NewDatabase(embeddedpostgres.DefaultConfig().
 		Port(5433).
 		Version(embeddedpostgres.V12).
 		Logger(io.Discard),
 	)
 
-	// Start the embedded Postgres instance.
 	if postgresStartErr := postgres.Start(); postgresStartErr != nil {
 		logrus.Fatalf("failed to start embedded postgres: %v", postgresStartErr)
 	}
 
-	// Connect to the running instance.
 	dsn := "postgres://postgres:postgres@localhost:5433/postgres?sslmode=disable"
 	db, err := sqlx.Connect("postgres", dsn)
 	if err != nil {
@@ -78,15 +47,11 @@ func setupGlobalTestDB() (*repository.AccountRepository, *sqlx.DB, func()) {
 	}
 
 	cfg := config.Config{MigrationPath: "../migrations"}
-	err = RunMigrations(db, &cfg)
+	err = accountDB.RunMigrations(db, &cfg)
 	if err != nil {
 		logrus.Fatalf("failed to run migrations: %v", err)
 	}
-	/*for _, schema := range schemas {
-		if _, err := db.Exec(schema); err != nil {
-			t.Fatalf("Failed to execute schema: %v\nSchema: %s", err, schema)
-		}
-	}*/
+
 	repo := repository.NewAccountRepository(db)
 
 	cleanup := func() {
@@ -94,7 +59,6 @@ func setupGlobalTestDB() (*repository.AccountRepository, *sqlx.DB, func()) {
 		if err != nil {
 			logrus.Fatalf("failed to close db: %v", err)
 		}
-		// Stop the embedded Postgres instance.
 		if err := postgres.Stop(); err != nil {
 			logrus.Fatalf("failed to stop embedded postgres: %v", err)
 		}
@@ -114,7 +78,6 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-// TestCreateAccount uses an in-memory SQLite DB to test the CreateAccount logic.
 func TestCreateAccount(t *testing.T) {
 	created_at := time.Now()
 	updated_at := time.Now()
@@ -122,7 +85,7 @@ func TestCreateAccount(t *testing.T) {
 		name                 string
 		account              *models.Account
 		expectError          bool
-		expectedErrorMessage string // Substring expected to appear in the error message.
+		expectedErrorMessage string
 	}{
 		{
 			name: "Successful account creation",
