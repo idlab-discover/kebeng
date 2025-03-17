@@ -40,10 +40,10 @@ type Account struct {
 	DisplayName  string     `db:"display_name"`
 	Username     string     `db:"username"`
 	Email        string     `db:"email"`
-	PasswordHash string     `db:"password"`
-	CreatedAt    time.Time  `db:"created_at"`
-	UpdatedAt    time.Time  `db:"updated_at"`
+	PasswordHash string     `db:"password_hash"`
+	CreatedAt    *time.Time `db:"created_at"`
+	UpdatedAt    *time.Time `db:"updated_at"`
 	DeletedAt    *time.Time `db:"deleted_at"`
-	Validation   string     `db:"validation"`
+	Validation   *string    `db:"validation"`
 	SSHKeys      []SSHKey   // associations (handled separately)
 }
