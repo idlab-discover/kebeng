@@ -46,11 +46,16 @@ func NewAccountRepository(db *sqlx.DB) *AccountRepository {
 
 func (a *AccountRepository) CreateAccount(ctx context.Context, account *models.Account) (*models.Account, error) {
 	query := `
-        INSERT INTO accounts (id, username, email, password_hash, created_at, updated_at)
-        VALUES (:id, :username, :email, :password_hash, :created_at, :updated_at)
+        INSERT INTO public.accounts (display_name, username, email, password_hash, created_at, updated_at)
+        VALUES (:display_name, :username, :email, :password_hash, :created_at, :updated_at)
+        RETURNING id, display_name, username, email, password_hash, validation, created_at, updated_at, deleted_at
     `
 	rows, err := a.db.NamedQueryContext(ctx, query, account)
-	if err != nil {
+	if err == sql.ErrNoRows {
+		logrus.Error(err)
+		return nil, errors.New(cerrors.ResourceNotFound)
+	} else if err != nil {
+		logrus.Error(err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -70,17 +75,21 @@ func (a *AccountRepository) CreateAccount(ctx context.Context, account *models.A
 func (a *AccountRepository) UpdateAccount(ctx context.Context, account *models.Account) (*models.Account, error) {
 	query := `
         UPDATE accounts
-        SET display_name   = :display_name,
-            username       = :username,
-            email          = :email,
-            password       = :password,
-            validation     = :validation,
-            updated_at     = :updated_at
+        SET display_name    = :display_name,
+            username        = :username,
+            email           = :email,
+            password_hash   = :password_hash,
+            validation      = :validation,
+            updated_at      = :updated_at
         WHERE id = :id
-        RETURNING id, display_name, username, email, password, validation, created_at, updated_at, deleted_at
+        RETURNING id, display_name, username, email, password_hash, validation, created_at, updated_at, deleted_at
     `
 	rows, err := a.db.NamedQueryContext(ctx, query, account)
-	if err != nil {
+	if err == sql.ErrNoRows {
+		logrus.Error(err)
+		return nil, errors.New(cerrors.ResourceNotFound)
+	} else if err != nil {
+		logrus.Error(err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -402,7 +411,7 @@ func (a *AccountRepository) FilterAccounts(ctx context.Context, filter *models.A
 		query += " AND deleted_at = :deleted_at"
 		params["deleted_at"] = filter.DeletedAt
 	}
-	if filter.Validation != "" {
+	if filter.Validation != nil {
 		query += " AND validation = :validation"
 		params["validation"] = filter.Validation
 	}

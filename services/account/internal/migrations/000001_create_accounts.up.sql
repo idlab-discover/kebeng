@@ -15,20 +15,19 @@ create sequence public.accounts_id_seq;
 CREATE TABLE IF NOT EXISTS public.accounts
 (
     id UUID NOT NULL DEFAULT uuid_generate_v4(),
-    created_at timestamp with time zone DEFAULT now(),
-    updated_at timestamp with time zone DEFAULT now(),
-    deleted_at timestamp with time zone,
-    display_name text COLLATE pg_catalog."default",
-    username text COLLATE pg_catalog."default",
-    email text COLLATE pg_catalog."default",
-    password text COLLATE pg_catalog."default",
-    validation text COLLATE pg_catalog."default",
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now(),
+    deleted_at TIMESTAMPTZ,
+    display_name TEXT COLLATE pg_catalog."default" NOT NULL CHECK (display_name <> ''),
+    username TEXT COLLATE pg_catalog."default" NOT NULL CHECK (username <> ''),
+    email TEXT COLLATE pg_catalog."default" NOT NULL CHECK (email <> ''),
+    password_hash TEXT COLLATE pg_catalog."default" NOT NULL CHECK (password_hash <> ''),
+    validation TEXT COLLATE pg_catalog."default",
     CONSTRAINT accounts_pkey PRIMARY KEY (id),
-    CONSTRAINT accounts_account_id_key UNIQUE (id),
     CONSTRAINT accounts_display_name_key UNIQUE (display_name),
-    CONSTRAINT accounts_username_key UNIQUE (username)
+    CONSTRAINT accounts_username_key UNIQUE (username),
+    CONSTRAINT accounts_email_key UNIQUE (email)
 )
-
 TABLESPACE pg_default;
 
 ALTER TABLE public.accounts
