@@ -15,8 +15,8 @@ create sequence public.accounts_id_seq;
 CREATE TABLE IF NOT EXISTS public.accounts
 (
     id UUID NOT NULL DEFAULT uuid_generate_v4(),
-    created_at timestamp with time zone,
-    updated_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
     deleted_at timestamp with time zone,
     display_name text COLLATE pg_catalog."default",
     username text COLLATE pg_catalog."default",
