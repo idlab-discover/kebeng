@@ -1,8 +1,8 @@
-create sequence public.snap_uploads_id_seq;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE IF NOT EXISTS public.snap_uploads
 (
-    id         bigint NOT NULL DEFAULT nextval('snap_uploads_id_seq'::regclass),
+    id uuid NOT NULL DEFAULT uuid_generate_v4(),
     created_at timestamp with time zone,
     updated_at timestamp with time zone,
     deleted_at timestamp with time zone,

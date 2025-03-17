@@ -15,8 +15,8 @@ create sequence public.snap_entries_id_seq;
 CREATE TABLE IF NOT EXISTS public.snap_entries
 (
     id uuid NOT NULL DEFAULT uuid_generate_v4(),
-    created_at timestamp with time zone,
-    updated_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
     deleted_at timestamp with time zone,
     private BOOLEAN,
     name text COLLATE pg_catalog."default",
