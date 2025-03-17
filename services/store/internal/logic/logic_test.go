@@ -159,6 +159,11 @@ func TestGetEntries(t *testing.T) {
 	db.Exec("INSERT INTO snap_entries (id, name, type, confinement, base, private) VALUES (?, ?, ?, ?, ?, ?)",
 		testID, "test-snap", "app", "strict", "core20", false)
 
+	var typeString = "app"
+	var confinementString = "strict"
+	var baseString = "core20"
+	var privateBool = false
+
 	tests := []struct {
 		name     string
 		request  *proto.GetEntriesRequest
@@ -174,10 +179,10 @@ func TestGetEntries(t *testing.T) {
 					{
 						Id:          testID,
 						SnapName:    "test-snap",
-						Type:        "app",
-						Confinement: "strict",
-						Base:        "core20",
-						Private:     false,
+						Type:        &typeString,
+						Confinement: &confinementString,
+						Base:        &baseString,
+						Private:     &privateBool,
 					},
 				},
 				Errors: nil,
@@ -238,10 +243,10 @@ func TestGetEntries(t *testing.T) {
 					{
 						Id:          testID,
 						SnapName:    "test-snap",
-						Type:        "app",
-						Confinement: "strict",
-						Base:        "core20",
-						Private:     false,
+						Type:        &typeString,
+						Confinement: &confinementString,
+						Base:        &baseString,
+						Private:     &privateBool,
 					},
 				},
 				Errors: nil,
@@ -314,6 +319,11 @@ func TestGetEntryById(t *testing.T) {
 	db.Exec("INSERT INTO snap_entries (id, name, type, confinement, base, private) VALUES (?, ?, ?, ?, ?, ?)",
 		testID, "test-snap", "app", "strict", "core20", false)
 
+	var typeString = "app"
+	var confinementString = "strict"
+	var baseString = "core20"
+	var privateBool = false
+
 	tests := []struct {
 		name     string
 		request  *proto.GetEntryRequest
@@ -327,10 +337,10 @@ func TestGetEntryById(t *testing.T) {
 			expected: &proto.GetEntryResponse{
 				Id:          testID,
 				SnapName:    "test-snap",
-				Type:        "app",
-				Confinement: "strict",
-				Base:        "core20",
-				Private:     false,
+				Type:        &typeString,
+				Confinement: &confinementString,
+				Base:        &baseString,
+				Private:     &privateBool,
 			},
 		},
 		{
@@ -428,6 +438,11 @@ func TestGetEntryByName(t *testing.T) {
 	db.Exec("INSERT INTO snap_entries (id, name, type, confinement, base, private) VALUES (?, ?, ?, ?, ?, ?)",
 		testID, testName, "app", "strict", "core20", false)
 
+	var typeString = "app"
+	var confinementString = "strict"
+	var baseString = "core20"
+	var privateBool = false
+
 	tests := []struct {
 		name     string
 		request  *proto.GetEntryRequest
@@ -441,10 +456,10 @@ func TestGetEntryByName(t *testing.T) {
 			expected: &proto.GetEntryResponse{
 				Id:          testID,
 				SnapName:    testName,
-				Type:        "app",
-				Confinement: "strict",
-				Base:        "core20",
-				Private:     false,
+				Type:        &typeString,
+				Confinement: &confinementString,
+				Base:        &baseString,
+				Private:     &privateBool,
 			},
 		},
 		{

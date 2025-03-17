@@ -33,19 +33,19 @@ type SnapEntry struct {
 	ID             uuid.UUID    `db:"id"`
 	CreatedAt      time.Time    `db:"created_at"`
 	UpdatedAt      time.Time    `db:"updated_at"`
-	DeletedAt      sql.NullTime `db:"deleted_at"`
+	DeletedAt      *time.Time   `db:"deleted_at"`
 	Name           string       `json:"name" db:"name"`
 	Revisions      []*SnapRevision
-	Type           sql.NullString `json:"type" db:"type"`
-	Confinement    sql.NullString `json:"confinement" db:"confinement"`
-	Base           sql.NullString `json:"base" db:"base"`
-	Private        sql.NullBool   `json:"private" db:"private"`
+	Type           *string      `json:"type" db:"type"`
+	Confinement    *string      `json:"confinement" db:"confinement"`
+	Base           *string      `json:"base" db:"base"`
+	Private        *bool        `json:"private" db:"private"`
 	Uploads        []*SnapUpload
-	AccountID      uuid.UUID       `db:"account_id"`
-	Status         sql.NullString  `db:"status"`   // NOT YET IMPLEMENTED
-	Price          sql.NullFloat64 `db:"price"`    // NOT YET IMPLEMENTED
-	Store          sql.NullString  `db:"store"`    // NOT YET IMPLEMENTED
-	IconURL        sql.NullString  `db:"icon_url"` // NOT YET IMPLEMENTED
+	AccountID      uuid.UUID    `db:"account_id"`
+	Status         *string      `db:"status"`   // NOT YET IMPLEMENTED
+	Price          *float64     `db:"price"`    // NOT YET IMPLEMENTED
+	Store          *string      `db:"store"`    // NOT YET IMPLEMENTED
+	IconURL        *string      `db:"icon_url"` // NOT YET IMPLEMENTED
 	LatestComments []*SnapComment  // NOT YET IMPLEMENTED
 }
 
@@ -153,7 +153,7 @@ func (se *SnapEntry) ToStoreSnap(snapRevision *SnapRevision) (*responses.StoreSn
 
 	storeSnap := &responses.StoreSnap{
 		Name:     se.Name,
-		Type:     snap.Type(se.Type.String),
+		Type:     snap.Type(*se.Type),
 		SnapID:   se.ID.String(),
 		Revision: int(snapRevision.SequenceNumber),
 		Download: responses.StoreSnapDownload{
@@ -161,8 +161,8 @@ func (se *SnapEntry) ToStoreSnap(snapRevision *SnapRevision) (*responses.StoreSn
 			Size:     snapRevision.Size,
 			URL:      downloadURL,
 		},
-		Confinement: se.Confinement.String,
-		Base:        &se.Base.String,
+		Confinement: *se.Confinement,
+		Base:        se.Base,
 	}
 
 	return storeSnap, nil
