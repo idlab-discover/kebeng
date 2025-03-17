@@ -49,15 +49,15 @@ message GetEntryRequest {
 message GetEntryResponse {
     string id = 1;
     string snap_name = 2;
-    string confinement = 3;
-    string base = 4;
-    string type = 5;
-    bool private = 6;
+    optional string confinement = 3;
+    optional string base = 4;
+    optional string type = 5;
+    optional bool private = 6;
     string publisher_id = 7;
-    string status = 8;
-    double price = 9;
+    optional string status = 8;
+    optional double price = 9;
     google.protobuf.Timestamp since = 10;
-    string icon_url = 11;
+    optional string icon_url = 11;
     repeated Error errors = 12;
 }
 

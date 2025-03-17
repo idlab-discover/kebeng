@@ -278,7 +278,7 @@ func (sp *SnapsRepository) SetChannelRevision(trackName string, channelName stri
 func (sp *SnapsRepository) RegisterSnap(snapName string, isPrivate bool) (*models.SnapEntry, error) {
 	snapEntry := models.SnapEntry{
 		Name:    snapName,
-		Private: sql.NullBool{Bool: isPrivate, Valid: true},
+		Private: &isPrivate,
 	}
 
 	query := `
@@ -568,7 +568,8 @@ func (sp *SnapsRepository) AddSnap(name string, size uint64, accountId uuid.UUID
 	var newSnapEntry models.SnapEntry
 	newSnapEntry.Name = name
 	newSnapEntry.AccountID = accountId
-	newSnapEntry.Type = sql.NullString{String: "app", Valid: true}
+	typeStr := "app"
+	newSnapEntry.Type = &typeStr
 	//newSnapEntry.Confinement = "strict"
 	//newSnapEntry.Base = "core18" // default base
 
@@ -782,14 +783,26 @@ func (sp *SnapsRepository) updateMeta(metaBytes *[]byte) error {
 		return errors.New(cerrors.DatabaseError)
 	}
 
-	snapEntry.Type = sql.NullString{String: "app", Valid: true}
-	if snapMeta.Type != "" {
-		snapEntry.Type = sql.NullString{String: snapMeta.Type, Valid: snapMeta.Type != ""}
-	} else {
-		logrus.Warnf("Snap %s had an emtpy type from its metadata, using default '%s'", snapEntry.Name, snapEntry.Type.String)
+	snapEntry.Type = &snapMeta.Type
+	if snapMeta.Type == "" {
+		defaultType := "app"
+		snapEntry.Type = &defaultType
 	}
-	snapEntry.Confinement = sql.NullString{String: snapMeta.Confinement, Valid: snapMeta.Confinement != ""}
-	snapEntry.Base = sql.NullString{String: snapMeta.Base, Valid: snapMeta.Base != ""}
+	if snapMeta.Type != "" {
+	snapEntry.Type = &snapMeta.Type
+	} else {
+		logrus.Warnf("Snap %s had an empty type from its metadata, using default 'app'", snapEntry.Name)
+	}
+	if snapMeta.Confinement != "" {
+		snapEntry.Confinement = &snapMeta.Confinement
+	} else {
+		snapEntry.Confinement = nil
+	}
+	if snapMeta.Base != "" {
+		snapEntry.Base = &snapMeta.Base
+	} else {
+		snapEntry.Base = nil
+	}
 
 	query = `
 		UPDATE snap_entries

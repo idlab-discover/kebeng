@@ -149,15 +149,15 @@ func (s *StoreLogic) GetEntries(ctx context.Context, req *proto.GetEntriesReques
 			foundEntries = append(foundEntries, &proto.GetEntryResponse{
 				Id:          snapEntry.ID.String(),
 				SnapName:    snapEntry.Name,
-				Type:        snapEntry.Type.String,
-				Confinement: snapEntry.Confinement.String,
-				Base:        snapEntry.Base.String,
-				Private:     snapEntry.Private.Bool,
+				Type:        snapEntry.Type,
+				Confinement: snapEntry.Confinement,
+				Base:        snapEntry.Base,
+				Private:     snapEntry.Private,
 				PublisherId: snapEntry.AccountID.String(),
-				Price:       snapEntry.Price.Float64,
-				Status:      snapEntry.Status.String,
+				Price:       snapEntry.Price,
+				Status:      snapEntry.Status,
 				Since:       timestamppb.New(snapEntry.CreatedAt),
-				IconUrl:     snapEntry.IconURL.String,
+				IconUrl:     snapEntry.IconURL,
 			})
 
 			// If ID is not given, try to retrieve the entry by its name
@@ -179,15 +179,15 @@ func (s *StoreLogic) GetEntries(ctx context.Context, req *proto.GetEntriesReques
 			foundEntries = append(foundEntries, &proto.GetEntryResponse{
 				Id:          snapEntry.ID.String(),
 				SnapName:    snapEntry.Name,
-				Type:        snapEntry.Type.String,
-				Confinement: snapEntry.Confinement.String,
-				Base:        snapEntry.Base.String,
-				Private:     snapEntry.Private.Bool,
+				Type:        snapEntry.Type,
+				Confinement: snapEntry.Confinement,
+				Base:        snapEntry.Base,
+				Private:     snapEntry.Private,
 				PublisherId: snapEntry.AccountID.String(),
-				Price:       snapEntry.Price.Float64,
-				Status:      snapEntry.Status.String,
+				Price:       snapEntry.Price,
+				Status:      snapEntry.Status,
 				Since:       timestamppb.New(snapEntry.CreatedAt),
-				IconUrl:     snapEntry.IconURL.String,
+				IconUrl:     snapEntry.IconURL,
 			})
 
 		} else {
@@ -243,15 +243,15 @@ func (s *StoreLogic) GetEntryById(ctx context.Context, req *proto.GetEntryReques
 	return &proto.GetEntryResponse{
 		Id:          snapEntry.ID.String(),
 		SnapName:    snapEntry.Name,
-		Type:        snapEntry.Type.String,
-		Confinement: snapEntry.Confinement.String,
-		Base:        snapEntry.Base.String,
-		Private:     snapEntry.Private.Bool,
+		Type:        snapEntry.Type,
+		Confinement: snapEntry.Confinement,
+		Base:        snapEntry.Base,
+		Private:     snapEntry.Private,
 		PublisherId: snapEntry.AccountID.String(),
-		Price:       snapEntry.Price.Float64,
-		Status:      snapEntry.Status.String,
+		Price:       snapEntry.Price,
+		Status:      snapEntry.Status,
 		Since:       timestamppb.New(snapEntry.CreatedAt),
-		IconUrl:     snapEntry.IconURL.String,
+		IconUrl:     snapEntry.IconURL,
 	}, nil
 }
 
@@ -292,15 +292,15 @@ func (s *StoreLogic) GetEntryByName(ctx context.Context, req *proto.GetEntryRequ
 	return &proto.GetEntryResponse{
 		Id:          snapEntry.ID.String(),
 		SnapName:    snapEntry.Name,
-		Type:        snapEntry.Type.String,
-		Confinement: snapEntry.Confinement.String,
-		Base:        snapEntry.Base.String,
-		Private:     snapEntry.Private.Bool,
+		Type:        snapEntry.Type,
+		Confinement: snapEntry.Confinement,
+		Base:        snapEntry.Base,
+		Private:     snapEntry.Private,
 		PublisherId: snapEntry.AccountID.String(),
-		Price:       snapEntry.Price.Float64,
-		Status:      snapEntry.Status.String,
+		Price:       snapEntry.Price,
+		Status:      snapEntry.Status,
 		Since:       timestamppb.New(snapEntry.CreatedAt),
-		IconUrl:     snapEntry.IconURL.String,
+		IconUrl:     snapEntry.IconURL,
 	}, nil
 }
 
@@ -492,15 +492,15 @@ func (s *StoreLogic) GetEntriesByAccountId(ctx context.Context, req *proto.GetEn
 		foundEntries[i] = &proto.GetEntryResponse{
 			Id:          entry.ID.String(),
 			SnapName:    entry.Name,
-			Type:        entry.Type.String,
-			Confinement: entry.Confinement.String,
-			Base:        entry.Base.String,
-			Private:     entry.Private.Bool,
+			Type:        entry.Type,
+			Confinement: entry.Confinement,
+			Base:        entry.Base,
+			Private:     entry.Private,
 			PublisherId: entry.AccountID.String(),
-			Price:       entry.Price.Float64,
-			Status:      entry.Status.String,
+			Price:       entry.Price,
+			Status:      entry.Status,
 			Since:       timestamppb.New(entry.CreatedAt),
-			IconUrl:     entry.IconURL.String,
+			IconUrl:     entry.IconURL,
 		}
 	}
 	return &proto.GetEntriesResponse{Entries: foundEntries}, nil
