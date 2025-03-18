@@ -13,8 +13,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// TODO: fix *cerror.CustomError handling better
-
 // IAccountRepository defines the interface for account-related database operations
 type IAccountRepository interface {
 	CreateAccount(ctx context.Context, account *models.Account) (*models.Account, *cerror.CustomError)
@@ -30,7 +28,7 @@ type IAccountRepository interface {
 	GetKeysByAccountID(ctx context.Context, accountID uuid.UUID) ([]*models.Key, *cerror.CustomError)
 	GetSSHKeysByAccountID(ctx context.Context, accountID uuid.UUID) ([]models.SSHKey, *cerror.CustomError)
 
-	FilterKeys(ctx context.Context, whereModel *models.Key, takeFirst bool) (*models.Key, *cerror.CustomError)
+	FilterKeys(ctx context.Context, filter *models.Key, takeFirst bool) (*models.Key, *cerror.CustomError)
 	FilterAccounts(ctx context.Context, filter *models.Account, takeFirst bool) ([]*models.Account, *cerror.CustomError)
 }
 
@@ -66,6 +64,7 @@ func (a *AccountRepository) CreateAccount(ctx context.Context, account *models.A
 		return nil, cerror.NewCustomError(cerror.DatabaseError, "failed to insert account")
 	}
 
+	logrus.Error(err)
 	return account, nil
 }
 
@@ -104,7 +103,11 @@ func (a *AccountRepository) UpdateAccount(ctx context.Context, account *models.A
 func (a *AccountRepository) DeleteAccount(ctx context.Context, accountID uuid.UUID) *cerror.CustomError {
 	query := `DELETE FROM accounts WHERE id = $1`
 	_, err := a.db.ExecContext(ctx, query, accountID)
-	return cerror.ConvertError(err)
+	if err != nil {
+		logrus.Error(err)
+		return cerror.ConvertError(err)
+	}
+	return nil
 }
 
 func (a *AccountRepository) GetAccountByEmail(ctx context.Context, email string, associations []string) (*models.Account, *cerror.CustomError) {
@@ -117,26 +120,15 @@ func (a *AccountRepository) GetAccountByEmail(ctx context.Context, email string,
 		return nil, cerror.ConvertError(err)
 	}
 
-	// check if all associations are requested
-	if slices.Contains(associations, models.ALL) {
+	// TODO: check what difference between SSHKeys and Keys
+	all := slices.Contains(associations, models.ALL)
+	switch {
+	case all || slices.Contains(associations, models.SSHKEY):
 		sshKeys, err := a.GetSSHKeysByAccountID(ctx, account.ID)
 		if err != nil {
 			return nil, err
 		}
 		account.SSHKeys = sshKeys
-	} else {
-		// if not everything is request loop over associations and get them
-		// TODO: check what difference between sshkey and key
-		for _, association := range associations {
-			switch association {
-			case models.SSHKEY:
-				sshKeys, err := a.GetSSHKeysByAccountID(ctx, account.ID)
-				if err != nil {
-					return nil, err
-				}
-				account.SSHKeys = sshKeys
-			}
-		}
 	}
 
 	return &account, nil
@@ -152,25 +144,14 @@ func (a *AccountRepository) GetAccountByID(ctx context.Context, accountID uuid.U
 		return nil, cerror.ConvertError(err)
 	}
 
-	// Check if all associations are requested.
-	if slices.Contains(associations, models.ALL) {
+	all := slices.Contains(associations, models.ALL)
+	switch {
+	case all || slices.Contains(associations, models.SSHKEY):
 		sshKeys, err := a.GetSSHKeysByAccountID(ctx, account.ID)
 		if err != nil {
 			return nil, err
 		}
 		account.SSHKeys = sshKeys
-	} else {
-		// Loop over associations and load each requested association.
-		for _, association := range associations {
-			switch association {
-			case models.SSHKEY:
-				sshKeys, err := a.GetSSHKeysByAccountID(ctx, account.ID)
-				if err != nil {
-					return nil, err
-				}
-				account.SSHKeys = sshKeys
-			}
-		}
 	}
 
 	return &account, nil
@@ -182,29 +163,18 @@ func (a *AccountRepository) GetAccountByUsername(ctx context.Context, username s
 
 	err := a.db.Get(&account, query, username)
 	if err != nil {
+		logrus.Error(err)
 		return nil, cerror.ConvertError(err)
 	}
 
-	// Check if all associations are requested.
-	if slices.Contains(associations, models.ALL) {
+	all := slices.Contains(associations, models.ALL)
+	switch {
+	case all || slices.Contains(associations, models.SSHKEY):
 		sshKeys, err := a.GetSSHKeysByAccountID(ctx, account.ID)
 		if err != nil {
 			return nil, err
 		}
 		account.SSHKeys = sshKeys
-	} else {
-		// Loop over associations and load each requested association.
-		for _, association := range associations {
-			switch association {
-			case models.SSHKEY:
-				sshKeys, err := a.GetSSHKeysByAccountID(ctx, account.ID)
-				if err != nil {
-					logrus.Error(err)
-					return nil, err
-				}
-				account.SSHKeys = sshKeys
-			}
-		}
 	}
 
 	return &account, nil
@@ -233,16 +203,19 @@ func (a *AccountRepository) AddKeyToAccountByEmail(ctx context.Context, name, sh
 
 	rows, err := a.db.NamedQueryContext(ctx, query, newKey)
 	if err != nil {
-		return nil, cerror.ConvertError(err)
+		logrus.Error(err)
+		return nil, cerror.ConvertError(err, fmt.Sprintf("could not add key with name '%s' for account id '%s'", name, acct.ID))
 	}
 	defer rows.Close()
 
 	var key models.Key
 	if rows.Next() {
 		if err := rows.StructScan(&key); err != nil {
+			logrus.Error(err)
 			return nil, cerror.ConvertError(err)
 		}
 	} else {
+		logrus.Errorf("failed to insert key for account id '%s'", acct.ID)
 		return nil, cerror.NewCustomError(cerror.DatabaseError, "failed to insert key")
 	}
 
@@ -255,7 +228,8 @@ func (a *AccountRepository) GetKeyBySHA3384(ctx context.Context, sha3384 string)
 
 	err := a.db.GetContext(ctx, &key, query, sha3384)
 	if err != nil {
-		return nil, cerror.ConvertError(err)
+		logrus.Error(err)
+		return nil, cerror.ConvertError(err, fmt.Sprintf("resource not found by SHA3384, value = '%s'", sha3384))
 	}
 
 	return &key, nil
@@ -290,46 +264,46 @@ func (a *AccountRepository) GetSSHKeysByAccountID(ctx context.Context, accountID
 }
 
 // filter function that returns keys based on filter
-func (a *AccountRepository) FilterKeys(ctx context.Context, whereModel *models.Key, takeFirst bool) (*models.Key, *cerror.CustomError) {
+func (a *AccountRepository) FilterKeys(ctx context.Context, filter *models.Key, takeFirst bool) (*models.Key, *cerror.CustomError) {
 	// Start with a base query.
 	query := "SELECT * FROM keys WHERE 1=1"
 	params := make(map[string]interface{})
 
-	if whereModel.ID != uuid.Nil {
+	if filter.ID != uuid.Nil {
 		query += " AND id = :id"
-		params["id"] = whereModel.ID
+		params["id"] = filter.ID
 	}
-	if whereModel.Name != "" {
+	if filter.Name != "" {
 		query += " AND name = :name"
-		params["name"] = whereModel.Name
+		params["name"] = filter.Name
 	}
-	if whereModel.SHA3384 != "" {
+	if filter.SHA3384 != "" {
 		query += " AND sha3384 = :sha3384"
-		params["sha3384"] = whereModel.SHA3384
+		params["sha3384"] = filter.SHA3384
 	}
-	if whereModel.EncodedPublicKey != "" {
+	if filter.EncodedPublicKey != "" {
 		query += " AND encoded_public_key = :encoded_public_key"
-		params["encoded_public_key"] = whereModel.EncodedPublicKey
+		params["encoded_public_key"] = filter.EncodedPublicKey
 	}
-	if whereModel.AccountID != uuid.Nil {
+	if filter.AccountID != uuid.Nil {
 		query += " AND account_id = :account_id"
-		params["account_id"] = whereModel.AccountID
+		params["account_id"] = filter.AccountID
 	}
-	if !whereModel.Until.IsZero() {
+	if !filter.Until.IsZero() {
 		query += " AND until = :until"
-		params["until"] = whereModel.Until
+		params["until"] = filter.Until
 	}
-	if !whereModel.CreatedAt.IsZero() {
+	if !filter.CreatedAt.IsZero() {
 		query += " AND created_at = :created_at"
-		params["created_at"] = whereModel.CreatedAt
+		params["created_at"] = filter.CreatedAt
 	}
-	if !whereModel.UpdatedAt.IsZero() {
+	if !filter.UpdatedAt.IsZero() {
 		query += " AND updated_at = :updated_at"
-		params["updated_at"] = whereModel.UpdatedAt
+		params["updated_at"] = filter.UpdatedAt
 	}
-	if whereModel.DeletedAt != nil {
+	if filter.DeletedAt != nil {
 		query += " AND deleted_at = :deleted_at"
-		params["deleted_at"] = whereModel.DeletedAt
+		params["deleted_at"] = filter.DeletedAt
 	}
 
 	if takeFirst {
@@ -338,6 +312,7 @@ func (a *AccountRepository) FilterKeys(ctx context.Context, whereModel *models.K
 
 	rows, err := a.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
+		logrus.Error(err)
 		return nil, cerror.ConvertError(err)
 	}
 	defer rows.Close()
@@ -346,13 +321,15 @@ func (a *AccountRepository) FilterKeys(ctx context.Context, whereModel *models.K
 	for rows.Next() {
 		var key models.Key
 		if err := rows.StructScan(&key); err != nil {
+			logrus.Error(err)
 			return nil, cerror.ConvertError(err)
 		}
 		keys = append(keys, &key)
 	}
 
 	if len(keys) == 0 {
-		return nil, cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("no keys found with filter %+v", whereModel))
+		logrus.Errorf("no keys found with filter %+v", filter)
+		return nil, cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("no keys found with filter %+v", filter))
 	}
 
 	return keys[0], nil
@@ -403,6 +380,7 @@ func (a *AccountRepository) FilterAccounts(ctx context.Context, filter *models.A
 
 	rows, err := a.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
+		logrus.Error(err)
 		return nil, cerror.ConvertError(err)
 	}
 	defer rows.Close()
@@ -411,12 +389,14 @@ func (a *AccountRepository) FilterAccounts(ctx context.Context, filter *models.A
 	for rows.Next() {
 		var account models.Account
 		if err := rows.StructScan(&account); err != nil {
+			logrus.Error(err)
 			return nil, cerror.ConvertError(err)
 		}
 		accounts = append(accounts, &account)
 	}
 
 	if len(accounts) == 0 {
+		logrus.Errorf("no accounts found with filter %+v", filter)
 		return nil, cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("no accounts found with filter %+v", filter))
 	}
 
