@@ -17,14 +17,34 @@ jobs:
       with:
         go-version: '1.22.2'
 
-    - name: Build services
-      working-directory: ./services
-      run: |
-        go build -v ./account
-        go build -v ./assertion
-        go build -v ./gateway
-        go build -v ./store
+    - name: Build Account service
+      working-directory: ./services/account
+      run: go build -v ./
 
-    - name: Test
-      working-directory: ./services
-      run: go test -v ./account ./assertion ./gateway ./store
+    - name: Build Assertion service
+      working-directory: ./services/assertion
+      run: go build -v ./
+
+    - name: Build Gateway service
+      working-directory: ./services/gateway
+      run: go build -v ./
+
+    - name: Build Store service
+      working-directory: ./services/store
+      run: go build -v ./
+
+    - name: Test Account service
+      working-directory: ./services/account
+      run: go test -v ./
+
+    - name: Test Assertion service
+      working-directory: ./services/assertion
+      run: go test -v ./
+
+    - name: Test Gateway service
+      working-directory: ./services/gateway
+      run: go test -v ./
+
+    - name: Test Store service
+      working-directory: ./services/store
+      run: go test -v ./
