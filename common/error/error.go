@@ -55,8 +55,8 @@ type CustomError struct {
 // helper struct
 type ErrorList []CustomError
 
-func New(code, message string) CustomError {
-	return CustomError{
+func NewCustomError(code, message string) *CustomError {
+	return &CustomError{
 		Code:    code,
 		Message: message,
 	}
