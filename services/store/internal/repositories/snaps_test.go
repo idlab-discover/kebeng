@@ -13,7 +13,7 @@ import (
 
 	_ "github.com/golang-migrate/migrate/v4/source/file" // needed for file source
 
-	cerrors "github.com/idlab-discover/kebeng/common/error"
+	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	storeDB "github.com/idlab-discover/kebeng/services/store/internal"
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
 	"github.com/idlab-discover/kebeng/services/store/internal/repositories"
@@ -50,9 +50,9 @@ func setupGlobalTestDB() (*repositories.SnapsRepository, *sqlx.DB, func()) {
 
 	repo := repositories.NewSnapsRepository(db)
 
-	_, err = repo.RegisterSnap("test", false)
-	if err != nil {
-		logrus.Fatalf("failed to register existing snap: %v", err)
+	_, err2 := repo.RegisterSnap("test", false)
+	if err2 != nil {
+		logrus.Fatalf("failed to register existing snap: %v", err2)
 	}
 
 	cleanup := func() {
@@ -81,25 +81,25 @@ func TestMain(m *testing.M) {
 
 func TestGetEntryByName(t *testing.T) {
 	tests := []struct {
-		name                 string
-		entryName            string
-		entryPrivate         bool
-		expectError          bool
-		expectedErrorCode	 string
+		name              string
+		entryName         string
+		entryPrivate      bool
+		expectError       bool
+		expectedErrorCode string
 	}{
 		{
-			name:                 "Success getting entry by name",
-			entryName:            "test",
-			entryPrivate:         false,
-			expectError:          false,
-			expectedErrorCode:    "",
+			name:              "Success getting entry by name",
+			entryName:         "test",
+			entryPrivate:      false,
+			expectError:       false,
+			expectedErrorCode: "",
 		},
 		{
-			name:                 "Fail getting entry by name",
-			entryName:            "nonexistent",
-			entryPrivate:         false,
-			expectError:          true,
-			expectedErrorCode:    cerrors.ResourceNotFound,
+			name:              "Fail getting entry by name",
+			entryName:         "nonexistent",
+			entryPrivate:      false,
+			expectError:       true,
+			expectedErrorCode: cerror.ResourceNotFound,
 		},
 	}
 
@@ -107,10 +107,9 @@ func TestGetEntryByName(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			entry, err := globalRepo.GetEntryByName(tt.entryName, nil)
 			if tt.expectError {
-				assert.Error(t, err)
-				assert.Contains(t, err.Error(), tt.expectedErrorCode)
+				assert.Equal(t, err.GetCode(), tt.expectedErrorCode)
 			} else {
-				assert.NoError(t, err)
+				assert.Nil(t, err)
 				assert.NotNil(t, entry.ID)
 				assert.Equal(t, tt.entryName, entry.Name)
 			}
