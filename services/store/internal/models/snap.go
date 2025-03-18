@@ -19,6 +19,7 @@ import (
 )
 
 const (
+	ALL      = "all"
 	ENTRY    = "entry"
 	TRACK    = "track"
 	CHANNEL  = "channel"
@@ -30,23 +31,23 @@ const (
 
 // Entry = base information, first entry point, global information...
 type SnapEntry struct {
-	ID             uuid.UUID    `db:"id"`
-	CreatedAt      time.Time    `db:"created_at"`
-	UpdatedAt      time.Time    `db:"updated_at"`
-	DeletedAt      *time.Time   `db:"deleted_at"`
-	Name           string       `json:"name" db:"name"`
+	ID             uuid.UUID  `db:"id"`
+	CreatedAt      time.Time  `db:"created_at"`
+	UpdatedAt      time.Time  `db:"updated_at"`
+	DeletedAt      *time.Time `db:"deleted_at"`
+	Name           string     `json:"name" db:"name"`
 	Revisions      []*SnapRevision
-	Type           *string      `json:"type" db:"type"`
-	Confinement    *string      `json:"confinement" db:"confinement"`
-	Base           *string      `json:"base" db:"base"`
-	Private        *bool        `json:"private" db:"private"`
+	Type           *string `json:"type" db:"type"`
+	Confinement    *string `json:"confinement" db:"confinement"`
+	Base           *string `json:"base" db:"base"`
+	Private        *bool   `json:"private" db:"private"`
 	Uploads        []*SnapUpload
-	AccountID      uuid.UUID    `db:"account_id"`
-	Status         *string      `db:"status"`   // NOT YET IMPLEMENTED
-	Price          *float64     `db:"price"`    // NOT YET IMPLEMENTED
-	Store          *string      `db:"store"`    // NOT YET IMPLEMENTED
-	IconURL        *string      `db:"icon_url"` // NOT YET IMPLEMENTED
-	LatestComments []*SnapComment  // NOT YET IMPLEMENTED
+	AccountID      uuid.UUID      `db:"account_id"`
+	Status         *string        `db:"status"`   // NOT YET IMPLEMENTED
+	Price          *float64       `db:"price"`    // NOT YET IMPLEMENTED
+	Store          *string        `db:"store"`    // NOT YET IMPLEMENTED
+	IconURL        *string        `db:"icon_url"` // NOT YET IMPLEMENTED
+	LatestComments []*SnapComment // NOT YET IMPLEMENTED
 }
 
 // Track = latest, or things like 2.0, 2.1, 2.2
@@ -154,7 +155,7 @@ func (se *SnapEntry) ToStoreSnap(snapRevision *SnapRevision) (*responses.StoreSn
 	storeSnap := &responses.StoreSnap{
 		Name:     se.Name,
 		Type:     snap.Type(*se.Type),
-		SnapID:   se.ID.String(),
+		SnapID:   se.ID,
 		Revision: int(snapRevision.SequenceNumber),
 		Download: responses.StoreSnapDownload{
 			Sha3_384: actualSha3,

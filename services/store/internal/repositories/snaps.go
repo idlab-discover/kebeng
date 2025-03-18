@@ -1,8 +1,6 @@
 package repositories
 
 import (
-	"database/sql"
-	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -54,7 +52,11 @@ func NewSnapsRepository(db *sqlx.DB) *SnapsRepository {
 
 func (sp *SnapsRepository) GetRevisionByChannel(channel string, snapName string) (*models.SnapRevision, *cerror.CustomError) {
 	snapEntry, err := sp.GetEntryByName(snapName, nil)
-	if err == nil && snapEntry != nil {
+	if err != nil {
+		// Already logged in GetEntryByName
+		return nil, err
+	}
+	if snapEntry != nil {
 		channelParts := strings.Split(channel, "/")
 		var track string
 		var channel string
@@ -70,7 +72,7 @@ func (sp *SnapsRepository) GetRevisionByChannel(channel string, snapName string)
 			track = channelParts[0]
 			channel = channelParts[1]
 		} else {
-			return nil, *cerror.CustomErrors.New("branches not yet supported for channels")
+			return nil, cerror.NewCustomError(cerror.NotImplemented, "branches not yet supported for channels")
 		}
 
 		query := `
@@ -82,25 +84,24 @@ func (sp *SnapsRepository) GetRevisionByChannel(channel string, snapName string)
 		err := sp.db.Get(&trackId, query, snapEntry.ID, track)
 		if err != nil {
 
-		query = `
+			query = `
 			SELECT *
 			FROM snap_channels
 			WHERE snap_entry_id = $1 AND name = $2 AND snap_track_id = $3
 		`
-		var snapChannel models.SnapChannel
-		err = sp.db.Get(&snapChannel, query, snapEntry.ID, channel, trackId)
-		if err != nil {
-			logrus.Error(err)
-			return nil, cerror.ConvertError(err, "resource not found: channel '%s' for snap with id = '%s'", channel, snapEntry.ID)
+			var snapChannel models.SnapChannel
+			err = sp.db.Get(&snapChannel, query, snapEntry.ID, channel, trackId)
+			if err != nil {
+				logrus.Error(err)
+				return nil, cerror.ConvertError(err, "resource not found: channel '%s' for snap with id = '%s'", channel, snapEntry.ID.String())
+			}
+			return snapChannel.Revision, nil
+
 		}
-		return snapChannel.Revision, nil
+		return nil, cerror.NewCustomError(cerror.ResourceNotFound, "track not found")
 
-	} else if err != nil {
-		logrus.*cerror.CustomError(err)
-		return nil, err
 	}
-
-	return nil, *cerror.CustomErrors.New("unknown *cerror.CustomError encountered trying to find revision for snap by channel")
+	return nil, cerror.NewCustomError(cerror.ResourceNotFound, "snap not found")
 }
 
 func (sp *SnapsRepository) GetSections() (*[]string, *cerror.CustomError) {
@@ -121,12 +122,9 @@ func (sp *SnapsRepository) GetTracksBySnapId(snapId uuid.UUID) (*[]models.SnapTr
 		WHERE snap_entry_id = $1
 	`
 	err := sp.db.Select(&tracks, query, snapId)
-	if err == sql.ErrNoRows {
-		logrus.*cerror.CustomError(err)
-		return nil, *cerror.CustomErrors.New(c*cerror.CustomErrors.ResourceNotFound)
-	} else if err != nil {
-		logrus.*cerror.CustomError(err)
-		return nil, err
+	if err != nil {
+		logrus.Error(err)
+		return nil, cerror.ConvertError(err, "resource not found: tracks for snap with id = '%s'", snapId.String())
 	}
 
 	return &tracks, nil
@@ -140,12 +138,9 @@ func (sp *SnapsRepository) Getchannels(trackId uuid.UUID) (*[]models.SnapChannel
 		WHERE snap_track_id = $1
 	`
 	err := sp.db.Select(&channels, query, trackId)
-	if err == sql.ErrNoRows {
-		logrus.*cerror.CustomError(err)
-		return nil, *cerror.CustomErrors.New(c*cerror.CustomErrors.ResourceNotFound)
-	} else if err != nil {
-		logrus.*cerror.CustomError(err)
-		return nil, err
+	if err != nil {
+		logrus.Error(err)
+		return nil, cerror.ConvertError(err, "resource not found: channels for track with id = '%s'", trackId.String())
 	}
 
 	return &channels, nil
@@ -159,12 +154,9 @@ func (sp *SnapsRepository) GetRevisionById(id string) (*models.SnapRevision, *ce
 		WHERE id = $1
 	`
 	err := sp.db.Get(&revision, query, id)
-	if err == sql.ErrNoRows {
-		logrus.*cerror.CustomError(err)
-		return nil, *cerror.CustomErrors.New(c*cerror.CustomErrors.ResourceNotFound)
-	} else if err != nil {
-		logrus.*cerror.CustomError(err)
-		return nil, err
+	if err != nil {
+		logrus.Error(err)
+		return nil, cerror.ConvertError(err, "resource not found: revision with id = '%s'", id)
 	}
 
 	return &revision, nil
@@ -178,12 +170,9 @@ func (sp *SnapsRepository) GetRevisionByNameAndSequence(name string, sequence ui
 		WHERE name = $1
 	`
 	err := sp.db.Get(&entry, query, name)
-	if err == sql.ErrNoRows {
-		logrus.*cerror.CustomError(err)
-		return nil, *cerror.CustomErrors.New(c*cerror.CustomErrors.ResourceNotFound)
-	} else if err != nil {
-		logrus.*cerror.CustomError(err)
-		return nil, err
+	if err != nil {
+		logrus.Error(err)
+		return nil, cerror.ConvertError(err, "resource not found: snap with name = '%s' while searching for revision", name)
 	}
 
 	var revision models.SnapRevision
@@ -193,18 +182,15 @@ func (sp *SnapsRepository) GetRevisionByNameAndSequence(name string, sequence ui
 		WHERE snap_entry_id = $1 AND sequence_number = $2
 	`
 	err = sp.db.Get(&revision, query, entry.ID, sequence)
-	if err == sql.ErrNoRows {
-		logrus.*cerror.CustomError(err)
-		return nil, *cerror.CustomErrors.New(c*cerror.CustomErrors.ResourceNotFound)
-	} else if err != nil {
-		logrus.*cerror.CustomError(err)
-		return nil, err
+	if err != nil {
+		logrus.Error(err)
+		return nil, cerror.ConvertError(err, "resource not found: revision with sequence = '%d' for snap with name = '%s'", fmt.Sprint(sequence), name)
 	}
 
 	return &revision, nil
 }
 
-func (sp *SnapsRepository) SetChannelRevision(trackName string, channelName string, revisionId uint, snapId uuid.UUID) (*models.SnapTrack, *cerror.CustomError) {
+func (sp *SnapsRepository) SetChannelRevision(trackName string, channelName string, revisionId uuid.UUID, snapId uuid.UUID) (*models.SnapTrack, *cerror.CustomError) {
 	// get all the tracks
 	var track models.SnapTrack
 	query := `
@@ -213,12 +199,9 @@ func (sp *SnapsRepository) SetChannelRevision(trackName string, channelName stri
 		WHERE snap_entry_id = $1 AND name = $2
 	`
 	err := sp.db.Get(&track, query, snapId, trackName)
-	if err == sql.ErrNoRows {
-		logrus.*cerror.CustomError(err)
-		return nil, *cerror.CustomErrors.New(c*cerror.CustomErrors.ResourceNotFound)
-	} else if err != nil {
-		logrus.*cerror.CustomError(err)
-		return nil, err
+	if err != nil {
+		logrus.Error(err)
+		return nil, cerror.ConvertError(err, "resource not found: track '%s' for snap with id = '%s'", trackName, snapId.String())
 	}
 
 	var channel models.SnapChannel
@@ -228,12 +211,9 @@ func (sp *SnapsRepository) SetChannelRevision(trackName string, channelName stri
 		WHERE snap_entry_id = $1 AND name = $2 AND snap_track_id = $3
 	`
 	err = sp.db.Get(&channel, query, snapId, channelName, track.ID)
-	if err == sql.ErrNoRows {
-		logrus.*cerror.CustomError(err)
-		return nil, *cerror.CustomErrors.New(c*cerror.CustomErrors.ResourceNotFound)
-	} else if err != nil {
-		logrus.*cerror.CustomError(err)
-		return nil, err
+	if err != nil {
+		logrus.Error(err)
+		return nil, cerror.ConvertError(err, "resource not found: channel '%s' for snap with id = '%s'", channelName, snapId.String())
 	}
 
 	var revision models.SnapRevision
@@ -243,12 +223,9 @@ func (sp *SnapsRepository) SetChannelRevision(trackName string, channelName stri
 		WHERE id = $1
 	`
 	err = sp.db.Get(&revision, query, revisionId)
-	if err == sql.ErrNoRows {
-		logrus.*cerror.CustomError(err)
-		return nil, *cerror.CustomErrors.New(c*cerror.CustomErrors.ResourceNotFound)
-	} else if err != nil {
-		logrus.*cerror.CustomError(err)
-		return nil, err
+	if err != nil {
+		logrus.Error(err)
+		return nil, cerror.ConvertError(err, "resource not found: revision with id = '%s'", revisionId.String())
 	}
 
 	query = `
@@ -258,8 +235,8 @@ func (sp *SnapsRepository) SetChannelRevision(trackName string, channelName stri
 	`
 	_, err = sp.db.Exec(query, revision.ID, channel.ID)
 	if err != nil {
-		logrus.*cerror.CustomError(err)
-		return nil, err
+		logrus.Error(err)
+		return nil, cerror.ConvertError(err, "resource not found: channel '%s' for snap with id = '%s'", channelName, snapId.String())
 	}
 
 	return &track, nil
@@ -277,14 +254,11 @@ func (sp *SnapsRepository) RegisterSnap(snapName string, isPrivate bool) (*model
 		RETURNING id
 	`
 	err := sp.db.Get(&snapEntry.ID, query, snapName, isPrivate)
-	if err == sql.ErrNoRows {
-		logrus.*cerror.CustomErrorf("amellobwu: %v", err)
-		return nil, *cerror.CustomErrors.New(c*cerror.CustomErrors.ResourceNotFound)
-	} else if err != nil {
-		logrus.*cerror.CustomErrorf("uwbollema: %v", err)
-		return nil, err
+	if err != nil {
+		logrus.Error(err)
+		return nil, cerror.ConvertError(err)
 	}
-	fmt.Printf("snapEntry: %+v", snapEntry)
+
 	return &snapEntry, nil
 }
 
@@ -296,12 +270,9 @@ func (sp *SnapsRepository) AddUpload(snapName string, upDownId string, fileSize 
 		WHERE name = $1
 	`
 	err := sp.db.Get(&snap.ID, query, snapName)
-	if err == sql.ErrNoRows {
-		logrus.*cerror.CustomError(err)
-		return nil, *cerror.CustomErrors.New(c*cerror.CustomErrors.ResourceNotFound)
-	} else if err != nil {
-		logrus.*cerror.CustomError(err)
-		return nil, err
+	if err != nil {
+		logrus.Error(err)
+		return nil, cerror.ConvertError(err, "resource not found: snap with name = '%s'", snapName)
 	}
 
 	snapUpload := models.SnapUpload{
@@ -333,12 +304,9 @@ func (sp *SnapsRepository) AddUpload(snapName string, upDownId string, fileSize 
 		RETURNING id
 	`
 	err = sp.db.Get(&snapUpload.ID, query, snapName, upDownId, fileSize, snapUpload.Channels, snap.ID)
-	if err == sql.ErrNoRows {
-		logrus.*cerror.CustomError(err)
-		return nil, *cerror.CustomErrors.New(c*cerror.CustomErrors.ResourceNotFound)
-	} else if err != nil {
-		logrus.*cerror.CustomError(err)
-		return nil, err
+	if err != nil {
+		logrus.Error(err)
+		return nil, cerror.ConvertError(err, "resource not found: snap with name = '%s'", snapName)
 	}
 
 	return &snapUpload, nil
@@ -355,12 +323,9 @@ func (sp *SnapsRepository) GetRevisionBySHA(SHA3_384 string, encoded bool) (*mod
 			WHERE sha3_384_encoded = $1
 		`
 		err := sp.db.Get(&revision, query, SHA3_384)
-		if err == sql.ErrNoRows {
-			logrus.*cerror.CustomError(err)
-			return nil, *cerror.CustomErrors.New(c*cerror.CustomErrors.ResourceNotFound)
-		} else if err != nil {
-			logrus.*cerror.CustomError(err)
-			return nil, err
+		if err != nil {
+			logrus.Error(err)
+			return nil, cerror.ConvertError(err)
 		}
 	} else {
 		logrus.Tracef("Getting snap revision by sha3_384: %s", SHA3_384)
@@ -370,12 +335,9 @@ func (sp *SnapsRepository) GetRevisionBySHA(SHA3_384 string, encoded bool) (*mod
 			WHERE sha3_384 = $1
 		`
 		err := sp.db.Get(&revision, query, SHA3_384)
-		if err == sql.ErrNoRows {
-			logrus.*cerror.CustomError(err)
-			return nil, *cerror.CustomErrors.New(c*cerror.CustomErrors.ResourceNotFound)
-		} else if err != nil {
-			logrus.*cerror.CustomError(err)
-			return nil, err
+		if err != nil {
+			logrus.Error(err)
+			return nil, cerror.ConvertError(err)
 		}
 	}
 
@@ -390,12 +352,9 @@ func (sp *SnapsRepository) GetUploadByUpDownId(upDownId string) (*models.SnapUpl
 		WHERE up_down_id = $1
 	`
 	err := sp.db.Get(&snapUpload, query, upDownId)
-	if err == sql.ErrNoRows {
-		logrus.*cerror.CustomError(err)
-		return nil, *cerror.CustomErrors.New(c*cerror.CustomErrors.ResourceNotFound)
-	} else if err != nil {
-		logrus.*cerror.CustomError(err)
-		return nil, err
+	if err != nil {
+		logrus.Error(err)
+		return nil, cerror.ConvertError(err, "resource not found: upload with up_down_id = '%s'", upDownId)
 	}
 
 	return &snapUpload, nil
@@ -410,12 +369,9 @@ func (sp *SnapsRepository) UpdateRevision(revision *models.SnapRevision, revisio
 		RETURNING *
 	`
 	err := sp.db.Get(&newRevision, query, revision.SnapFilename, revision.SHA3_384, revision.SHA3_384_Encoded, revision.Size, revision.SequenceNumber, revision.Architectures, revision.Status, revision.Version, revision.Since, revision.ID)
-	if err == sql.ErrNoRows {
-		logrus.*cerror.CustomError(err)
-		return nil, *cerror.CustomErrors.New(c*cerror.CustomErrors.ResourceNotFound)
-	} else if err != nil {
-		logrus.*cerror.CustomError(err)
-		return nil, err
+	if err != nil {
+		logrus.Error(err)
+		return nil, cerror.ConvertError(err, "resource not found: revision with id = '%s'", revision.ID.String())
 	}
 
 	return &newRevision, nil
@@ -428,12 +384,9 @@ func (sp *SnapsRepository) GetSnaps() (*[]models.SnapEntry, *cerror.CustomError)
 		FROM snap_entries
 	`
 	err := sp.db.Select(&snaps, query)
-	if err == sql.ErrNoRows {
-		logrus.*cerror.CustomError(err)
-		return nil, *cerror.CustomErrors.New(c*cerror.CustomErrors.ResourceNotFound)
-	} else if err != nil {
-		logrus.*cerror.CustomError(err)
-		return nil, err
+	if err != nil {
+		logrus.Error(err)
+		return nil, cerror.ConvertError(err)
 	}
 
 	return &snaps, nil
@@ -447,37 +400,36 @@ func (sp *SnapsRepository) GetEntryById(Id uuid.UUID, preloadAssociations []stri
 		WHERE id = $1
 	`
 	err := sp.db.Get(&snapEntry, query, Id)
-	if err == sql.ErrNoRows {
-		logrus.*cerror.CustomError(err)
-		return nil, *cerror.CustomErrors.New(c*cerror.CustomErrors.ResourceNotFound)
-	} else if err != nil {
-		logrus.*cerror.CustomError(err)
-		return nil, *cerror.CustomErrors.New(c*cerror.CustomErrors.Database*cerror.CustomError)
+	if err != nil {
+		logrus.Error(err)
+		return nil, cerror.ConvertError(err, "resource not found: snap with id = '%s'", Id.String())
 	}
 
+	all := slices.Contains(preloadAssociations, models.ALL)
+
 	switch {
-	case slices.Contains(preloadAssociations, models.COMMENT):
+	case all || slices.Contains(preloadAssociations, models.COMMENT):
 		resp, err := sp.GetCommentsByEntryId(snapEntry.ID)
 		if err != nil {
-			logrus.*cerror.CustomError(err)
+			// Already logged in GetCommentsByEntryId
 			return nil, err
 		}
 		snapEntry.LatestComments = resp
 		fallthrough
 
-	case slices.Contains(preloadAssociations, models.REVISION):
+	case all || slices.Contains(preloadAssociations, models.REVISION) || all:
 		resp, err := sp.GetRevisionsByEntryId(snapEntry.ID)
 		if err != nil {
-			logrus.*cerror.CustomError(err)
+			// Already logged in GetRevisionsByEntryId
 			return nil, err
 		}
 		snapEntry.Revisions = resp
 		fallthrough
 
-	case slices.Contains(preloadAssociations, models.UPLOAD):
+	case all || slices.Contains(preloadAssociations, models.UPLOAD):
 		resp, err := sp.GetUploadsByEntryId(snapEntry.ID)
 		if err != nil {
-			logrus.*cerror.CustomError(err)
+			// Already logged in GetUploadsByEntryId
 			return nil, err
 		}
 		snapEntry.Uploads = resp
@@ -486,7 +438,7 @@ func (sp *SnapsRepository) GetEntryById(Id uuid.UUID, preloadAssociations []stri
 	return &snapEntry, nil
 }
 
-func (sp *SnapsRepository) GetEntryByName(name string, preloadAssociations []string) (*models.SnapEntry, *c*cerror.CustomErrors.Custom*cerror.CustomError) {
+func (sp *SnapsRepository) GetEntryByName(name string, preloadAssociations []string) (*models.SnapEntry, *cerror.CustomError) {
 	if preloadAssociations == nil {
 		preloadAssociations = []string{}
 	}
@@ -499,33 +451,35 @@ func (sp *SnapsRepository) GetEntryByName(name string, preloadAssociations []str
 	`
 	err := sp.db.Get(&snapEntry, query, name)
 	if err != nil {
-		logrus.*cerror.CustomError(err)
-		return nil, c*cerror.CustomErrors.Convert*cerror.CustomError(err, fmt.Sprintf("resource not found by name = '%s'"), name)
+		logrus.Error(err)
+		return nil, cerror.ConvertError(err, "resource not found: snap with name = '%s'", name)
 	}
 
+	all := slices.Contains(preloadAssociations, models.ALL)
+
 	switch {
-	case slices.Contains(preloadAssociations, models.COMMENT):
+	case all || slices.Contains(preloadAssociations, models.COMMENT):
 		resp, err := sp.GetCommentsByEntryId(snapEntry.ID)
 		if err != nil {
-			logrus.*cerror.CustomError(err)
+			// Already logged in GetCommentsByEntryId
 			return nil, err
 		}
 		snapEntry.LatestComments = resp
 		fallthrough
 
-	case slices.Contains(preloadAssociations, models.REVISION):
+	case all || slices.Contains(preloadAssociations, models.REVISION) || all:
 		resp, err := sp.GetRevisionsByEntryId(snapEntry.ID)
 		if err != nil {
-			logrus.*cerror.CustomError(err)
+			// Already logged in GetRevisionsByEntryId
 			return nil, err
 		}
 		snapEntry.Revisions = resp
 		fallthrough
 
-	case slices.Contains(preloadAssociations, models.UPLOAD):
+	case all || slices.Contains(preloadAssociations, models.UPLOAD):
 		resp, err := sp.GetUploadsByEntryId(snapEntry.ID)
 		if err != nil {
-			logrus.*cerror.CustomError(err)
+			// Already logged in GetUploadsByEntryId
 			return nil, err
 		}
 		snapEntry.Uploads = resp
@@ -542,13 +496,13 @@ func (sp *SnapsRepository) GetEntryByName(name string, preloadAssociations []str
 func (sp *SnapsRepository) AddSnap(name string, size uint64, accountId uuid.UUID) (*models.SnapEntry, *cerror.CustomError) {
 	existingSnap, err := sp.GetEntryByName(name, nil)
 	if err != nil {
-		logrus.*cerror.CustomError(err)
+		// Already logged in GetEntryByName
 		return nil, err
 	}
 
 	// if the snap already exists, return an *cerror.CustomError
 	if existingSnap != nil {
-		return nil, fmt.*cerror.CustomErrorf("snap with name=%s already exists", name)
+		return nil, cerror.NewCustomError(cerror.AlreadyRegistered, fmt.Sprintf("snap with name '%s' already exists", name))
 	}
 
 	// when registering a snap, not finding one is what you want
@@ -566,13 +520,10 @@ func (sp *SnapsRepository) AddSnap(name string, size uint64, accountId uuid.UUID
 		VALUES ($1, $2, $3)
 		RETURNING id
 	`
-	err = sp.db.Get(&newSnapEntry.ID, query, name, accountId, "app")
-	if err == sql.ErrNoRows {
-		logrus.*cerror.CustomError(err)
-		return nil, *cerror.CustomErrors.New(c*cerror.CustomErrors.ResourceNotFound)
-	} else if err != nil {
-		logrus.*cerror.CustomError(err)
-		return nil, *cerror.CustomErrors.New(c*cerror.CustomErrors.Database*cerror.CustomError)
+	err2 := sp.db.Get(&newSnapEntry.ID, query, name, accountId, "app")
+	if err2 != nil {
+		logrus.Error(err2)
+		return nil, cerror.ConvertError(err2)
 	}
 
 	// snap_uploads table contains channels where the snap is uploaded
@@ -588,13 +539,10 @@ func (sp *SnapsRepository) AddSnap(name string, size uint64, accountId uuid.UUID
 		VALUES ($1, $2)
 		RETURNING id
 	`
-	err = sp.db.Get(&track.ID, query, track.Name, newSnapEntry.ID)
-	if err == sql.ErrNoRows {
-		logrus.*cerror.CustomError(err)
-		return nil, *cerror.CustomErrors.New(c*cerror.CustomErrors.ResourceNotFound)
-	} else if err != nil {
-		logrus.*cerror.CustomError(err)
-		return nil, *cerror.CustomErrors.New(c*cerror.CustomErrors.Database*cerror.CustomError)
+	err2 = sp.db.Get(&track.ID, query, track.Name, newSnapEntry.ID)
+	if err2 != nil {
+		logrus.Error(err2)
+		return nil, cerror.ConvertError(err2)
 	}
 
 	newRevision, _ := sp.addRevision(newSnapEntry, size)
@@ -625,7 +573,7 @@ func (sp *SnapsRepository) ReleaseSnap(channels []string, snapEntryId uuid.UUID,
 			trackForRelease = parts[0]
 			channelForRelease = parts[1]
 		} else if len(parts) == 3 {
-			return *cerror.CustomErrors.New("branches not supported yet")
+			return cerror.NewCustomError(cerror.NotImplemented, "branches not yet supported for channels")
 		}
 
 		// get all the tracks
@@ -636,12 +584,9 @@ func (sp *SnapsRepository) ReleaseSnap(channels []string, snapEntryId uuid.UUID,
 			WHERE snap_entry_id = $1 AND name = $2
 		`
 		err := sp.db.Get(&track, query, snapEntryId, trackForRelease)
-		if err == sql.ErrNoRows {
-			logrus.*cerror.CustomError(err)
-			return *cerror.CustomErrors.New(c*cerror.CustomErrors.ResourceNotFound)
-		} else if err != nil {
-			logrus.*cerror.CustomError(err)
-			return *cerror.CustomErrors.New(c*cerror.CustomErrors.Database*cerror.CustomError)
+		if err != nil {
+			logrus.Error(err)
+			return cerror.ConvertError(err, "resource not found: track '%s' for snap with id = '%s'", trackForRelease, snapEntryId.String())
 		}
 
 		// get all the channels
@@ -652,12 +597,9 @@ func (sp *SnapsRepository) ReleaseSnap(channels []string, snapEntryId uuid.UUID,
 			WHERE snap_entry_id = $1 AND name = $2 AND snap_track_id = $3
 		`
 		err = sp.db.Get(&channel, query, snapEntryId, channelForRelease, track.ID)
-		if err == sql.ErrNoRows {
-			logrus.*cerror.CustomError(err)
-			return *cerror.CustomErrors.New(c*cerror.CustomErrors.ResourceNotFound)
-		} else if err != nil {
-			logrus.*cerror.CustomError(err)
-			return *cerror.CustomErrors.New(c*cerror.CustomErrors.Database*cerror.CustomError)
+		if err != nil {
+			logrus.Error(err)
+			return cerror.ConvertError(err, "resource not found: channel '%s' for snap with id = '%s'", channelForRelease, snapEntryId.String())
 		}
 
 		var revision models.SnapRevision
@@ -667,12 +609,9 @@ func (sp *SnapsRepository) ReleaseSnap(channels []string, snapEntryId uuid.UUID,
 			WHERE id = $1
 		`
 		err = sp.db.Get(&revision, query, revisionId)
-		if err == sql.ErrNoRows {
-			logrus.*cerror.CustomError(err)
-			return *cerror.CustomErrors.New(c*cerror.CustomErrors.ResourceNotFound)
-		} else if err != nil {
-			logrus.*cerror.CustomError(err)
-			return *cerror.CustomErrors.New(c*cerror.CustomErrors.Database*cerror.CustomError)
+		if err != nil {
+			logrus.Error(err)
+			return cerror.ConvertError(err, "resource not found: revision with id = '%s'", revisionId.String())
 		}
 
 		query = `
@@ -681,12 +620,9 @@ func (sp *SnapsRepository) ReleaseSnap(channels []string, snapEntryId uuid.UUID,
 			WHERE id = $2
 		`
 		_, err = sp.db.Exec(query, revision.ID, channel.ID)
-		if err == sql.ErrNoRows {
-			logrus.*cerror.CustomError(err)
-			return *cerror.CustomErrors.New(c*cerror.CustomErrors.ResourceNotFound)
-		} else if err != nil {
-			logrus.*cerror.CustomError(err)
-			return *cerror.CustomErrors.New(c*cerror.CustomErrors.Database*cerror.CustomError)
+		if err != nil {
+			logrus.Error(err)
+			return cerror.ConvertError(err)
 		}
 	}
 
@@ -708,12 +644,9 @@ func (sp *SnapsRepository) addRevision(snapEntry models.SnapEntry, size uint64) 
 		RETURNING id
 	`
 	err := sp.db.Get(&snapRevision.ID, query, snapRevision.SnapFilename, snapRevision.SnapEntryID, snapRevision.SHA3_384, snapRevision.Size)
-	if err == sql.ErrNoRows {
-		logrus.*cerror.CustomError(err)
-		return nil, *cerror.CustomErrors.New(c*cerror.CustomErrors.ResourceNotFound)
-	} else if err != nil {
-		logrus.*cerror.CustomError(err)
-		return nil, *cerror.CustomErrors.New(c*cerror.CustomErrors.Database*cerror.CustomError)
+	if err != nil {
+		logrus.Error(err)
+		return nil, cerror.ConvertError(err)
 	}
 
 	return &snapRevision, nil
@@ -736,12 +669,9 @@ func (sp *SnapsRepository) addChannels(snapEntry models.SnapEntry, snapRevision 
 			RETURNING id
 		`
 		err := sp.db.Get(&snapChannel.ID, query, snapChannel.Name, snapChannel.SnapEntryID, snapChannel.SnapTrackID, snapChannel.RevisionID)
-		if err == sql.ErrNoRows {
-			logrus.*cerror.CustomError(err)
-			return *cerror.CustomErrors.New(c*cerror.CustomErrors.ResourceNotFound)
-		} else if err != nil {
-			logrus.*cerror.CustomError(err)
-			return *cerror.CustomErrors.New(c*cerror.CustomErrors.Database*cerror.CustomError)
+		if err != nil {
+			logrus.Error(err)
+			return cerror.ConvertError(err)
 		}
 	}
 
@@ -751,8 +681,8 @@ func (sp *SnapsRepository) addChannels(snapEntry models.SnapEntry, snapRevision 
 func (sp *SnapsRepository) updateMeta(metaBytes *[]byte) *cerror.CustomError {
 	snapMeta, err2 := snap.GetSnapMetaFromBytes(*metaBytes, "/tmp")
 	if err2 != nil {
-		logrus.*cerror.CustomError(err2)
-		return err2
+		logrus.Error(err2)
+		return cerror.NewCustomError(err2.Error(), "failed to get snap metadata from bytes")
 	}
 	logrus.Tracef("snapMeta: %+v", snapMeta)
 	var snapEntry models.SnapEntry
@@ -762,12 +692,9 @@ func (sp *SnapsRepository) updateMeta(metaBytes *[]byte) *cerror.CustomError {
 		WHERE name = $1
 	`
 	err := sp.db.Get(&snapEntry, query, snapMeta.Name)
-	if err == sql.ErrNoRows {
-		logrus.*cerror.CustomError(err)
-		return *cerror.CustomErrors.New(c*cerror.CustomErrors.ResourceNotFound)
-	} else if err != nil {
-		logrus.*cerror.CustomError(err)
-		return *cerror.CustomErrors.New(c*cerror.CustomErrors.Database*cerror.CustomError)
+	if err != nil {
+		logrus.Error(err)
+		return cerror.ConvertError(err, "resource not found: snap with name = '%s'", snapMeta.Name)
 	}
 
 	snapEntry.Type = &snapMeta.Type
@@ -797,12 +724,9 @@ func (sp *SnapsRepository) updateMeta(metaBytes *[]byte) *cerror.CustomError {
 		WHERE id = $4
 	`
 	_, err = sp.db.Exec(query, snapEntry.Type, snapEntry.Confinement, snapEntry.Base, snapEntry.ID)
-	if err == sql.ErrNoRows {
-		logrus.*cerror.CustomError(err)
-		return *cerror.CustomErrors.New(c*cerror.CustomErrors.ResourceNotFound)
-	} else if err != nil {
-		logrus.*cerror.CustomError(err)
-		return *cerror.CustomErrors.New(c*cerror.CustomErrors.Database*cerror.CustomError)
+	if err != nil {
+		logrus.Error(err)
+		return cerror.ConvertError(err)
 	}
 
 	return nil
@@ -817,39 +741,38 @@ func (sp *SnapsRepository) GetEntriesByAccountId(accountId uuid.UUID, preloadAss
         `
 	var entries []*models.SnapEntry
 	err := sp.db.Select(&entries, query, accountId)
-	if err == sql.ErrNoRows {
-		logrus.*cerror.CustomError(err)
-		return nil, *cerror.CustomErrors.New(c*cerror.CustomErrors.ResourceNotFound)
-	} else if err != nil {
-		logrus.*cerror.CustomError(err)
-		return nil, *cerror.CustomErrors.New(c*cerror.CustomErrors.Database*cerror.CustomError)
+	if err != nil {
+		logrus.Error(err)
+		return nil, cerror.ConvertError(err, "resource not found: snaps for account with id = '%s'", accountId.String())
 	}
 
 	for _, entry := range entries {
 
+		all := slices.Contains(preloadAssociations, models.ALL)
+
 		switch {
-		case slices.Contains(preloadAssociations, models.COMMENT):
+		case all || slices.Contains(preloadAssociations, models.COMMENT):
 			resp, err := sp.GetCommentsByEntryId(entry.ID)
 			if err != nil {
-				logrus.*cerror.CustomError(err)
+				logrus.Error(err)
 				return nil, err
 			}
 			entry.LatestComments = resp
 			fallthrough
 
-		case slices.Contains(preloadAssociations, models.REVISION):
+		case all || slices.Contains(preloadAssociations, models.REVISION) || all:
 			resp, err := sp.GetRevisionsByEntryId(entry.ID)
 			if err != nil {
-				logrus.*cerror.CustomError(err)
+				logrus.Error(err)
 				return nil, err
 			}
 			entry.Revisions = resp
 			fallthrough
 
-		case slices.Contains(preloadAssociations, models.UPLOAD):
+		case all || slices.Contains(preloadAssociations, models.UPLOAD):
 			resp, err := sp.GetUploadsByEntryId(entry.ID)
 			if err != nil {
-				logrus.*cerror.CustomError(err)
+				logrus.Error(err)
 				return nil, err
 			}
 			entry.Uploads = resp
@@ -867,13 +790,11 @@ func (sp *SnapsRepository) GetUploadsByEntryId(d uuid.UUID) ([]*models.SnapUploa
 		`
 	var uploads []*models.SnapUpload
 	err := sp.db.Select(&uploads, query, d)
-	if err == sql.ErrNoRows {
-		logrus.*cerror.CustomError(err)
-		return nil, *cerror.CustomErrors.New(c*cerror.CustomErrors.ResourceNotFound)
-	} else if err != nil {
-		logrus.*cerror.CustomError(err)
-		return nil, *cerror.CustomErrors.New(c*cerror.CustomErrors.Database*cerror.CustomError)
+	if err != nil {
+		logrus.Error(err)
+		return nil, cerror.ConvertError(err, "resource not found: uploads for snap with id = '%s'", d.String())
 	}
+
 	return uploads, nil
 }
 
@@ -885,45 +806,13 @@ func (sp *SnapsRepository) GetCommentsByEntryId(d uuid.UUID) ([]*models.SnapComm
 		`
 	var comments []*models.SnapComment
 	err := sp.db.Select(&comments, query, d)
-	if err == sql.ErrNoRows {
-		logrus.*cerror.CustomError(err)
-		return nil, *cerror.CustomErrors.New(c*cerror.CustomErrors.ResourceNotFound)
-	} else if err != nil {
-		logrus.*cerror.CustomError(err)
-		return nil, err
+	if err != nil {
+		logrus.Error(err)
+		return nil, cerror.ConvertError(err, "resource not found: comments for snap with id = '%s'", d.String())
 	}
+
 	return comments, nil
 }
-
-/*
-// This is the grom version trying sqlx version
-func (sp *SnapsRepository) GetEntriesByAccountId(accountId uuid.UUID, preloadAssociations bool) ([]*models.SnapEntry, *cerror.CustomError) {
-    var snaps []*models.SnapEntry
-    var db *gorm.DB
-    if preloadAssociations {
-        db = sp.db.Model(&models.SnapEntry{}).
-            Preload("").
-            Where(&models.SnapEntry{AccountID: accountId}).
-            Find(&snaps)
-    } else {
-        db = sp.db.Model(&models.SnapEntry{}).
-            Where(&models.SnapEntry{AccountID: accountId}).
-            Find(&snaps)
-    }
-
-    if _, ok := database.CheckDBFor*cerror.CustomErrorOrNoRows(db); ok {
-        return snaps, nil
-    }
-
-    if db.*cerror.CustomError != nil {
-        return nil, db.*cerror.CustomError
-    }
-
-    logrus.*cerror.CustomErrorf("Could not find snaps for accountId: %s", accountId)
-    return nil, nil
-}
-
-*/
 
 func (sp *SnapsRepository) GetRevisionsByEntryId(entryId uuid.UUID) ([]*models.SnapRevision, *cerror.CustomError) {
 	var revisions []*models.SnapRevision
@@ -933,12 +822,9 @@ func (sp *SnapsRepository) GetRevisionsByEntryId(entryId uuid.UUID) ([]*models.S
 			WHERE snap_entry_id = $1
 		`
 	err := sp.db.Select(&revisions, query, entryId)
-	if err == sql.ErrNoRows {
-		logrus.*cerror.CustomError(err)
-		return nil, *cerror.CustomErrors.New(c*cerror.CustomErrors.ResourceNotFound)
-	} else if err != nil {
-		logrus.*cerror.CustomError(err)
-		return nil, *cerror.CustomErrors.New(c*cerror.CustomErrors.Database*cerror.CustomError)
+	if err != nil {
+		logrus.Error(err)
+		return nil, cerror.ConvertError(err, "resource not found: revisions for snap with id = '%s'", entryId.String())
 	}
 
 	return revisions, nil
@@ -952,37 +838,36 @@ func (sp *SnapsRepository) getSnap(whereModel *models.SnapEntry, preloadAssociat
 		WHERE id = $1
 	`
 	err := sp.db.Get(&snapEntry, query, whereModel.ID)
-	if err == sql.ErrNoRows {
-		logrus.*cerror.CustomError(err)
-		return nil, *cerror.CustomErrors.New(c*cerror.CustomErrors.ResourceNotFound)
-	} else if err != nil {
-		logrus.*cerror.CustomError(err)
-		return nil, *cerror.CustomErrors.New(c*cerror.CustomErrors.Database*cerror.CustomError)
+	if err != nil {
+		logrus.Error(err)
+		return nil, cerror.ConvertError(err, "resource not found: snap with id = '%s'", whereModel.ID.String())
 	}
 
+	all := slices.Contains(preloadAssociations, models.ALL)
+
 	switch {
-	case slices.Contains(preloadAssociations, models.COMMENT):
+	case all || slices.Contains(preloadAssociations, models.COMMENT):
 		resp, err := sp.GetCommentsByEntryId(snapEntry.ID)
 		if err != nil {
-			logrus.*cerror.CustomError(err)
+			logrus.Error(err)
 			return nil, err
 		}
 		snapEntry.LatestComments = resp
 		fallthrough
 
-	case slices.Contains(preloadAssociations, models.REVISION):
+	case all || slices.Contains(preloadAssociations, models.REVISION) || all:
 		resp, err := sp.GetRevisionsByEntryId(snapEntry.ID)
 		if err != nil {
-			logrus.*cerror.CustomError(err)
+			logrus.Error(err)
 			return nil, err
 		}
 		snapEntry.Revisions = resp
 		fallthrough
 
-	case slices.Contains(preloadAssociations, models.UPLOAD):
+	case all || slices.Contains(preloadAssociations, models.UPLOAD):
 		resp, err := sp.GetUploadsByEntryId(snapEntry.ID)
 		if err != nil {
-			logrus.*cerror.CustomError(err)
+			logrus.Error(err)
 			return nil, err
 		}
 		snapEntry.Uploads = resp
