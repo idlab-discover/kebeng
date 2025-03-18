@@ -4,20 +4,18 @@ import (
 	"context"
 	"fmt"
 
+	cerror "github.com/idlab-discover/kebeng/common/error"
 	"github.com/idlab-discover/kebeng/services/account/internal/config"
-	"github.com/idlab-discover/kebeng/services/account/internal/errors"
 	proto "github.com/idlab-discover/kebeng/services/account/proto"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-// TEST pipeline 2
-
-// NOTE: in all the endpoints the errors of the actual logic are included in the response and NOT returned as an error
+// NOTE: in all the endpoints the cerror of the actual logic are included in the response and NOT returned as an error
 // this is because we need every error and not just 1 according to the snapcraft docs
 // there is an err field in the proto functions because proto incists on it so if that is != nil the request failed
-// but the actual error is in the errors field
+// but the actual error is in the cerror field
 
 type AccountClient struct {
 	conn   *grpc.ClientConn
@@ -51,7 +49,7 @@ func (c *AccountClient) CreateAccount(displayName, username, email string) *prot
 		// this means proto request failed not the actual logic
 		resp = &proto.AccountResponse{
 			Errors: []*proto.Error{{
-				Code: errors.InternalServerError, Message: err.Error()},
+				Code: cerror.InternalServerError, Message: err.Error()},
 			},
 		}
 	}
@@ -71,7 +69,7 @@ func (c *AccountClient) UpdateAccount(id, displayName, username, email string) *
 		// this means proto request failed not the actual logic
 		resp = &proto.AccountResponse{
 			Errors: []*proto.Error{{
-				Code: errors.InternalServerError, Message: err.Error()},
+				Code: cerror.InternalServerError, Message: err.Error()},
 			},
 		}
 	}
@@ -86,7 +84,7 @@ func (c *AccountClient) DeleteAccount(id string) *proto.DeleteAccountResponse {
 		// this means proto request failed not the actual logic
 		resp = &proto.DeleteAccountResponse{
 			Errors: []*proto.Error{{
-				Code: errors.InternalServerError, Message: err.Error()},
+				Code: cerror.InternalServerError, Message: err.Error()},
 			},
 		}
 	}
@@ -101,7 +99,7 @@ func (c *AccountClient) GetAccountByEmail(email string) *proto.AccountResponse {
 		// this means proto request failed not the actual logic
 		resp = &proto.AccountResponse{
 			Errors: []*proto.Error{{
-				Code: errors.InternalServerError, Message: err.Error()},
+				Code: cerror.InternalServerError, Message: err.Error()},
 			},
 		}
 	}
@@ -116,7 +114,7 @@ func (c *AccountClient) GetAccountByID(id string) *proto.AccountResponse {
 		// this means proto request failed not the actual logic
 		resp = &proto.AccountResponse{
 			Errors: []*proto.Error{{
-				Code: errors.InternalServerError, Message: err.Error()},
+				Code: cerror.InternalServerError, Message: err.Error()},
 			},
 		}
 	}
@@ -130,7 +128,7 @@ func (c *AccountClient) GetAccountsByIds(ids []string) *proto.GetAccountsByIdsRe
 		// this means proto request failed not the actual logic
 		resp = &proto.GetAccountsByIdsResponse{
 			Errors: []*proto.Error{{
-				Code: errors.InternalServerError, Message: err.Error()},
+				Code: cerror.InternalServerError, Message: err.Error()},
 			},
 		}
 	}
@@ -145,7 +143,7 @@ func (c *AccountClient) GetAccountByUsername(username string) *proto.AccountResp
 		// this means proto request failed not the actual logic
 		resp = &proto.AccountResponse{
 			Errors: []*proto.Error{{
-				Code: errors.InternalServerError, Message: err.Error()},
+				Code: cerror.InternalServerError, Message: err.Error()},
 			},
 		}
 	}
@@ -165,7 +163,7 @@ func (c *AccountClient) AddKey(accountEmail, keyName, sha3384, encodedPublicKey 
 		// this means proto request failed not the actual logic
 		resp = &proto.KeyResponse{
 			Errors: []*proto.Error{{
-				Code: errors.InternalServerError, Message: err.Error()},
+				Code: cerror.InternalServerError, Message: err.Error()},
 			},
 		}
 	}
@@ -180,7 +178,7 @@ func (c *AccountClient) GetAccountKey(Sha3384 string) *proto.KeyResponse {
 		// this means proto request failed not the actual logic
 		resp = &proto.KeyResponse{
 			Errors: []*proto.Error{{
-				Code: errors.InternalServerError, Message: err.Error()},
+				Code: cerror.InternalServerError, Message: err.Error()},
 			},
 		}
 	}
@@ -195,7 +193,7 @@ func (c *AccountClient) GetAccountKeysByAccountID(accountID string) *proto.KeysR
 		// this means proto request failed not the actual logic
 		resp = &proto.KeysResponse{
 			Errors: []*proto.Error{{
-				Code: errors.InternalServerError, Message: err.Error()},
+				Code: cerror.InternalServerError, Message: err.Error()},
 			},
 		}
 	}
