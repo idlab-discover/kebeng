@@ -268,7 +268,7 @@ func (a *AccountService) convertToProtoAccount(account *models.Account, el []*pr
 		DisplayName: account.DisplayName,
 		Username:    account.Username,
 		Email:       account.Email,
-		Validation:  account.Validation,
+		Validation:  *account.Validation,
 		Errors:      el,
 	}
 }
