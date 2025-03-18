@@ -1,4 +1,4 @@
-package error
+package cerror
 
 import (
 	"database/sql"
@@ -52,6 +52,14 @@ type CustomError struct {
 	Message string `json:"message"`
 }
 
+func (e *CustomError) GetCode() string {
+	return e.Code
+}
+
+func (e *CustomError) GetMessage() string {
+	return e.Message
+}
+
 // helper struct
 type ErrorList []CustomError
 
@@ -82,16 +90,6 @@ func ConvertError(err error, message ...string) *CustomError {
 	}
 }
 
-// buildCustomError creates a new instance of CustomError with the specified code and message.
-// If a custom message is provided, it will be used; otherwise, the defaultMessage will be used.
-//
-// Parameters:
-//   - code: A string representing the error code.
-//   - defaultMessage: A string representing the default error message.
-//   - message: An optional variadic parameter for a custom error message.
-//
-// Returns:
-//   - A pointer to a CustomError instance containing the provided code and message.
 func buildCustomError(code, defaultMessage string, message ...string) *CustomError {
 	msg := defaultMessage
 	if len(message) > 0 {

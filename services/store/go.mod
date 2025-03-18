@@ -3,7 +3,7 @@ module github.com/idlab-discover/kebeng/services/store
 go 1.22.2
 
 require (
-	github.com/idlab-discover/kebeng v0.0.0-20250318152852-aa6424019e4d
+	github.com/idlab-discover/kebeng v0.0.0-20250318175121-48d4a0fe8d85
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.10.0
