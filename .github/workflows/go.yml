@@ -35,16 +35,16 @@ jobs:
 
     - name: Test Account service
       working-directory: ./services/account
-      run: go test -v ./
+      run: go test -v ./...
 
     - name: Test Assertion service
       working-directory: ./services/assertion
-      run: go test -v ./
+      run: go test -v ./...
 
     - name: Test Gateway service
       working-directory: ./services/gateway
-      run: go test -v ./
+      run: go test -v ./...
 
     - name: Test Store service
       working-directory: ./services/store
-      run: go test -v ./
+      run: go test -v ./...
