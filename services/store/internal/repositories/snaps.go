@@ -15,7 +15,7 @@ import (
 	"github.com/idlab-discover/kebeng/services/store/internal/models"
 	"github.com/jmoiron/sqlx"
 
-	cerrors "github.com/idlab-discover/kebeng/services/store/internal/errors"
+	cerrors "github.com/idlab-discover/kebeng/common/error"
 )
 
 type ISnapsRepository interface {
@@ -288,13 +288,13 @@ func (sp *SnapsRepository) RegisterSnap(snapName string, isPrivate bool) (*model
 	`
 	err := sp.db.Get(&snapEntry.ID, query, snapName, isPrivate)
 	if err == sql.ErrNoRows {
-		logrus.Error(err)
+		logrus.Errorf("amellobwu: %v", err)
 		return nil, errors.New(cerrors.ResourceNotFound)
 	} else if err != nil {
-		logrus.Error(err)
+		logrus.Errorf("uwbollema: %v", err)
 		return nil, err
 	}
-
+	fmt.Printf("snapEntry: %+v", snapEntry)
 	return &snapEntry, nil
 }
 
@@ -496,7 +496,7 @@ func (sp *SnapsRepository) GetEntryById(Id uuid.UUID, preloadAssociations []stri
 	return &snapEntry, nil
 }
 
-func (sp *SnapsRepository) GetEntryByName(name string, preloadAssociations []string) (*models.SnapEntry, error) {
+func (sp *SnapsRepository) GetEntryByName(name string, preloadAssociations []string) (*models.SnapEntry, *cerrors.CustomError) {
 	if preloadAssociations == nil {
 		preloadAssociations = []string{}
 	}
@@ -508,12 +508,9 @@ func (sp *SnapsRepository) GetEntryByName(name string, preloadAssociations []str
 		WHERE name = $1
 	`
 	err := sp.db.Get(&snapEntry, query, name)
-	if err == sql.ErrNoRows {
+	if err != nil {
 		logrus.Error(err)
-		return nil, errors.New(cerrors.ResourceNotFound)
-	} else if err != nil {
-		logrus.Error(err)
-		return nil, errors.New(cerrors.DatabaseError)
+		return nil, cerrors.ConvertError(err, fmt.Sprintf("resource not found by name = '%s'"), name)
 	}
 
 	switch {
@@ -789,7 +786,7 @@ func (sp *SnapsRepository) updateMeta(metaBytes *[]byte) error {
 		snapEntry.Type = &defaultType
 	}
 	if snapMeta.Type != "" {
-	snapEntry.Type = &snapMeta.Type
+		snapEntry.Type = &snapMeta.Type
 	} else {
 		logrus.Warnf("Snap %s had an empty type from its metadata, using default 'app'", snapEntry.Name)
 	}
