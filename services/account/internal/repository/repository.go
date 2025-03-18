@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	cerrors "github.com/idlab-discover/kebeng/services/account/internal/errors"
+	cerrors "github.com/idlab-discover/kebeng/common/error"
 	"github.com/idlab-discover/kebeng/services/account/internal/models"
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"

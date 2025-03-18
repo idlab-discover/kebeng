@@ -1,4 +1,4 @@
-package errors
+package error
 
 const (
 	AssertionCreationFailed    = "assertion-creation-failed"
