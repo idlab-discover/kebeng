@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"crypto"
+	"database/sql"
 	"fmt"
 	"io"
 	"time"
@@ -15,109 +16,124 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/snapcore/snapd/snap"
 	"github.com/spf13/viper"
-	"gorm.io/gorm"
+)
+
+const (
+	ENTRY    = "entry"
+	TRACK    = "track"
+	CHANNEL  = "channel"
+	BRANCH   = "branch"
+	REVISION = "revision"
+	UPLOAD   = "upload"
+	COMMENT  = "comment"
 )
 
 // Entry = base information, first entry point, global information...
 type SnapEntry struct {
-	gorm.Model
-    ID             uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey" db:"id"`
-    CreatedAt       time.Time   `db:"created_at"`
-    UpdatedAt       time.Time   `db:"updated_at"`
-    DeletedAt       *time.Time  `db:"deleted_at"`
-    Name           string    `json:"name" db:"name"`
-    Revisions      []SnapRevision 
-    Type           string   `json:"type" db:"type"`
-    Confinement    string   `json:"confinement" db:"confinement"`
-    Base           string  `json:"base" db:"base"`
-    Private        bool   `json:"private" db:"private"`
-	Uploads        []SnapUpload 
-    AccountID      uuid.UUID `db:"account_id"`
-    Status         string         `db:"status"`  // NOT YET IMPLEMENTED
-	Price          float64        `db:"price"`   // NOT YET IMPLEMENTED
-    Store          string         `db:"store"`   // NOT YET IMPLEMENTED
-    IconURL        string         `db:"icon_url"`// NOT YET IMPLEMENTED
-	LatestComments []SnapComment                 // NOT YET IMPLEMENTED
+	ID             uuid.UUID    `db:"id"`
+	CreatedAt      time.Time    `db:"created_at"`
+	UpdatedAt      time.Time    `db:"updated_at"`
+	DeletedAt      *time.Time   `db:"deleted_at"`
+	Name           string       `json:"name" db:"name"`
+	Revisions      []*SnapRevision
+	Type           *string      `json:"type" db:"type"`
+	Confinement    *string      `json:"confinement" db:"confinement"`
+	Base           *string      `json:"base" db:"base"`
+	Private        *bool        `json:"private" db:"private"`
+	Uploads        []*SnapUpload
+	AccountID      uuid.UUID    `db:"account_id"`
+	Status         *string      `db:"status"`   // NOT YET IMPLEMENTED
+	Price          *float64     `db:"price"`    // NOT YET IMPLEMENTED
+	Store          *string      `db:"store"`    // NOT YET IMPLEMENTED
+	IconURL        *string      `db:"icon_url"` // NOT YET IMPLEMENTED
+	LatestComments []*SnapComment  // NOT YET IMPLEMENTED
 }
 
 // Track = latest, or things like 2.0, 2.1, 2.2
 type SnapTrack struct {
-	gorm.Model
-	Name string
-
+	ID          uuid.UUID    `db:"id"`
+	CreatedAt   time.Time    `db:"created_at"`
+	UpdatedAt   time.Time    `db:"updated_at"`
+	DeletedAt   sql.NullTime `db:"deleted_at"`
+	Name        string       `json:"name" db:"name"`
 	SnapEntryID uuid.UUID
-	SnapEntry   SnapEntry
-
-	Risks []SnapChannel
+	SnapEntry   *SnapEntry
+	Risks       []*SnapChannel
 }
 
 // Channel = stable, beta, edge, candidate
 type SnapChannel struct {
-	gorm.Model
-	ID          string `gorm:"primaryKey"`
-	Name        string
-	SnapTrackID uint
-	SnapEntryID uuid.UUID
-	SnapEntry   SnapEntry
+	ID          uuid.UUID    `db:"id"`
+	CreatedAt   time.Time    `db:"created_at"`
+	UpdatedAt   time.Time    `db:"updated_at"`
+	DeletedAt   sql.NullTime `db:"deleted_at"`
+	Name        string       `json:"name" db:"name"`
+	SnapTrackID uuid.UUID    `db:"snap_track_id"`
+	SnapEntryID uuid.UUID    `db:"snap_entry_id"`
+	SnapEntry   *SnapEntry
 
-	// TODO: fix this -- currently this is monotonically incrementing across ALL revisions, it should just be a given snap
-	RevisionID string
-	Revision   SnapRevision
+	RevisionID uuid.UUID `db:"revision_id"`
+	Revision   *SnapRevision
 
-	Branches []SnapBranch
+	Branches []*SnapBranch
 }
 
 // keep this for later... maybe
 type SnapBranch struct {
-	gorm.Model
-	ID          string `gorm:"primaryKey"`
-	Name        string
-	SnapRiskID  uint
-	SnapEntryID uuid.UUID
-	SnapEntry   SnapEntry
+	ID          uuid.UUID `db:"id"`
+	Name        string    `json:"name" db:"name"`
+	SnapRiskID  uuid.UUID `db:"snap_risk_id"`
+	SnapEntryID uuid.UUID `db:"snap_entry_id"`
+	SnapEntry   *SnapEntry
 
-	RevisionID uint
-	Revision   SnapRevision
+	RevisionID uuid.UUID `db:"revision_id"`
+	Revision   *SnapRevision
 }
 
 // Revision = a specific version of a snap, not necessarily a release
 type SnapRevision struct {
-	gorm.Model
-	ID             string `gorm:"primaryKey"`
-	SnapFilename   string
-	SnapEntryID    uuid.UUID
-	SHA3_384       string
-	SHA3384Encoded string `gorm:"column:sha3_384_encoded"`
-	Size           uint64
-	SequenceNumber uint
-    Architectures  []string // TODO: check if this is supposed to be stored here
-    Status          string
-    Version         string
-    Since          time.Time
+	ID               uuid.UUID    `db:"id"`
+	CreatedAt        time.Time    `db:"created_at"`
+	UpdatedAt        time.Time    `db:"updated_at"`
+	DeletedAt        sql.NullTime `db:"deleted_at"`
+	SnapFilename     string       `db:"snap_filename"`
+	SnapEntryID      uuid.UUID    `db:"snap_entry_id"`
+	SHA3_384         string       `db:"sha3_384"`
+	SHA3_384_Encoded string       `db:"sha3_384_encoded"`
+	Size             uint64       `db:"size"`
+	SequenceNumber   uint         `db:"sequence_number"`
+	Architectures    []string     `db:"architectures"` // TODO: check if this is supposed to be stored here
+	Status           string       `db:"status"`
+	Version          string       `db:"version"`
+	Since            time.Time    `db:"since"`
 }
 
 // SnapUpload = a specific upload of a snap, with a specific file, info about file, etc
 type SnapUpload struct {
-	gorm.Model
-	ID       string `gorm:"primaryKey"`
-	Name     string
-	UpDownID string
-	Filesize uint
+	ID        uuid.UUID    `db:"id"`
+	CreatedAt time.Time    `db:"created_at"`
+	UpdatedAt time.Time    `db:"updated_at"`
+	DeletedAt sql.NullTime `db:"deleted_at"`
+	Name      string       `db:"name"`
+	UpDownID  string       `db:"up_down_id"`
+	Filesize  uint         `db:"filesize"`
 	// Channels is a comma-separated string of channels
-	Channels    string
-	SnapEntryID uuid.UUID
-	SnapEntry   SnapEntry
+	Channels    string    `db:"channels"`
+	SnapEntryID uuid.UUID `db:"snap_entry_id"`
+	SnapEntry   *SnapEntry
 }
 
 type SnapComment struct {
-	gorm.Model
-	ID          uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	AuthorID    uuid.UUID
-	Since       time.Time
-	Reason      string
-	Comment     string
-	SnapEntryID uuid.UUID
-	SnapEntry   SnapEntry
+	ID          uuid.UUID    `db:"id"`
+	CreatedAt   time.Time    `db:"created_at"`
+	UpdatedAt   time.Time    `db:"updated_at"`
+	DeletedAt   sql.NullTime `db:"deleted_at"`
+	AuthorID    uuid.UUID    `db:"author_id"`
+	Since       time.Time    `db:"since"`
+	Reason      string       `json:"reason"`
+	Comment     string       `json:"comment"`
+	SnapEntryID uuid.UUID    `db:"snap_entry_id"`
+	SnapEntry   *SnapEntry
 }
 
 func (se *SnapEntry) ToStoreSnap(snapRevision *SnapRevision) (*responses.StoreSnap, error) {
@@ -137,7 +153,7 @@ func (se *SnapEntry) ToStoreSnap(snapRevision *SnapRevision) (*responses.StoreSn
 
 	storeSnap := &responses.StoreSnap{
 		Name:     se.Name,
-		Type:     snap.Type(se.Type),
+		Type:     snap.Type(*se.Type),
 		SnapID:   se.ID.String(),
 		Revision: int(snapRevision.SequenceNumber),
 		Download: responses.StoreSnapDownload{
@@ -145,8 +161,8 @@ func (se *SnapEntry) ToStoreSnap(snapRevision *SnapRevision) (*responses.StoreSn
 			Size:     snapRevision.Size,
 			URL:      downloadURL,
 		},
-		Confinement: se.Confinement,
-		Base:        &se.Base,
+		Confinement: *se.Confinement,
+		Base:        se.Base,
 	}
 
 	return storeSnap, nil

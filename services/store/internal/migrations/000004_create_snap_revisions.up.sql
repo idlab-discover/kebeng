@@ -1,10 +1,10 @@
-create sequence public.snap_revisions_id_seq;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE IF NOT EXISTS public.snap_revisions
 (
-    id bigint NOT NULL DEFAULT nextval('snap_revisions_id_seq'::regclass),
-    created_at timestamp with time zone,
-    updated_at timestamp with time zone,
+    id uuid NOT NULL DEFAULT uuid_generate_v4(),
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
     deleted_at timestamp with time zone,
     snap_filename text COLLATE pg_catalog."default",
     build_assertion_filename text COLLATE pg_catalog."default",

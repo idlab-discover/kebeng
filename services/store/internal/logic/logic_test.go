@@ -9,14 +9,14 @@ import (
 	"github.com/idlab-discover/kebeng/services/store/internal/errors"
 	"github.com/idlab-discover/kebeng/services/store/internal/repositories"
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
+	"github.com/jmoiron/sqlx"
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
 )
 
 func TestRegisterSnapName(t *testing.T) {
 	// Connect to an in-memory database
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	db, err := sqlx.Open("sqlite3", ":memory:")
 	if err != nil {
 		t.Fatalf("Failed to connect to database: %v", err)
 	}
@@ -40,12 +40,12 @@ func TestRegisterSnapName(t *testing.T) {
 	);`
 
 	// Execute the SQL to create the table
-	err = db.Exec(sql).Error
+	_, err = db.Exec(sql)
 	if err != nil {
-		panic("Failed to create table")
+		t.Fatalf("Failed to create table: %v", err)
 	}
 
-	repo := repositories.NewSnapsRepository(db, nil)
+	repo := repositories.NewSnapsRepository(db)
 	service := NewStoreLogic(repo)
 
 	tests := []struct {
@@ -123,7 +123,7 @@ func TestRegisterSnapName(t *testing.T) {
 
 func TestGetEntries(t *testing.T) {
 	// Connect to an in-memory database
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	db, err := sqlx.Open("sqlite3", ":memory:")
 	if err != nil {
 		t.Fatalf("Failed to connect to database: %v", err)
 	}
@@ -146,18 +146,23 @@ func TestGetEntries(t *testing.T) {
 		deleted_at TIMESTAMP
 	);`
 
-	err = db.Exec(sql).Error
+	_, err = db.Exec(sql)
 	if err != nil {
-		panic("Failed to create table")
+		t.Fatalf("Failed to create table: %v", err)
 	}
 
-	repo := repositories.NewSnapsRepository(db, nil)
+	repo := repositories.NewSnapsRepository(db)
 	service := NewStoreLogic(repo)
 
 	// Seed database with test entry
 	testID := uuid.New().String()
 	db.Exec("INSERT INTO snap_entries (id, name, type, confinement, base, private) VALUES (?, ?, ?, ?, ?, ?)",
 		testID, "test-snap", "app", "strict", "core20", false)
+
+	var typeString = "app"
+	var confinementString = "strict"
+	var baseString = "core20"
+	var privateBool = false
 
 	tests := []struct {
 		name     string
@@ -174,10 +179,10 @@ func TestGetEntries(t *testing.T) {
 					{
 						Id:          testID,
 						SnapName:    "test-snap",
-						Type:        "app",
-						Confinement: "strict",
-						Base:        "core20",
-						Private:     false,
+						Type:        &typeString,
+						Confinement: &confinementString,
+						Base:        &baseString,
+						Private:     &privateBool,
 					},
 				},
 				Errors: nil,
@@ -238,10 +243,10 @@ func TestGetEntries(t *testing.T) {
 					{
 						Id:          testID,
 						SnapName:    "test-snap",
-						Type:        "app",
-						Confinement: "strict",
-						Base:        "core20",
-						Private:     false,
+						Type:        &typeString,
+						Confinement: &confinementString,
+						Base:        &baseString,
+						Private:     &privateBool,
 					},
 				},
 				Errors: nil,
@@ -278,7 +283,7 @@ func TestGetEntries(t *testing.T) {
 
 func TestGetEntryById(t *testing.T) {
 	// Connect to an in-memory database
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	db, err := sqlx.Open("sqlite3", ":memory:")
 	if err != nil {
 		t.Fatalf("Failed to connect to database: %v", err)
 	}
@@ -301,18 +306,23 @@ func TestGetEntryById(t *testing.T) {
 		deleted_at TIMESTAMP
 	);`
 
-	err = db.Exec(sql).Error
+	_, err = db.Exec(sql)
 	if err != nil {
-		panic("Failed to create table")
+		t.Fatalf("Failed to create table: %v", err)
 	}
 
-	repo := repositories.NewSnapsRepository(db,nil)
+	repo := repositories.NewSnapsRepository(db)
 	service := NewStoreLogic(repo)
 
 	// Seed database with test entry
 	testID := uuid.New().String()
 	db.Exec("INSERT INTO snap_entries (id, name, type, confinement, base, private) VALUES (?, ?, ?, ?, ?, ?)",
 		testID, "test-snap", "app", "strict", "core20", false)
+
+	var typeString = "app"
+	var confinementString = "strict"
+	var baseString = "core20"
+	var privateBool = false
 
 	tests := []struct {
 		name     string
@@ -327,10 +337,10 @@ func TestGetEntryById(t *testing.T) {
 			expected: &proto.GetEntryResponse{
 				Id:          testID,
 				SnapName:    "test-snap",
-				Type:        "app",
-				Confinement: "strict",
-				Base:        "core20",
-				Private:     false,
+				Type:        &typeString,
+				Confinement: &confinementString,
+				Base:        &baseString,
+				Private:     &privateBool,
 			},
 		},
 		{
@@ -391,7 +401,7 @@ func TestGetEntryById(t *testing.T) {
 
 func TestGetEntryByName(t *testing.T) {
 	// Connect to an in-memory database
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	db, err := sqlx.Open("sqlite3", ":memory:")
 	if err != nil {
 		t.Fatalf("Failed to connect to database: %v", err)
 	}
@@ -414,12 +424,12 @@ func TestGetEntryByName(t *testing.T) {
 		deleted_at TIMESTAMP
 	);`
 
-	err = db.Exec(sql).Error
+	_, err = db.Exec(sql)
 	if err != nil {
-		panic("Failed to create table")
+		t.Fatalf("Failed to create table: %v", err)
 	}
 
-	repo := repositories.NewSnapsRepository(db,nil)
+	repo := repositories.NewSnapsRepository(db)
 	service := NewStoreLogic(repo)
 
 	// Seed database with test entry
@@ -427,6 +437,11 @@ func TestGetEntryByName(t *testing.T) {
 	testName := "test-snap"
 	db.Exec("INSERT INTO snap_entries (id, name, type, confinement, base, private) VALUES (?, ?, ?, ?, ?, ?)",
 		testID, testName, "app", "strict", "core20", false)
+
+	var typeString = "app"
+	var confinementString = "strict"
+	var baseString = "core20"
+	var privateBool = false
 
 	tests := []struct {
 		name     string
@@ -441,10 +456,10 @@ func TestGetEntryByName(t *testing.T) {
 			expected: &proto.GetEntryResponse{
 				Id:          testID,
 				SnapName:    testName,
-				Type:        "app",
-				Confinement: "strict",
-				Base:        "core20",
-				Private:     false,
+				Type:        &typeString,
+				Confinement: &confinementString,
+				Base:        &baseString,
+				Private:     &privateBool,
 			},
 		},
 		{
@@ -491,7 +506,7 @@ func TestGetEntryByName(t *testing.T) {
 
 func TestGetRevisions(t *testing.T) {
 	// Connect to an in-memory database
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	db, err := sqlx.Open("sqlite3", ":memory:")
 	if err != nil {
 		t.Fatalf("Failed to connect to database: %v", err)
 	}
@@ -524,12 +539,12 @@ func TestGetRevisions(t *testing.T) {
 		FOREIGN KEY(snap_entry_id) REFERENCES snap_entries(id)
 	);`
 
-	err = db.Exec(sql).Error
+	_, err = db.Exec(sql)
 	if err != nil {
-		t.Fatalf("Failed to create tables: %v", err)
+		t.Fatalf("Failed to create table: %v", err)
 	}
 
-	repo := repositories.NewSnapsRepository(db,nil)
+	repo := repositories.NewSnapsRepository(db)
 	service := NewStoreLogic(repo)
 
 	// Seed database with test entry and revision
@@ -539,10 +554,6 @@ func TestGetRevisions(t *testing.T) {
 	testSequence := uint64(1)
 	db.Exec("INSERT INTO snap_entries (id, name) VALUES (?, ?)", testSnapID, testSnapName)
 	db.Exec("INSERT INTO snap_revisions (id, snap_entry_id, sequence_number) VALUES (?, ?, ?)", testRevisionID, testSnapID, testSequence)
-
-	if db.Error != nil {
-		t.Fatalf("Failed to seed database: %v", db.Error)
-	}
 
 	tests := []struct {
 		name     string
@@ -625,7 +636,7 @@ func TestGetRevisions(t *testing.T) {
 
 func TestGetRevisionByNameAndSequence(t *testing.T) {
 	// Connect to an in-memory database
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	db, err := sqlx.Open("sqlite3", ":memory:")
 	if err != nil {
 		t.Fatalf("Failed to connect to database: %v", err)
 	}
@@ -658,12 +669,12 @@ func TestGetRevisionByNameAndSequence(t *testing.T) {
 		FOREIGN KEY(snap_entry_id) REFERENCES snap_entries(id)
 	);`
 
-	err = db.Exec(sql).Error
+	_, err = db.Exec(sql)
 	if err != nil {
-		t.Fatalf("Failed to create tables: %v", err)
+		t.Fatalf("Failed to create table: %v", err)
 	}
 
-	repo := repositories.NewSnapsRepository(db, nil)
+	repo := repositories.NewSnapsRepository(db)
 	service := NewStoreLogic(repo)
 
 	// Seed test data
@@ -673,10 +684,6 @@ func TestGetRevisionByNameAndSequence(t *testing.T) {
 	testSequence := uint64(1)
 	db.Exec("INSERT INTO snap_entries (id, name) VALUES (?, ?)", testSnapID, testSnapName)
 	db.Exec("INSERT INTO snap_revisions (id, snap_entry_id, sequence_number) VALUES (?, ?, ?)", testRevisionID, testSnapID, testSequence)
-
-	if db.Error != nil {
-		t.Fatalf("Failed to seed database: %v", db.Error)
-	}
 
 	tests := []struct {
 		name     string
