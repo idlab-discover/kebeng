@@ -21,7 +21,7 @@ jobs:
         id: account_changed_files
         uses: tj-actions/changed-files@v45
         with:
-          files: ./services/account/...
+          files: ./services/account/*
       
       - name: Print changed files boolean
         run: echo "${{ steps.account_changed_files.outputs.any_changed }}"
