@@ -19,10 +19,19 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: '1.20'
+        go-version: '1.22.2'
 
-    - name: Build
-      run: go build -v ./...
+    - name: Build Account service
+      run: go build -v ./services/account
+
+    - name: Build Assertions service
+      run: go build -v ./services/assertion
+    
+    - name: Build Gateway service
+      run: go build -v ./services/gateway
+    
+    - name: Build Store service
+      run: go build -v ./services/store
 
     - name: Test
       run: go test -v ./services/account ./services/assertion ./services/gateway ./services/store
