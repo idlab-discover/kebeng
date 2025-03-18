@@ -10,6 +10,7 @@ import (
 
 	embeddedpostgres "github.com/fergusstrange/embedded-postgres"
 	"github.com/google/uuid"
+	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3" // SQLite driver
 	"github.com/sirupsen/logrus"
@@ -82,10 +83,10 @@ func TestCreateAccount(t *testing.T) {
 	created_at := time.Now()
 	updated_at := time.Now()
 	tests := []struct {
-		name                 string
-		account              *models.Account
-		expectError          bool
-		expectedErrorMessage string
+		name              string
+		account           *models.Account
+		expectError       bool
+		expectedErrorCode string
 	}{
 		{
 			name: "Successful account creation",
@@ -109,8 +110,8 @@ func TestCreateAccount(t *testing.T) {
 				CreatedAt:    &created_at,
 				UpdatedAt:    &updated_at,
 			},
-			expectError:          true,
-			expectedErrorMessage: "duplicate key value violates unique constraint \"accounts_username_key\"",
+			expectError:       true,
+			expectedErrorCode: cerror.AlreadyRegistered,
 		},
 		{
 			name: "Duplicate email",
@@ -122,8 +123,8 @@ func TestCreateAccount(t *testing.T) {
 				CreatedAt:    &created_at,
 				UpdatedAt:    &updated_at,
 			},
-			expectError:          true,
-			expectedErrorMessage: "duplicate key value violates unique constraint \"accounts_email_key\"",
+			expectError:       true,
+			expectedErrorCode: cerror.AlreadyRegistered,
 		},
 		{
 			name: "Missing username",
@@ -135,8 +136,8 @@ func TestCreateAccount(t *testing.T) {
 				CreatedAt:    &created_at,
 				UpdatedAt:    &updated_at,
 			},
-			expectError:          true,
-			expectedErrorMessage: "violates check constraint \"accounts_username_check\"",
+			expectError:       true,
+			expectedErrorCode: cerror.InvalidField,
 		},
 		{
 			name: "Missing email",
@@ -148,8 +149,8 @@ func TestCreateAccount(t *testing.T) {
 				CreatedAt:    &created_at,
 				UpdatedAt:    &updated_at,
 			},
-			expectError:          true,
-			expectedErrorMessage: "violates check constraint \"accounts_email_check\"",
+			expectError:       true,
+			expectedErrorCode: cerror.InvalidField,
 		},
 		{
 			name: "Missing password hash",
@@ -161,21 +162,21 @@ func TestCreateAccount(t *testing.T) {
 				CreatedAt:    &created_at,
 				UpdatedAt:    &updated_at,
 			},
-			expectError:          true,
-			expectedErrorMessage: "violates check constraint \"accounts_password_hash_check\"",
+			expectError:       true,
+			expectedErrorCode: cerror.InvalidField,
 		},
 		{
 			name: "Missing display name",
 			account: &models.Account{
-				DisplayName:  "", // missing display name
+				// missing display name
 				Username:     "aliceMissingDisplay",
 				Email:        "alice_missing_display@example.com",
 				PasswordHash: "hashMissing",
 				CreatedAt:    &created_at,
 				UpdatedAt:    &updated_at,
 			},
-			expectError:          true,
-			expectedErrorMessage: "violates check constraint \"accounts_display_name_check\"",
+			expectError:       true,
+			expectedErrorCode: cerror.InvalidField,
 		},
 	}
 
@@ -184,15 +185,12 @@ func TestCreateAccount(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			createdAccount, err := globalRepo.CreateAccount(context.Background(), tt.account)
 			if tt.expectError {
-				// We expect an error, so assert that err is non-nil.
-				assert.Error(t, err, "Expected an error during account creation")
-				if err != nil {
-					assert.Contains(t, err.Error(), tt.expectedErrorMessage)
-				}
+				// check that error code is what it should be
+				assert.Equal(t, err.GetCode(), tt.expectedErrorCode)
 			} else {
 				fmt.Printf("created account: %+v\n", createdAccount)
 				// No error expected, so assert that err is nil and the returned account is correct.
-				assert.NoError(t, err, "Did not expect an error during account creation")
+				assert.Nil(t, err, "Did not expect an error during account creation")
 				assert.NotNil(t, createdAccount, "Created account should not be nil")
 				assert.Equal(t, tt.account.DisplayName, createdAccount.DisplayName)
 				assert.Equal(t, tt.account.Username, createdAccount.Username)
@@ -246,10 +244,10 @@ func TestUpdateAccount(t *testing.T) {
 	validation := "validated"
 	// Table-driven tests for UpdateAccount.
 	tests := []struct {
-		name                 string
-		updateAccount        *models.Account
-		expectError          bool
-		expectedErrorMessage string // Expected substring in the error message.
+		name              string
+		updateAccount     *models.Account
+		expectError       bool
+		expectedErrorCode string // Expected substring in the error message.
 	}{
 		{
 			name: "Successful update",
@@ -275,8 +273,8 @@ func TestUpdateAccount(t *testing.T) {
 				Validation:   &validation,
 				UpdatedAt:    ptrTime(time.Now()),
 			},
-			expectError:          true,
-			expectedErrorMessage: "no account updated",
+			expectError:       true,
+			expectedErrorCode: cerror.DatabaseError,
 		},
 	}
 
@@ -284,12 +282,9 @@ func TestUpdateAccount(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			updated, err := globalRepo.UpdateAccount(context.Background(), tt.updateAccount)
 			if tt.expectError {
-				assert.Error(t, err, "Expected an error during account update")
-				if err != nil {
-					assert.Contains(t, err.Error(), tt.expectedErrorMessage)
-				}
+				assert.Equal(t, err.GetCode(), tt.expectedErrorCode)
 			} else {
-				assert.NoError(t, err, "Did not expect an error during account update")
+				assert.Nil(t, err, "Did not expect an error during account update")
 				assert.NotNil(t, updated, "Updated account should not be nil")
 				assert.Equal(t, tt.updateAccount.DisplayName, updated.DisplayName)
 				assert.Equal(t, tt.updateAccount.Username, updated.Username)
@@ -336,11 +331,11 @@ func TestDeleteAccount(t *testing.T) {
 	t.Logf("Inserted initial account: %+v", original)
 
 	t.Run("delete existing account", func(t *testing.T) {
-		err := globalRepo.DeleteAccount(context.Background(), original.ID)
-		assert.NoError(t, err, "expected no error when deleting an existing account")
+		cerr := globalRepo.DeleteAccount(context.Background(), original.ID)
+		assert.Nil(t, cerr, "expected no error when deleting an existing account")
 
 		var count int
-		err = globalDB.GetContext(context.Background(), &count, "SELECT COUNT(*) FROM accounts WHERE id = $1", original.ID)
+		err := globalDB.GetContext(context.Background(), &count, "SELECT COUNT(*) FROM accounts WHERE id = $1", original.ID)
 		assert.NoError(t, err, "failed to count rows")
 		assert.Equal(t, 0, count, "account should be deleted")
 	})
@@ -348,6 +343,6 @@ func TestDeleteAccount(t *testing.T) {
 	t.Run("delete non-existing account", func(t *testing.T) {
 		nonExistentID := uuid.New()
 		err := globalRepo.DeleteAccount(context.Background(), nonExistentID)
-		assert.NoError(t, err, "expected no error when deleting a non-existent account")
+		assert.Nil(t, err, "expected no error when deleting a non-existent account")
 	})
 }

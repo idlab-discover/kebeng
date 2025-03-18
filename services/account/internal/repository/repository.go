@@ -2,38 +2,36 @@ package repository
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 	"slices"
 	"time"
 
 	"github.com/google/uuid"
-	cerrors "github.com/idlab-discover/kebeng/common/error"
+	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/idlab-discover/kebeng/services/account/internal/models"
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
 )
 
-// TODO: fix error handling better
+// TODO: fix *cerror.CustomError handling better
 
 // IAccountRepository defines the interface for account-related database operations
 type IAccountRepository interface {
-	CreateAccount(ctx context.Context, account *models.Account) (*models.Account, error)
-	UpdateAccount(ctx context.Context, account *models.Account) (*models.Account, error)
-	DeleteAccount(ctx context.Context, accountID uuid.UUID) error
+	CreateAccount(ctx context.Context, account *models.Account) (*models.Account, *cerror.CustomError)
+	UpdateAccount(ctx context.Context, account *models.Account) (*models.Account, *cerror.CustomError)
+	DeleteAccount(ctx context.Context, accountID uuid.UUID) *cerror.CustomError
 
-	GetAccountByEmail(ctx context.Context, email string, associations []string) (*models.Account, error)
-	GetAccountByID(ctx context.Context, accountID uuid.UUID, associations []string) (*models.Account, error)
-	GetAccountByUsername(ctx context.Context, username string, associations []string) (*models.Account, error)
+	GetAccountByEmail(ctx context.Context, email string, associations []string) (*models.Account, *cerror.CustomError)
+	GetAccountByID(ctx context.Context, accountID uuid.UUID, associations []string) (*models.Account, *cerror.CustomError)
+	GetAccountByUsername(ctx context.Context, username string, associations []string) (*models.Account, *cerror.CustomError)
 
-	AddKeyToAccountByEmail(ctx context.Context, name, sha3384, encodedPublicKey, accountEmail string) (*models.Key, error)
-	GetKeyBySHA3384(ctx context.Context, sha3384 string) (*models.Key, error)
-	GetKeysByAccountID(ctx context.Context, accountID uuid.UUID) ([]*models.Key, error)
-	GetSSHKeysByAccountID(ctx context.Context, accountID uuid.UUID) ([]models.SSHKey, error)
+	AddKeyToAccountByEmail(ctx context.Context, name, sha3384, encodedPublicKey, accountEmail string) (*models.Key, *cerror.CustomError)
+	GetKeyBySHA3384(ctx context.Context, sha3384 string) (*models.Key, *cerror.CustomError)
+	GetKeysByAccountID(ctx context.Context, accountID uuid.UUID) ([]*models.Key, *cerror.CustomError)
+	GetSSHKeysByAccountID(ctx context.Context, accountID uuid.UUID) ([]models.SSHKey, *cerror.CustomError)
 
-	FilterKeys(ctx context.Context, whereModel *models.Key, takeFirst bool) (*models.Key, error)
-	FilterAccounts(ctx context.Context, filter *models.Account, takeFirst bool) ([]*models.Account, error)
+	FilterKeys(ctx context.Context, whereModel *models.Key, takeFirst bool) (*models.Key, *cerror.CustomError)
+	FilterAccounts(ctx context.Context, filter *models.Account, takeFirst bool) ([]*models.Account, *cerror.CustomError)
 }
 
 type AccountRepository struct {
@@ -44,35 +42,34 @@ func NewAccountRepository(db *sqlx.DB) *AccountRepository {
 	return &AccountRepository{db: db}
 }
 
-func (a *AccountRepository) CreateAccount(ctx context.Context, account *models.Account) (*models.Account, error) {
+func (a *AccountRepository) CreateAccount(ctx context.Context, account *models.Account) (*models.Account, *cerror.CustomError) {
 	query := `
-        INSERT INTO accounts (display_name, username, email, password_hash, created_at, updated_at)
-        VALUES (:display_name, :username, :email, :password_hash, :created_at, :updated_at)
+        INSERT INTO accounts (display_name, username, email, password_hash, updated_at)
+        VALUES (:display_name, :username, :email, :password_hash, :updated_at)
         RETURNING id, display_name, username, email, password_hash, validation, created_at, updated_at, deleted_at
     `
 	rows, err := a.db.NamedQueryContext(ctx, query, account)
-	if err == sql.ErrNoRows {
+	if err != nil {
 		logrus.Error(err)
-		return nil, errors.New(cerrors.ResourceNotFound)
-	} else if err != nil {
-		logrus.Error(err)
-		return nil, err
+		return nil, cerror.ConvertError(err)
 	}
 	defer rows.Close()
 
 	var newAccount models.Account
 	if rows.Next() {
 		if err := rows.StructScan(&newAccount); err != nil {
-			return nil, err
+			logrus.Error(err)
+			return nil, cerror.ConvertError(err)
 		}
 	} else {
-		return nil, fmt.Errorf("could not create account %+v", account)
+		logrus.Error(err)
+		return nil, cerror.NewCustomError(cerror.DatabaseError, "failed to insert account")
 	}
 
 	return account, nil
 }
 
-func (a *AccountRepository) UpdateAccount(ctx context.Context, account *models.Account) (*models.Account, error) {
+func (a *AccountRepository) UpdateAccount(ctx context.Context, account *models.Account) (*models.Account, *cerror.CustomError) {
 	query := `
         UPDATE accounts
         SET display_name    = :display_name,
@@ -85,43 +82,39 @@ func (a *AccountRepository) UpdateAccount(ctx context.Context, account *models.A
         RETURNING id, display_name, username, email, password_hash, validation, created_at, updated_at, deleted_at
     `
 	rows, err := a.db.NamedQueryContext(ctx, query, account)
-	if err == sql.ErrNoRows {
+	if err != nil {
 		logrus.Error(err)
-		return nil, errors.New(cerrors.ResourceNotFound)
-	} else if err != nil {
-		logrus.Error(err)
-		return nil, err
+		return nil, cerror.ConvertError(err)
 	}
 	defer rows.Close()
 
 	var updated models.Account
 	if rows.Next() {
 		if err := rows.StructScan(&updated); err != nil {
-			return nil, err
+			logrus.Error(err)
+			return nil, cerror.ConvertError(err)
 		}
 	} else {
-		return nil, fmt.Errorf("no account updated")
+		logrus.Error(err)
+		return nil, cerror.NewCustomError(cerror.DatabaseError, "failed to update account")
 	}
 	return &updated, nil
 }
 
-func (a *AccountRepository) DeleteAccount(ctx context.Context, accountID uuid.UUID) error {
+func (a *AccountRepository) DeleteAccount(ctx context.Context, accountID uuid.UUID) *cerror.CustomError {
 	query := `DELETE FROM accounts WHERE id = $1`
 	_, err := a.db.ExecContext(ctx, query, accountID)
-	return err
+	return cerror.ConvertError(err)
 }
 
-func (a *AccountRepository) GetAccountByEmail(ctx context.Context, email string, associations []string) (*models.Account, error) {
+func (a *AccountRepository) GetAccountByEmail(ctx context.Context, email string, associations []string) (*models.Account, *cerror.CustomError) {
 	var account models.Account
 	query := `SELECT * FROM accounts WHERE email = $1`
 
 	err := a.db.Get(&account, query, email)
-	if err == sql.ErrNoRows {
+	if err != nil {
 		logrus.Error(err)
-		return nil, errors.New(cerrors.ResourceNotFound)
-	} else if err != nil {
-		logrus.Error(err)
-		return nil, errors.New(cerrors.DatabaseError)
+		return nil, cerror.ConvertError(err)
 	}
 
 	// check if all associations are requested
@@ -139,7 +132,6 @@ func (a *AccountRepository) GetAccountByEmail(ctx context.Context, email string,
 			case models.SSHKEY:
 				sshKeys, err := a.GetSSHKeysByAccountID(ctx, account.ID)
 				if err != nil {
-					logrus.Error(err)
 					return nil, err
 				}
 				account.SSHKeys = sshKeys
@@ -150,17 +142,14 @@ func (a *AccountRepository) GetAccountByEmail(ctx context.Context, email string,
 	return &account, nil
 }
 
-func (a *AccountRepository) GetAccountByID(ctx context.Context, accountID uuid.UUID, associations []string) (*models.Account, error) {
+func (a *AccountRepository) GetAccountByID(ctx context.Context, accountID uuid.UUID, associations []string) (*models.Account, *cerror.CustomError) {
 	var account models.Account
 	query := `SELECT * FROM accounts WHERE id = $1`
 
 	err := a.db.Get(&account, query, accountID)
-	if err == sql.ErrNoRows {
+	if err != nil {
 		logrus.Error(err)
-		return nil, errors.New(cerrors.ResourceNotFound)
-	} else if err != nil {
-		logrus.Error(err)
-		return nil, errors.New(cerrors.DatabaseError)
+		return nil, cerror.ConvertError(err)
 	}
 
 	// Check if all associations are requested.
@@ -177,7 +166,6 @@ func (a *AccountRepository) GetAccountByID(ctx context.Context, accountID uuid.U
 			case models.SSHKEY:
 				sshKeys, err := a.GetSSHKeysByAccountID(ctx, account.ID)
 				if err != nil {
-					logrus.Error(err)
 					return nil, err
 				}
 				account.SSHKeys = sshKeys
@@ -188,17 +176,13 @@ func (a *AccountRepository) GetAccountByID(ctx context.Context, accountID uuid.U
 	return &account, nil
 }
 
-func (a *AccountRepository) GetAccountByUsername(ctx context.Context, username string, associations []string) (*models.Account, error) {
+func (a *AccountRepository) GetAccountByUsername(ctx context.Context, username string, associations []string) (*models.Account, *cerror.CustomError) {
 	var account models.Account
 	query := `SELECT * FROM accounts WHERE username = $1`
 
 	err := a.db.Get(&account, query, username)
-	if err == sql.ErrNoRows {
-		logrus.Error(err)
-		return nil, errors.New(cerrors.ResourceNotFound)
-	} else if err != nil {
-		logrus.Error(err)
-		return nil, errors.New(cerrors.DatabaseError)
+	if err != nil {
+		return nil, cerror.ConvertError(err)
 	}
 
 	// Check if all associations are requested.
@@ -226,10 +210,10 @@ func (a *AccountRepository) GetAccountByUsername(ctx context.Context, username s
 	return &account, nil
 }
 
-func (a *AccountRepository) AddKeyToAccountByEmail(ctx context.Context, name, sha3384, encodedPublicKey, email string) (*models.Key, error) {
-	acct, err := a.GetAccountByEmail(ctx, email, []string{})
-	if err != nil || acct == nil {
-		return nil, fmt.Errorf("could not find account with email %s: err: %v", email, err)
+func (a *AccountRepository) AddKeyToAccountByEmail(ctx context.Context, name, sha3384, encodedPublicKey, email string) (*models.Key, *cerror.CustomError) {
+	acct, cerr := a.GetAccountByEmail(ctx, email, []string{})
+	if cerr != nil {
+		return nil, cerr
 	}
 
 	// Create a new key value.
@@ -249,67 +233,64 @@ func (a *AccountRepository) AddKeyToAccountByEmail(ctx context.Context, name, sh
 
 	rows, err := a.db.NamedQueryContext(ctx, query, newKey)
 	if err != nil {
-		return nil, err
+		return nil, cerror.ConvertError(err)
 	}
 	defer rows.Close()
 
 	var key models.Key
 	if rows.Next() {
 		if err := rows.StructScan(&key); err != nil {
-			return nil, err
+			return nil, cerror.ConvertError(err)
 		}
 	} else {
-		return nil, fmt.Errorf("failed to insert key")
+		return nil, cerror.NewCustomError(cerror.DatabaseError, "failed to insert key")
 	}
 
 	return &key, nil
 }
 
-func (a *AccountRepository) GetKeyBySHA3384(ctx context.Context, sha3384 string) (*models.Key, error) {
+func (a *AccountRepository) GetKeyBySHA3384(ctx context.Context, sha3384 string) (*models.Key, *cerror.CustomError) {
 	var key models.Key
 	query := `SELECT * FROM keys WHERE sha3384 = $1`
 
 	err := a.db.GetContext(ctx, &key, query, sha3384)
-	if err == sql.ErrNoRows {
-		logrus.Error(err)
-		return nil, errors.New(cerrors.ResourceNotFound)
-	} else if err != nil {
-		logrus.Error(err)
-		return nil, errors.New(cerrors.DatabaseError)
+	if err != nil {
+		return nil, cerror.ConvertError(err)
 	}
 
 	return &key, nil
 }
 
-func (a *AccountRepository) GetKeysByAccountID(ctx context.Context, accountID uuid.UUID) ([]*models.Key, error) {
+func (a *AccountRepository) GetKeysByAccountID(ctx context.Context, accountID uuid.UUID) ([]*models.Key, *cerror.CustomError) {
 	var keys []*models.Key
 	query := `SELECT * FROM keys WHERE account_id = $1`
 
 	err := a.db.SelectContext(ctx, &keys, query, accountID)
 	if err != nil {
 		logrus.Error(err)
-		return nil, errors.New(cerrors.DatabaseError)
+		return nil, cerror.ConvertError(err)
 	}
 
 	if len(keys) == 0 {
-		return nil, errors.New(cerrors.ResourceNotFound)
+		logrus.Errorf("no keys found for account %s", accountID)
+		return nil, cerror.NewCustomError(cerror.ResourceNotFound, "no keys found for account")
 	}
 
 	return keys, nil
 }
 
-func (a *AccountRepository) GetSSHKeysByAccountID(ctx context.Context, accountID uuid.UUID) ([]models.SSHKey, error) {
+func (a *AccountRepository) GetSSHKeysByAccountID(ctx context.Context, accountID uuid.UUID) ([]models.SSHKey, *cerror.CustomError) {
 	var sshKeys []models.SSHKey
 	query := "SELECT * FROM ssh_keys WHERE account_id = $1"
 	if err := a.db.SelectContext(ctx, &sshKeys, query, accountID); err != nil {
 		logrus.Error(err)
-		return nil, err
+		return nil, cerror.ConvertError(err)
 	}
 	return sshKeys, nil
 }
 
 // filter function that returns keys based on filter
-func (a *AccountRepository) FilterKeys(ctx context.Context, whereModel *models.Key, takeFirst bool) (*models.Key, error) {
+func (a *AccountRepository) FilterKeys(ctx context.Context, whereModel *models.Key, takeFirst bool) (*models.Key, *cerror.CustomError) {
 	// Start with a base query.
 	query := "SELECT * FROM keys WHERE 1=1"
 	params := make(map[string]interface{})
@@ -357,7 +338,7 @@ func (a *AccountRepository) FilterKeys(ctx context.Context, whereModel *models.K
 
 	rows, err := a.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
-		return nil, err
+		return nil, cerror.ConvertError(err)
 	}
 	defer rows.Close()
 
@@ -365,20 +346,20 @@ func (a *AccountRepository) FilterKeys(ctx context.Context, whereModel *models.K
 	for rows.Next() {
 		var key models.Key
 		if err := rows.StructScan(&key); err != nil {
-			return nil, err
+			return nil, cerror.ConvertError(err)
 		}
 		keys = append(keys, &key)
 	}
 
 	if len(keys) == 0 {
-		return nil, fmt.Errorf("no key found with filter %+v", whereModel)
+		return nil, cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("no keys found with filter %+v", whereModel))
 	}
 
 	return keys[0], nil
 }
 
 // filter function that returns accounts based on filter
-func (a *AccountRepository) FilterAccounts(ctx context.Context, filter *models.Account, takeFirst bool) ([]*models.Account, error) {
+func (a *AccountRepository) FilterAccounts(ctx context.Context, filter *models.Account, takeFirst bool) ([]*models.Account, *cerror.CustomError) {
 	// do WHERE 1=1 to have base query to append to
 	query := "SELECT * FROM accounts WHERE 1=1"
 	params := make(map[string]interface{})
@@ -422,7 +403,7 @@ func (a *AccountRepository) FilterAccounts(ctx context.Context, filter *models.A
 
 	rows, err := a.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
-		return nil, err
+		return nil, cerror.ConvertError(err)
 	}
 	defer rows.Close()
 
@@ -430,13 +411,13 @@ func (a *AccountRepository) FilterAccounts(ctx context.Context, filter *models.A
 	for rows.Next() {
 		var account models.Account
 		if err := rows.StructScan(&account); err != nil {
-			return nil, err
+			return nil, cerror.ConvertError(err)
 		}
 		accounts = append(accounts, &account)
 	}
 
 	if len(accounts) == 0 {
-		return nil, fmt.Errorf("no accounts found with filter %+v", filter)
+		return nil, cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("no accounts found with filter %+v", filter))
 	}
 
 	return accounts, nil
