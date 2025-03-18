@@ -4,15 +4,15 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	cerror "github.com/idlab-discover/kebeng/common/error"
 	"github.com/idlab-discover/kebeng/services/account/internal/config"
-	"github.com/idlab-discover/kebeng/services/account/internal/errors"
 	"github.com/idlab-discover/kebeng/services/account/internal/models"
 	"github.com/idlab-discover/kebeng/services/account/internal/repository"
 	proto "github.com/idlab-discover/kebeng/services/account/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// NOTE: in all the endpoints the errors of the actual logic are included in the response and NOT returned as an error
+// NOTE: in all the endpoints the cerror of the actual logic are included in the response and NOT returned as an error
 // SO NEVER RETURN AN ERROR IN THIS LOGIC but insert them in the response
 
 // TODO: maybe call this different?
@@ -40,7 +40,7 @@ func (a *AccountService) CreateAccount(ctx context.Context, req *proto.CreateAcc
 	createdAccount, err := a.repo.CreateAccount(ctx, account)
 	if err != nil {
 		el = append(el, &proto.Error{
-			Code:    errors.InternalServerError,
+			Code:    cerror.InternalServerError,
 			Message: err.Error(),
 		})
 		return &proto.AccountResponse{Errors: el}, nil
@@ -54,7 +54,7 @@ func (a *AccountService) UpdateAccount(ctx context.Context, req *proto.UpdateAcc
 	accountID, err := uuid.Parse(req.Id)
 	if err != nil {
 		el = append(el, &proto.Error{
-			Code:    errors.BadRequest,
+			Code:    cerror.BadRequest,
 			Message: "invalid UUID format",
 		})
 		return &proto.AccountResponse{Errors: el}, nil
@@ -70,7 +70,7 @@ func (a *AccountService) UpdateAccount(ctx context.Context, req *proto.UpdateAcc
 	updatedAccount, err := a.repo.UpdateAccount(ctx, account)
 	if err != nil {
 		el = append(el, &proto.Error{
-			Code:    errors.InternalServerError,
+			Code:    cerror.InternalServerError,
 			Message: err.Error(),
 		})
 		return &proto.AccountResponse{Errors: el}, nil
@@ -84,7 +84,7 @@ func (a *AccountService) DeleteAccount(ctx context.Context, req *proto.DeleteAcc
 	accountID, err := uuid.Parse(req.Id)
 	if err != nil {
 		el = append(el, &proto.Error{
-			Code:    errors.BadRequest,
+			Code:    cerror.BadRequest,
 			Message: "invalid UUID format",
 		})
 		return &proto.DeleteAccountResponse{Success: false, Errors: el}, nil
@@ -92,7 +92,7 @@ func (a *AccountService) DeleteAccount(ctx context.Context, req *proto.DeleteAcc
 
 	if err := a.repo.DeleteAccount(ctx, accountID); err != nil {
 		el = append(el, &proto.Error{
-			Code:    errors.InternalServerError,
+			Code:    cerror.InternalServerError,
 			Message: err.Error(),
 		})
 		return &proto.DeleteAccountResponse{Success: false, Errors: el}, nil
@@ -106,7 +106,7 @@ func (a *AccountService) GetAccountByEmail(ctx context.Context, req *proto.GetAc
 	account, err := a.repo.GetAccountByEmail(ctx, req.Email, []string{models.ALL})
 	if err != nil {
 		el = append(el, &proto.Error{
-			Code:    errors.InternalServerError,
+			Code:    cerror.InternalServerError,
 			Message: err.Error(),
 		})
 		return &proto.AccountResponse{Errors: el}, nil
@@ -120,7 +120,7 @@ func (a *AccountService) GetAccountByID(ctx context.Context, req *proto.GetAccou
 	accountID, err := uuid.Parse(req.Id)
 	if err != nil {
 		el = append(el, &proto.Error{
-			Code:    errors.BadRequest,
+			Code:    cerror.BadRequest,
 			Message: "invalid UUID format",
 		})
 		return &proto.AccountResponse{Errors: el}, nil
@@ -129,7 +129,7 @@ func (a *AccountService) GetAccountByID(ctx context.Context, req *proto.GetAccou
 	account, err := a.repo.GetAccountByID(ctx, accountID, []string{models.ALL})
 	if err != nil {
 		el = append(el, &proto.Error{
-			Code:    errors.InternalServerError,
+			Code:    cerror.InternalServerError,
 			Message: err.Error(),
 		})
 		return &proto.AccountResponse{Errors: el}, nil
@@ -146,13 +146,13 @@ func (a *AccountService) GetAccountsByIds(ctx context.Context, req *proto.GetAcc
 		accountID, err := uuid.Parse(id)
 		if err != nil {
 			el = append(el, &proto.Error{
-				Code:    errors.BadRequest,
+				Code:    cerror.BadRequest,
 				Message: "invalid UUID format",
 			})
 		}
 		accountIDs = append(accountIDs, accountID)
 	}
-	// first parse everything than only return if there are errors so we check all ids
+	// first parse everything than only return if there are cerror so we check all ids
 	if len(el) > 0 {
 		return &proto.GetAccountsByIdsResponse{Errors: el}, nil
 	}
@@ -161,7 +161,7 @@ func (a *AccountService) GetAccountsByIds(ctx context.Context, req *proto.GetAcc
 		account, err := a.repo.GetAccountByID(ctx, id, []string{models.ALL})
 		if err != nil {
 			el = append(el, &proto.Error{
-				Code:    errors.InternalServerError,
+				Code:    cerror.InternalServerError,
 				Message: err.Error(),
 			})
 		}
@@ -177,7 +177,7 @@ func (a *AccountService) GetAccountByUsername(ctx context.Context, req *proto.Ge
 	account, err := a.repo.GetAccountByUsername(ctx, req.Username, []string{models.ALL})
 	if err != nil {
 		el = append(el, &proto.Error{
-			Code:    errors.InternalServerError,
+			Code:    cerror.InternalServerError,
 			Message: err.Error(),
 		})
 		return &proto.AccountResponse{Errors: el}, nil
@@ -191,7 +191,7 @@ func (a *AccountService) AddKey(ctx context.Context, req *proto.AddKeyRequest) (
 	key, err := a.repo.AddKeyToAccountByEmail(ctx, req.KeyName, req.Sha3384, req.EncodedPublicKey, req.AccountEmail)
 	if err != nil {
 		el = append(el, &proto.Error{
-			Code:    errors.InternalServerError,
+			Code:    cerror.InternalServerError,
 			Message: err.Error(),
 		})
 		return &proto.KeyResponse{Errors: el}, nil
@@ -209,7 +209,7 @@ func (a *AccountService) GetKey(ctx context.Context, req *proto.GetKeyBySHA3384R
 	key, err := a.repo.GetKeyBySHA3384(ctx, req.Sha3384)
 	if err != nil {
 		el = append(el, &proto.Error{
-			Code:    errors.InternalServerError,
+			Code:    cerror.InternalServerError,
 			Message: err.Error(),
 		})
 		return &proto.KeyResponse{Errors: el}, nil
@@ -228,7 +228,7 @@ func (a *AccountService) GetKeysByAccountId(ctx context.Context, req *proto.GetK
 	accountID, err := uuid.Parse(req.AccountId)
 	if err != nil {
 		el = append(el, &proto.Error{
-			Code:    errors.BadRequest,
+			Code:    cerror.BadRequest,
 			Message: "invalid UUID format",
 		})
 		return &proto.KeysResponse{Errors: el}, nil
@@ -238,7 +238,7 @@ func (a *AccountService) GetKeysByAccountId(ctx context.Context, req *proto.GetK
 	keys, err := a.repo.GetKeysByAccountID(ctx, accountID)
 	if err != nil {
 		el = append(el, &proto.Error{
-			Code:    errors.InternalServerError,
+			Code:    cerror.InternalServerError,
 			Message: err.Error(),
 		})
 		return &proto.KeysResponse{Errors: el}, nil
