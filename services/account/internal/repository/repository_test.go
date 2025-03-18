@@ -302,3 +302,52 @@ func TestUpdateAccount(t *testing.T) {
 		})
 	}
 }
+
+func TestDeleteAccount(t *testing.T) {
+	// Insert an initial account using globalDB with positional parameters.
+	createdAt := time.Now()
+	updatedAt := time.Now()
+	original := &models.Account{
+		ID:           uuid.New(),
+		DisplayName:  "Charlie",
+		Username:     "charlie123",
+		Email:        "charlie@example.com",
+		PasswordHash: "charlieHash1",
+		CreatedAt:    &createdAt,
+		UpdatedAt:    &updatedAt,
+	}
+
+	insertQuery := `
+		INSERT INTO accounts (id, display_name, username, email, password_hash, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+	`
+	_, err := globalDB.ExecContext(context.Background(), insertQuery,
+		original.ID,
+		original.DisplayName,
+		original.Username,
+		original.Email,
+		original.PasswordHash,
+		original.CreatedAt,
+		original.UpdatedAt,
+	)
+	if err != nil {
+		t.Fatalf("failed to insert initial account: %v", err)
+	}
+	t.Logf("Inserted initial account: %+v", original)
+
+	t.Run("delete existing account", func(t *testing.T) {
+		err := globalRepo.DeleteAccount(context.Background(), original.ID)
+		assert.NoError(t, err, "expected no error when deleting an existing account")
+
+		var count int
+		err = globalDB.GetContext(context.Background(), &count, "SELECT COUNT(*) FROM accounts WHERE id = $1", original.ID)
+		assert.NoError(t, err, "failed to count rows")
+		assert.Equal(t, 0, count, "account should be deleted")
+	})
+
+	t.Run("delete non-existing account", func(t *testing.T) {
+		nonExistentID := uuid.New()
+		err := globalRepo.DeleteAccount(context.Background(), nonExistentID)
+		assert.NoError(t, err, "expected no error when deleting a non-existent account")
+	})
+}
