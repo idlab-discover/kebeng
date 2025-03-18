@@ -12,6 +12,7 @@ require (
 	github.com/idlab-discover/kebeng/services/account v0.0.0-20250311154753-8199d8a8bc52
 	github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250318141246-77a544f56023
 	github.com/idlab-discover/kebeng/services/store v0.0.0-20250318141246-77a544f56023
+	github.com/lib/pq v1.10.9
 	github.com/minio/minio-go/v7 v7.0.87
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/sirupsen/logrus v1.9.3
@@ -54,7 +55,6 @@ require (
 	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.9 // indirect
 	github.com/leodido/go-urn v1.2.0 // indirect
-	github.com/lib/pq v1.10.9 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
