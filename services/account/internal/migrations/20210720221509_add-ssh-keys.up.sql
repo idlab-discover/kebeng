@@ -5,10 +5,10 @@ create sequence public.ssh_keys_id_seq;
 CREATE TABLE IF NOT EXISTS public.ssh_keys
 (
     id uuid NOT NULL DEFAULT uuid_generate_v4(),
-    created_at timestamp with time zone,
-    updated_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
     deleted_at timestamp with time zone,
-    public_key_string text COLLATE pg_catalog."default",
+    public_key_string text COLLATE pg_catalog."default" NOT NULL,
     account_id uuid,
     CONSTRAINT ssh_keys_pkey PRIMARY KEY (id),
     CONSTRAINT fk_accounts_ssh_keys FOREIGN KEY (account_id)

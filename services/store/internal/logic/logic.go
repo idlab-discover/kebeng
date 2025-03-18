@@ -69,7 +69,7 @@ func (s *StoreLogic) RegisterSnapName(ctx context.Context, req *proto.RegisterSn
 	// TODO: check if snap name is valid (it should only have ASCII lowercase letters, numbers, and hyphens, and must have at least one letter)
 
 	// First check if the snap name is already registered
-	snapEntry, err := s.repo.GetEntryByName(req.SnapName, false)
+	snapEntry, err := s.repo.GetEntryByName(req.SnapName, nil)
 	if err != nil {
 		switch {
 		case cerrors.Is(err, cerrors.DatabaseError):
@@ -132,7 +132,7 @@ func (s *StoreLogic) GetEntries(ctx context.Context, req *proto.GetEntriesReques
 				continue
 			}
 
-			snapEntry, err := s.repo.GetEntryById(id, false)
+			snapEntry, err := s.repo.GetEntryById(id, nil)
 			if err != nil {
 				switch {
 				case cerrors.Is(err, cerrors.ResourceNotFound):
@@ -152,17 +152,17 @@ func (s *StoreLogic) GetEntries(ctx context.Context, req *proto.GetEntriesReques
 				Type:        snapEntry.Type,
 				Confinement: snapEntry.Confinement,
 				Base:        snapEntry.Base,
-                Private:     snapEntry.Private,
-                PublisherId: snapEntry.AccountID.String(),
-                Price: snapEntry.Price,
-                Status: snapEntry.Status,
-                Since: timestamppb.New(snapEntry.CreatedAt),
-                IconUrl: snapEntry.IconURL,
+				Private:     snapEntry.Private,
+				PublisherId: snapEntry.AccountID.String(),
+				Price:       snapEntry.Price,
+				Status:      snapEntry.Status,
+				Since:       timestamppb.New(snapEntry.CreatedAt),
+				IconUrl:     snapEntry.IconURL,
 			})
 
 			// If ID is not given, try to retrieve the entry by its name
 		} else if entry.Name != "" {
-			snapEntry, err := s.repo.GetEntryByName(entry.Name, false)
+			snapEntry, err := s.repo.GetEntryByName(entry.Name, nil)
 			if err != nil {
 				switch {
 				case cerrors.Is(err, cerrors.ResourceNotFound):
@@ -183,11 +183,11 @@ func (s *StoreLogic) GetEntries(ctx context.Context, req *proto.GetEntriesReques
 				Confinement: snapEntry.Confinement,
 				Base:        snapEntry.Base,
 				Private:     snapEntry.Private,
-                PublisherId: snapEntry.AccountID.String(),
-                Price: snapEntry.Price,
-                Status: snapEntry.Status,
-                Since: timestamppb.New(snapEntry.CreatedAt),
-                IconUrl: snapEntry.IconURL,
+				PublisherId: snapEntry.AccountID.String(),
+				Price:       snapEntry.Price,
+				Status:      snapEntry.Status,
+				Since:       timestamppb.New(snapEntry.CreatedAt),
+				IconUrl:     snapEntry.IconURL,
 			})
 
 		} else {
@@ -224,7 +224,7 @@ func (s *StoreLogic) GetEntryById(ctx context.Context, req *proto.GetEntryReques
 		return &proto.GetEntryResponse{Errors: el}, nil
 	}
 
-	snapEntry, err := s.repo.GetEntryById(id, false)
+	snapEntry, err := s.repo.GetEntryById(id, nil)
 	if err != nil {
 		switch {
 		case cerrors.Is(err, cerrors.ResourceNotFound):
@@ -241,18 +241,18 @@ func (s *StoreLogic) GetEntryById(ctx context.Context, req *proto.GetEntryReques
 	}
 
 	return &proto.GetEntryResponse{
-        Id: snapEntry.ID.String(),
-        SnapName: snapEntry.Name,
-        Type: snapEntry.Type,
-        Confinement: snapEntry.Confinement,
-        Base: snapEntry.Base,
-        Private: snapEntry.Private,
-        PublisherId: snapEntry.AccountID.String(),
-        Price: snapEntry.Price,
-        Status: snapEntry.Status,
-        Since: timestamppb.New(snapEntry.CreatedAt),
-        IconUrl: snapEntry.IconURL,
-    }, nil
+		Id:          snapEntry.ID.String(),
+		SnapName:    snapEntry.Name,
+		Type:        snapEntry.Type,
+		Confinement: snapEntry.Confinement,
+		Base:        snapEntry.Base,
+		Private:     snapEntry.Private,
+		PublisherId: snapEntry.AccountID.String(),
+		Price:       snapEntry.Price,
+		Status:      snapEntry.Status,
+		Since:       timestamppb.New(snapEntry.CreatedAt),
+		IconUrl:     snapEntry.IconURL,
+	}, nil
 }
 
 // GetEntryByName retrieves a single snap entry by its name.
@@ -273,7 +273,7 @@ func (s *StoreLogic) GetEntryByName(ctx context.Context, req *proto.GetEntryRequ
 		return &proto.GetEntryResponse{Errors: el}, fmt.Errorf("name is required")
 	}
 
-	snapEntry, err := s.repo.GetEntryByName(req.Name, false)
+	snapEntry, err := s.repo.GetEntryByName(req.Name, nil)
 	if err != nil {
 		switch {
 		case cerrors.Is(err, cerrors.ResourceNotFound):
@@ -290,18 +290,18 @@ func (s *StoreLogic) GetEntryByName(ctx context.Context, req *proto.GetEntryRequ
 	}
 
 	return &proto.GetEntryResponse{
-        Id: snapEntry.ID.String(),
-        SnapName: snapEntry.Name,
-        Type: snapEntry.Type,
-        Confinement: snapEntry.Confinement,
-        Base: snapEntry.Base,
-        Private: snapEntry.Private,
-        PublisherId: snapEntry.AccountID.String(),
-        Price: snapEntry.Price,
-        Status: snapEntry.Status,
-        Since: timestamppb.New(snapEntry.CreatedAt),
-        IconUrl: snapEntry.IconURL,
-    }, nil
+		Id:          snapEntry.ID.String(),
+		SnapName:    snapEntry.Name,
+		Type:        snapEntry.Type,
+		Confinement: snapEntry.Confinement,
+		Base:        snapEntry.Base,
+		Private:     snapEntry.Private,
+		PublisherId: snapEntry.AccountID.String(),
+		Price:       snapEntry.Price,
+		Status:      snapEntry.Status,
+		Since:       timestamppb.New(snapEntry.CreatedAt),
+		IconUrl:     snapEntry.IconURL,
+	}, nil
 }
 
 // GetRevisions retrieves a list of revisions based on the provided request.
@@ -340,7 +340,7 @@ func (s *StoreLogic) GetRevisions(ctx context.Context, req *proto.GetRevisionsRe
 				continue
 			}
 
-			entry, err := s.repo.GetEntryById(rev.SnapEntryID, false)
+			entry, err := s.repo.GetEntryById(rev.SnapEntryID, nil)
 			if err != nil {
 				switch {
 				case cerrors.Is(err, cerrors.ResourceNotFound):
@@ -357,14 +357,14 @@ func (s *StoreLogic) GetRevisions(ctx context.Context, req *proto.GetRevisionsRe
 			}
 
 			foundRevisions = append(foundRevisions, &proto.GetRevisionResponse{
-                Id: rev.ID, 
-                SnapName: entry.Name, 
-                Sequence: uint64(rev.SequenceNumber),
-                Architectures: rev.Architectures,
-                Version: rev.Version,
-                Since: timestamppb.New(rev.Since),
-                Status: rev.Status,
-            })
+				Id:            rev.ID.String(),
+				SnapName:      entry.Name,
+				Sequence:      uint64(rev.SequenceNumber),
+				Architectures: rev.Architectures,
+				Version:       rev.Version,
+				Since:         timestamppb.New(rev.Since),
+				Status:        rev.Status,
+			})
 
 			// If id is not provided, check if snapName and sequence are provided
 		} else if revision.SnapName != "" && revision.Sequence != 0 {
@@ -386,14 +386,14 @@ func (s *StoreLogic) GetRevisions(ctx context.Context, req *proto.GetRevisionsRe
 			}
 
 			foundRevisions = append(foundRevisions, &proto.GetRevisionResponse{
-                Id: rev.ID, 
-                SnapName: revision.SnapName, 
-                Sequence: uint64(rev.SequenceNumber),
-                Architectures: rev.Architectures,
-                Version: rev.Version,
-                Since: timestamppb.New(rev.Since),
-                Status: rev.Status,
-            })
+				Id:            rev.ID.String(),
+				SnapName:      revision.SnapName,
+				Sequence:      uint64(rev.SequenceNumber),
+				Architectures: rev.Architectures,
+				Version:       rev.Version,
+				Since:         timestamppb.New(rev.Since),
+				Status:        rev.Status,
+			})
 
 		} else {
 			if revision.Id == "" && (revision.SnapName == "" || revision.Sequence == 0) {
@@ -424,7 +424,7 @@ func (s *StoreLogic) GetRevisionByNameAndSequence(ctx context.Context, req *prot
 		return &proto.GetRevisionResponse{Errors: el}, nil
 	}
 
-	snapEntry, err := s.repo.GetEntryByName(req.SnapName, false)
+	snapEntry, err := s.repo.GetEntryByName(req.SnapName, nil)
 	if err != nil {
 		switch {
 		case cerrors.Is(err, cerrors.ResourceNotFound):
@@ -457,113 +457,113 @@ func (s *StoreLogic) GetRevisionByNameAndSequence(ctx context.Context, req *prot
 	}
 
 	return &proto.GetRevisionResponse{
-        Id: revision.ID, 
-        SnapName: snapEntry.Name, 
-        Sequence: uint64(revision.SequenceNumber),
-        Architectures: revision.Architectures,
-        Version: revision.Version,
-        Since: timestamppb.New(revision.Since),
-        Status: revision.Status,
-    }, nil
+		Id:            revision.ID.String(),
+		SnapName:      snapEntry.Name,
+		Sequence:      uint64(revision.SequenceNumber),
+		Architectures: revision.Architectures,
+		Version:       revision.Version,
+		Since:         timestamppb.New(revision.Since),
+		Status:        revision.Status,
+	}, nil
 }
 
 func (s *StoreLogic) GetEntriesByAccountId(ctx context.Context, req *proto.GetEntriesByAccountIdRequest) (*proto.GetEntriesResponse, error) {
-    el := make([]*proto.Error, 0)
-    if req.AccountId == "" {
-        el = append(el, &proto.Error{Code: cerrors.MissingField, Message: "Account id is required"})
-        return &proto.GetEntriesResponse{Errors: el}, nil
-    }
-    accId, err := uuid.Parse(req.AccountId)
-    if err != nil {
-        logrus.Error(err)
-        el = append(el, &proto.Error{Code: cerrors.InvalidField, Message: "Invalid UUID format"})
-        return &proto.GetEntriesResponse{Errors: el}, nil
-    }
+	el := make([]*proto.Error, 0)
+	if req.AccountId == "" {
+		el = append(el, &proto.Error{Code: cerrors.MissingField, Message: "Account id is required"})
+		return &proto.GetEntriesResponse{Errors: el}, nil
+	}
+	accId, err := uuid.Parse(req.AccountId)
+	if err != nil {
+		logrus.Error(err)
+		el = append(el, &proto.Error{Code: cerrors.InvalidField, Message: "Invalid UUID format"})
+		return &proto.GetEntriesResponse{Errors: el}, nil
+	}
 
-    entries, err := s.repo.GetEntriesByAccountId(accId,true)
-    if err != nil {
-        logrus.Debugf("Failed to get entries from database: %v", err)
-        el = append(el, &proto.Error{Code: cerrors.InternalServerError, Message: "Failed to get entries from database"})
-        return &proto.GetEntriesResponse{Errors: el}, err
-    }
+	entries, err := s.repo.GetEntriesByAccountId(accId, nil)
+	if err != nil {
+		logrus.Debugf("Failed to get entries from database: %v", err)
+		el = append(el, &proto.Error{Code: cerrors.InternalServerError, Message: "Failed to get entries from database"})
+		return &proto.GetEntriesResponse{Errors: el}, err
+	}
 
-    foundEntries := make([]*proto.GetEntryResponse, len(entries))
-    for i, entry := range entries {
-        foundEntries[i] = &proto.GetEntryResponse{
-                Id: entry.ID.String(), 
-                SnapName: entry.Name, 
-                Type: entry.Type, 
-                Confinement: entry.Confinement, 
-                Base: entry.Base, 
-                Private: entry.Private,
-                PublisherId: entry.AccountID.String(),
-                Price: entry.Price,           
-                Status: entry.Status,
-                Since: timestamppb.New(entry.CreatedAt),
-                IconUrl: entry.IconURL,
-            }
-    }
-    return &proto.GetEntriesResponse{Entries: foundEntries}, nil
+	foundEntries := make([]*proto.GetEntryResponse, len(entries))
+	for i, entry := range entries {
+		foundEntries[i] = &proto.GetEntryResponse{
+			Id:          entry.ID.String(),
+			SnapName:    entry.Name,
+			Type:        entry.Type,
+			Confinement: entry.Confinement,
+			Base:        entry.Base,
+			Private:     entry.Private,
+			PublisherId: entry.AccountID.String(),
+			Price:       entry.Price,
+			Status:      entry.Status,
+			Since:       timestamppb.New(entry.CreatedAt),
+			IconUrl:     entry.IconURL,
+		}
+	}
+	return &proto.GetEntriesResponse{Entries: foundEntries}, nil
 }
 
-// returns multiple Revisions by their entry ids 
+// returns multiple Revisions by their entry ids
 // if a revision is not found a response with EntryId filled in and len(Errors) > 0 is put in the response
 func (s *StoreLogic) GetRevisionsByEntryIds(ctx context.Context, req *proto.GetRevisionsByEntryIdRequests) (*proto.GetRevisionsByEntryIdResponses, error) {
-    el := make([]*proto.Error, 0)
-    responses := make([]*proto.GetRevisionsByEntryIdResponse, 0)
-    for _, entryIdReq := range req.GetRequests() {
-        if entryIdReq.EntryId == "" {
-            el = append(el, &proto.Error{
-                Code: cerrors.MissingField, 
-                Message: "Entry id is required",
-            })
-            continue
-        }
+	el := make([]*proto.Error, 0)
+	responses := make([]*proto.GetRevisionsByEntryIdResponse, 0)
+	for _, entryIdReq := range req.GetRequests() {
+		if entryIdReq.EntryId == "" {
+			el = append(el, &proto.Error{
+				Code:    cerrors.MissingField,
+				Message: "Entry id is required",
+			})
+			continue
+		}
 
-        entryId, err := uuid.Parse(entryIdReq.EntryId)
-        if err != nil {
-            logrus.Error(err)
-            el = append(el, &proto.Error{
-                Code: cerrors.InvalidField, 
-                Message: "Invalid UUID format",
-            })
-            continue
-        }
+		entryId, err := uuid.Parse(entryIdReq.EntryId)
+		if err != nil {
+			logrus.Error(err)
+			el = append(el, &proto.Error{
+				Code:    cerrors.InvalidField,
+				Message: "Invalid UUID format",
+			})
+			continue
+		}
 
-        revisions, err := s.repo.GetRevisionsByEntryId(entryId)
-        if err != nil {
-            logrus.Debugf("Failed to get revisions from database: %v", err)
-            el = append(el, &proto.Error{
-                Code: cerrors.InternalServerError, 
-                Message: "Failed to get revisions from database",
-            })
-            // add empty response to keep the order of responses
-            responses = append(responses, &proto.GetRevisionsByEntryIdResponse{
-                EntryId: entryId.String(),
-                Errors: el,
-            })
-            continue
-        }
-        // revision were found so convert them in response format
-        revisionsProto := make([]*proto.GetRevisionResponse, len(revisions))
-        for i, rev := range revisions {
-            revisionsProto[i] = &proto.GetRevisionResponse{
-                Id: rev.ID,
-                SnapName: rev.SnapFilename,
-                Sequence: uint64(rev.SequenceNumber),
-                Architectures: rev.Architectures,
-                Version: rev.Version,
-                Since: timestamppb.New(rev.Since),
-                Status: rev.Status,
-            }
-        }
-        // add to response
-        responses = append(responses, &proto.GetRevisionsByEntryIdResponse{
-            EntryId: entryId.String(),
-            Revisions: revisionsProto,
-        })
-    }
-    return &proto.GetRevisionsByEntryIdResponses{Responses: responses}, nil
+		revisions, err := s.repo.GetRevisionsByEntryId(entryId)
+		if err != nil {
+			logrus.Debugf("Failed to get revisions from database: %v", err)
+			el = append(el, &proto.Error{
+				Code:    cerrors.InternalServerError,
+				Message: "Failed to get revisions from database",
+			})
+			// add empty response to keep the order of responses
+			responses = append(responses, &proto.GetRevisionsByEntryIdResponse{
+				EntryId: entryId.String(),
+				Errors:  el,
+			})
+			continue
+		}
+		// revision were found so convert them in response format
+		revisionsProto := make([]*proto.GetRevisionResponse, len(revisions))
+		for i, rev := range revisions {
+			revisionsProto[i] = &proto.GetRevisionResponse{
+				Id:            rev.ID.String(),
+				SnapName:      rev.SnapFilename,
+				Sequence:      uint64(rev.SequenceNumber),
+				Architectures: rev.Architectures,
+				Version:       rev.Version,
+				Since:         timestamppb.New(rev.Since),
+				Status:        rev.Status,
+			}
+		}
+		// add to response
+		responses = append(responses, &proto.GetRevisionsByEntryIdResponse{
+			EntryId:   entryId.String(),
+			Revisions: revisionsProto,
+		})
+	}
+	return &proto.GetRevisionsByEntryIdResponses{Responses: responses}, nil
 }
 
 func saveFileToTemp(snapFile io.Reader) (string, string, error) {
