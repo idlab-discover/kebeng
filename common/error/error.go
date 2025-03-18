@@ -62,16 +62,20 @@ func New(code, message string) CustomError {
 	}
 }
 
-func ConvertError(err error) *CustomError {
+func ConvertError(err error, message ...string) *CustomError {
 	if err == nil {
 		return nil
 	}
 
 	if err == sql.ErrNoRows {
-		return &CustomError{
+		ce := CustomError{
 			Code:    ResourceNotFound,
 			Message: "resource not found",
 		}
+		if len(message) > 0 {
+			ce.Message = message[0]
+		}
+		return &ce
 	}
 
 	if err, ok := err.(*pq.Error); ok {
