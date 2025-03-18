@@ -1,6 +1,7 @@
 package error
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -8,6 +9,7 @@ import (
 	accountpb "github.com/idlab-discover/kebeng/services/account/proto"
 	assertionpb "github.com/idlab-discover/kebeng/services/assertion/proto"
 	storepb "github.com/idlab-discover/kebeng/services/store/proto"
+	"github.com/lib/pq"
 )
 
 const (
@@ -53,6 +55,36 @@ type CustomError struct {
 // helper struct
 type ErrorList []CustomError
 
+func New(code, message string) CustomError {
+	return CustomError{
+		Code:    code,
+		Message: message,
+	}
+}
+
+func ConvertError(err error) *CustomError {
+	if err == nil {
+		return nil
+	}
+
+	if err == sql.ErrNoRows {
+		return &CustomError{
+			Code:    ResourceNotFound,
+			Message: "resource not found",
+		}
+	}
+
+	if err, ok := err.(*pq.Error); ok {
+		return handlePqError(err)
+	}
+
+	// Fallback for non-PostgreSQL errors.
+	return &CustomError{
+		Code:    InternalServerError,
+		Message: err.Error(),
+	}
+}
+
 func (el *ErrorList) AddCustomError(err CustomError) {
 	*el = append(*el, err)
 }
@@ -86,12 +118,12 @@ func (el *ErrorList) ExtendAssertionError(other []*assertionpb.Error) {
 	}
 }
 
-func New() *ErrorList {
+func NewErrorList() *ErrorList {
 	return &ErrorList{}
 }
 
 func NewError(code, message string) *ErrorList {
-	el := New()
+	el := NewErrorList()
 	el.Add(code, message)
 	return el
 }
@@ -196,4 +228,35 @@ func (el *ErrorList) GetHTTPStatus() int {
 	default:
 		return http.StatusInternalServerError
 	}
+}
+
+func handlePqError(err *pq.Error) *CustomError {
+	switch err.Code {
+	case "23505": // unique violation
+		return &CustomError{
+			Code:    AlreadyRegistered,
+			Message: err.Message,
+		}
+	case "23502": // not null violation
+		return &CustomError{
+			Code:    MissingField,
+			Message: err.Message,
+		}
+	case "23514": // check violation
+		return &CustomError{
+			Code:    InvalidField,
+			Message: err.Message,
+		}
+	case "23503": // foreign key violation
+		return &CustomError{
+			Code:    ResourceNotFound,
+			Message: err.Message,
+		}
+	default:
+		return &CustomError{
+			Code:    DatabaseError,
+			Message: err.Message,
+		}
+	}
+
 }
