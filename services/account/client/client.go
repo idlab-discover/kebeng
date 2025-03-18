@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-// TEST pipeline
+// TEST pipeline 2
 
 // NOTE: in all the endpoints the errors of the actual logic are included in the response and NOT returned as an error
 // this is because we need every error and not just 1 according to the snapcraft docs
