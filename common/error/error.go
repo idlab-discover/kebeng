@@ -1,4 +1,4 @@
-package error
+package cerror
 
 import (
 	"database/sql"
