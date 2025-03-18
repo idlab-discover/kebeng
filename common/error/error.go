@@ -68,14 +68,7 @@ func ConvertError(err error, message ...string) *CustomError {
 	}
 
 	if err == sql.ErrNoRows {
-		ce := CustomError{
-			Code:    ResourceNotFound,
-			Message: "resource not found",
-		}
-		if len(message) > 0 {
-			ce.Message = message[0]
-		}
-		return &ce
+		return buildCustomError(ResourceNotFound, "Resource not found", message...)
 	}
 
 	if err, ok := err.(*pq.Error); ok {
@@ -86,6 +79,28 @@ func ConvertError(err error, message ...string) *CustomError {
 	return &CustomError{
 		Code:    InternalServerError,
 		Message: err.Error(),
+	}
+}
+
+// buildCustomError creates a new instance of CustomError with the specified code and message.
+// If a custom message is provided, it will be used; otherwise, the defaultMessage will be used.
+//
+// Parameters:
+//   - code: A string representing the error code.
+//   - defaultMessage: A string representing the default error message.
+//   - message: An optional variadic parameter for a custom error message.
+//
+// Returns:
+//   - A pointer to a CustomError instance containing the provided code and message.
+func buildCustomError(code, defaultMessage string, message ...string) *CustomError {
+	msg := defaultMessage
+	if len(message) > 0 {
+		msg = message[0]
+	}
+
+	return &CustomError{
+		Code:    code,
+		Message: msg,
 	}
 }
 
