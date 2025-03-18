@@ -17,34 +17,66 @@ jobs:
       with:
         go-version: '1.22.2'
 
-    - name: Build Account service
+    - name: Check for changes in Account service
+      id: account
+      run: |
+        if git diff --quiet HEAD^ HEAD -- services/account; then
+          echo "account_service_changed=false" >> $GITHUB_ENV
+        else
+          echo "account_service_changed=true" >> $GITHUB_ENV
+        fi
+
+    - name: Build & Test Account service
+      if: env.account_service_changed == 'true'
       working-directory: ./services/account
-      run: go build -v ./
+      run: |
+        go build -v ./
+        go test -v ./...
 
-    - name: Build Assertion service
+    - name: Check for changes in Assertion service
+      id: assertion
+      run: |
+        if git diff --quiet HEAD^ HEAD -- services/assertion; then
+          echo "changed=false" >> $GITHUB_ENV
+        else
+          echo "changed=true" >> $GITHUB_ENV
+        fi
+
+    - name: Build & Test Assertion service
+      if: env.changed == 'true'
       working-directory: ./services/assertion
-      run: go build -v ./
+      run: |
+        go build -v ./
+        go test -v ./...
 
-    - name: Build Gateway service
+    - name: Check for changes in Gateway service
+      id: gateway
+      run: |
+        if git diff --quiet HEAD^ HEAD -- services/gateway; then
+          echo "changed=false" >> $GITHUB_ENV
+        else
+          echo "changed=true" >> $GITHUB_ENV
+        fi
+
+    - name: Build & Test Gateway service
+      if: env.changed == 'true'
       working-directory: ./services/gateway
-      run: go build -v ./
+      run: |
+        go build -v ./
+        go test -v ./...
 
-    - name: Build Store service
+    - name: Check for changes in Store service
+      id: store
+      run: |
+        if git diff --quiet HEAD^ HEAD -- services/store; then
+          echo "changed=false" >> $GITHUB_ENV
+        else
+          echo "changed=true" >> $GITHUB_ENV
+        fi
+
+    - name: Build & Test Store service
+      if: env.changed == 'true'
       working-directory: ./services/store
-      run: go build -v ./
-
-    - name: Test Account service
-      working-directory: ./services/account
-      run: go test -v ./...
-
-    - name: Test Assertion service
-      working-directory: ./services/assertion
-      run: go test -v ./...
-
-    - name: Test Gateway service
-      working-directory: ./services/gateway
-      run: go test -v ./...
-
-    - name: Test Store service
-      working-directory: ./services/store
-      run: go test -v ./...
+      run: |
+        go build -v ./
+        go test -v ./...
