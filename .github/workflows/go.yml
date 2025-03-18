@@ -17,11 +17,66 @@ jobs:
         with:
           go-version: '1.22.2'
     
-      - name: Get changed files
+      - name: Get changed files in account service
         id: account_changed_files
         uses: tj-actions/changed-files@v45
         with:
           files: services/account/**
       
-      - name: Print changed files boolean
-        run: echo "${{ steps.account_changed_files.outputs.any_changed }}"
+      - name: Get changed files in assertion service
+        id: assertion_changed_files
+        uses: tj-actions/changed-files@v45
+        with:
+          files: services/assertion/**
+      
+      - name: Get changed files in gateway service
+        id: gateway_changed_files
+        uses: tj-actions/changed-files@v45
+        with:
+          files: services/gateway/**
+
+      - name: Get changed files in store service
+        id: store_changed_files
+        uses: tj-actions/changed-files@v45
+        with:
+          files: services/store/**
+      
+      - name: Build account service
+        if: steps.account_changed_files.outputs.any_changed == 'true'
+        working-directory: services/account
+        run: go build -v ./...
+
+      - name: Build assertion service
+        if: steps.assertion_changed_files.outputs.any_changed == 'true'
+        working-directory: services/assertion
+        run: go build -v ./...
+
+      - name: Build gateway service
+        if: steps.gateway_changed_files.outputs.any_changed == 'true'
+        working-directory: services/gateway
+        run: go build -v ./...
+
+      - name: Build store service
+        if: steps.store_changed_files.outputs.any_changed == 'true'
+        working-directory: services/store
+        run: go build -v ./...
+
+      - name: Test account service
+        if: steps.account_changed_files.outputs.any_changed == 'true'
+        working-directory: services/account
+        run: go test -v ./...
+
+      - name: Test assertion service
+        if: steps.assertion_changed_files.outputs.any_changed == 'true'
+        working-directory: services/assertion
+        run: go test -v ./...
+
+      - name: Test gateway service
+        if: steps.gateway_changed_files.outputs.any_changed == 'true'
+        working-directory: services/gateway
+        run: go test -v ./...
+
+      - name: Test store service
+        if: steps.store_changed_files.outputs.any_changed == 'true'
+        working-directory: services/store
+        run: go test -v ./...
