@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS public.ssh_keys
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now(),
     deleted_at timestamp with time zone,
-    public_key_string text COLLATE pg_catalog."default",
+    public_key_string text COLLATE pg_catalog."default" NOT NULL,
     account_id uuid,
     CONSTRAINT ssh_keys_pkey PRIMARY KEY (id),
     CONSTRAINT fk_accounts_ssh_keys FOREIGN KEY (account_id)
