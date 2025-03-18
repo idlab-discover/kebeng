@@ -15,7 +15,7 @@ import (
 	"github.com/idlab-discover/kebeng/services/store/internal/models"
 	"github.com/jmoiron/sqlx"
 
-	cerror "github.com/idlab-discover/kebeng/common/error"
+	cerror "github.com/idlab-discover/kebeng/common/cerror"
 )
 
 type ISnapsRepository interface {

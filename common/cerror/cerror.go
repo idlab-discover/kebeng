@@ -61,10 +61,10 @@ func (e *CustomError) GetMessage() string {
 }
 
 // helper struct
-type ErrorList []CustomError
+type ErrorList []*CustomError
 
-func New(code, message string) CustomError {
-	return CustomError{
+func NewCustomError(code, message string) *CustomError {
+	return &CustomError{
 		Code:    code,
 		Message: message,
 	}
@@ -102,12 +102,12 @@ func buildCustomError(code, defaultMessage string, message ...string) *CustomErr
 	}
 }
 
-func (el *ErrorList) AddCustomError(err CustomError) {
+func (el *ErrorList) AddCustomError(err *CustomError) {
 	*el = append(*el, err)
 }
 
 func (el *ErrorList) Add(code, message string) {
-	*el = append(*el, CustomError{
+	*el = append(*el, &CustomError{
 		Code:    code,
 		Message: message,
 	})
