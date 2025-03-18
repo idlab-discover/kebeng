@@ -405,34 +405,10 @@ func (sp *SnapsRepository) GetEntryById(Id uuid.UUID, preloadAssociations []stri
 		return nil, cerror.ConvertError(err, "resource not found: snap with id = '%s'", Id.String())
 	}
 
-	all := slices.Contains(preloadAssociations, models.ALL)
-
-	switch {
-	case all || slices.Contains(preloadAssociations, models.COMMENT):
-		resp, err := sp.GetCommentsByEntryId(snapEntry.ID)
-		if err != nil {
-			// Already logged in GetCommentsByEntryId
-			return nil, err
-		}
-		snapEntry.LatestComments = resp
-		fallthrough
-
-	case all || slices.Contains(preloadAssociations, models.REVISION) || all:
-		resp, err := sp.GetRevisionsByEntryId(snapEntry.ID)
-		if err != nil {
-			// Already logged in GetRevisionsByEntryId
-			return nil, err
-		}
-		snapEntry.Revisions = resp
-		fallthrough
-
-	case all || slices.Contains(preloadAssociations, models.UPLOAD):
-		resp, err := sp.GetUploadsByEntryId(snapEntry.ID)
-		if err != nil {
-			// Already logged in GetUploadsByEntryId
-			return nil, err
-		}
-		snapEntry.Uploads = resp
+	cerr := sp.getPreloadAssociations(&snapEntry, &preloadAssociations)
+	if cerr != nil {
+		logrus.Error("failed to preload associations")
+		return nil, cerr
 	}
 
 	return &snapEntry, nil
@@ -455,34 +431,10 @@ func (sp *SnapsRepository) GetEntryByName(name string, preloadAssociations []str
 		return nil, cerror.ConvertError(err, "resource not found: snap with name = '%s'", name)
 	}
 
-	all := slices.Contains(preloadAssociations, models.ALL)
-
-	switch {
-	case all || slices.Contains(preloadAssociations, models.COMMENT):
-		resp, err := sp.GetCommentsByEntryId(snapEntry.ID)
-		if err != nil {
-			// Already logged in GetCommentsByEntryId
-			return nil, err
-		}
-		snapEntry.LatestComments = resp
-		fallthrough
-
-	case all || slices.Contains(preloadAssociations, models.REVISION) || all:
-		resp, err := sp.GetRevisionsByEntryId(snapEntry.ID)
-		if err != nil {
-			// Already logged in GetRevisionsByEntryId
-			return nil, err
-		}
-		snapEntry.Revisions = resp
-		fallthrough
-
-	case all || slices.Contains(preloadAssociations, models.UPLOAD):
-		resp, err := sp.GetUploadsByEntryId(snapEntry.ID)
-		if err != nil {
-			// Already logged in GetUploadsByEntryId
-			return nil, err
-		}
-		snapEntry.Uploads = resp
+	cerr := sp.getPreloadAssociations(&snapEntry, &preloadAssociations)
+	if cerr != nil {
+		logrus.Error("failed to preload associations")
+		return nil, cerr
 	}
 
 	return &snapEntry, nil
@@ -748,34 +700,10 @@ func (sp *SnapsRepository) GetEntriesByAccountId(accountId uuid.UUID, preloadAss
 
 	for _, entry := range entries {
 
-		all := slices.Contains(preloadAssociations, models.ALL)
-
-		switch {
-		case all || slices.Contains(preloadAssociations, models.COMMENT):
-			resp, err := sp.GetCommentsByEntryId(entry.ID)
-			if err != nil {
-				logrus.Error(err)
-				return nil, err
-			}
-			entry.LatestComments = resp
-			fallthrough
-
-		case all || slices.Contains(preloadAssociations, models.REVISION) || all:
-			resp, err := sp.GetRevisionsByEntryId(entry.ID)
-			if err != nil {
-				logrus.Error(err)
-				return nil, err
-			}
-			entry.Revisions = resp
-			fallthrough
-
-		case all || slices.Contains(preloadAssociations, models.UPLOAD):
-			resp, err := sp.GetUploadsByEntryId(entry.ID)
-			if err != nil {
-				logrus.Error(err)
-				return nil, err
-			}
-			entry.Uploads = resp
+		cerr := sp.getPreloadAssociations(entry, &preloadAssociations)
+		if cerr != nil {
+			logrus.Error("failed to preload associations")
+			return nil, cerr
 		}
 	}
 
@@ -843,35 +771,44 @@ func (sp *SnapsRepository) getSnap(whereModel *models.SnapEntry, preloadAssociat
 		return nil, cerror.ConvertError(err, "resource not found: snap with id = '%s'", whereModel.ID.String())
 	}
 
-	all := slices.Contains(preloadAssociations, models.ALL)
-
-	switch {
-	case all || slices.Contains(preloadAssociations, models.COMMENT):
-		resp, err := sp.GetCommentsByEntryId(snapEntry.ID)
-		if err != nil {
-			logrus.Error(err)
-			return nil, err
-		}
-		snapEntry.LatestComments = resp
-		fallthrough
-
-	case all || slices.Contains(preloadAssociations, models.REVISION) || all:
-		resp, err := sp.GetRevisionsByEntryId(snapEntry.ID)
-		if err != nil {
-			logrus.Error(err)
-			return nil, err
-		}
-		snapEntry.Revisions = resp
-		fallthrough
-
-	case all || slices.Contains(preloadAssociations, models.UPLOAD):
-		resp, err := sp.GetUploadsByEntryId(snapEntry.ID)
-		if err != nil {
-			logrus.Error(err)
-			return nil, err
-		}
-		snapEntry.Uploads = resp
+	cerr := sp.getPreloadAssociations(&snapEntry, &preloadAssociations)
+	if cerr != nil {
+		logrus.Error("failed to preload associations")
+		return nil, cerr
 	}
 
 	return &snapEntry, nil
+}
+
+func (sp *SnapsRepository) getPreloadAssociations(entry *models.SnapEntry, preloadAssociations *[]string) *cerror.CustomError {
+	all := slices.Contains(*preloadAssociations, models.ALL)
+
+	switch {
+	case all || slices.Contains(*preloadAssociations, models.COMMENT):
+		resp, err := sp.GetCommentsByEntryId(entry.ID)
+		if err != nil {
+			// Already logged in GetCommentsByEntryId
+			return err
+		}
+		entry.LatestComments = resp
+		fallthrough
+
+	case all || slices.Contains(*preloadAssociations, models.REVISION) || all:
+		resp, err := sp.GetRevisionsByEntryId(entry.ID)
+		if err != nil {
+			// Already logged in GetRevisionsByEntryId
+			return err
+		}
+		entry.Revisions = resp
+		fallthrough
+
+	case all || slices.Contains(*preloadAssociations, models.UPLOAD):
+		resp, err := sp.GetUploadsByEntryId(entry.ID)
+		if err != nil {
+			// Already logged in GetUploadsByEntryId
+			return err
+		}
+		entry.Uploads = resp
+	}
+	return nil
 }
