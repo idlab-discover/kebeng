@@ -49,7 +49,7 @@ func (a *AccountRepository) CreateAccount(ctx context.Context, account *models.A
 	rows, err := a.db.NamedQueryContext(ctx, query, account)
 	if err != nil {
 		logrus.Error(err)
-		return nil, cerror.ConvertError(err)
+		return nil, cerror.ConvertError(err, fmt.Sprintf("could not create account with email '%s'", account.Email))
 	}
 	defer rows.Close()
 
@@ -61,7 +61,7 @@ func (a *AccountRepository) CreateAccount(ctx context.Context, account *models.A
 		}
 	} else {
 		logrus.Error(err)
-		return nil, cerror.NewCustomError(cerror.DatabaseError, "failed to insert account")
+		return nil, cerror.NewCustomError(cerror.DatabaseError, fmt.Sprintf("failed to insert account with email '%s'", account.Email))
 	}
 
 	return account, nil
@@ -171,17 +171,18 @@ func (a *AccountRepository) AddKeyToAccountByEmail(ctx context.Context, name, sh
 	}
 
 	// Create a new key value.
+	until := time.Now().AddDate(1, 0, 0)
 	newKey := models.Key{
 		Name:             name,
 		SHA3384:          sha3384,
 		EncodedPublicKey: encodedPublicKey,
 		AccountID:        acct.ID,
-		Until:            time.Now().AddDate(1, 0, 0), // 1 year from now TODO: check what this value should be
+		Until:            &until, // 1 year from now TODO: check what this value should be
 	}
 
 	query := `
-        INSERT INTO keys (name, sha3384, encoded_public_key, account_id)
-        VALUES (:name, :sha3384, :encoded_public_key, :account_id)
+	INSERT INTO keys (name, sha3384, encoded_public_key, account_id, until)
+	VALUES (:name, :sha3384, :encoded_public_key, :account_id, :until)
         RETURNING id, name, sha3384, encoded_public_key, account_id, until, created_at, updated_at, deleted_at
     `
 
@@ -249,7 +250,7 @@ func (a *AccountRepository) GetSSHKeysByAccountID(ctx context.Context, accountID
 
 // filter function that returns keys based on filter
 func (a *AccountRepository) FilterKeys(ctx context.Context, filter *models.Key, takeFirst bool) (*models.Key, *cerror.CustomError) {
-	// Start with a base query.
+	// start with base query
 	query := "SELECT * FROM keys WHERE 1=1"
 	params := make(map[string]interface{})
 
@@ -273,19 +274,19 @@ func (a *AccountRepository) FilterKeys(ctx context.Context, filter *models.Key, 
 		query += " AND account_id = :account_id"
 		params["account_id"] = filter.AccountID
 	}
-	if !filter.Until.IsZero() {
+	if filter.Until != nil && !filter.Until.IsZero() {
 		query += " AND until = :until"
 		params["until"] = filter.Until
 	}
-	if !filter.CreatedAt.IsZero() {
+	if filter.CreatedAt != nil && !filter.CreatedAt.IsZero() {
 		query += " AND created_at = :created_at"
 		params["created_at"] = filter.CreatedAt
 	}
-	if !filter.UpdatedAt.IsZero() {
+	if filter.UpdatedAt != nil && !filter.UpdatedAt.IsZero() {
 		query += " AND updated_at = :updated_at"
 		params["updated_at"] = filter.UpdatedAt
 	}
-	if filter.DeletedAt != nil {
+	if filter.DeletedAt != nil && !filter.DeletedAt.IsZero() {
 		query += " AND deleted_at = :deleted_at"
 		params["deleted_at"] = filter.DeletedAt
 	}
@@ -341,15 +342,15 @@ func (a *AccountRepository) FilterAccounts(ctx context.Context, filter *models.A
 		query += " AND email = :email"
 		params["email"] = filter.Email
 	}
-	if !filter.CreatedAt.IsZero() {
+	if filter.CreatedAt != nil && !filter.CreatedAt.IsZero() {
 		query += " AND created_at = :created_at"
 		params["created_at"] = filter.CreatedAt
 	}
-	if !filter.UpdatedAt.IsZero() {
+	if filter.UpdatedAt != nil && !filter.UpdatedAt.IsZero() {
 		query += " AND updated_at = :updated_at"
 		params["updated_at"] = filter.UpdatedAt
 	}
-	if filter.DeletedAt != nil {
+	if filter.DeletedAt != nil && !filter.DeletedAt.IsZero() {
 		query += " AND deleted_at = :deleted_at"
 		params["deleted_at"] = filter.DeletedAt
 	}
