@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	cerror "github.com/idlab-discover/kebeng/common/error"
+	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/idlab-discover/kebeng/services/account/internal/config"
 	proto "github.com/idlab-discover/kebeng/services/account/proto"
 	"github.com/sirupsen/logrus"
