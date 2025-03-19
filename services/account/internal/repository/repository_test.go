@@ -346,3 +346,95 @@ func TestDeleteAccount(t *testing.T) {
 		assert.Nil(t, err, "expected no error when deleting a non-existent account")
 	})
 }
+
+func TestGetAccountByEmail(t *testing.T) {
+	// create user
+	createdAt := time.Now()
+	updatedAt := time.Now()
+	original := &models.Account{
+		ID:           uuid.New(),
+		DisplayName:  "Duncan",
+		Username:     "duncan123",
+		Email:        "duncan@example.com",
+		PasswordHash: "duncanHash1",
+		CreatedAt:    &createdAt,
+		UpdatedAt:    &updatedAt,
+	}
+
+	insertQuery := `
+		INSERT INTO accounts (id, display_name, username, email, password_hash, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+	`
+	_, err := globalDB.ExecContext(context.Background(), insertQuery,
+		original.ID,
+		original.DisplayName,
+		original.Username,
+		original.Email,
+		original.PasswordHash,
+		original.CreatedAt,
+		original.UpdatedAt,
+	)
+	if err != nil {
+		t.Fatalf("failed to insert initial account: %v", err)
+	}
+	t.Logf("Inserted initial account: %+v", original)
+
+	// Insert an SSH key associated with this account.
+	sshKeyID := uuid.New()
+	keyValue := "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC..."
+	sshCreatedAt := time.Now()
+	sshUpdatedAt := time.Now()
+
+	insertKeyQuery := `
+		INSERT INTO ssh_keys (id, account_id, public_key_string, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5)
+	`
+	_, err = globalDB.ExecContext(context.Background(), insertKeyQuery,
+		sshKeyID,
+		original.ID,
+		keyValue,
+		&sshCreatedAt,
+		&sshUpdatedAt,
+	)
+	if err != nil {
+		t.Fatalf("failed to insert SSH key: %v", err)
+	}
+
+	t.Run("get account by Email no associations", func(t *testing.T) {
+		acc, cerr := globalRepo.GetAccountByEmail(context.Background(), original.Email, []string{})
+		assert.Nil(t, cerr, "expected no error when getting account without associations")
+		assert.Equal(t, original.ID, acc.ID)
+		assert.Equal(t, original.Email, acc.Email)
+		// Without associations, SSHKeys should be nil or empty.
+		assert.True(t, acc.SSHKeys == nil || len(acc.SSHKeys) == 0, "expected no SSHKeys without association")
+	})
+
+	t.Run("get account by Email with SSHKey association", func(t *testing.T) {
+		acc, cerr := globalRepo.GetAccountByEmail(context.Background(), original.Email, []string{models.SSHKEY})
+		assert.Nil(t, cerr, "expected no error when getting account with SSHKey association")
+		assert.Equal(t, original.ID, acc.ID)
+		assert.Equal(t, original.Email, acc.Email)
+		// Now we expect SSHKeys to be present.
+		assert.NotNil(t, acc.SSHKeys, "expected SSHKeys to be fetched")
+		assert.Greater(t, len(acc.SSHKeys), 0, "expected at least one SSHKey")
+		// Optionally check that our inserted key is in the list.
+		found := false
+		for _, k := range acc.SSHKeys {
+			if k.ID == sshKeyID {
+				found = true
+				break
+			}
+		}
+		assert.True(t, found, "expected inserted SSHKey to be found")
+	})
+
+	t.Run("get account by Email with ALL associations", func(t *testing.T) {
+		acc, cerr := globalRepo.GetAccountByEmail(context.Background(), original.Email, []string{models.ALL})
+		assert.Nil(t, cerr, "expected no error when getting account with ALL associations")
+		assert.Equal(t, original.ID, acc.ID)
+		assert.Equal(t, original.Email, acc.Email)
+		// Expect associations to be present.
+		assert.NotNil(t, acc.SSHKeys, "expected SSHKeys to be fetched")
+		assert.Greater(t, len(acc.SSHKeys), 0, "expected at least one SSHKey")
+	})
+}
