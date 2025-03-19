@@ -13,9 +13,9 @@ import (
 )
 
 const (
-	AlreadyClaimed             = "already_claimed"
-	AlreadyOwned               = "already_owned"
-	AlreadyRegistered          = "already_registered"
+	AlreadyClaimed             = "already-claimed"
+	AlreadyOwned               = "already-owned"
+	AlreadyRegistered          = "already-registered"
 	AssertionCreationFailed    = "assertion-creation-failed"
 	BadRequest                 = "bad-request"
 	DatabaseError              = "database-error"
@@ -23,7 +23,7 @@ const (
 	FeatureDisabled            = "feature-disabled"
 	InternalServerError        = "internal-server-error"
 	Invalid                    = "invalid"
-	InvalidChoice              = "invalid_choice"
+	InvalidChoice              = "invalid-choice"
 	InvalidField               = "invalid-field"
 	MacaroonPermissionRequired = "macaroon-permission-required"
 	MediaFileSizeTooBig        = "media-file-size-too-big"
@@ -36,13 +36,13 @@ const (
 	NameNotAvailableForDispute = "name-not-available-for-dispute"
 	NameNotRegistered          = "name-not-registered"
 	NotImplemented             = "not-implemented"
-	RegisterWindow             = "register_window"
+	RegisterWindow             = "register-window"
 	Required                   = "required"
-	ReservedName               = "reserved_name"
+	ReservedName               = "reserved-name"
 	ResourceForbidden          = "resource-forbidden"
 	ResourceNotFound           = "resource-not-found"
 	ResourceNotReady           = "resource-not-ready"
-	RevokedName                = "revoked_name"
+	RevokedName                = "revoked-name"
 	Unauthorized               = "unauthorized"
 	UserNotReady               = "user-not-ready"
 )

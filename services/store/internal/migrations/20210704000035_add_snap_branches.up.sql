@@ -8,8 +8,8 @@ create table snap_branches
     deleted_at    timestamp with time zone,
     name          text,
     snap_risk_id  uuid
-        constraint fk_snap_risks_branches
-            references snap_risks,
+        constraint fk_snap_channels_branches
+            references snap_channels,
     snap_entry_id uuid
         constraint fk_snap_branches_snap_entry
             references snap_entries,

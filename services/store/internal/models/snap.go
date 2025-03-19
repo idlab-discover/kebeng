@@ -115,7 +115,6 @@ type SnapUpload struct {
 	CreatedAt time.Time    `db:"created_at"`
 	UpdatedAt time.Time    `db:"updated_at"`
 	DeletedAt sql.NullTime `db:"deleted_at"`
-	Name      string       `db:"name"`
 	UpDownID  string       `db:"up_down_id"`
 	Filesize  uint         `db:"filesize"`
 	// Channels is a comma-separated string of channels
