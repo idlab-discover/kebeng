@@ -2,9 +2,10 @@ package logic
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
-	cerror "github.com/idlab-discover/kebeng/common/error"
+	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/idlab-discover/kebeng/services/account/internal/config"
 	"github.com/idlab-discover/kebeng/services/account/internal/models"
 	"github.com/idlab-discover/kebeng/services/account/internal/repository"
@@ -29,6 +30,13 @@ func NewAccountService(repo *repository.AccountRepository, config *config.Config
 	return &AccountService{repo: repo, config: config}
 }
 
+func ptrTimeToPtrTimestamp(t *time.Time) *timestamppb.Timestamp {
+	if t == nil {
+		return nil
+	}
+	return timestamppb.New(*t)
+}
+
 func (a *AccountService) CreateAccount(ctx context.Context, req *proto.CreateAccountRequest) (*proto.AccountResponse, error) {
 	el := make([]*proto.Error, 0)
 	account := &models.Account{
@@ -40,8 +48,8 @@ func (a *AccountService) CreateAccount(ctx context.Context, req *proto.CreateAcc
 	createdAccount, err := a.repo.CreateAccount(ctx, account)
 	if err != nil {
 		el = append(el, &proto.Error{
-			Code:    cerror.InternalServerError,
-			Message: err.Error(),
+			Code:    err.GetCode(),
+			Message: err.GetMessage(),
 		})
 		return &proto.AccountResponse{Errors: el}, nil
 	}
@@ -67,11 +75,11 @@ func (a *AccountService) UpdateAccount(ctx context.Context, req *proto.UpdateAcc
 		Email:       req.Email,
 	}
 
-	updatedAccount, err := a.repo.UpdateAccount(ctx, account)
-	if err != nil {
+	updatedAccount, cerr := a.repo.UpdateAccount(ctx, account)
+	if cerr != nil {
 		el = append(el, &proto.Error{
-			Code:    cerror.InternalServerError,
-			Message: err.Error(),
+			Code:    cerr.GetCode(),
+			Message: cerr.GetMessage(),
 		})
 		return &proto.AccountResponse{Errors: el}, nil
 	}
@@ -92,8 +100,8 @@ func (a *AccountService) DeleteAccount(ctx context.Context, req *proto.DeleteAcc
 
 	if err := a.repo.DeleteAccount(ctx, accountID); err != nil {
 		el = append(el, &proto.Error{
-			Code:    cerror.InternalServerError,
-			Message: err.Error(),
+			Code:    err.GetCode(),
+			Message: err.GetMessage(),
 		})
 		return &proto.DeleteAccountResponse{Success: false, Errors: el}, nil
 	}
@@ -106,8 +114,8 @@ func (a *AccountService) GetAccountByEmail(ctx context.Context, req *proto.GetAc
 	account, err := a.repo.GetAccountByEmail(ctx, req.Email, []string{models.ALL})
 	if err != nil {
 		el = append(el, &proto.Error{
-			Code:    cerror.InternalServerError,
-			Message: err.Error(),
+			Code:    err.GetCode(),
+			Message: err.GetMessage(),
 		})
 		return &proto.AccountResponse{Errors: el}, nil
 	}
@@ -126,11 +134,11 @@ func (a *AccountService) GetAccountByID(ctx context.Context, req *proto.GetAccou
 		return &proto.AccountResponse{Errors: el}, nil
 	}
 
-	account, err := a.repo.GetAccountByID(ctx, accountID, []string{models.ALL})
-	if err != nil {
+	account, cerr := a.repo.GetAccountByID(ctx, accountID, []string{models.ALL})
+	if cerr != nil {
 		el = append(el, &proto.Error{
-			Code:    cerror.InternalServerError,
-			Message: err.Error(),
+			Code:    cerr.GetCode(),
+			Message: cerr.GetMessage(),
 		})
 		return &proto.AccountResponse{Errors: el}, nil
 	}
@@ -161,8 +169,8 @@ func (a *AccountService) GetAccountsByIds(ctx context.Context, req *proto.GetAcc
 		account, err := a.repo.GetAccountByID(ctx, id, []string{models.ALL})
 		if err != nil {
 			el = append(el, &proto.Error{
-				Code:    cerror.InternalServerError,
-				Message: err.Error(),
+				Code:    err.GetCode(),
+				Message: err.GetMessage(),
 			})
 		}
 		// convert to proto
@@ -177,8 +185,8 @@ func (a *AccountService) GetAccountByUsername(ctx context.Context, req *proto.Ge
 	account, err := a.repo.GetAccountByUsername(ctx, req.Username, []string{models.ALL})
 	if err != nil {
 		el = append(el, &proto.Error{
-			Code:    cerror.InternalServerError,
-			Message: err.Error(),
+			Code:    err.GetCode(),
+			Message: err.GetMessage(),
 		})
 		return &proto.AccountResponse{Errors: el}, nil
 	}
@@ -191,8 +199,8 @@ func (a *AccountService) AddKey(ctx context.Context, req *proto.AddKeyRequest) (
 	key, err := a.repo.AddKeyToAccountByEmail(ctx, req.KeyName, req.Sha3384, req.EncodedPublicKey, req.AccountEmail)
 	if err != nil {
 		el = append(el, &proto.Error{
-			Code:    cerror.InternalServerError,
-			Message: err.Error(),
+			Code:    err.GetCode(),
+			Message: err.GetMessage(),
 		})
 		return &proto.KeyResponse{Errors: el}, nil
 	}
@@ -209,8 +217,8 @@ func (a *AccountService) GetKey(ctx context.Context, req *proto.GetKeyBySHA3384R
 	key, err := a.repo.GetKeyBySHA3384(ctx, req.Sha3384)
 	if err != nil {
 		el = append(el, &proto.Error{
-			Code:    cerror.InternalServerError,
-			Message: err.Error(),
+			Code:    err.GetCode(),
+			Message: err.GetMessage(),
 		})
 		return &proto.KeyResponse{Errors: el}, nil
 	}
@@ -235,11 +243,11 @@ func (a *AccountService) GetKeysByAccountId(ctx context.Context, req *proto.GetK
 	}
 
 	// get keys
-	keys, err := a.repo.GetKeysByAccountID(ctx, accountID)
-	if err != nil {
+	keys, cerr := a.repo.GetKeysByAccountID(ctx, accountID)
+	if cerr != nil {
 		el = append(el, &proto.Error{
-			Code:    cerror.InternalServerError,
-			Message: err.Error(),
+			Code:    cerr.GetCode(),
+			Message: cerr.GetMessage(),
 		})
 		return &proto.KeysResponse{Errors: el}, nil
 	}
@@ -251,8 +259,8 @@ func (a *AccountService) GetKeysByAccountId(ctx context.Context, req *proto.GetK
 			Name:             key.Name,
 			Sha3384:          key.SHA3384,
 			EncodedPublicKey: key.EncodedPublicKey,
-			Since:            timestamppb.New(key.CreatedAt),
-			Until:            timestamppb.New(key.Until),
+			Since:            ptrTimeToPtrTimestamp(key.CreatedAt),
+			Until:            ptrTimeToPtrTimestamp(key.Until),
 		})
 	}
 
@@ -268,7 +276,7 @@ func (a *AccountService) convertToProtoAccount(account *models.Account, el []*pr
 		DisplayName: account.DisplayName,
 		Username:    account.Username,
 		Email:       account.Email,
-		Validation:  *account.Validation,
+		Validation:  account.Validation,
 		Errors:      el,
 	}
 }

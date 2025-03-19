@@ -13,7 +13,6 @@ service AccountService {
     rpc GetAccountByID(GetAccountByIDRequest) returns (AccountResponse);
     rpc GetAccountsByIds(GetAccountsByIdsRequest) returns (GetAccountsByIdsResponse);
     rpc GetAccountByUsername(GetAccountByUsernameRequest) returns (AccountResponse);
-
     rpc AddKey(AddKeyRequest) returns (KeyResponse);
     rpc GetKeyBySHA3384(GetKeyBySHA3384Request) returns (KeyResponse);
     rpc GetKeysByAccountId(GetKeysByAccountIdRequest) returns (KeysResponse);
@@ -29,7 +28,7 @@ message AccountResponse {
     string display_name = 2;
     string username = 3;
     string email = 4;
-    string validation = 5;
+    optional string validation = 5;
     repeated Error errors = 6;
 }
 
@@ -73,12 +72,14 @@ message GetAccountByUsernameRequest {
 }
 
 message KeyResponse {
-    string name = 1;
-    string sha3384 = 2;
-    string encoded_public_key = 3;
-    google.protobuf.Timestamp since = 5;
-    google.protobuf.Timestamp until = 6;   
-    repeated Error errors = 4;
+    string id = 1;
+    string name = 2;
+    string sha3384 = 3;
+    string encoded_public_key = 4;
+    // Use google.protobuf.Timestamp for fields that are pointers in Go.
+    optional google.protobuf.Timestamp since = 5;
+    optional google.protobuf.Timestamp until = 6;   
+    repeated Error errors = 7;
 }
 
 message AddKeyRequest {
@@ -92,7 +93,6 @@ message GetKeyBySHA3384Request {
     string sha3384 = 1;
 }
 
-
 message GetKeysByAccountIdRequest {
     string account_id = 1;
 }
@@ -105,4 +105,3 @@ message GetAccountsByIdsResponse {
     repeated AccountResponse accounts = 1;
     repeated Error errors = 2;
 }
-
