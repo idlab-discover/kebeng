@@ -41,29 +41,17 @@ func NewAccountRepository(db *sqlx.DB) *AccountRepository {
 }
 
 func (a *AccountRepository) CreateAccount(ctx context.Context, account *models.Account) (*models.Account, *cerror.CustomError) {
+	resp := models.Account{}
 	query := `
         INSERT INTO accounts (display_name, username, email, password_hash, updated_at)
-        VALUES (:display_name, :username, :email, :password_hash, :updated_at)
+        VALUES ($1, $2, $3, $4, $5)
         RETURNING id, display_name, username, email, password_hash, validation, created_at, updated_at, deleted_at
     `
-	rows, err := a.db.NamedQueryContext(ctx, query, account)
+	err := a.db.Get(&resp, query, account.DisplayName, account.Username, account.Email, account.PasswordHash, account.UpdatedAt)
 	if err != nil {
 		logrus.Error(err)
 		return nil, cerror.ConvertError(err, fmt.Sprintf("could not create account with email '%s'", account.Email))
 	}
-	defer rows.Close()
-
-	var newAccount models.Account
-	if rows.Next() {
-		if err := rows.StructScan(&newAccount); err != nil {
-			logrus.Error(err)
-			return nil, cerror.ConvertError(err)
-		}
-	} else {
-		logrus.Error(err)
-		return nil, cerror.NewCustomError(cerror.DatabaseError, fmt.Sprintf("failed to insert account with email '%s'", account.Email))
-	}
-
 	return account, nil
 }
 
