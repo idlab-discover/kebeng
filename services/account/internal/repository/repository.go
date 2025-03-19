@@ -64,7 +64,6 @@ func (a *AccountRepository) CreateAccount(ctx context.Context, account *models.A
 		return nil, cerror.NewCustomError(cerror.DatabaseError, "failed to insert account")
 	}
 
-	logrus.Error(err)
 	return account, nil
 }
 
@@ -121,14 +120,9 @@ func (a *AccountRepository) GetAccountByEmail(ctx context.Context, email string,
 	}
 
 	// TODO: check what difference between SSHKeys and Keys
-	all := slices.Contains(associations, models.ALL)
-	switch {
-	case all || slices.Contains(associations, models.SSHKEY):
-		sshKeys, err := a.GetSSHKeysByAccountID(ctx, account.ID)
-		if err != nil {
-			return nil, err
-		}
-		account.SSHKeys = sshKeys
+	cerr := a.handleAssociations(ctx, &account, associations)
+	if cerr != nil {
+		return nil, cerr
 	}
 
 	return &account, nil
@@ -144,14 +138,9 @@ func (a *AccountRepository) GetAccountByID(ctx context.Context, accountID uuid.U
 		return nil, cerror.ConvertError(err)
 	}
 
-	all := slices.Contains(associations, models.ALL)
-	switch {
-	case all || slices.Contains(associations, models.SSHKEY):
-		sshKeys, err := a.GetSSHKeysByAccountID(ctx, account.ID)
-		if err != nil {
-			return nil, err
-		}
-		account.SSHKeys = sshKeys
+	cerr := a.handleAssociations(ctx, &account, associations)
+	if cerr != nil {
+		return nil, cerr
 	}
 
 	return &account, nil
@@ -167,14 +156,9 @@ func (a *AccountRepository) GetAccountByUsername(ctx context.Context, username s
 		return nil, cerror.ConvertError(err)
 	}
 
-	all := slices.Contains(associations, models.ALL)
-	switch {
-	case all || slices.Contains(associations, models.SSHKEY):
-		sshKeys, err := a.GetSSHKeysByAccountID(ctx, account.ID)
-		if err != nil {
-			return nil, err
-		}
-		account.SSHKeys = sshKeys
+	cerr := a.handleAssociations(ctx, &account, associations)
+	if cerr != nil {
+		return nil, cerr
 	}
 
 	return &account, nil
@@ -401,4 +385,17 @@ func (a *AccountRepository) FilterAccounts(ctx context.Context, filter *models.A
 	}
 
 	return accounts, nil
+}
+
+func (a *AccountRepository) handleAssociations(ctx context.Context, account *models.Account, associations []string) *cerror.CustomError {
+	all := slices.Contains(associations, models.ALL)
+	switch {
+	case all || slices.Contains(associations, models.SSHKEY):
+		sshKeys, err := a.GetSSHKeysByAccountID(ctx, account.ID)
+		if err != nil {
+			return err
+		}
+		account.SSHKeys = sshKeys
+	}
+	return nil
 }
