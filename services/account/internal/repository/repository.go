@@ -41,50 +41,39 @@ func NewAccountRepository(db *sqlx.DB) *AccountRepository {
 }
 
 func (a *AccountRepository) CreateAccount(ctx context.Context, account *models.Account) (*models.Account, *cerror.CustomError) {
-	resp := models.Account{}
+	resp := &models.Account{}
 	query := `
         INSERT INTO accounts (display_name, username, email, password_hash, updated_at)
         VALUES ($1, $2, $3, $4, $5)
         RETURNING id, display_name, username, email, password_hash, validation, created_at, updated_at, deleted_at
     `
-	err := a.db.Get(&resp, query, account.DisplayName, account.Username, account.Email, account.PasswordHash, account.UpdatedAt)
+	err := a.db.Get(resp, query, account.DisplayName, account.Username, account.Email, account.PasswordHash, account.UpdatedAt)
 	if err != nil {
 		logrus.Error(err)
 		return nil, cerror.ConvertError(err, fmt.Sprintf("could not create account with email '%s'", account.Email))
 	}
-	return account, nil
+	return resp, nil
 }
 
 func (a *AccountRepository) UpdateAccount(ctx context.Context, account *models.Account) (*models.Account, *cerror.CustomError) {
+	resp := &models.Account{}
 	query := `
         UPDATE accounts
-        SET display_name    = :display_name,
-            username        = :username,
-            email           = :email,
-            password_hash   = :password_hash,
-            validation      = :validation,
-            updated_at      = :updated_at
-        WHERE id = :id
+        SET display_name    = $1,
+            username        = $2,
+            email           = $3,
+            password_hash   = $4,
+            validation      = $5,
+            updated_at      = $6
+        WHERE id = $7
         RETURNING id, display_name, username, email, password_hash, validation, created_at, updated_at, deleted_at
     `
-	rows, err := a.db.NamedQueryContext(ctx, query, account)
+	err := a.db.Get(resp, query, account.DisplayName, account.Username, account.Email, account.PasswordHash, account.Validation, account.UpdatedAt, account.ID)
 	if err != nil {
 		logrus.Error(err)
 		return nil, cerror.ConvertError(err)
 	}
-	defer rows.Close()
-
-	var updated models.Account
-	if rows.Next() {
-		if err := rows.StructScan(&updated); err != nil {
-			logrus.Error(err)
-			return nil, cerror.ConvertError(err)
-		}
-	} else {
-		logrus.Error(err)
-		return nil, cerror.NewCustomError(cerror.DatabaseError, "failed to update account")
-	}
-	return &updated, nil
+	return resp, nil
 }
 
 func (a *AccountRepository) DeleteAccount(ctx context.Context, accountID uuid.UUID) *cerror.CustomError {
@@ -158,7 +147,7 @@ func (a *AccountRepository) AddKeyToAccountByEmail(ctx context.Context, name, sh
 		return nil, cerr
 	}
 
-	// Create a new key value.
+	resp := &models.Key{}
 	until := time.Now().AddDate(1, 0, 0)
 	newKey := models.Key{
 		Name:             name,
@@ -170,29 +159,17 @@ func (a *AccountRepository) AddKeyToAccountByEmail(ctx context.Context, name, sh
 
 	query := `
 	INSERT INTO keys (name, sha3384, encoded_public_key, account_id, until)
-	VALUES (:name, :sha3384, :encoded_public_key, :account_id, :until)
+	VALUES ($1, $2, $3, $4, $5)
         RETURNING id, name, sha3384, encoded_public_key, account_id, until, created_at, updated_at, deleted_at
     `
 
-	rows, err := a.db.NamedQueryContext(ctx, query, newKey)
+	err := a.db.Get(resp, query, newKey.Name, newKey.SHA3384, newKey.EncodedPublicKey, newKey.AccountID, newKey.Until)
 	if err != nil {
 		logrus.Error(err)
 		return nil, cerror.ConvertError(err, fmt.Sprintf("could not add key with name '%s' for account id '%s'", name, acct.ID))
 	}
-	defer rows.Close()
 
-	var key models.Key
-	if rows.Next() {
-		if err := rows.StructScan(&key); err != nil {
-			logrus.Error(err)
-			return nil, cerror.ConvertError(err)
-		}
-	} else {
-		logrus.Errorf("failed to insert key for account id '%s'", acct.ID)
-		return nil, cerror.NewCustomError(cerror.DatabaseError, "failed to insert key")
-	}
-
-	return &key, nil
+	return resp, nil
 }
 
 func (a *AccountRepository) GetKeyBySHA3384(ctx context.Context, sha3384 string) (*models.Key, *cerror.CustomError) {
