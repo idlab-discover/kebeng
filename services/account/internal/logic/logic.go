@@ -2,6 +2,7 @@ package logic
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
@@ -27,6 +28,13 @@ type AccountService struct {
 
 func NewAccountService(repo *repository.AccountRepository, config *config.Config) *AccountService {
 	return &AccountService{repo: repo, config: config}
+}
+
+func ptrTimeToPtrTimestamp(t *time.Time) *timestamppb.Timestamp {
+	if t == nil {
+		return nil
+	}
+	return timestamppb.New(*t)
 }
 
 func (a *AccountService) CreateAccount(ctx context.Context, req *proto.CreateAccountRequest) (*proto.AccountResponse, error) {
@@ -127,7 +135,7 @@ func (a *AccountService) GetAccountByID(ctx context.Context, req *proto.GetAccou
 	}
 
 	account, cerr := a.repo.GetAccountByID(ctx, accountID, []string{models.ALL})
-	if err != nil {
+	if cerr != nil {
 		el = append(el, &proto.Error{
 			Code:    cerr.GetCode(),
 			Message: cerr.GetMessage(),
@@ -251,8 +259,8 @@ func (a *AccountService) GetKeysByAccountId(ctx context.Context, req *proto.GetK
 			Name:             key.Name,
 			Sha3384:          key.SHA3384,
 			EncodedPublicKey: key.EncodedPublicKey,
-			Since:            timestamppb.New(key.CreatedAt),
-			Until:            timestamppb.New(key.Until),
+			Since:            ptrTimeToPtrTimestamp(key.CreatedAt),
+			Until:            ptrTimeToPtrTimestamp(key.Until),
 		})
 	}
 
@@ -268,7 +276,7 @@ func (a *AccountService) convertToProtoAccount(account *models.Account, el []*pr
 		DisplayName: account.DisplayName,
 		Username:    account.Username,
 		Email:       account.Email,
-		Validation:  *account.Validation,
+		Validation:  account.Validation,
 		Errors:      el,
 	}
 }
