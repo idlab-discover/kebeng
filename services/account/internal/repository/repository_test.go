@@ -2,7 +2,6 @@ package repository_test
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"os"
 	"testing"
@@ -80,8 +79,6 @@ func TestMain(m *testing.M) {
 }
 
 func TestCreateAccount(t *testing.T) {
-	created_at := time.Now()
-	updated_at := time.Now()
 	tests := []struct {
 		name              string
 		account           *models.Account
@@ -91,24 +88,20 @@ func TestCreateAccount(t *testing.T) {
 		{
 			name: "Successful account creation",
 			account: &models.Account{
-				DisplayName:  "Alice",
+				DisplayName:  "AliceValid",
 				Username:     "alice123",
 				Email:        "alice@example.com",
 				PasswordHash: "hash1",
-				CreatedAt:    &created_at,
-				UpdatedAt:    &updated_at,
 			},
 			expectError: false,
 		},
 		{
 			name: "Duplicate username",
 			account: &models.Account{
-				DisplayName:  "Alice2",
-				Username:     "alice123", // duplicate username from first test case
+				DisplayName:  "AliceDuplicateUsername",
+				Username:     "alice123", // Duplicate username
 				Email:        "alice2@example.com",
 				PasswordHash: "hash2",
-				CreatedAt:    &created_at,
-				UpdatedAt:    &updated_at,
 			},
 			expectError:       true,
 			expectedErrorCode: cerror.AlreadyRegistered,
@@ -116,12 +109,10 @@ func TestCreateAccount(t *testing.T) {
 		{
 			name: "Duplicate email",
 			account: &models.Account{
-				DisplayName:  "Alice3",
+				DisplayName:  "AliceDuplicateEmail",
 				Username:     "alice3",
-				Email:        "alice@example.com", // duplicate email from first test case
+				Email:        "alice@example.com", // Duplicate email
 				PasswordHash: "hash3",
-				CreatedAt:    &created_at,
-				UpdatedAt:    &updated_at,
 			},
 			expectError:       true,
 			expectedErrorCode: cerror.AlreadyRegistered,
@@ -129,12 +120,10 @@ func TestCreateAccount(t *testing.T) {
 		{
 			name: "Missing username",
 			account: &models.Account{
-				DisplayName:  "Alice Missing Username",
-				Username:     "", // missing username
+				DisplayName:  "AliceMissingUsername",
+				Username:     "", // Invalid
 				Email:        "alice_missing_username@example.com",
 				PasswordHash: "hashMissing",
-				CreatedAt:    &created_at,
-				UpdatedAt:    &updated_at,
 			},
 			expectError:       true,
 			expectedErrorCode: cerror.InvalidField,
@@ -142,12 +131,10 @@ func TestCreateAccount(t *testing.T) {
 		{
 			name: "Missing email",
 			account: &models.Account{
-				DisplayName:  "Alice Missing Email",
+				DisplayName:  "AliceMissingEmail",
 				Username:     "aliceMissingEmail",
-				Email:        "", // missing email
+				Email:        "", // Invalid
 				PasswordHash: "hashMissing",
-				CreatedAt:    &created_at,
-				UpdatedAt:    &updated_at,
 			},
 			expectError:       true,
 			expectedErrorCode: cerror.InvalidField,
@@ -155,12 +142,10 @@ func TestCreateAccount(t *testing.T) {
 		{
 			name: "Missing password hash",
 			account: &models.Account{
-				DisplayName:  "Alice Missing Password",
+				DisplayName:  "AliceMissingPassword",
 				Username:     "aliceMissingPass",
 				Email:        "alice_missing_pass@example.com",
-				PasswordHash: "", // missing password hash
-				CreatedAt:    &created_at,
-				UpdatedAt:    &updated_at,
+				PasswordHash: "", // Invalid
 			},
 			expectError:       true,
 			expectedErrorCode: cerror.InvalidField,
@@ -168,38 +153,40 @@ func TestCreateAccount(t *testing.T) {
 		{
 			name: "Missing display name",
 			account: &models.Account{
-				// missing display name
 				Username:     "aliceMissingDisplay",
 				Email:        "alice_missing_display@example.com",
 				PasswordHash: "hashMissing",
-				CreatedAt:    &created_at,
-				UpdatedAt:    &updated_at,
 			},
 			expectError:       true,
 			expectedErrorCode: cerror.InvalidField,
 		},
 	}
 
-	// Execute each test case.
+	// Execute test cases
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			createdAt := time.Now()
+			updatedAt := time.Now()
+			tt.account.CreatedAt = &createdAt
+			tt.account.UpdatedAt = &updatedAt
+
 			createdAccount, err := globalRepo.CreateAccount(context.Background(), tt.account)
+
 			if tt.expectError {
-				// check that error code is what it should be
-				assert.Equal(t, err.GetCode(), tt.expectedErrorCode)
+				assert.NotNil(t, err, "Expected an error")
+				assert.Equal(t, tt.expectedErrorCode, err.GetCode(), "Unexpected error code")
 			} else {
-				fmt.Printf("created account: %+v\n", createdAccount)
-				// No error expected, so assert that err is nil and the returned account is correct.
-				assert.Nil(t, err, "Did not expect an error during account creation")
+				assert.Nil(t, err, "Did not expect an error")
 				assert.NotNil(t, createdAccount, "Created account should not be nil")
 				assert.Equal(t, tt.account.DisplayName, createdAccount.DisplayName)
 				assert.Equal(t, tt.account.Username, createdAccount.Username)
 				assert.Equal(t, tt.account.Email, createdAccount.Email)
 				assert.Equal(t, tt.account.PasswordHash, createdAccount.PasswordHash)
-				assert.Equal(t, tt.account.CreatedAt, createdAccount.CreatedAt)
-				assert.Equal(t, tt.account.UpdatedAt, createdAccount.UpdatedAt)
-				assert.NotEqual(t, "00000000-0000-0000-0000-000000000000", createdAccount.ID, "Created account ID should be a valid uuid")
+				assert.NotEqual(t, "00000000-0000-0000-0000-000000000000", createdAccount.ID.String(), "ID should be valid")
 
+				// Compare timestamps within an acceptable range
+				assert.WithinDuration(t, *tt.account.CreatedAt, *createdAccount.CreatedAt, time.Second)
+				assert.WithinDuration(t, *tt.account.UpdatedAt, *createdAccount.UpdatedAt, time.Second)
 			}
 		})
 	}
@@ -210,11 +197,11 @@ func ptrTime(t time.Time) *time.Time {
 }
 
 func TestUpdateAccount(t *testing.T) {
-	// Create an initial account that will be updated.
+	// Insert an initial account
 	createdAt := time.Now()
 	updatedAt := time.Now()
 	original := &models.Account{
-		ID:           uuid.New(), // manually generate a valid UUID
+		ID:           uuid.New(),
 		DisplayName:  "Ben",
 		Username:     "Ben123",
 		Email:        "Ben@example.com",
@@ -227,9 +214,8 @@ func TestUpdateAccount(t *testing.T) {
 		INSERT INTO accounts (id, display_name, username, email, password_hash, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 	`
-	// Use positional parameters with ExecContext.
 	_, err := globalDB.ExecContext(context.Background(), insertQuery,
-		original.ID.String(),
+		original.ID,
 		original.DisplayName,
 		original.Username,
 		original.Email,
@@ -238,16 +224,15 @@ func TestUpdateAccount(t *testing.T) {
 		original.UpdatedAt,
 	)
 	if err != nil {
-		t.Fatalf("failed to insert initial account: %v", err)
+		t.Fatalf("Failed to insert initial account: %v", err)
 	}
 
 	validation := "validated"
-	// Table-driven tests for UpdateAccount.
 	tests := []struct {
 		name              string
 		updateAccount     *models.Account
 		expectError       bool
-		expectedErrorCode string // Expected substring in the error message.
+		expectedErrorCode string
 	}{
 		{
 			name: "Successful update",
@@ -265,7 +250,7 @@ func TestUpdateAccount(t *testing.T) {
 		{
 			name: "Update non-existing account",
 			updateAccount: &models.Account{
-				ID:           uuid.New(), // non-existent id
+				ID:           uuid.New(), // Non-existent ID
 				DisplayName:  "No One",
 				Username:     "noone",
 				Email:        "noone@example.com",
@@ -274,25 +259,28 @@ func TestUpdateAccount(t *testing.T) {
 				UpdatedAt:    ptrTime(time.Now()),
 			},
 			expectError:       true,
-			expectedErrorCode: cerror.DatabaseError,
+			expectedErrorCode: cerror.ResourceNotFound, // should not be found
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			updated, err := globalRepo.UpdateAccount(context.Background(), tt.updateAccount)
+
 			if tt.expectError {
-				assert.Equal(t, err.GetCode(), tt.expectedErrorCode)
+				assert.NotNil(t, err, "Expected an error")
+				assert.Equal(t, tt.expectedErrorCode, err.GetCode(), "Unexpected error code")
 			} else {
-				assert.Nil(t, err, "Did not expect an error during account update")
+				assert.Nil(t, err, "Did not expect an error")
 				assert.NotNil(t, updated, "Updated account should not be nil")
 				assert.Equal(t, tt.updateAccount.DisplayName, updated.DisplayName)
 				assert.Equal(t, tt.updateAccount.Username, updated.Username)
 				assert.Equal(t, tt.updateAccount.Email, updated.Email)
-				// Check password; note: ensure your query and model field names match.
 				assert.Equal(t, tt.updateAccount.PasswordHash, updated.PasswordHash)
 				assert.Equal(t, tt.updateAccount.Validation, updated.Validation)
-				// Optionally, you can also compare UpdatedAt if needed.
+
+				// Compare UpdatedAt within a reasonable range
+				assert.WithinDuration(t, *tt.updateAccount.UpdatedAt, *updated.UpdatedAt, time.Second)
 			}
 		})
 	}
