@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS public.snap_entries
     updated_at timestamp with time zone DEFAULT now(),
     deleted_at timestamp with time zone,
     private BOOLEAN,
-    name text COLLATE pg_catalog."default",
+    name text UNIQUE COLLATE pg_catalog."default",
     type text COLLATE pg_catalog."default",
     confinement text COLLATE pg_catalog."default",
     account_id uuid,
