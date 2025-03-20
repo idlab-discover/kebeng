@@ -52,6 +52,7 @@ type CustomError struct {
 	Message string `json:"message"`
 }
 
+
 func (e *CustomError) GetCode() string {
 	return e.Code
 }
@@ -60,7 +61,6 @@ func (e *CustomError) GetMessage() string {
 	return e.Message
 }
 
-// helper struct
 type ErrorList []*CustomError
 
 func NewCustomError(code, message string) *CustomError {
@@ -89,6 +89,7 @@ func ConvertError(err error, message ...string) *CustomError {
 		Message: err.Error(),
 	}
 }
+
 
 func buildCustomError(code, defaultMessage string, message ...string) *CustomError {
 	msg := defaultMessage
