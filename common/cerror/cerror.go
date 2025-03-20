@@ -13,9 +13,9 @@ import (
 )
 
 const (
-	AlreadyClaimed             = "already_claimed"
-	AlreadyOwned               = "already_owned"
-	AlreadyRegistered          = "already_registered"
+	AlreadyClaimed             = "already-claimed"
+	AlreadyOwned               = "already-owned"
+	AlreadyRegistered          = "already-registered"
 	AssertionCreationFailed    = "assertion-creation-failed"
 	BadRequest                 = "bad-request"
 	DatabaseError              = "database-error"
@@ -23,7 +23,7 @@ const (
 	FeatureDisabled            = "feature-disabled"
 	InternalServerError        = "internal-server-error"
 	Invalid                    = "invalid"
-	InvalidChoice              = "invalid_choice"
+	InvalidChoice              = "invalid-choice"
 	InvalidField               = "invalid-field"
 	MacaroonPermissionRequired = "macaroon-permission-required"
 	MediaFileSizeTooBig        = "media-file-size-too-big"
@@ -36,13 +36,13 @@ const (
 	NameNotAvailableForDispute = "name-not-available-for-dispute"
 	NameNotRegistered          = "name-not-registered"
 	NotImplemented             = "not-implemented"
-	RegisterWindow             = "register_window"
+	RegisterWindow             = "register-window"
 	Required                   = "required"
-	ReservedName               = "reserved_name"
+	ReservedName               = "reserved-name"
 	ResourceForbidden          = "resource-forbidden"
 	ResourceNotFound           = "resource-not-found"
 	ResourceNotReady           = "resource-not-ready"
-	RevokedName                = "revoked_name"
+	RevokedName                = "revoked-name"
 	Unauthorized               = "unauthorized"
 	UserNotReady               = "user-not-ready"
 )
@@ -52,8 +52,16 @@ type CustomError struct {
 	Message string `json:"message"`
 }
 
-// helper struct
-type ErrorList []CustomError
+
+func (e *CustomError) GetCode() string {
+	return e.Code
+}
+
+func (e *CustomError) GetMessage() string {
+	return e.Message
+}
+
+type ErrorList []*CustomError
 
 func NewCustomError(code, message string) *CustomError {
 	return &CustomError{
@@ -62,16 +70,13 @@ func NewCustomError(code, message string) *CustomError {
 	}
 }
 
-func ConvertError(err error) *CustomError {
+func ConvertError(err error, message ...string) *CustomError {
 	if err == nil {
 		return nil
 	}
 
 	if err == sql.ErrNoRows {
-		return &CustomError{
-			Code:    ResourceNotFound,
-			Message: "resource not found",
-		}
+		return buildCustomError(ResourceNotFound, "Resource not found", message...)
 	}
 
 	if err, ok := err.(*pq.Error); ok {
@@ -85,12 +90,25 @@ func ConvertError(err error) *CustomError {
 	}
 }
 
-func (el *ErrorList) AddCustomError(err CustomError) {
+
+func buildCustomError(code, defaultMessage string, message ...string) *CustomError {
+	msg := defaultMessage
+	if len(message) > 0 {
+		msg = message[0]
+	}
+
+	return &CustomError{
+		Code:    code,
+		Message: msg,
+	}
+}
+
+func (el *ErrorList) AddCustomError(err *CustomError) {
 	*el = append(*el, err)
 }
 
 func (el *ErrorList) Add(code, message string) {
-	*el = append(*el, CustomError{
+	*el = append(*el, &CustomError{
 		Code:    code,
 		Message: message,
 	})
