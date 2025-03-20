@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS public.keys
     name text COLLATE pg_catalog."default" NOT NULL,
     sha3384 text COLLATE pg_catalog."default" NOT NULL,
     encoded_public_key text COLLATE pg_catalog."default" NOT NULL,
-    account_id uuid,
+    account_id uuid NOT NULL,
     CONSTRAINT keys_pkey PRIMARY KEY (id),
     CONSTRAINT keys_sha3384_key UNIQUE (sha3384),
     CONSTRAINT fk_accounts_keys FOREIGN KEY (account_id)

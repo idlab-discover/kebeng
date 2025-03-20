@@ -20,9 +20,9 @@ type Key struct {
 	EncodedPublicKey string     `db:"encoded_public_key"`
 	AccountID        uuid.UUID  `db:"account_id"`
 	Account          *Account   `db:"-"`
-	Until            time.Time  `db:"until"`
-	CreatedAt        time.Time  `db:"created_at"`
-	UpdatedAt        time.Time  `db:"updated_at"`
+	Until            *time.Time `db:"until"`
+	CreatedAt        *time.Time `db:"created_at"`
+	UpdatedAt        *time.Time `db:"updated_at"`
 	DeletedAt        *time.Time `db:"deleted_at"`
 }
 
@@ -30,8 +30,8 @@ type SSHKey struct {
 	ID              uuid.UUID  `db:"id"`
 	PublicKeyString string     `db:"public_key_string"` // should be unique
 	AccountID       uuid.UUID  `db:"account_id"`
-	CreatedAt       time.Time  `db:"created_at"`
-	UpdatedAt       time.Time  `db:"updated_at"`
+	CreatedAt       *time.Time `db:"created_at"`
+	UpdatedAt       *time.Time `db:"updated_at"`
 	DeletedAt       *time.Time `db:"deleted_at"`
 }
 
