@@ -6,7 +6,6 @@ CREATE TABLE IF NOT EXISTS public.snap_uploads
     created_at timestamp with time zone,
     updated_at timestamp with time zone,
     deleted_at timestamp with time zone,
-    name text COLLATE pg_catalog."default",
     up_down_id text COLLATE pg_catalog."default",
     filesize bigint,
     snap_entry_id uuid,

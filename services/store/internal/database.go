@@ -29,7 +29,7 @@ func createDatabaseWithDSN(connectionString string, cfg *config.Config) (*sqlx.D
 		if err == nil {
 			logrus.Info("Connected to database")
 
-			err = runMigrations(db, cfg)
+			err = RunMigrations(db, cfg)
 			if err != nil {
 				logrus.Errorf("Migration failed: %v", err)
 			}
@@ -54,7 +54,7 @@ func getDSN(cfg *config.Config) string {
 }
 
 // runs the migration files in the /migrations folder
-func runMigrations(db *sqlx.DB, cfg *config.Config) error {
+func RunMigrations(db *sqlx.DB, cfg *config.Config) error {
 	logrus.Info("Running database migrations")
 
 	driver, err := postgres.WithInstance(db.DB, &postgres.Config{})
