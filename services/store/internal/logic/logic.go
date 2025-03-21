@@ -300,11 +300,11 @@ func (s *StoreLogic) GetRevisions(ctx context.Context, req *proto.GetRevisionsRe
 			foundRevisions = append(foundRevisions, &proto.GetRevisionResponse{
 				Id:            rev.ID.String(),
 				SnapName:      entry.Name,
-				Sequence:      uint64(rev.SequenceNumber),
+				Sequence:      uint64(*rev.SequenceNumber),
 				Architectures: rev.Architectures,
-				Version:       rev.Version,
+				Version:       *rev.Version,
 				Since:         timestamppb.New(rev.Since),
-				Status:        rev.Status,
+				Status:        *rev.Status,
 			})
 
 			// If id is not provided, check if snapName and sequence are provided
@@ -318,11 +318,11 @@ func (s *StoreLogic) GetRevisions(ctx context.Context, req *proto.GetRevisionsRe
 			foundRevisions = append(foundRevisions, &proto.GetRevisionResponse{
 				Id:            rev.ID.String(),
 				SnapName:      revision.SnapName,
-				Sequence:      uint64(rev.SequenceNumber),
+				Sequence:      uint64(*rev.SequenceNumber),
 				Architectures: rev.Architectures,
-				Version:       rev.Version,
+				Version:       *rev.Version,
 				Since:         timestamppb.New(rev.Since),
-				Status:        rev.Status,
+				Status:        *rev.Status,
 			})
 
 		} else {
@@ -371,11 +371,11 @@ func (s *StoreLogic) GetRevisionByNameAndSequence(ctx context.Context, req *prot
 	return &proto.GetRevisionResponse{
 		Id:            revision.ID.String(),
 		SnapName:      snapEntry.Name,
-		Sequence:      uint64(revision.SequenceNumber),
+		Sequence:      uint64(*revision.SequenceNumber),
 		Architectures: revision.Architectures,
-		Version:       revision.Version,
+		Version:       *revision.Version,
 		Since:         timestamppb.New(revision.Since),
-		Status:        revision.Status,
+		Status:        *revision.Status,
 	}, nil
 }
 
@@ -460,13 +460,13 @@ func (s *StoreLogic) GetRevisionsByEntryIds(ctx context.Context, req *proto.GetR
 		for i, rev := range revisions {
 			revisionsProto[i] = &proto.GetRevisionResponse{
 				Id:                     rev.ID.String(),
-				SnapName:               rev.SnapName,
-				BuildAssertionFilename: rev.BuildAssertionFileName,
-				Sequence:               uint64(rev.SequenceNumber),
+				SnapName:               *rev.SnapName,
+				BuildAssertionFilename: *rev.BuildAssertionFileName,
+				Sequence:               uint64(*rev.SequenceNumber),
 				Architectures:          rev.Architectures,
-				Version:                rev.Version,
+				Version:                *rev.Version,
 				Since:                  timestamppb.New(rev.Since),
-				Status:                 rev.Status,
+				Status:                 *rev.Status,
 			}
 		}
 		// add to response
