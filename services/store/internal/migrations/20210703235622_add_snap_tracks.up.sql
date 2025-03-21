@@ -6,7 +6,7 @@ create table snap_tracks
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now(),
     deleted_at    timestamp with time zone,
-    name          text,
+    name          text, -- eg. "latest"
     snap_entry_id uuid
         constraint fk_snap_tracks_snap_entry
             references snap_entries,

@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS public.snap_revisions
     sha3_384_encoded text COLLATE pg_catalog."default",
     size bigint,
     sequence_number bigint,
-    architectures TEXT[] COLLATE pg_catalog."default", -- TODO: check if ok like this?
+    architectures TEXT[], -- TODO: check if ok like this?
     status TEXT COLLATE pg_catalog."default",
     version TEXT COLLATE pg_catalog."default",
 
@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS public.snap_revisions
     CONSTRAINT fk_snap_entries_revisions FOREIGN KEY (snap_entry_id)
         REFERENCES public.snap_entries (id) MATCH SIMPLE
         ON UPDATE NO ACTION
-        ON DELETE NO ACTION
+        ON DELETE NO ACTION 
 )
 
 TABLESPACE pg_default;
