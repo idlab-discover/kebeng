@@ -6,16 +6,17 @@ create table snap_channels
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now(),
     deleted_at timestamp with time zone,
-    name          text,
-    snap_track_id uuid
-        constraint fk_snap_tracks_channels
-            references snap_tracks,
+    name          text, -- eg. "stable"
     snap_entry_id uuid
         constraint fk_snap_channels_snap_entry
             references snap_entries,
+    snap_track_id uuid
+        constraint fk_snap_tracks_channels
+            references snap_tracks,
     revision_id   uuid
         constraint fk_snap_channels_revision
             references snap_revisions,
+
     CONSTRAINT snap_channels_pkey PRIMARY KEY (id)
 );
 

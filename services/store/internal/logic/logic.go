@@ -283,7 +283,13 @@ func (s *StoreLogic) GetRevisions(ctx context.Context, req *proto.GetRevisionsRe
 	for _, revision := range req.Revisions {
 		// First check if id is provided
 		if revision.Id != "" {
-			rev, err := s.repo.GetRevisionById(revision.Id)
+			id, err1 := uuid.Parse(revision.Id)
+			if err1 != nil {
+				logrus.Errorf("Failed to parse UUID '%s':", revision.Id)
+				el = append(el, &proto.Error{Code: cerror.InvalidField, Message: fmt.Sprintf("Invalid UUID format for id '%s'", revision.Id)})
+				continue
+			}
+			rev, err := s.repo.GetRevisionById(id)
 			if err != nil {
 				// Already logged in GetRevisionById (repository)
 				el = append(el, &proto.Error{Code: err.GetCode(), Message: err.GetMessage()})

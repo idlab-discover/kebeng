@@ -340,57 +340,67 @@ func (sp *SnapsRepository) GetEntryByName(name string, preloadAssociations []str
 }
 
 func (sp *SnapsRepository) GetRevisionByChannel(channel string, snapName string) (*models.SnapRevision, *cerror.CustomError) {
-	snapEntry, err := sp.GetEntryByName(snapName, nil)
-	if err != nil {
-		// Already logged in GetEntryByName
-		return nil, err
+	snapEntry, err1 := sp.GetEntryByName(snapName, nil)
+	if err1 != nil {
+		logrus.Error(err1.GetMessage())
+		return nil, err1
 	}
-	if snapEntry != nil {
-		channelParts := strings.Split(channel, "/")
-		var track string
-		var channel string
-		if len(channelParts) == 1 {
-			if channelParts[0] == "beta" || channelParts[0] == "edge" || channelParts[0] == "stable" || channelParts[0] == "candidate" {
-				track = "latest"
-				channel = channelParts[0]
-			} else {
-				track = channelParts[0]
-				channel = "stable"
-			}
-		} else if len(channelParts) == 2 {
-			track = channelParts[0]
-			channel = channelParts[1]
-		} else {
-			return nil, cerror.NewCustomError(cerror.NotImplemented, "branches not yet supported for channels")
-		}
 
-		query := `
+	channelParts := strings.Split(channel, "/")
+	var track string
+	var channelname string
+	if len(channelParts) == 1 {
+		if channelParts[0] == "beta" || channelParts[0] == "edge" || channelParts[0] == "stable" || channelParts[0] == "candidate" {
+			track = "latest"
+			channelname = channelParts[0]
+		} else {
+			track = channelParts[0]
+			channelname = "stable"
+		}
+	} else if len(channelParts) == 2 {
+		track = channelParts[0]
+		channelname = channelParts[1]
+	} else {
+		return nil, cerror.NewCustomError(cerror.NotImplemented, "branches not yet supported for channels")
+	}
+
+	var snapTrack models.SnapTrack
+	query := `
 			SELECT id
 			FROM snap_tracks
 			WHERE snap_entry_id = $1 AND name = $2
 		`
-		var trackId uint
-		err := sp.db.Get(&trackId, query, snapEntry.ID, track)
-		if err != nil {
-
-			query = `
-			SELECT *
-			FROM snap_channels
-			WHERE snap_entry_id = $1 AND name = $2 AND snap_track_id = $3
-		`
-			var snapChannel models.SnapChannel
-			err = sp.db.Get(&snapChannel, query, snapEntry.ID, channel, trackId)
-			if err != nil {
-				logrus.Error(err)
-				return nil, cerror.ConvertError(err, fmt.Sprintf("resource not found: channel '%s' for snap with id = '%s'", channel, snapEntry.ID.String()))
-			}
-			return snapChannel.Revision, nil
-
-		}
-		return nil, cerror.NewCustomError(cerror.ResourceNotFound, "track not found")
-
+	err := sp.db.Get(&snapTrack, query, snapEntry.ID, track)
+	if err != nil {
+		logrus.Error(err)
+		return nil, cerror.ConvertError(err, fmt.Sprintf("resource not found: track '%s' for snap with name = '%s'", track, snapName))
 	}
-	return nil, cerror.NewCustomError(cerror.ResourceNotFound, "snap not found")
+
+	var snapChannel models.SnapChannel
+	query = `
+			SELECT revision_id
+			FROM snap_channels
+			WHERE snap_entry_id = $1 AND snap_track_id = $2 AND name = $3
+		`
+	err = sp.db.Get(&snapChannel, query, snapEntry.ID, snapTrack.ID, channelname)
+	if err != nil {
+		logrus.Error(err)
+		return nil, cerror.ConvertError(err, fmt.Sprintf("resource not found: channel '%s' for snap with name = '%s'", channel, snapName))
+	}
+
+	var snapRevision models.SnapRevision
+	query = `
+			SELECT *
+			FROM snap_revisions
+			WHERE id = $1
+		`
+	err = sp.db.Get(&snapRevision, query, snapChannel.RevisionID)
+	if err != nil {
+		logrus.Error(err)
+		return nil, cerror.ConvertError(err, fmt.Sprintf("resource not found: revision with id = '%s'", snapChannel.RevisionID))
+	}
+
+	return &snapRevision, nil
 }
 
 func (sp *SnapsRepository) GetRevisionsByEntryId(entryId uuid.UUID) ([]*models.SnapRevision, *cerror.CustomError) {
@@ -409,7 +419,7 @@ func (sp *SnapsRepository) GetRevisionsByEntryId(entryId uuid.UUID) ([]*models.S
 	return revisions, nil
 }
 
-func (sp *SnapsRepository) GetRevisionById(id string) (*models.SnapRevision, *cerror.CustomError) {
+func (sp *SnapsRepository) GetRevisionById(id uuid.UUID) (*models.SnapRevision, *cerror.CustomError) {
 	var revision models.SnapRevision
 	query := `
 		SELECT *
