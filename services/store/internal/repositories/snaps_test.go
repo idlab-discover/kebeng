@@ -370,6 +370,82 @@ func TestGetCommentsByEntryId(t *testing.T) {
 	}
 }
 
+func TestGetEntriesByAccountId(t *testing.T) {
+	tests := []struct {
+		name              string
+		accountId         uuid.UUID
+		expectError       bool
+		expectedErrorCode string
+	}{
+		{
+			name:              "Success getting entries by account id",
+			accountId:         mockUUID,
+			expectError:       false,
+			expectedErrorCode: "",
+		},
+		{
+			name:              "Fail getting entries by account id for non-existing account",
+			accountId:         uuid.New(),
+			expectError:       true,
+			expectedErrorCode: cerror.ResourceNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			entries, err := globalRepo.GetEntriesByAccountId(tt.accountId, []string{models.ALL})
+			if tt.expectError {
+				assert.NotNil(t, err)
+				if err != nil {
+					assert.Equal(t, tt.expectedErrorCode, err.GetCode())
+				}
+			} else {
+				assert.Nil(t, err)
+				assert.NotNil(t, entries)
+			}
+		})
+	}
+}
+
+func TestGetEntryById(t *testing.T) {
+	tests := []struct {
+		name              string
+		entryId           uuid.UUID
+		expectError       bool
+		expectedErrorCode string
+	}{
+		{
+			name:              "Success getting entry by id",
+			entryId:           mockUUID,
+			expectError:       false,
+			expectedErrorCode: "",
+		},
+		{
+			name:              "Fail getting entry by id for non-existing entry",
+			entryId:           uuid.New(),
+			expectError:       true,
+			expectedErrorCode: cerror.ResourceNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			entry, err := globalRepo.GetEntryById(tt.entryId, nil)
+			if tt.expectError {
+				assert.NotNil(t, err)
+				if err != nil {
+					assert.Equal(t, tt.expectedErrorCode, err.GetCode())
+				}
+			} else {
+				assert.Nil(t, err)
+				assert.NotNil(t, entry)
+			}
+		})
+	}
+}
+
+
+
 // func TestGetEntryByName(t *testing.T) {
 // 	_, err := globalRepo.RegisterSnap("test-1", false)
 // 	tests := []struct {
@@ -454,9 +530,9 @@ func TestGetCommentsByEntryId(t *testing.T) {
 func mockData(db *sqlx.DB) {
 	// Mock snap entry
 	_, err := db.Exec(`
-		INSERT INTO public.snap_entries (id, private, name, type, confinement, status, price, store, icon_url)
-		VALUES ($1, false, 'mock-snap', 'application', 'strict', 'active', 0.0, 'mock-store', 'http://mock-icon-url.com');
-	`, mockUUID)
+		INSERT INTO public.snap_entries (id, private, name, type, confinement, status, price, store, icon_url, account_id)
+		VALUES ($1, false, 'mock-snap', 'application', 'strict', 'active', 0.0, 'mock-store', 'http://mock-icon-url.com', $2);
+	`, mockUUID, mockUUID)
 	if err != nil {
 		logrus.Fatalf("failed to insert mock data for snap entry: %v", err)
 	}
