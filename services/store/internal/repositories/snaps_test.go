@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	embeddedpostgres "github.com/fergusstrange/embedded-postgres"
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3" // SQLite driver
 	"github.com/sirupsen/logrus"
@@ -134,7 +135,7 @@ func TestAddUpload(t *testing.T) {
 			snapName:          "mock-snap",
 			upDownId:          "test-up-down-id",
 			fileSize:          999,
-			channels:          []string{"latest","beta"},
+			channels:          []string{"latest", "beta"},
 			expectError:       false,
 			expectedErrorCode: "",
 		},
@@ -244,11 +245,23 @@ func TestAddUpload(t *testing.T) {
 // }
 
 func mockData(db *sqlx.DB) {
-	_, err := db.Exec(`
+	// Mock snap entry
+	var snapEntryID uuid.UUID
+	err := db.QueryRow(`
 		INSERT INTO public.snap_entries (private, name, type, confinement, status, price, store, icon_url)
-		VALUES (false, 'mock-snap', 'application', 'strict', 'active', 0.0, 'mock-store', 'http://mock-icon-url.com');
-		`)
+		VALUES (false, 'mock-snap', 'application', 'strict', 'active', 0.0, 'mock-store', 'http://mock-icon-url.com')
+		RETURNING id;
+	`).Scan(&snapEntryID)
 	if err != nil {
-		logrus.Fatalf("failed to insert mock data: %v", err)
+		logrus.Fatalf("failed to insert mock data for snap entry: %v", err)
+	}
+
+	// Mock snap revision
+	_, err = db.Exec(`
+		INSERT INTO public.snap_revisions (snap_name, snap_entry_id, build_assertion_filename, sha3_384, size, sequence_number, architectures, status, version)
+		VALUES ('mock-snap', $1, 'mock-build-assertion', 'mock-sha3-384', 999, 1, ARRAY['mock-arch'], 'active', '1.0.0');
+	`, snapEntryID)
+	if err != nil {
+		logrus.Fatalf("failed to insert mock data for snap revision: %v", err)
 	}
 }

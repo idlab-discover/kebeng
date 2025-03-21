@@ -58,19 +58,20 @@ func NewSnapsRepository(db *sqlx.DB) *SnapsRepository {
 
 func (sp *SnapsRepository) AddRevision(snapEntry models.SnapEntry, size uint64) (*models.SnapRevision, *cerror.CustomError) {
 	// TODO: fix the need for an empty revision
+	// TODO: add build_assertion_filename if an assertion exists -> doesn't get checked in official snap store either
 	snapRevision := models.SnapRevision{
-		SnapFilename: snapEntry.Name,
-		SnapEntryID:  snapEntry.ID,
-		SHA3_384:     "",
-		Size:         size,
+		SnapName:    snapEntry.Name,
+		SnapEntryID: snapEntry.ID,
+		SHA3_384:    "",
+		Size:        size,
 	}
 
 	query := `
-		INSERT INTO snap_revisions (snap_filename, snap_entry_id, sha3_384, size)
+		INSERT INTO snap_revisions (snap_name, snap_entry_id, sha3_384, size)
 		VALUES ($1, $2, $3, $4)
 		RETURNING id
 	`
-	err := sp.db.Get(&snapRevision.ID, query, snapRevision.SnapFilename, snapRevision.SnapEntryID, snapRevision.SHA3_384, snapRevision.Size)
+	err := sp.db.Get(&snapRevision.ID, query, snapRevision.SnapName, snapRevision.SnapEntryID, snapRevision.SHA3_384, snapRevision.Size)
 	if err != nil {
 		logrus.Error(err)
 		return nil, cerror.ConvertError(err)
@@ -671,11 +672,11 @@ func (sp *SnapsRepository) UpdateRevision(revision *models.SnapRevision, revisio
 	var newRevision models.SnapRevision
 	query := `
 		UPDATE snap_revisions
-		SET snap_filename = $1, sha3_384 = $2, sha3_384_encoded = $3, size = $4, sequence_number = $5, architectures = $6, status = $7, version = $8, since = $9
+		SET snap_name = $1, sha3_384 = $2, sha3_384_encoded = $3, size = $4, sequence_number = $5, architectures = $6, status = $7, version = $8, since = $9
 		WHERE id = $10
 		RETURNING *
 	`
-	err := sp.db.Get(&newRevision, query, revision.SnapFilename, revision.SHA3_384, revision.SHA3_384_Encoded, revision.Size, revision.SequenceNumber, revision.Architectures, revision.Status, revision.Version, revision.Since, revision.ID)
+	err := sp.db.Get(&newRevision, query, revision.SnapName, revision.SHA3_384, revision.SHA3_384_Encoded, revision.Size, revision.SequenceNumber, revision.Architectures, revision.Status, revision.Version, revision.Since, revision.ID)
 	if err != nil {
 		logrus.Error(err)
 		return nil, cerror.ConvertError(err, fmt.Sprintf("resource not found: revision with id = '%s'", revision.ID.String()))
