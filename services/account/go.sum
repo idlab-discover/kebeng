@@ -49,16 +49,6 @@ github.com/hashicorp/go-multierror v1.1.1 h1:H5DkEtf6CXdFp0N0Em5UCwQpXMWke8IA0+l
 github.com/hashicorp/go-multierror v1.1.1/go.mod h1:iw975J/qwKPdAO1clOe2L8331t/9/fmwbPZ6JB6eMoM=
 github.com/hashicorp/hcl v1.0.0 h1:0Anlzjpi4vEasTeNFn2mLJgTSwt0+6sfsiTG8qcWGx4=
 github.com/hashicorp/hcl v1.0.0/go.mod h1:E5yfLk+7swimpb2L/Alb/PJmXilQ/rhwaUYs4T20WEQ=
-github.com/idlab-discover/kebeng v0.0.0-20250318143915-9842f59a7ef3 h1:Bn8x+UpvKW12DDPTAGnKHkeZ9GZwPcZc9ZJArAGQOM4=
-github.com/idlab-discover/kebeng v0.0.0-20250318143915-9842f59a7ef3/go.mod h1:RxNtr4c3l8TdF6ixmdz/4rxPhocVlSpn0M55f0cV3Fs=
-github.com/idlab-discover/kebeng v0.0.0-20250318152852-aa6424019e4d h1:5DSseZtZ1kFKj0gS1hD7PLkLWdNyixPyxjXEWJPkP/A=
-github.com/idlab-discover/kebeng v0.0.0-20250318152852-aa6424019e4d/go.mod h1:RxNtr4c3l8TdF6ixmdz/4rxPhocVlSpn0M55f0cV3Fs=
-github.com/idlab-discover/kebeng v0.0.0-20250318154108-2f99796191e2 h1:zPtaKFRkxrqaLAIyqoDE+bZ7osbwiXLUwqV9XUJoHR4=
-github.com/idlab-discover/kebeng v0.0.0-20250318154108-2f99796191e2/go.mod h1:sA3WVcQPDn3CbW4Dse26VFKTWvozqSwzKpwU42xrVBU=
-github.com/idlab-discover/kebeng v0.0.0-20250318162642-e4720c7c101d h1:HnTy35jrI3Z+sfMyHMYTQSXZ3sBE4ic5bhnP90aVbeo=
-github.com/idlab-discover/kebeng v0.0.0-20250318162642-e4720c7c101d/go.mod h1:sA3WVcQPDn3CbW4Dse26VFKTWvozqSwzKpwU42xrVBU=
-github.com/idlab-discover/kebeng v0.0.0-20250318180919-595317a089b2 h1:0DRv+TSgwajfa+8SW1t+vLOECnPSZAzayUvVfV3u9Vw=
-github.com/idlab-discover/kebeng v0.0.0-20250318180919-595317a089b2/go.mod h1:RxNtr4c3l8TdF6ixmdz/4rxPhocVlSpn0M55f0cV3Fs=
 github.com/idlab-discover/kebeng v0.0.0-20250318181307-e419463f7679 h1:ytLoH3WqJMKI+iArbHMGKuiyZIf2CT/XcrsA0wdBSzw=
 github.com/idlab-discover/kebeng v0.0.0-20250318181307-e419463f7679/go.mod h1:RxNtr4c3l8TdF6ixmdz/4rxPhocVlSpn0M55f0cV3Fs=
 github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250318141246-77a544f56023 h1:pL76A+DTYUZlKVab3El0+5vuaMVPhHEKIQpsR2CsIW8=
@@ -120,6 +110,7 @@ github.com/spf13/viper v1.19.0/go.mod h1:GQUN9bilAbhU/jgc1bKs99f/suXKeUMct8Adx5+
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.4.0/go.mod h1:YvHI0jy2hoMjB+UWwv71VJQ9isScKT/TqJzVSSt89Yw=
 github.com/stretchr/objx v0.5.0/go.mod h1:Yh+to48EsGEfYuaHDzXPcE3xhTkx73EhmCGUpEOglKo=
+github.com/stretchr/objx v0.5.2 h1:xuMeJ0Sdp5ZMRXx/aWO6RZxdr3beISkG5/G/aIRr3pY=
 github.com/stretchr/objx v0.5.2/go.mod h1:FRsXN1f5AsAjCGJKqEizvkpNtU+EGNCLh3NxZ/8L+MA=
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=

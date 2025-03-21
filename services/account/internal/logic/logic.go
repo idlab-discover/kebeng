@@ -23,10 +23,10 @@ import (
 type AccountService struct {
 	config *config.Config
 	proto.UnimplementedAccountServiceServer
-	repo *repository.AccountRepository
+	repo repository.IAccountRepository
 }
 
-func NewAccountService(repo *repository.AccountRepository, config *config.Config) *AccountService {
+func NewAccountService(repo repository.IAccountRepository, config *config.Config) *AccountService {
 	return &AccountService{repo: repo, config: config}
 }
 
@@ -46,6 +46,7 @@ func (a *AccountService) CreateAccount(ctx context.Context, req *proto.CreateAcc
 	}
 
 	createdAccount, err := a.repo.CreateAccount(ctx, account)
+
 	if err != nil {
 		el = append(el, &proto.Error{
 			Code:    err.GetCode(),
@@ -149,7 +150,7 @@ func (a *AccountService) GetAccountByID(ctx context.Context, req *proto.GetAccou
 func (a *AccountService) GetAccountsByIds(ctx context.Context, req *proto.GetAccountsByIdsRequest) (*proto.GetAccountsByIdsResponse, error) {
 	el := make([]*proto.Error, 0)
 	response := &proto.GetAccountsByIdsResponse{}
-	accountIDs := make([]uuid.UUID, len(req.Ids))
+	accountIDs := make([]uuid.UUID, 0, len(req.Ids))
 	for _, id := range req.Ids {
 		accountID, err := uuid.Parse(id)
 		if err != nil {
@@ -172,10 +173,15 @@ func (a *AccountService) GetAccountsByIds(ctx context.Context, req *proto.GetAcc
 				Code:    err.GetCode(),
 				Message: err.GetMessage(),
 			})
+			continue
 		}
 		// convert to proto
 		a.convertToProtoAccount(account, el)
 		response.Accounts = append(response.Accounts, a.convertToProtoAccount(account, el))
+	}
+
+	if len(el) > 0 {
+		response.Errors = el
 	}
 	return response, nil
 }
