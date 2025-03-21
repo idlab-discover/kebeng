@@ -93,20 +93,21 @@ type SnapBranch struct {
 
 // Revision = a specific version of a snap, not necessarily a release
 type SnapRevision struct {
-	ID               uuid.UUID    `db:"id"`
-	CreatedAt        time.Time    `db:"created_at"`
-	UpdatedAt        time.Time    `db:"updated_at"`
-	DeletedAt        sql.NullTime `db:"deleted_at"`
-	SnapFilename     string       `db:"snap_filename"`
-	SnapEntryID      uuid.UUID    `db:"snap_entry_id"`
-	SHA3_384         string       `db:"sha3_384"`
-	SHA3_384_Encoded string       `db:"sha3_384_encoded"`
-	Size             uint64       `db:"size"`
-	SequenceNumber   uint         `db:"sequence_number"`
-	Architectures    []string     `db:"architectures"` // TODO: check if this is supposed to be stored here
-	Status           string       `db:"status"`
-	Version          string       `db:"version"`
-	Since            time.Time    `db:"since"`
+	ID                     uuid.UUID    `db:"id"`
+	CreatedAt              time.Time    `db:"created_at"`
+	UpdatedAt              time.Time    `db:"updated_at"`
+	DeletedAt              sql.NullTime `db:"deleted_at"`
+	SnapName               string       `db:"snap_name"`
+	BuildAssertionFileName string       `db:"build_assertion_filename"`
+	SnapEntryID            uuid.UUID    `db:"snap_entry_id"`
+	SHA3_384               string       `db:"sha3_384"`
+	SHA3_384_Encoded       string       `db:"sha3_384_encoded"`
+	Size                   uint64       `db:"size"`
+	SequenceNumber         uint         `db:"sequence_number"`
+	Architectures          []string     `db:"architectures"` // TODO: check if this is supposed to be stored here
+	Status                 string       `db:"status"`
+	Version                string       `db:"version"`
+	Since                  time.Time    `db:"since"`
 }
 
 // SnapUpload = a specific upload of a snap, with a specific file, info about file, etc
@@ -137,8 +138,8 @@ type SnapComment struct {
 }
 
 func (se *SnapEntry) ToStoreSnap(snapRevision *SnapRevision) (*responses.StoreSnap, error) {
-	downloadURL := fmt.Sprintf(viper.GetString(configkey.StoreAPIURL)+"/download/snaps/%s", snapRevision.SnapFilename)
-	base := snapRevision.SnapFilename
+	downloadURL := fmt.Sprintf(viper.GetString(configkey.StoreAPIURL)+"/download/snaps/%s", snapRevision.SnapName)
+	base := snapRevision.SnapName
 	obs := objectstore.NewObjectStore()
 	h := crypto.SHA3_384.New()
 	objectPtr, err := obs.MinioClient.GetObject(context.Background(), "snaps", base, minio.GetObjectOptions{})

@@ -6,10 +6,11 @@ CREATE TABLE IF NOT EXISTS public.snap_revisions
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now(),
     deleted_at timestamp with time zone,
-    snap_filename text COLLATE pg_catalog."default",
-    build_assertion_filename text COLLATE pg_catalog."default",
+    snap_name text COLLATE pg_catalog."default",
     snap_entry_id uuid,   
+    build_assertion_filename text COLLATE pg_catalog."default",
     sha3_384 text COLLATE pg_catalog."default",
+    sha3_384_encoded text COLLATE pg_catalog."default",
     size bigint,
     sequence_number bigint,
     architectures TEXT[] COLLATE pg_catalog."default", -- TODO: check if ok like this?
