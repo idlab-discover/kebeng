@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS public.snap_uploads
     up_down_id text COLLATE pg_catalog."default",
     filesize bigint,
     snap_entry_id uuid,
-    channels text COLLATE pg_catalog."default",
+    channels text[],
     CONSTRAINT snap_uploads_pkey PRIMARY KEY (id),
     CONSTRAINT fk_snap_entries_uploads FOREIGN KEY (snap_entry_id)
         REFERENCES public.snap_entries (id) MATCH SIMPLE
