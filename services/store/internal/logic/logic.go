@@ -309,7 +309,6 @@ func (s *StoreLogic) GetRevisions(ctx context.Context, req *proto.GetRevisionsRe
 				Sequence:      uint64(*rev.SequenceNumber),
 				Architectures: rev.Architectures,
 				Version:       *rev.Version,
-				Since:         timestamppb.New(rev.Since),
 				Status:        *rev.Status,
 			})
 
@@ -327,7 +326,6 @@ func (s *StoreLogic) GetRevisions(ctx context.Context, req *proto.GetRevisionsRe
 				Sequence:      uint64(*rev.SequenceNumber),
 				Architectures: rev.Architectures,
 				Version:       *rev.Version,
-				Since:         timestamppb.New(rev.Since),
 				Status:        *rev.Status,
 			})
 
@@ -380,7 +378,6 @@ func (s *StoreLogic) GetRevisionByNameAndSequence(ctx context.Context, req *prot
 		Sequence:      uint64(*revision.SequenceNumber),
 		Architectures: revision.Architectures,
 		Version:       *revision.Version,
-		Since:         timestamppb.New(revision.Since),
 		Status:        *revision.Status,
 	}, nil
 }
@@ -471,7 +468,6 @@ func (s *StoreLogic) GetRevisionsByEntryIds(ctx context.Context, req *proto.GetR
 				Sequence:               uint64(*rev.SequenceNumber),
 				Architectures:          rev.Architectures,
 				Version:                *rev.Version,
-				Since:                  timestamppb.New(rev.Since),
 				Status:                 *rev.Status,
 			}
 		}

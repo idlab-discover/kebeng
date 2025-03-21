@@ -756,15 +756,16 @@ func (sp *SnapsRepository) SetChannelRevision(trackName string, channelName stri
 	return &track, nil
 }
 
+// QUESTION: not sure what revisionBytes is for?
 func (sp *SnapsRepository) UpdateRevision(revision *models.SnapRevision, revisionBytes *[]byte) (*models.SnapRevision, *cerror.CustomError) {
 	var newRevision models.SnapRevision
 	query := `
 		UPDATE snap_revisions
-		SET snap_name = $1, sha3_384 = $2, sha3_384_encoded = $3, size = $4, sequence_number = $5, architectures = $6, status = $7, version = $8, since = $9
-		WHERE id = $10
+		SET snap_name = $1, sha3_384 = $2, sha3_384_encoded = $3, size = $4, sequence_number = $5, architectures = $6, status = $7, version = $8
+		WHERE id = $9
 		RETURNING *
 	`
-	err := sp.db.Get(&newRevision, query, revision.SnapName, revision.SHA3_384, revision.SHA3_384_Encoded, revision.Size, revision.SequenceNumber, revision.Architectures, revision.Status, revision.Version, revision.Since, revision.ID)
+	err := sp.db.Get(&newRevision, query, revision.SnapName, revision.SHA3_384, revision.SHA3_384_Encoded, revision.Size, revision.SequenceNumber, revision.Architectures, revision.Status, revision.Version, revision.ID)
 	if err != nil {
 		logrus.Error(err)
 		return nil, cerror.ConvertError(err, fmt.Sprintf("resource not found: revision with id = '%s'", revision.ID.String()))
