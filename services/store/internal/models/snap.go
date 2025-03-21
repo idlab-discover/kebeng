@@ -107,7 +107,6 @@ type SnapRevision struct {
 	Architectures          pq.StringArray `db:"architectures"` // TODO: check if this is supposed to be stored here
 	Status                 *string        `db:"status"`
 	Version                *string        `db:"version"`
-	Since                  time.Time      `db:"since"`
 }
 
 // SnapUpload = a specific upload of a snap, with a specific file, info about file, etc

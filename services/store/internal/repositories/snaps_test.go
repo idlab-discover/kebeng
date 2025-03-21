@@ -8,6 +8,7 @@ import (
 	embeddedpostgres "github.com/fergusstrange/embedded-postgres"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3" // SQLite driver
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -1069,6 +1070,75 @@ func TestSetChannelRevision(t *testing.T) {
 			} else {
 				assert.Nil(t, err)
 				assert.NotNil(t, snapTrack)
+			}
+		})
+	}
+}
+
+func TestUpdateRevision(t *testing.T) {
+	snapName := "mock-snap"
+	buildAssertionFileName := "mock-build-assertion"
+	sha3_384 := "mock-sha3-384"
+	sha3_384_Encoded := "mock-sha3-384-encoded"
+	size := uint64(999)
+	sequenceNumber := uint(1)
+	architectures := pq.StringArray{"mock-arch"}
+	status := "active"
+	version := "1.0.0"
+	tests := []struct {
+		name              string
+		revision          models.SnapRevision
+		expectError       bool
+		expectedErrorCode string
+	}{
+		{
+			name: "Success updating revision",
+			revision: models.SnapRevision{
+				ID:                     mockUUID,
+				SnapName:               &snapName,
+				SnapEntryID:            mockUUID,
+				BuildAssertionFileName: &buildAssertionFileName,
+				SHA3_384:               &sha3_384,
+				SHA3_384_Encoded:       &sha3_384_Encoded,
+				Size:                   &size,
+				SequenceNumber:         &sequenceNumber,
+				Architectures:          architectures,
+				Status:                 &status,
+				Version:                &version,
+			},
+			expectError: false,
+		},
+		{
+			name: "Fail updating revision for non-existing revision",
+			revision: models.SnapRevision{
+				ID:                     uuid.New(),
+				SnapName:               &snapName,
+				SnapEntryID:            mockUUID,
+				BuildAssertionFileName: &buildAssertionFileName,
+				SHA3_384:               &sha3_384,
+				SHA3_384_Encoded:       &sha3_384_Encoded,
+				Size:                   &size,
+				SequenceNumber:         &sequenceNumber,
+				Architectures:          architectures,
+				Status:                 &status,
+				Version:                &version,
+			},
+			expectError:       true,
+			expectedErrorCode: cerror.ResourceNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			revision, err := globalRepo.UpdateRevision(&tt.revision, nil)
+			if tt.expectError {
+				assert.NotNil(t, err)
+				if err != nil {
+					assert.Equal(t, tt.expectedErrorCode, err.GetCode())
+				}
+			} else {
+				assert.Nil(t, err)
+				assert.NotNil(t, revision)
 			}
 		})
 	}

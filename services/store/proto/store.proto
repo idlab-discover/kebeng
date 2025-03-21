@@ -84,8 +84,7 @@ message GetRevisionResponse {
     repeated string architectures = 5;
     string status = 6;
     string version = 7;
-    google.protobuf.Timestamp since = 8;
-    repeated Error errors = 9;
+    repeated Error errors = 8;
 }
 
 message GetRevisionsRequest {
