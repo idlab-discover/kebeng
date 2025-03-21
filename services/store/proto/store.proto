@@ -79,7 +79,7 @@ message GetRevisionRequest {
 message GetRevisionResponse {
     string id = 1;
     string snap_name = 2;
-    string buildAssertion_filename = 3;
+    string build_assertion_filename = 3;
     uint64 sequence = 4;
     repeated string architectures = 5;
     string status = 6;

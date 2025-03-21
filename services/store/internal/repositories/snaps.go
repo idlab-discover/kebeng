@@ -60,10 +60,10 @@ func (sp *SnapsRepository) AddRevision(snapEntry *models.SnapEntry, size uint64)
 	// TODO: fix the need for an empty revision
 	// TODO: add build_assertion_filename if an assertion exists -> doesn't get checked in official snap store either
 	snapRevision := models.SnapRevision{
-		SnapName:    snapEntry.Name,
+		SnapName:    &snapEntry.Name,
 		SnapEntryID: snapEntry.ID,
-		SHA3_384:    "",
-		Size:        size,
+		SHA3_384:    nil,
+		Size:        &size,
 	}
 
 	query := `
@@ -262,16 +262,21 @@ func (sp *SnapsRepository) GetCommentsByEntryId(entryId uuid.UUID) ([]*models.Sn
 }
 
 func (sp *SnapsRepository) GetEntriesByAccountId(accountId uuid.UUID, preloadAssociations []string) ([]*models.SnapEntry, *cerror.CustomError) {
+	var entries []*models.SnapEntry
 	query := `
             SELECT * 
             FROM snap_entries 
             WHERE account_id = $1
         `
-	var entries []*models.SnapEntry
 	err := sp.db.Select(&entries, query, accountId)
 	if err != nil {
 		logrus.Error(err)
 		return nil, cerror.ConvertError(err, fmt.Sprintf("resource not found: snaps for account with id = '%s'", accountId.String()))
+	}
+
+	// manual check for empty result because db.Select doesn't return an error for empty results
+	if len(entries) == 0 {
+		return nil, cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("resource not found: snaps for account with id = '%s'", accountId.String()))
 	}
 
 	for _, entry := range entries {
