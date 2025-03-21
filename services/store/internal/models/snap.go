@@ -57,7 +57,7 @@ type SnapTrack struct {
 	UpdatedAt   time.Time  `db:"updated_at"`
 	DeletedAt   *time.Time `db:"deleted_at"`
 	Name        string     `json:"name" db:"name"`
-	SnapEntryID uuid.UUID
+	SnapEntryID uuid.UUID  `db:"snap_entry_id"`
 	SnapEntry   *SnapEntry
 	Risks       []*SnapChannel
 }
@@ -119,8 +119,8 @@ type SnapUpload struct {
 	UpDownID  string     `db:"up_down_id"`
 	Filesize  uint       `db:"filesize"`
 	// Channels is a comma-separated string of channels
-	Channels    string    `db:"channels"`
-	SnapEntryID uuid.UUID `db:"snap_entry_id"`
+	Channels    pq.StringArray `db:"channels"`
+	SnapEntryID uuid.UUID      `db:"snap_entry_id"`
 	SnapEntry   *SnapEntry
 }
 

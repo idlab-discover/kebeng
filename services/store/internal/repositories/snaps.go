@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/idlab-discover/kebeng/services/store/internal/snap"
+	"github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 
 	"github.com/google/uuid"
@@ -24,6 +25,7 @@ type ISnapsRepository interface {
 	RegisterSnap(snapName string, isPrivate bool) (*models.SnapEntry, *cerror.CustomError)
 
 	// READ
+	GetAllSnapEntries() (*[]models.SnapEntry, *cerror.CustomError)
 	GetChannelsByTrackId(trackId uuid.UUID) ([]*models.SnapChannel, *cerror.CustomError)
 	GetCommentsByEntryId(entryId uuid.UUID) ([]*models.SnapComment, *cerror.CustomError)
 	GetEntriesByAccountId(accountId uuid.UUID, preloadAssociations []string) ([]*models.SnapEntry, *cerror.CustomError)
@@ -35,8 +37,7 @@ type ISnapsRepository interface {
 	GetRevisionByNameAndSequence(name string, sequence uint) (*models.SnapRevision, *cerror.CustomError)
 	GetRevisionBySHA(SHA3_384 string, encoded bool) (*models.SnapRevision, *cerror.CustomError)
 	GetSections() (*[]string, *cerror.CustomError)
-	GetSnaps() (*[]models.SnapEntry, *cerror.CustomError)
-	GetTracksBySnapId(snapId uuid.UUID) (*[]models.SnapTrack, *cerror.CustomError)
+	GetTracksBySnapId(snapId uuid.UUID) ([]*models.SnapTrack, *cerror.CustomError)
 	GetUploadByUpDownId(upDownId string) (*models.SnapUpload, *cerror.CustomError)
 	GetUploadsByEntryId(d uuid.UUID) ([]*models.SnapUpload, *cerror.CustomError)
 
@@ -171,16 +172,7 @@ func (sp *SnapsRepository) AddUpload(snapName string, upDownId string, fileSize 
 
 	// TODO: fix lazy; this should be converted to a table so that the channels can be stored separately or maybe redis
 	if len(channels) > 0 {
-		channelsString := ""
-		for _, chn := range channels {
-			if channelsString == "" {
-				channelsString = chn
-			} else {
-				channelsString = channelsString + "," + chn
-			}
-		}
-
-		snapUpload.Channels = channelsString
+		snapUpload.Channels = pq.StringArray(channels)
 	}
 
 	query = `
@@ -218,6 +210,25 @@ func (sp *SnapsRepository) RegisterSnap(snapName string, isPrivate bool) (*model
 }
 
 // ============ READ =============
+
+func (sp *SnapsRepository) GetAllSnapEntries() (*[]models.SnapEntry, *cerror.CustomError) {
+	var snaps []models.SnapEntry
+	query := `
+		SELECT *
+		FROM snap_entries
+	`
+	err := sp.db.Select(&snaps, query)
+	if err != nil {
+		logrus.Error(err)
+		return nil, cerror.ConvertError(err)
+	}
+
+	if len(snaps) == 0 {
+		return nil, cerror.NewCustomError(cerror.ResourceNotFound, "resource not found: no snaps")
+	}
+
+	return &snaps, nil
+}
 
 func (sp *SnapsRepository) GetChannelsByTrackId(trackId uuid.UUID) ([]*models.SnapChannel, *cerror.CustomError) {
 	var channels []*models.SnapChannel
@@ -416,6 +427,11 @@ func (sp *SnapsRepository) GetRevisionsByEntryId(entryId uuid.UUID) ([]*models.S
 		return nil, cerror.ConvertError(err, fmt.Sprintf("resource not found: revisions for snap with id = '%s'", entryId.String()))
 	}
 
+	// manual check for empty result because db.Select doesn't return an error for empty results
+	if len(revisions) == 0 {
+		return nil, cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("resource not found: revisions for snap with id = '%s'", entryId.String()))
+	}
+
 	return revisions, nil
 }
 
@@ -495,6 +511,7 @@ func (sp *SnapsRepository) GetRevisionBySHA(SHA3_384 string, encoded bool) (*mod
 	return &revision, nil
 }
 
+// QUESTION: Think this is for browsing categories? Not sure
 func (sp *SnapsRepository) GetSections() (*[]string, *cerror.CustomError) {
 	// TODO: add these to the database for real
 	sections := []string{
@@ -504,23 +521,8 @@ func (sp *SnapsRepository) GetSections() (*[]string, *cerror.CustomError) {
 	return &sections, nil
 }
 
-func (sp *SnapsRepository) GetSnaps() (*[]models.SnapEntry, *cerror.CustomError) {
-	var snaps []models.SnapEntry
-	query := `
-		SELECT *
-		FROM snap_entries
-	`
-	err := sp.db.Select(&snaps, query)
-	if err != nil {
-		logrus.Error(err)
-		return nil, cerror.ConvertError(err)
-	}
-
-	return &snaps, nil
-}
-
-func (sp *SnapsRepository) GetTracksBySnapId(snapId uuid.UUID) (*[]models.SnapTrack, *cerror.CustomError) {
-	var tracks []models.SnapTrack
+func (sp *SnapsRepository) GetTracksBySnapId(snapId uuid.UUID) ([]*models.SnapTrack, *cerror.CustomError) {
+	var tracks []*models.SnapTrack
 
 	query := `
 		SELECT *
@@ -533,9 +535,14 @@ func (sp *SnapsRepository) GetTracksBySnapId(snapId uuid.UUID) (*[]models.SnapTr
 		return nil, cerror.ConvertError(err, fmt.Sprintf("resource not found: tracks for snap with id = '%s'", snapId.String()))
 	}
 
-	return &tracks, nil
+	if len(tracks) == 0 {
+		return nil, cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("resource not found: tracks for snap with id = '%s'", snapId.String()))
+	}
+
+	return tracks, nil
 }
 
+// QUESTION: still not sure what UpDownId is?
 func (sp *SnapsRepository) GetUploadByUpDownId(upDownId string) (*models.SnapUpload, *cerror.CustomError) {
 	var snapUpload models.SnapUpload
 	query := `
@@ -563,6 +570,11 @@ func (sp *SnapsRepository) GetUploadsByEntryId(d uuid.UUID) ([]*models.SnapUploa
 	if err != nil {
 		logrus.Error(err)
 		return nil, cerror.ConvertError(err, fmt.Sprintf("resource not found: uploads for snap with id = '%s'", d.String()))
+	}
+
+	// manual check for empty result because db.Select doesn't return an error for empty results
+	if len(uploads) == 0 {
+		return nil, cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("resource not found: uploads for snap with id = '%s'", d.String()))
 	}
 
 	return uploads, nil
