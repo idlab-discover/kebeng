@@ -17,6 +17,7 @@ import (
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	storeDB "github.com/idlab-discover/kebeng/services/store/internal"
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
+	"github.com/idlab-discover/kebeng/services/store/internal/models"
 	"github.com/idlab-discover/kebeng/services/store/internal/repositories"
 )
 
@@ -24,6 +25,7 @@ var (
 	globalRepo *repositories.SnapsRepository
 	globalDB   *sqlx.DB
 	cleanupDB  func()
+	mockUUID   = uuid.New()
 )
 
 func setupGlobalTestDB() (*repositories.SnapsRepository, *sqlx.DB, func()) {
@@ -82,6 +84,133 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
+func TestAddRevision(t *testing.T) {
+	tests := []struct {
+		name              string
+		snapEntry         models.SnapEntry
+		size              uint64
+		expectError       bool
+		expectedErrorCode string
+	}{
+		{
+			name: "Success adding revision",
+			snapEntry: models.SnapEntry{
+				ID:   mockUUID,
+				Name: "mock-snap",
+			},
+			size:        999,
+			expectError: false,
+		},
+		{
+			name: "Fail adding revision for non-existing snap entry",
+			snapEntry: models.SnapEntry{
+				ID:   uuid.New(),
+				Name: "nonexistent",
+			},
+			size:              999,
+			expectError:       true,
+			expectedErrorCode: cerror.ResourceNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := globalRepo.AddRevision(&tt.snapEntry, tt.size)
+			if tt.expectError {
+				assert.NotNil(t, err)
+				if err != nil {
+					assert.Equal(t, tt.expectedErrorCode, err.GetCode())
+				}
+			} else {
+				assert.Nil(t, err)
+			}
+		})
+	}
+}
+
+// Not sure if this is needed
+// func TestAddSnap(t *testing.T) {
+// 	tests := []struct {
+// 		name              string
+// 		snapName          string
+// 		size              uint64
+// 		accountId         uuid.UUID
+// 		expectError       bool
+// 		expectedErrorCode string
+// 	}{
+// 		{
+// 			name:      "Success adding snap",
+// 			snapName:  "test-1",
+// 			size:      999,
+// 			accountId: uuid.New(),
+// 		},
+// 		{
+// 			name:              "Fail adding snap",
+// 			snapName:          "mock-snap",
+// 			size:              999,
+// 			expectError:       true,
+// 			expectedErrorCode: cerror.AlreadyRegistered,
+// 		},
+// 	}
+
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			_, err := globalRepo.AddSnap(tt.snapName, tt.size, uuid.New())
+// 			if tt.expectError {
+// 				assert.NotNil(t, err)
+// 				assert.Equal(t, tt.expectedErrorCode, err.GetCode())
+// 			} else {
+// 				assert.Nil(t, err)
+// 			}
+// 		})
+// 	}
+// }
+
+func AddUpload(t *testing.T) {
+	tests := []struct {
+		name              string
+		snapName          string
+		upDownId          string
+		fileSize          uint
+		channels          []string
+		expectError       bool
+		expectedErrorCode string
+	}{
+		{
+			name:              "Success adding upload",
+			snapName:          "mock-snap",
+			upDownId:          "test-up-down-id",
+			fileSize:          999,
+			channels:          []string{"latest", "beta"},
+			expectError:       false,
+			expectedErrorCode: "",
+		},
+		{
+			name:              "Fail adding upload for non-existing snap entry",
+			snapName:          "nonexistent",
+			upDownId:          "test-up-down-id",
+			fileSize:          999,
+			channels:          []string{"latest"},
+			expectError:       true,
+			expectedErrorCode: cerror.ResourceNotFound,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp, err := globalRepo.AddUpload(tt.snapName, tt.upDownId, tt.fileSize, tt.channels)
+			if tt.expectError {
+				assert.NotNil(t, err)
+				if err != nil {
+					assert.Equal(t, tt.expectedErrorCode, err.GetCode())
+				}
+			} else {
+				assert.Nil(t, err)
+				assert.NotNil(t, resp.ID)
+			}
+		})
+	}
+}
+
 func TestRegisterSnap(t *testing.T) {
 	tests := []struct {
 		name              string
@@ -111,7 +240,9 @@ func TestRegisterSnap(t *testing.T) {
 			entry, err := globalRepo.RegisterSnap(tt.entryName, tt.entryPrivate)
 			if tt.expectError {
 				assert.NotNil(t, err)
-				assert.Equal(t, tt.expectedErrorCode, err.GetCode())
+				if err != nil {
+					assert.Equal(t, tt.expectedErrorCode, err.GetCode())
+				}
 			} else {
 				assert.Nil(t, err)
 				assert.NotNil(t, entry.ID)
@@ -154,10 +285,86 @@ func TestAddUpload(t *testing.T) {
 			resp, err := globalRepo.AddUpload(tt.snapName, tt.upDownId, tt.fileSize, tt.channels)
 			if tt.expectError {
 				assert.NotNil(t, err)
-				assert.Equal(t, tt.expectedErrorCode, err.GetCode())
+				if err != nil {
+					assert.Equal(t, tt.expectedErrorCode, err.GetCode())
+				}
 			} else {
 				assert.Nil(t, err)
 				assert.NotNil(t, resp.ID)
+			}
+		})
+	}
+}
+
+func TestGetChannelsByTrackId(t *testing.T) {
+	tests := []struct {
+		name              string
+		trackId           uuid.UUID
+		expectError       bool
+		expectedErrorCode string
+	}{
+		{
+			name:              "Success getting channels by track id",
+			trackId:           mockUUID,
+			expectError:       false,
+			expectedErrorCode: "",
+		},
+		{
+			name:              "Fail getting channels by track id for non-existing track",
+			trackId:           uuid.New(),
+			expectError:       true,
+			expectedErrorCode: cerror.ResourceNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			channels, err := globalRepo.GetChannelsByTrackId(tt.trackId)
+			if tt.expectError {
+				assert.NotNil(t, err)
+				if err != nil {
+					assert.Equal(t, tt.expectedErrorCode, err.GetCode())
+				}
+			} else {
+				assert.Nil(t, err)
+				assert.NotNil(t, channels)
+			}
+		})
+	}
+}
+
+func TestGetCommentsByEntryId(t *testing.T) {
+	tests := []struct {
+		name              string
+		entryId           uuid.UUID
+		expectError       bool
+		expectedErrorCode string
+	}{
+		{
+			name:              "Success getting comments by entry id",
+			entryId:           mockUUID,
+			expectError:       false,
+			expectedErrorCode: "",
+		},
+		{
+			name:              "Fail getting comments by entry id for non-existing entry",
+			entryId:           uuid.New(),
+			expectError:       true,
+			expectedErrorCode: cerror.ResourceNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			comments, err := globalRepo.GetCommentsByEntryId(tt.entryId)
+			if tt.expectError {
+				assert.NotNil(t, err)
+				if err != nil {
+					assert.Equal(t, tt.expectedErrorCode, err.GetCode())
+				}
+			} else {
+				assert.Nil(t, err)
+				assert.NotNil(t, comments)
 			}
 		})
 	}
@@ -246,22 +453,47 @@ func TestAddUpload(t *testing.T) {
 
 func mockData(db *sqlx.DB) {
 	// Mock snap entry
-	var snapEntryID uuid.UUID
-	err := db.QueryRow(`
-		INSERT INTO public.snap_entries (private, name, type, confinement, status, price, store, icon_url)
-		VALUES (false, 'mock-snap', 'application', 'strict', 'active', 0.0, 'mock-store', 'http://mock-icon-url.com')
-		RETURNING id;
-	`).Scan(&snapEntryID)
+	_, err := db.Exec(`
+		INSERT INTO public.snap_entries (id, private, name, type, confinement, status, price, store, icon_url)
+		VALUES ($1, false, 'mock-snap', 'application', 'strict', 'active', 0.0, 'mock-store', 'http://mock-icon-url.com');
+	`, mockUUID)
 	if err != nil {
 		logrus.Fatalf("failed to insert mock data for snap entry: %v", err)
 	}
 
 	// Mock snap revision
 	_, err = db.Exec(`
-		INSERT INTO public.snap_revisions (snap_name, snap_entry_id, build_assertion_filename, sha3_384, size, sequence_number, architectures, status, version)
-		VALUES ('mock-snap', $1, 'mock-build-assertion', 'mock-sha3-384', 999, 1, ARRAY['mock-arch'], 'active', '1.0.0');
-	`, snapEntryID)
+		INSERT INTO public.snap_revisions (id, snap_name, snap_entry_id, build_assertion_filename, sha3_384, size, sequence_number, architectures, status, version)
+		VALUES ($1, 'mock-snap', $2, 'mock-build-assertion', 'mock-sha3-384', 999, 1, ARRAY['mock-arch'], 'active', '1.0.0');
+	`, mockUUID, mockUUID)
 	if err != nil {
 		logrus.Fatalf("failed to insert mock data for snap revision: %v", err)
+	}
+
+	// Mock snap track
+	_, err = db.Exec(`
+		INSERT INTO public.snap_tracks (id, name, snap_entry_id)
+		VALUES ($1, 'latest', $2);
+	`, mockUUID, mockUUID)
+	if err != nil {
+		logrus.Fatalf("failed to insert mock data for snap track: %v", err)
+	}
+
+	// Mock snap channel
+	_, err = db.Exec(`
+		INSERT INTO public.snap_channels (id, name, snap_track_id, snap_entry_id, revision_id)
+		VALUES ($1, 'latest', $2, $3, $4);
+	`, mockUUID, mockUUID, mockUUID, mockUUID)
+	if err != nil {
+		logrus.Fatalf("failed to insert mock data for snap channel: %v", err)
+	}
+
+	// Mock snap comment
+	_, err = db.Exec(`
+		INSERT INTO public.snap_comments (id, snap_entry_id, author_id, reason, comment)
+		VALUES ($1, $2, $3, 'mock-reason', 'mock-comment');
+	`, mockUUID, mockUUID, mockUUID)
+	if err != nil {
+		logrus.Fatalf("failed to insert mock data for snap comment: %v", err)
 	}
 }

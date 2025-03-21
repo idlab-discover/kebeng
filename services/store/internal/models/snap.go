@@ -3,7 +3,6 @@ package models
 import (
 	"context"
 	"crypto"
-	"database/sql"
 	"fmt"
 	"io"
 	"time"
@@ -52,11 +51,11 @@ type SnapEntry struct {
 
 // Track = latest, or things like 2.0, 2.1, 2.2
 type SnapTrack struct {
-	ID          uuid.UUID    `db:"id"`
-	CreatedAt   time.Time    `db:"created_at"`
-	UpdatedAt   time.Time    `db:"updated_at"`
-	DeletedAt   sql.NullTime `db:"deleted_at"`
-	Name        string       `json:"name" db:"name"`
+	ID          uuid.UUID  `db:"id"`
+	CreatedAt   time.Time  `db:"created_at"`
+	UpdatedAt   time.Time  `db:"updated_at"`
+	DeletedAt   *time.Time `db:"deleted_at"`
+	Name        string     `json:"name" db:"name"`
 	SnapEntryID uuid.UUID
 	SnapEntry   *SnapEntry
 	Risks       []*SnapChannel
@@ -64,13 +63,13 @@ type SnapTrack struct {
 
 // Channel = stable, beta, edge, candidate
 type SnapChannel struct {
-	ID          uuid.UUID    `db:"id"`
-	CreatedAt   time.Time    `db:"created_at"`
-	UpdatedAt   time.Time    `db:"updated_at"`
-	DeletedAt   sql.NullTime `db:"deleted_at"`
-	Name        string       `json:"name" db:"name"`
-	SnapTrackID uuid.UUID    `db:"snap_track_id"`
-	SnapEntryID uuid.UUID    `db:"snap_entry_id"`
+	ID          uuid.UUID  `db:"id"`
+	CreatedAt   time.Time  `db:"created_at"`
+	UpdatedAt   time.Time  `db:"updated_at"`
+	DeletedAt   *time.Time `db:"deleted_at"`
+	Name        string     `json:"name" db:"name"`
+	SnapTrackID uuid.UUID  `db:"snap_track_id"`
+	SnapEntryID uuid.UUID  `db:"snap_entry_id"`
 	SnapEntry   *SnapEntry
 
 	RevisionID uuid.UUID `db:"revision_id"`
@@ -93,31 +92,31 @@ type SnapBranch struct {
 
 // Revision = a specific version of a snap, not necessarily a release
 type SnapRevision struct {
-	ID                     uuid.UUID    `db:"id"`
-	CreatedAt              time.Time    `db:"created_at"`
-	UpdatedAt              time.Time    `db:"updated_at"`
-	DeletedAt              sql.NullTime `db:"deleted_at"`
-	SnapName               string       `db:"snap_name"`
-	BuildAssertionFileName string       `db:"build_assertion_filename"`
-	SnapEntryID            uuid.UUID    `db:"snap_entry_id"`
-	SHA3_384               string       `db:"sha3_384"`
-	SHA3_384_Encoded       string       `db:"sha3_384_encoded"`
-	Size                   uint64       `db:"size"`
-	SequenceNumber         uint         `db:"sequence_number"`
-	Architectures          []string     `db:"architectures"` // TODO: check if this is supposed to be stored here
-	Status                 string       `db:"status"`
-	Version                string       `db:"version"`
-	Since                  time.Time    `db:"since"`
+	ID                     uuid.UUID  `db:"id"`
+	CreatedAt              time.Time  `db:"created_at"`
+	UpdatedAt              time.Time  `db:"updated_at"`
+	DeletedAt              *time.Time `db:"deleted_at"`
+	SnapName               string     `db:"snap_name"`
+	BuildAssertionFileName string     `db:"build_assertion_filename"`
+	SnapEntryID            uuid.UUID  `db:"snap_entry_id"`
+	SHA3_384               string     `db:"sha3_384"`
+	SHA3_384_Encoded       string     `db:"sha3_384_encoded"`
+	Size                   uint64     `db:"size"`
+	SequenceNumber         uint       `db:"sequence_number"`
+	Architectures          []string   `db:"architectures"` // TODO: check if this is supposed to be stored here
+	Status                 string     `db:"status"`
+	Version                string     `db:"version"`
+	Since                  time.Time  `db:"since"`
 }
 
 // SnapUpload = a specific upload of a snap, with a specific file, info about file, etc
 type SnapUpload struct {
-	ID        uuid.UUID    `db:"id"`
-	CreatedAt time.Time    `db:"created_at"`
-	UpdatedAt time.Time    `db:"updated_at"`
-	DeletedAt sql.NullTime `db:"deleted_at"`
-	UpDownID  string       `db:"up_down_id"`
-	Filesize  uint         `db:"filesize"`
+	ID        uuid.UUID  `db:"id"`
+	CreatedAt time.Time  `db:"created_at"`
+	UpdatedAt time.Time  `db:"updated_at"`
+	DeletedAt *time.Time `db:"deleted_at"`
+	UpDownID  string     `db:"up_down_id"`
+	Filesize  uint       `db:"filesize"`
 	// Channels is a comma-separated string of channels
 	Channels    string    `db:"channels"`
 	SnapEntryID uuid.UUID `db:"snap_entry_id"`
@@ -125,15 +124,15 @@ type SnapUpload struct {
 }
 
 type SnapComment struct {
-	ID          uuid.UUID    `db:"id"`
-	CreatedAt   time.Time    `db:"created_at"`
-	UpdatedAt   time.Time    `db:"updated_at"`
-	DeletedAt   sql.NullTime `db:"deleted_at"`
-	AuthorID    uuid.UUID    `db:"author_id"`
-	Since       time.Time    `db:"since"`
-	Reason      string       `json:"reason"`
-	Comment     string       `json:"comment"`
-	SnapEntryID uuid.UUID    `db:"snap_entry_id"`
+	ID          uuid.UUID  `db:"id"`
+	CreatedAt   time.Time  `db:"created_at"`
+	UpdatedAt   time.Time  `db:"updated_at"`
+	DeletedAt   *time.Time `db:"deleted_at"`
+	AuthorID    uuid.UUID  `db:"author_id"`
+	Since       time.Time  `db:"since"`
+	Reason      string     `json:"reason"`
+	Comment     string     `json:"comment"`
+	SnapEntryID uuid.UUID  `db:"snap_entry_id"`
 	SnapEntry   *SnapEntry
 }
 

@@ -24,8 +24,8 @@ type ISnapsRepository interface {
 	RegisterSnap(snapName string, isPrivate bool) (*models.SnapEntry, *cerror.CustomError)
 
 	// READ
-	GetChannels(trackId uuid.UUID) (*[]models.SnapChannel, *cerror.CustomError)
-	GetCommentsByEntryId(entryId uuid.UUID) (*[]models.SnapComment, *cerror.CustomError)
+	GetChannelsByTrackId(trackId uuid.UUID) ([]*models.SnapChannel, *cerror.CustomError)
+	GetCommentsByEntryId(entryId uuid.UUID) ([]*models.SnapComment, *cerror.CustomError)
 	GetEntriesByAccountId(accountId uuid.UUID, preloadAssociations []string) ([]*models.SnapEntry, *cerror.CustomError)
 	GetEntryById(id uuid.UUID, preloadAssociations []string) (*models.SnapEntry, *cerror.CustomError)
 	GetEntryByName(name string, preloadAssociations []string) (*models.SnapEntry, *cerror.CustomError)
@@ -56,7 +56,7 @@ func NewSnapsRepository(db *sqlx.DB) *SnapsRepository {
 
 // ============ CREATE =============
 
-func (sp *SnapsRepository) AddRevision(snapEntry models.SnapEntry, size uint64) (*models.SnapRevision, *cerror.CustomError) {
+func (sp *SnapsRepository) AddRevision(snapEntry *models.SnapEntry, size uint64) (*models.SnapRevision, *cerror.CustomError) {
 	// TODO: fix the need for an empty revision
 	// TODO: add build_assertion_filename if an assertion exists -> doesn't get checked in official snap store either
 	snapRevision := models.SnapRevision{
@@ -80,72 +80,73 @@ func (sp *SnapsRepository) AddRevision(snapEntry models.SnapEntry, size uint64) 
 	return &snapRevision, nil
 }
 
+// Not sure if this is needed
 // Used when a new snap gets uploaded for the first time (=registering a snap)
 
 // AddSnap registers a new snap with the given name, size, and accountId.
 // It ensures the snap does not already exist, creates a new SnapEntry,
 // adds an initial upload, and sets up default tracks and channels.
-func (sp *SnapsRepository) AddSnap(name string, size uint64, accountId uuid.UUID) (*models.SnapEntry, *cerror.CustomError) {
-	existingSnap, err := sp.GetEntryByName(name, nil)
-	if err != nil {
-		// Already logged in GetEntryByName
-		if err.GetCode() != cerror.ResourceNotFound {
-			return nil, err
-		}
-	}
+// func (sp *SnapsRepository) AddSnap(name string, size uint64, accountId uuid.UUID) (*models.SnapEntry, *cerror.CustomError) {
+// 	existingSnap, err := sp.GetEntryByName(name, nil)
+// 	if err != nil {
+// 		// Already logged in GetEntryByName
+// 		if err.GetCode() != cerror.ResourceNotFound {
+// 			return nil, err
+// 		}
+// 	}
 
-	// if the snap already exists, return an *cerror.CustomError
-	if existingSnap != nil {
-		return nil, cerror.NewCustomError(cerror.AlreadyRegistered, fmt.Sprintf("snap with name '%s' already exists", name))
-	}
+// 	// if the snap already exists, return an *cerror.CustomError
+// 	if existingSnap != nil {
+// 		return nil, cerror.NewCustomError(cerror.AlreadyRegistered, fmt.Sprintf("snap with name '%s' already exists", name))
+// 	}
 
-	// when registering a snap, not finding one is what you want
-	var newSnapEntry models.SnapEntry
-	newSnapEntry.Name = name
-	newSnapEntry.AccountID = accountId
-	typeStr := "app"
-	newSnapEntry.Type = &typeStr
-	//newSnapEntry.Confinement = "strict"
-	//newSnapEntry.Base = "core18" // default base
+// 	// when registering a snap, not finding one is what you want
+// 	var newSnapEntry models.SnapEntry
+// 	newSnapEntry.Name = name
+// 	newSnapEntry.AccountID = accountId
+// 	typeStr := "app"
+// 	newSnapEntry.Type = &typeStr
+// 	//newSnapEntry.Confinement = "strict"
+// 	//newSnapEntry.Base = "core18" // default base
 
-	// snap_entries table contains snaps with unique names (doesn't keep track of revisions or channels)
-	query := `
-		INSERT INTO snap_entries (name, account_id, type)
-		VALUES ($1, $2, $3)
-		RETURNING id
-	`
-	err2 := sp.db.Get(&newSnapEntry.ID, query, name, accountId, "app")
-	if err2 != nil {
-		logrus.Error(err2)
-		return nil, cerror.ConvertError(err2)
-	}
+// 	// snap_entries table contains snaps with unique names (doesn't keep track of revisions or channels)
+// 	query := `
+// 		INSERT INTO snap_entries (name, account_id, type)
+// 		VALUES ($1, $2, $3)
+// 		RETURNING id
+// 	`
+// 	err2 := sp.db.Get(&newSnapEntry.ID, query, name, accountId, "app")
+// 	if err2 != nil {
+// 		logrus.Error(err2)
+// 		return nil, cerror.ConvertError(err2)
+// 	}
+//
+// 	// snap_uploads table contains channels where the snap is uploaded
+// 	sp.AddUpload(name, newSnapEntry.ID.String(), uint(size), []string{"latest/stable"})
 
-	// snap_uploads table contains channels where the snap is uploaded
-	sp.AddUpload(name, newSnapEntry.ID.String(), uint(size), []string{"latest/stable"})
+// 	// For now when we register a snap we are going to create the default tracks/channels
+// 	track := models.SnapTrack{
+// 		Name:        "latest", // first upload of a snap is always the current latest
+// 		SnapEntryID: newSnapEntry.ID,
+// 	}
+// 	query = `
+// 		INSERT INTO snap_tracks (name, snap_entry_id)
+// 		VALUES ($1, $2)
+// 		RETURNING id
+// 	`
+// 	err2 = sp.db.Get(&track.ID, query, track.Name, newSnapEntry.ID)
+// 	if err2 != nil {
+// 		logrus.Error(err2)
+// 		return nil, cerror.ConvertError(err2)
+// 	}
 
-	// For now when we register a snap we are going to create the default tracks/channels
-	track := models.SnapTrack{
-		Name:        "latest", // first upload of a snap is always the current latest
-		SnapEntryID: newSnapEntry.ID,
-	}
-	query = `
-		INSERT INTO snap_tracks (name, snap_entry_id)
-		VALUES ($1, $2)
-		RETURNING id
-	`
-	err2 = sp.db.Get(&track.ID, query, track.Name, newSnapEntry.ID)
-	if err2 != nil {
-		logrus.Error(err2)
-		return nil, cerror.ConvertError(err2)
-	}
+// 	newRevision, _ := sp.AddRevision(&newSnapEntry, size)
 
-	newRevision, _ := sp.AddRevision(newSnapEntry, size)
+// 	sp.addChannels(newSnapEntry, *newRevision, track.ID)
 
-	sp.addChannels(newSnapEntry, *newRevision, track.ID)
+// 	return &newSnapEntry, nil
 
-	return &newSnapEntry, nil
-
-}
+// }
 
 func (sp *SnapsRepository) AddUpload(snapName string, upDownId string, fileSize uint, channels []string) (*models.SnapUpload, *cerror.CustomError) {
 	var snap models.SnapEntry
@@ -190,7 +191,7 @@ func (sp *SnapsRepository) AddUpload(snapName string, upDownId string, fileSize 
 	err = sp.db.Get(&snapUpload.ID, query, upDownId, fileSize, snapUpload.Channels, snap.ID)
 	if err != nil {
 		logrus.Error(err)
-		return nil, cerror.ConvertError(err, fmt.Sprintf("resource not found: snap with name = '%s'", snapName))
+		return nil, cerror.ConvertError(err, fmt.Sprintf("resource not found: snap with id = '%s'", snap.ID.String()))
 	}
 
 	return &snapUpload, nil
@@ -218,8 +219,8 @@ func (sp *SnapsRepository) RegisterSnap(snapName string, isPrivate bool) (*model
 
 // ============ READ =============
 
-func (sp *SnapsRepository) GetChannels(trackId uuid.UUID) (*[]models.SnapChannel, *cerror.CustomError) {
-	var channels []models.SnapChannel
+func (sp *SnapsRepository) GetChannelsByTrackId(trackId uuid.UUID) ([]*models.SnapChannel, *cerror.CustomError) {
+	var channels []*models.SnapChannel
 	query := `
 		SELECT *
 		FROM snap_channels
@@ -231,20 +232,30 @@ func (sp *SnapsRepository) GetChannels(trackId uuid.UUID) (*[]models.SnapChannel
 		return nil, cerror.ConvertError(err, fmt.Sprintf("resource not found: channels for track with id = '%s'", trackId.String()))
 	}
 
-	return &channels, nil
+	// manual check for empty result because db.Select doesn't return an error for empty results
+	if len(channels) == 0 {
+		return nil, cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("resource not found: channels for track with id = '%s'", trackId.String()))
+	}
+
+	return channels, nil
 }
 
-func (sp *SnapsRepository) GetCommentsByEntryId(d uuid.UUID) ([]*models.SnapComment, *cerror.CustomError) {
+func (sp *SnapsRepository) GetCommentsByEntryId(entryId uuid.UUID) ([]*models.SnapComment, *cerror.CustomError) {
+	var comments []*models.SnapComment
 	query := `
 			SELECT *
 			FROM snap_comments
 			WHERE snap_entry_id = $1
 		`
-	var comments []*models.SnapComment
-	err := sp.db.Select(&comments, query, d)
+	err := sp.db.Select(&comments, query, entryId)
 	if err != nil {
 		logrus.Error(err)
-		return nil, cerror.ConvertError(err, fmt.Sprintf("resource not found: comments for snap with id = '%s'", d.String()))
+		return nil, cerror.ConvertError(err, fmt.Sprintf("resource not found: comments for snap with id = '%s'", entryId.String()))
+	}
+
+	// manual check for empty result because db.Select doesn't return an error for empty results
+	if len(comments) == 0 {
+		return nil, cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("resource not found: comments for snap with id = '%s'", entryId.String()))
 	}
 
 	return comments, nil

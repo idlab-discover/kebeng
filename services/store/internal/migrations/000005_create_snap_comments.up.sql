@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS public.snap_comments
     updated_at timestamp with time zone DEFAULT now(),
     deleted_at timestamp with time zone,
     snap_entry_id uuid,
-    account_id uuid,
+    author_id uuid,
     reason text COLLATE pg_catalog."default",
     comment text COLLATE pg_catalog."default",
     CONSTRAINT snap_comments_pkey PRIMARY KEY (id),

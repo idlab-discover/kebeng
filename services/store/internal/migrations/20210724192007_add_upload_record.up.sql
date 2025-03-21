@@ -3,8 +3,8 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE IF NOT EXISTS public.snap_uploads
 (
     id uuid NOT NULL DEFAULT uuid_generate_v4(),
-    created_at timestamp with time zone,
-    updated_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
     deleted_at timestamp with time zone,
     up_down_id text COLLATE pg_catalog."default",
     filesize bigint,
