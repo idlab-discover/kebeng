@@ -917,6 +917,163 @@ func TestGetPreloadAssociations(t *testing.T) {
 	}
 }
 
+func TestReleaseSnap(t *testing.T) {
+	tests := []struct {
+		name              string
+		channels          []string
+		snapEntryId       uuid.UUID
+		revisionID        uuid.UUID
+		expectError       bool
+		expectedErrorCode string
+	}{
+		{
+			name:              "Success releasing snap to multiple channels",
+			channels:          []string{"stable", "latest/stable"},
+			snapEntryId:       mockUUID,
+			revisionID:        mockUUID,
+			expectError:       false,
+			expectedErrorCode: "",
+		},
+		{
+			name:              "Fail releasing snap to multiple channels for non-existing snap entry",
+			channels:          []string{"stable", "latest/stable"},
+			snapEntryId:       uuid.New(),
+			revisionID:        mockUUID,
+			expectError:       true,
+			expectedErrorCode: cerror.ResourceNotFound,
+		},
+		{
+			name:              "Fail releasing snap to multiple channels for non-existing revision",
+			channels:          []string{"stable", "latest/stable"},
+			snapEntryId:       mockUUID,
+			revisionID:        uuid.New(),
+			expectError:       true,
+			expectedErrorCode: cerror.ResourceNotFound,
+		},
+		{
+			name:              "Fail releasing snap to multiple channels for non-existing channel",
+			channels:          []string{"nonexistent"},
+			snapEntryId:       mockUUID,
+			revisionID:        mockUUID,
+			expectError:       true,
+			expectedErrorCode: cerror.ResourceNotFound,
+		},
+		{
+			name:              "Fail releasing snap to multiple channels for non-existing track",
+			channels:          []string{"nonexistent/stable"},
+			snapEntryId:       mockUUID,
+			revisionID:        mockUUID,
+			expectError:       true,
+			expectedErrorCode: cerror.ResourceNotFound,
+		},
+		{
+			name:              "Fail releasing snap to multiple channels for non-existing track and channel",
+			channels:          []string{"nonexistent/nonexistent"},
+			snapEntryId:       mockUUID,
+			revisionID:        mockUUID,
+			expectError:       true,
+			expectedErrorCode: cerror.ResourceNotFound,
+		},
+		{
+			name:              "Fail releasing snap because of specifying a branch (not supported yet)",
+			channels:          []string{"latest/stable/branch"},
+			expectError:       true,
+			expectedErrorCode: cerror.NotImplemented,
+		},
+		{
+			name:              "Fail releasing snap because of incorrect channel format",
+			channels:          []string{"latest/stable/branch/extra"},
+			expectError:       true,
+			expectedErrorCode: cerror.InvalidField,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := globalRepo.ReleaseSnap(tt.channels, tt.snapEntryId, tt.revisionID)
+			if tt.expectError {
+				assert.NotNil(t, err)
+				if err != nil {
+					assert.Equal(t, tt.expectedErrorCode, err.GetCode())
+				}
+			}
+		})
+	}
+}
+
+func TestSetChannelRevision(t *testing.T) {
+	tests := []struct {
+		name              string
+		trackName         string
+		channelName       string
+		revisionID        uuid.UUID
+		snapEntryId       uuid.UUID
+		expectError       bool
+		expectedErrorCode string
+	}{
+		{
+			name:              "Success setting channel revision",
+			trackName:         "latest",
+			channelName:       "stable",
+			revisionID:        mockUUID,
+			snapEntryId:       mockUUID,
+			expectError:       false,
+			expectedErrorCode: "",
+		},
+		{
+			name:              "Fail setting channel revision for non-existing track",
+			trackName:         "nonexistent",
+			channelName:       "stable",
+			revisionID:        mockUUID,
+			snapEntryId:       mockUUID,
+			expectError:       true,
+			expectedErrorCode: cerror.ResourceNotFound,
+		},
+		{
+			name:              "Fail setting channel revision for non-existing channel",
+			trackName:         "latest",
+			channelName:       "nonexistent",
+			revisionID:        mockUUID,
+			snapEntryId:       mockUUID,
+			expectError:       true,
+			expectedErrorCode: cerror.ResourceNotFound,
+		},
+		{
+			name:              "Fail setting channel revision for non-existing revision",
+			trackName:         "latest",
+			channelName:       "stable",
+			revisionID:        uuid.New(),
+			snapEntryId:       mockUUID,
+			expectError:       true,
+			expectedErrorCode: cerror.ResourceNotFound,
+		},
+		{
+			name:              "Fail setting channel revision for non-existing snap entry",
+			trackName:         "latest",
+			channelName:       "stable",
+			revisionID:        mockUUID,
+			snapEntryId:       uuid.New(),
+			expectError:       true,
+			expectedErrorCode: cerror.ResourceNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			snapTrack, err := globalRepo.SetChannelRevision(tt.trackName, tt.channelName, tt.revisionID, tt.snapEntryId)
+			if tt.expectError {
+				assert.NotNil(t, err)
+				if err != nil {
+					assert.Equal(t, tt.expectedErrorCode, err.GetCode())
+				}
+			} else {
+				assert.Nil(t, err)
+				assert.NotNil(t, snapTrack)
+			}
+		})
+	}
+}
+
 // Helper function to insert mock data
 func mockData(db *sqlx.DB) {
 	// Mock snap entry

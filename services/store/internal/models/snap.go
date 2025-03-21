@@ -59,7 +59,7 @@ type SnapTrack struct {
 	Name        string     `json:"name" db:"name"`
 	SnapEntryID uuid.UUID  `db:"snap_entry_id"`
 	SnapEntry   *SnapEntry
-	Risks       []*SnapChannel
+	Channels    []*SnapChannel
 }
 
 // Channel = stable, beta, edge, candidate

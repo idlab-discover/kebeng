@@ -582,14 +582,39 @@ func (sp *SnapsRepository) GetUploadsByEntryId(d uuid.UUID) ([]*models.SnapUploa
 
 // ============ UPDATE =============
 
+// ReleaseSnap releases a snap to the specified channels. It supports releasing to multiple
+// channels at once. The channels can be specified in the following formats:
+//   - "edge": Assumes the track is "latest" (interpreted as "latest/edge").
+//   - "latest/edge": Specifies both the track and channel.
+//   - "latest/edge/some_branch": Specifies track, channel, and branch (not supported).
+//
+// For each channel, the function performs the following steps:
+//  1. Parses the channel string to extract the track and channel names.
+//  2. Retrieves the corresponding track from the database.
+//  3. Retrieves the corresponding channel from the database.
+//  4. Validates the existence of the specified revision.
+//  5. Updates the channel to point to the specified revision.
+//
+// Parameters:
+//   - channels: A slice of strings representing the channels to release the snap to.
+//   - snapEntryId: The UUID of the snap entry to be released.
+//   - revisionId: The UUID of the revision to be released.
+//
+// Returns:
+//   - A pointer to a CustomError if an error occurs, or nil if the operation is successful.
+//
+// Notes:
+//   - Branches in channels (e.g., "latest/edge/some_branch") are not yet supported and will
+//     result in a "NotImplemented" error.
 func (sp *SnapsRepository) ReleaseSnap(channels []string, snapEntryId uuid.UUID, revisionId uuid.UUID) *cerror.CustomError {
 	var trackForRelease string
 	var channelForRelease string
+	// It's possible to release a snap to multiple <tracks/channels> at once
 	for _, cn := range channels {
 		// It's possible this comes in the form:
-		//   - single string values "edge" where the track is assumed to be "latest" there is no branch
-		//   - two values "latest/edge" where the channel is proceeded by the track
-		//   - three values "latest/edge/some_branch"
+		//   - single string values like "edge" where the track is assumed to be "latest" there is no branch -> ("latest/<channel>")
+		//   - two values "latest/edge" where the channel is proceeded by the track -> ("<track>/<channel>")
+		//   - three values "latest/edge/some_branch" -> ("<track>/<channel>/<branch>")
 		parts := strings.Split(cn, "/")
 		if len(parts) == 1 {
 			channelForRelease = parts[0]
@@ -599,9 +624,11 @@ func (sp *SnapsRepository) ReleaseSnap(channels []string, snapEntryId uuid.UUID,
 			channelForRelease = parts[1]
 		} else if len(parts) == 3 {
 			return cerror.NewCustomError(cerror.NotImplemented, "branches not yet supported for channels")
+		} else {
+			return cerror.NewCustomError(cerror.InvalidField, "invalid channel format")
 		}
 
-		// get all the tracks
+		// get the track for release
 		var track models.SnapTrack
 		query := `
 			SELECT id
@@ -614,7 +641,7 @@ func (sp *SnapsRepository) ReleaseSnap(channels []string, snapEntryId uuid.UUID,
 			return cerror.ConvertError(err, fmt.Sprintf("resource not found: track '%s' for snap with id = '%s'", trackForRelease, snapEntryId.String()))
 		}
 
-		// get all the channels
+		// get the channel for release
 		var channel models.SnapChannel
 		query = `
 			SELECT *
@@ -654,32 +681,54 @@ func (sp *SnapsRepository) ReleaseSnap(channels []string, snapEntryId uuid.UUID,
 	return nil
 }
 
-func (sp *SnapsRepository) SetChannelRevision(trackName string, channelName string, revisionId uuid.UUID, snapId uuid.UUID) (*models.SnapTrack, *cerror.CustomError) {
-	// get all the tracks
+// SetChannelRevision updates the revision of a specific channel within a track for a snap entry.
+// It performs the following steps:
+//  1. Retrieves the snap track by its name and snap entry ID.
+//  2. Retrieves the snap channel by its name, snap entry ID, and track ID.
+//  3. Validates the existence of the specified revision ID.
+//  4. Updates the channel's revision ID in the database.
+//
+// Parameters:
+//   - trackName: The name of the track to which the channel belongs.
+//   - channelName: The name of the channel to update.
+//   - revisionId: The UUID of the revision to set for the channel.
+//   - snapEntryId: The UUID of the snap entry associated with the track and channel.
+//
+// Returns:
+//   - *models.SnapTrack: The snap track associated with the updated channel.
+//   - *cerror.CustomError: A custom error object if any operation fails.
+//
+// Errors:
+//   - Returns an error if the track, channel, or revision does not exist.
+//   - Returns an error if the database operation to update the channel fails.
+func (sp *SnapsRepository) SetChannelRevision(trackName string, channelName string, revisionId uuid.UUID, snapEntryId uuid.UUID) (*models.SnapTrack, *cerror.CustomError) {
+	// get the snap track by its name and snap entry id
 	var track models.SnapTrack
 	query := `
 		SELECT id
 		FROM snap_tracks
 		WHERE snap_entry_id = $1 AND name = $2
 	`
-	err := sp.db.Get(&track, query, snapId, trackName)
+	err := sp.db.Get(&track, query, snapEntryId, trackName)
 	if err != nil {
 		logrus.Error(err)
-		return nil, cerror.ConvertError(err, fmt.Sprintf("resource not found: track '%s' for snap with id = '%s'", trackName, snapId.String()))
+		return nil, cerror.ConvertError(err, fmt.Sprintf("resource not found: track '%s' for snap with id = '%s'", trackName, snapEntryId.String()))
 	}
 
+	// get the snap channel inside the track by its name, snap entry id, and track id
 	var channel models.SnapChannel
 	query = `
 		SELECT *
 		FROM snap_channels
 		WHERE snap_entry_id = $1 AND name = $2 AND snap_track_id = $3
 	`
-	err = sp.db.Get(&channel, query, snapId, channelName, track.ID)
+	err = sp.db.Get(&channel, query, snapEntryId, channelName, track.ID)
 	if err != nil {
 		logrus.Error(err)
-		return nil, cerror.ConvertError(err, fmt.Sprintf("resource not found: channel '%s' for snap with id = '%s'", channelName, snapId.String()))
+		return nil, cerror.ConvertError(err, fmt.Sprintf("resource not found: channel '%s' for snap with id = '%s'", channelName, snapEntryId.String()))
 	}
 
+	// FIX: this only gets revision to check if it exists -> maybe we could just skip this and let the db throw an error when it tries updating the channel
 	var revision models.SnapRevision
 	query = `
 		SELECT *
@@ -692,6 +741,7 @@ func (sp *SnapsRepository) SetChannelRevision(trackName string, channelName stri
 		return nil, cerror.ConvertError(err, fmt.Sprintf("resource not found: revision with id = '%s'", revisionId.String()))
 	}
 
+	// update the channel's revision id
 	query = `
 		UPDATE snap_channels
 		SET revision_id = $1
@@ -700,7 +750,7 @@ func (sp *SnapsRepository) SetChannelRevision(trackName string, channelName stri
 	_, err = sp.db.Exec(query, revision.ID, channel.ID)
 	if err != nil {
 		logrus.Error(err)
-		return nil, cerror.ConvertError(err, fmt.Sprintf("resource not found: channel '%s' for snap with id = '%s'", channelName, snapId.String()))
+		return nil, cerror.ConvertError(err, fmt.Sprintf("resource not found: channel '%s' for snap with id = '%s'", channelName, snapEntryId.String()))
 	}
 
 	return &track, nil
