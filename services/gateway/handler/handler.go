@@ -14,6 +14,7 @@ import (
 	"github.com/idlab-discover/kebeng/services/gateway/internal/middleware"
 	storeClient "github.com/idlab-discover/kebeng/services/store/client"
 	storepb "github.com/idlab-discover/kebeng/services/store/proto"
+	"gopkg.in/macaroon.v2"
 )
 
 // this file handles all the http requests and maps it to the correct client
@@ -400,6 +401,20 @@ func (h *Handler) updateAccount(c *gin.Context) {
 	email, ok := c.Get("email")
 	if !ok {
 		el.Add(errors.BadRequest, "missing email")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
+
+	rootMacaroon, ok := c.Get("macaroon")
+	if !ok {
+		el.Add(errors.BadRequest, "missing macaroon")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
+
+	// check permissions of macaroon to include "edit_account" permission
+	if !auth.HasPermission(rootMacaroon.(*macaroon.Macaroon), "edit_account") {
+		el.Add(errors.Forbidden, "missing permission to edit account")
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}

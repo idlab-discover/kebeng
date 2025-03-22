@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
+	accountpb "github.com/idlab-discover/kebeng/services/account/proto"
 	assertionpb "github.com/idlab-discover/kebeng/services/assertion/proto"
 	storepb "github.com/idlab-discover/kebeng/services/store/proto"
-    accountpb "github.com/idlab-discover/kebeng/services/account/proto"
 )
 
 const (
@@ -17,6 +17,7 @@ const (
 	AssertionCreationFailed    string = "assertion-creation-failed"
 	BadRequest                 string = "bad-request"
 	FailedToRegister           string = "failed-to-register"
+	Forbidden                  string = "forbidden"
 	InternalServerError        string = "internal-server-error"
 	Invalid                    string = "invalid"
 	InvalidChoice              string = "invalid_choice"
@@ -64,9 +65,9 @@ func (el *ErrorList) ExtendStoreError(other []*storepb.Error) {
 }
 
 func (el *ErrorList) ExtendAccountError(other []*accountpb.Error) {
-    for _, err := range other {
-        el.Add(err.Code, err.Message)
-    }
+	for _, err := range other {
+		el.Add(err.Code, err.Message)
+	}
 }
 
 func (el *ErrorList) ExtendAssertionError(other []*assertionpb.Error) {
