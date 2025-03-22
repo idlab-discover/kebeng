@@ -3,7 +3,6 @@ package models
 import (
 	"context"
 	"crypto"
-	"database/sql"
 	"fmt"
 	"io"
 	"time"
@@ -12,6 +11,7 @@ import (
 	"github.com/idlab-discover/kebeng/pkg/store/responses"
 	"github.com/idlab-discover/kebeng/services/store/internal/config/configkey"
 	"github.com/idlab-discover/kebeng/services/store/internal/objectstore"
+	"github.com/lib/pq"
 	"github.com/minio/minio-go/v7"
 	"github.com/sirupsen/logrus"
 	"github.com/snapcore/snapd/snap"
@@ -52,25 +52,25 @@ type SnapEntry struct {
 
 // Track = latest, or things like 2.0, 2.1, 2.2
 type SnapTrack struct {
-	ID          uuid.UUID    `db:"id"`
-	CreatedAt   time.Time    `db:"created_at"`
-	UpdatedAt   time.Time    `db:"updated_at"`
-	DeletedAt   sql.NullTime `db:"deleted_at"`
-	Name        string       `json:"name" db:"name"`
-	SnapEntryID uuid.UUID
+	ID          uuid.UUID  `db:"id"`
+	CreatedAt   time.Time  `db:"created_at"`
+	UpdatedAt   time.Time  `db:"updated_at"`
+	DeletedAt   *time.Time `db:"deleted_at"`
+	Name        string     `json:"name" db:"name"`
+	SnapEntryID uuid.UUID  `db:"snap_entry_id"`
 	SnapEntry   *SnapEntry
-	Risks       []*SnapChannel
+	Channels    []*SnapChannel
 }
 
 // Channel = stable, beta, edge, candidate
 type SnapChannel struct {
-	ID          uuid.UUID    `db:"id"`
-	CreatedAt   time.Time    `db:"created_at"`
-	UpdatedAt   time.Time    `db:"updated_at"`
-	DeletedAt   sql.NullTime `db:"deleted_at"`
-	Name        string       `json:"name" db:"name"`
-	SnapTrackID uuid.UUID    `db:"snap_track_id"`
-	SnapEntryID uuid.UUID    `db:"snap_entry_id"`
+	ID          uuid.UUID  `db:"id"`
+	CreatedAt   time.Time  `db:"created_at"`
+	UpdatedAt   time.Time  `db:"updated_at"`
+	DeletedAt   *time.Time `db:"deleted_at"`
+	Name        string     `json:"name" db:"name"`
+	SnapTrackID uuid.UUID  `db:"snap_track_id"`
+	SnapEntryID uuid.UUID  `db:"snap_entry_id"`
 	SnapEntry   *SnapEntry
 
 	RevisionID uuid.UUID `db:"revision_id"`
@@ -93,55 +93,55 @@ type SnapBranch struct {
 
 // Revision = a specific version of a snap, not necessarily a release
 type SnapRevision struct {
-	ID               uuid.UUID    `db:"id"`
-	CreatedAt        time.Time    `db:"created_at"`
-	UpdatedAt        time.Time    `db:"updated_at"`
-	DeletedAt        sql.NullTime `db:"deleted_at"`
-	SnapFilename     string       `db:"snap_filename"`
-	SnapEntryID      uuid.UUID    `db:"snap_entry_id"`
-	SHA3_384         string       `db:"sha3_384"`
-	SHA3_384_Encoded string       `db:"sha3_384_encoded"`
-	Size             uint64       `db:"size"`
-	SequenceNumber   uint         `db:"sequence_number"`
-	Architectures    []string     `db:"architectures"` // TODO: check if this is supposed to be stored here
-	Status           string       `db:"status"`
-	Version          string       `db:"version"`
-	Since            time.Time    `db:"since"`
+	ID                     uuid.UUID      `db:"id"`
+	CreatedAt              time.Time      `db:"created_at"`
+	UpdatedAt              time.Time      `db:"updated_at"`
+	DeletedAt              *time.Time     `db:"deleted_at"`
+	SnapName               *string        `db:"snap_name"`
+	BuildAssertionFileName *string        `db:"build_assertion_filename"`
+	SnapEntryID            uuid.UUID      `db:"snap_entry_id"`
+	SHA3_384               *string        `db:"sha3_384"`
+	SHA3_384_Encoded       *string        `db:"sha3_384_encoded"`
+	Size                   *uint64        `db:"size"`
+	SequenceNumber         *uint          `db:"sequence_number"`
+	Architectures          pq.StringArray `db:"architectures"` // TODO: check if this is supposed to be stored here
+	Status                 *string        `db:"status"`
+	Version                *string        `db:"version"`
 }
 
 // SnapUpload = a specific upload of a snap, with a specific file, info about file, etc
 type SnapUpload struct {
-	ID        uuid.UUID    `db:"id"`
-	CreatedAt time.Time    `db:"created_at"`
-	UpdatedAt time.Time    `db:"updated_at"`
-	DeletedAt sql.NullTime `db:"deleted_at"`
-	UpDownID  string       `db:"up_down_id"`
-	Filesize  uint         `db:"filesize"`
+	ID        uuid.UUID  `db:"id"`
+	CreatedAt time.Time  `db:"created_at"`
+	UpdatedAt time.Time  `db:"updated_at"`
+	DeletedAt *time.Time `db:"deleted_at"`
+	UpDownID  string     `db:"up_down_id"`
+	Filesize  uint       `db:"filesize"`
 	// Channels is a comma-separated string of channels
-	Channels    string    `db:"channels"`
-	SnapEntryID uuid.UUID `db:"snap_entry_id"`
+	Channels    pq.StringArray `db:"channels"`
+	SnapEntryID uuid.UUID      `db:"snap_entry_id"`
 	SnapEntry   *SnapEntry
 }
 
 type SnapComment struct {
-	ID          uuid.UUID    `db:"id"`
-	CreatedAt   time.Time    `db:"created_at"`
-	UpdatedAt   time.Time    `db:"updated_at"`
-	DeletedAt   sql.NullTime `db:"deleted_at"`
-	AuthorID    uuid.UUID    `db:"author_id"`
-	Since       time.Time    `db:"since"`
-	Reason      string       `json:"reason"`
-	Comment     string       `json:"comment"`
-	SnapEntryID uuid.UUID    `db:"snap_entry_id"`
+	ID          uuid.UUID  `db:"id"`
+	CreatedAt   time.Time  `db:"created_at"`
+	UpdatedAt   time.Time  `db:"updated_at"`
+	DeletedAt   *time.Time `db:"deleted_at"`
+	AuthorID    uuid.UUID  `db:"author_id"`
+	Since       time.Time  `db:"since"`
+	Reason      string     `json:"reason"`
+	Comment     string     `json:"comment"`
+	SnapEntryID uuid.UUID  `db:"snap_entry_id"`
 	SnapEntry   *SnapEntry
 }
 
 func (se *SnapEntry) ToStoreSnap(snapRevision *SnapRevision) (*responses.StoreSnap, error) {
-	downloadURL := fmt.Sprintf(viper.GetString(configkey.StoreAPIURL)+"/download/snaps/%s", snapRevision.SnapFilename)
-	base := snapRevision.SnapFilename
+	downloadURL := fmt.Sprintf(viper.GetString(configkey.StoreAPIURL)+"/download/snaps/%s", snapRevision.SnapName)
+	base := snapRevision.SnapName
 	obs := objectstore.NewObjectStore()
 	h := crypto.SHA3_384.New()
-	objectPtr, err := obs.MinioClient.GetObject(context.Background(), "snaps", base, minio.GetObjectOptions{})
+	objectPtr, err := obs.MinioClient.GetObject(context.Background(), "snaps", *base, minio.GetObjectOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -155,10 +155,10 @@ func (se *SnapEntry) ToStoreSnap(snapRevision *SnapRevision) (*responses.StoreSn
 		Name:     se.Name,
 		Type:     snap.Type(*se.Type),
 		SnapID:   se.ID,
-		Revision: int(snapRevision.SequenceNumber),
+		Revision: int(*snapRevision.SequenceNumber),
 		Download: responses.StoreSnapDownload{
 			Sha3_384: actualSha3,
-			Size:     snapRevision.Size,
+			Size:     *snapRevision.Size,
 			URL:      downloadURL,
 		},
 		Confinement: *se.Confinement,
