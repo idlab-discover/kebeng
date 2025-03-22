@@ -74,6 +74,7 @@ func (s *AssertionService) ProcessSnapBuildAssertion(ctx context.Context, req *p
 		SnapSha3_384:    assertion["snap-sha3-384"],
 		SnapSize:        assertion["snap-size"],
 		Timestamp:       assertion["timestamp"],
+		Revision:        assertion["revision"],
 		Type:            assertion["type"],
 		DeveloperId:     assertion["developer-id"],
 		Errors:          errList,
@@ -93,6 +94,7 @@ func validateSnapBuildAssertion(assertion map[string]string) error {
 		"snap-id",
 		"snap-size",
 		"timestamp",
+		"revision",
 		"sign-key-sha3-384",
 	}
 
