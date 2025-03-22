@@ -1,7 +1,6 @@
 package logic
 
 import (
-	"bytes"
 	"context"
 	"io"
 	"os"
@@ -11,7 +10,6 @@ import (
 
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
-	"github.com/idlab-discover/kebeng/services/store/internal/objectstore"
 	"github.com/idlab-discover/kebeng/services/store/internal/repositories"
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
 	"github.com/sirupsen/logrus"
@@ -27,36 +25,36 @@ func NewStoreLogic(repo *repositories.SnapsRepository) *StoreLogic {
 	return &StoreLogic{repo: repo}
 }
 
-func (s *StoreLogic) UploadSnap(ctx context.Context, req *proto.UploadSnapRequest) (*proto.UploadSnapResponse, error) {
-	// TODO: check which fields are required and which are optional in req
-	el := make([]*proto.Error, 0)
-	snapFileName, id, err := saveFileToTemp(bytes.NewReader(req.File))
-	if err != nil {
-		logrus.Errorf("Failed to save file to temp storage: %v", err)
-		el = append(el, &proto.Error{Code: cerror.InternalServerError, Message: "Failed to save file to temp storage"})
-		return &proto.UploadSnapResponse{Errors: el}, nil
-	}
+// func (s *StoreLogic) UploadSnap(ctx context.Context, req *proto.UploadSnapRequest) (*proto.UploadSnapResponse, error) {
+// 	// TODO: check which fields are required and which are optional in req
+// 	el := make([]*proto.Error, 0)
+// 	snapFileName, id, err := saveFileToTemp(bytes.NewReader(req.File))
+// 	if err != nil {
+// 		logrus.Errorf("Failed to save file to temp storage: %v", err)
+// 		el = append(el, &proto.Error{Code: cerror.InternalServerError, Message: "Failed to save file to temp storage"})
+// 		return &proto.UploadSnapResponse{Errors: el}, nil
+// 	}
 
-	objectstore := objectstore.NewObjectStore()
-	tmpPath := path.Join(os.TempDir(), snapFileName)
+// 	objectstore := objectstore.NewObjectStore()
+// 	tmpPath := path.Join(os.TempDir(), snapFileName)
 
-	size, err2 := objectstore.SaveFileToBucket("unscanned", tmpPath)
-	if err2 != nil {
-		logrus.Errorf("Failed to save file to object store: %v", err)
-		el = append(el, &proto.Error{Code: cerror.InternalServerError, Message: "Failed to save file to object store"})
-		return &proto.UploadSnapResponse{Errors: el}, nil
-	}
+// 	size, err2 := objectstore.SaveFileToBucket("unscanned", tmpPath)
+// 	if err2 != nil {
+// 		logrus.Errorf("Failed to save file to object store: %v", err)
+// 		el = append(el, &proto.Error{Code: cerror.InternalServerError, Message: "Failed to save file to object store"})
+// 		return &proto.UploadSnapResponse{Errors: el}, nil
+// 	}
 
-	// addSnap() adds snap to snap_entries table
-	_, err3 := s.repo.AddSnap(snapFileName, size, uuid.New()) // uuid.New() is a placeholder for account id that is going to be added later throught the context
-	if err3 != nil {
-		logrus.Error(err2)
-		el = append(el, &proto.Error{Code: cerror.InternalServerError, Message: "Failed to add snap to database"})
-		return &proto.UploadSnapResponse{Errors: el}, nil
-	}
+// 	// addSnap() adds snap to snap_entries table
+// 	_, err3 := s.repo.AddSnap(snapFileName, size, uuid.New()) // uuid.New() is a placeholder for account id that is going to be added later throught the context
+// 	if err3 != nil {
+// 		logrus.Error(err2)
+// 		el = append(el, &proto.Error{Code: cerror.InternalServerError, Message: "Failed to add snap to database"})
+// 		return &proto.UploadSnapResponse{Errors: el}, nil
+// 	}
 
-	return &proto.UploadSnapResponse{Id: id, DisplayName: snapFileName}, nil
-}
+// 	return &proto.UploadSnapResponse{Id: id, DisplayName: snapFileName}, nil
+// }
 
 func (s *StoreLogic) RegisterSnapName(ctx context.Context, req *proto.RegisterSnapNameRequest) (*proto.RegisterSnapNameResponse, error) {
 	el := make([]*proto.Error, 0)
@@ -285,7 +283,13 @@ func (s *StoreLogic) GetRevisions(ctx context.Context, req *proto.GetRevisionsRe
 	for _, revision := range req.Revisions {
 		// First check if id is provided
 		if revision.Id != "" {
-			rev, err := s.repo.GetRevisionById(revision.Id)
+			id, err1 := uuid.Parse(revision.Id)
+			if err1 != nil {
+				logrus.Errorf("Failed to parse UUID '%s':", revision.Id)
+				el = append(el, &proto.Error{Code: cerror.InvalidField, Message: fmt.Sprintf("Invalid UUID format for id '%s'", revision.Id)})
+				continue
+			}
+			rev, err := s.repo.GetRevisionById(id)
 			if err != nil {
 				// Already logged in GetRevisionById (repository)
 				el = append(el, &proto.Error{Code: err.GetCode(), Message: err.GetMessage()})
@@ -302,11 +306,10 @@ func (s *StoreLogic) GetRevisions(ctx context.Context, req *proto.GetRevisionsRe
 			foundRevisions = append(foundRevisions, &proto.GetRevisionResponse{
 				Id:            rev.ID.String(),
 				SnapName:      entry.Name,
-				Sequence:      uint64(rev.SequenceNumber),
+				Sequence:      uint64(*rev.SequenceNumber),
 				Architectures: rev.Architectures,
-				Version:       rev.Version,
-				Since:         timestamppb.New(rev.Since),
-				Status:        rev.Status,
+				Version:       *rev.Version,
+				Status:        *rev.Status,
 			})
 
 			// If id is not provided, check if snapName and sequence are provided
@@ -320,11 +323,10 @@ func (s *StoreLogic) GetRevisions(ctx context.Context, req *proto.GetRevisionsRe
 			foundRevisions = append(foundRevisions, &proto.GetRevisionResponse{
 				Id:            rev.ID.String(),
 				SnapName:      revision.SnapName,
-				Sequence:      uint64(rev.SequenceNumber),
+				Sequence:      uint64(*rev.SequenceNumber),
 				Architectures: rev.Architectures,
-				Version:       rev.Version,
-				Since:         timestamppb.New(rev.Since),
-				Status:        rev.Status,
+				Version:       *rev.Version,
+				Status:        *rev.Status,
 			})
 
 		} else {
@@ -373,11 +375,10 @@ func (s *StoreLogic) GetRevisionByNameAndSequence(ctx context.Context, req *prot
 	return &proto.GetRevisionResponse{
 		Id:            revision.ID.String(),
 		SnapName:      snapEntry.Name,
-		Sequence:      uint64(revision.SequenceNumber),
+		Sequence:      uint64(*revision.SequenceNumber),
 		Architectures: revision.Architectures,
-		Version:       revision.Version,
-		Since:         timestamppb.New(revision.Since),
-		Status:        revision.Status,
+		Version:       *revision.Version,
+		Status:        *revision.Status,
 	}, nil
 }
 
@@ -461,13 +462,13 @@ func (s *StoreLogic) GetRevisionsByEntryIds(ctx context.Context, req *proto.GetR
 		revisionsProto := make([]*proto.GetRevisionResponse, len(revisions))
 		for i, rev := range revisions {
 			revisionsProto[i] = &proto.GetRevisionResponse{
-				Id:            rev.ID.String(),
-				SnapName:      rev.SnapFilename,
-				Sequence:      uint64(rev.SequenceNumber),
-				Architectures: rev.Architectures,
-				Version:       rev.Version,
-				Since:         timestamppb.New(rev.Since),
-				Status:        rev.Status,
+				Id:                     rev.ID.String(),
+				SnapName:               *rev.SnapName,
+				BuildAssertionFilename: *rev.BuildAssertionFileName,
+				Sequence:               uint64(*rev.SequenceNumber),
+				Architectures:          rev.Architectures,
+				Version:                *rev.Version,
+				Status:                 *rev.Status,
 			}
 		}
 		// add to response
