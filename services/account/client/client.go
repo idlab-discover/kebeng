@@ -199,3 +199,18 @@ func (c *AccountClient) GetAccountKeysByAccountID(accountID string) *proto.KeysR
 	}
 	return resp
 }
+
+func (c *AccountClient) PatchAccountByEmail(email string) *proto.PatchAccountByEmailResponse {
+	req := &proto.PatchAccountByEmailRequest{Email: email}
+
+	resp, err := c.client.PatchAccountByEmail(context.Background(), req)
+	if err != nil {
+		// this means proto request failed not the actual logic
+		resp = &proto.PatchAccountByEmailResponse{
+			Errors: []*proto.Error{{
+				Code: cerror.InternalServerError, Message: err.Error()},
+			},
+		}
+	}
+	return resp
+}
