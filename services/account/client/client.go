@@ -200,8 +200,8 @@ func (c *AccountClient) GetAccountKeysByAccountID(accountID string) *proto.KeysR
 	return resp
 }
 
-func (c *AccountClient) PatchAccountByEmail(email string) *proto.PatchAccountByEmailResponse {
-	req := &proto.PatchAccountByEmailRequest{Email: email}
+func (c *AccountClient) PatchAccountByEmail(email, username string) *proto.PatchAccountByEmailResponse {
+	req := &proto.PatchAccountByEmailRequest{Email: email, Username: username}
 
 	resp, err := c.client.PatchAccountByEmail(context.Background(), req)
 	if err != nil {
