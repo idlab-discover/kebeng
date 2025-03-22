@@ -317,7 +317,7 @@ func (h *Handler) getAccount(c *gin.Context) {
 			ID:          p.Id,
 			DisplayName: p.DisplayName,
 			Username:    p.Username,
-			Validation:  p.Validation,
+			Validation:  getString(p.Validation),
 		}
 	}
 
@@ -338,8 +338,8 @@ func (h *Handler) getAccount(c *gin.Context) {
 	}
 
 	for _, e := range entries.Entries {
-		series := e.Base       // Example: "16" //TODO: check if this is series normally but i think its the same as base?
-		snapName := e.SnapName // Example: "hello-published"
+		series := getString(e.Base) // Example: "16" //TODO: check if this is series normally but i think its the same as base?
+		snapName := e.SnapName      // Example: "hello-published"
 
 		// Ensure series exists in the map
 		if snaps[series] == nil {
@@ -363,13 +363,13 @@ func (h *Handler) getAccount(c *gin.Context) {
 
 		// TODO: fix this
 		snap := message.Snap{
-			Status: e.Status,
-			Price:  e.Price,
+			Status: getString(e.Status),
+			Price:  getFloat64(e.Price),
 			Since:  e.Since.AsTime(),
 			SnapID: e.Id,
 			// Store:           e.Store, // not yet implemented
-			Private:         e.Private,
-			IconURL:         &e.IconUrl,
+			Private:         getBool(e.Private), // this isn't the best yet but don't know what to do if its a nil value set to true or false?
+			IconURL:         e.IconUrl,
 			Publisher:       *publisher,
 			LatestComments:  []message.SnapComment{}, // No comments available yet
 			LatestRevisions: latestRevisions,
@@ -489,10 +489,24 @@ func (h *Handler) verifyMacaroon(c *gin.Context) {
 	*/
 }
 
-func formatErrors(errors []*storepb.Error) []map[string]string {
-	errs := make([]map[string]string, len(errors))
-	for i, e := range errors {
-		errs[i] = map[string]string{"code": e.GetCode(), "message": e.GetMessage()}
+// Helper functions for safe pointer dereferencing.
+func getString(s *string) string {
+	if s == nil {
+		return ""
 	}
-	return errs
+	return *s
+}
+
+func getFloat64(f *float64) float64 {
+	if f == nil {
+		return 0.0
+	}
+	return *f
+}
+
+func getBool(b *bool) bool {
+	if b == nil {
+		return false
+	}
+	return *b
 }
