@@ -47,6 +47,7 @@ func (h *Handler) SetupEndpoints(r *gin.Engine) {
 	r.POST("/dev/api/acl/", h.generateMacaroon)
 
 	authGroup.GET("/account/", h.getAccount)
+	authGroup.PATCH("/account", h.updateAccount)
 	r.POST("/dev/api/register-name-dispute/", h.RegisterSnapNameDispute)
 	r.POST("/dev/api/snaps/:snap_id/builds", h.ProcessSnapBuildAssertion)
 	r.POST("/dev/api/acl/verify/", h.verifyMacaroon) //TODO: implement correctly to many unknows of what has to be included and what not, need good source
@@ -392,6 +393,33 @@ func (h *Handler) getAccount(c *gin.Context) {
 		Stores:      nil,
 	}
 	c.JSON(http.StatusOK, resp)
+}
+
+func (h *Handler) updateAccount(c *gin.Context) {
+	el := errors.New()
+	email, ok := c.Get("email")
+	if !ok {
+		el.Add(errors.BadRequest, "missing email")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
+
+	var req *message.AccountPatchRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		el.Add(errors.BadRequest, errors.FormatBindError(err))
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
+
+	// patch account by email
+	account := h.AccountClient.PatchAccountByEmail(email.(string), req.ShortNameSpace)
+	if len(account.Errors) > 0 {
+		el.ExtendAccountError(account.Errors)
+		c.JSON(http.StatusInternalServerError, gin.H{"error_list": el})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true})
 }
 
 // TODO: implement correctly to many unknows of what has to be included and what not, need good source
