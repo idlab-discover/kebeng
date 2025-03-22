@@ -925,3 +925,139 @@ func TestGetKeysByAccountIdLogic(t *testing.T) {
 		})
 	}
 }
+
+func TestPatchAccountByEmail(t *testing.T) {
+	mockRepo := new(repository.MockAccountRepository)
+	service := NewAccountService(mockRepo, &config.Config{})
+
+	// Create dummy error values.
+	getAccountErr := cerror.NewCustomError(cerror.ResourceNotFound, "account not found")
+	updateAccountErr := cerror.NewCustomError(cerror.InternalServerError, "failed to update account")
+
+	id := uuid.New()
+	testCases := []struct {
+		name                   string
+		req                    *proto.PatchAccountByEmailRequest
+		originalAccount        *models.Account
+		updateAccountReturn    interface{} // Either *models.Account or *cerror.CustomError
+		expectError            bool
+		errorCode              string
+		expectedShortNamespace string
+	}{
+		{
+			name: "Successful patch with username provided",
+			req: &proto.PatchAccountByEmailRequest{
+				Email:    "test@example.com",
+				Username: "new_username",
+			},
+			originalAccount: &models.Account{
+				ID:       id,
+				Email:    "test@example.com",
+				Username: "old_username",
+			},
+			updateAccountReturn: &models.Account{
+				ID:       id,
+				Email:    "test@example.com",
+				Username: "new_username",
+			},
+			expectError:            false,
+			expectedShortNamespace: "new_username",
+		},
+		{
+			name: "Successful patch with empty username (no update)",
+			req: &proto.PatchAccountByEmailRequest{
+				Email:    "test@example.com",
+				Username: "",
+			},
+			originalAccount: &models.Account{
+				ID:       id,
+				Email:    "test@example.com",
+				Username: "old_username",
+			},
+			// When no username is provided, the account remains unchanged.
+			updateAccountReturn: &models.Account{
+				ID:       id,
+				Email:    "test@example.com",
+				Username: "old_username",
+			},
+			expectError:            false,
+			expectedShortNamespace: "old_username",
+		},
+		{
+			name: "Error in GetAccountByEmail",
+			req: &proto.PatchAccountByEmailRequest{
+				Email:    "nonexistent@example.com",
+				Username: "whatever",
+			},
+			originalAccount:        nil, // not used
+			updateAccountReturn:    nil, // UpdateAccount is never called.
+			expectError:            true,
+			errorCode:              getAccountErr.GetCode(),
+			expectedShortNamespace: "",
+		},
+		{
+			name: "Error in UpdateAccount",
+			req: &proto.PatchAccountByEmailRequest{
+				Email:    "test@example.com",
+				Username: "new_username",
+			},
+			originalAccount: &models.Account{
+				ID:       id,
+				Email:    "test@example.com",
+				Username: "old_username",
+			},
+			updateAccountReturn:    updateAccountErr,
+			expectError:            true,
+			errorCode:              updateAccountErr.GetCode(),
+			expectedShortNamespace: "",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Set up repository expectation for GetAccountByEmail if an original account is expected.
+			if tc.originalAccount != nil {
+				mockRepo.On("GetAccountByEmail", mock.Anything, tc.req.Email, ([]string)(nil)).
+					Return(tc.originalAccount, nil).Once()
+			} else {
+				mockRepo.On("GetAccountByEmail", mock.Anything, tc.req.Email, ([]string)(nil)).
+					Return(nil, getAccountErr).Once()
+			}
+
+			// If GetAccountByEmail succeeded, set expectation for UpdateAccount.
+			if tc.originalAccount != nil {
+				if upd, ok := tc.updateAccountReturn.(*models.Account); ok {
+					// Verify that the account passed to UpdateAccount has the expected username.
+					mockRepo.On("UpdateAccount", mock.Anything, mock.MatchedBy(func(a *models.Account) bool {
+						if tc.req.Username != "" {
+							return a.Username == tc.req.Username
+						}
+						return a.Username == tc.originalAccount.Username
+					})).
+						Return(upd, nil).Once()
+				} else if errVal, ok := tc.updateAccountReturn.(*cerror.CustomError); ok {
+					mockRepo.On("UpdateAccount", mock.Anything, mock.Anything).
+						Return(nil, errVal).Once()
+				}
+			}
+
+			// Call the service function.
+			resp, _ := service.PatchAccountByEmail(context.Background(), tc.req)
+			t.Logf("DEBUG: performed PatchAccountByEmail, resp = %+v", resp)
+
+			// Assertions.
+			if tc.expectError {
+				assert.NotNil(t, resp.Errors, "Expected an error response")
+				assert.GreaterOrEqual(t, len(resp.Errors), 1, "Expected at least one error")
+				assert.Equal(t, tc.errorCode, resp.Errors[0].Code, "Expected error code to match")
+				assert.Equal(t, "", resp.ShortNamespace, "Expected no short namespace on error")
+			} else {
+				assert.Equal(t, 0, len(resp.Errors), "Did not expect errors")
+				assert.Equal(t, tc.expectedShortNamespace, resp.ShortNamespace, "Expected short namespace to match")
+			}
+
+			// Verify that all expectations were met.
+			mockRepo.AssertExpectations(t)
+		})
+	}
+}
