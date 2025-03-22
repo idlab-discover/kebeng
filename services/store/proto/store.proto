@@ -79,11 +79,11 @@ message GetRevisionRequest {
 message GetRevisionResponse {
     string id = 1;
     string snap_name = 2;
-    uint64 sequence = 3;
-    repeated string architectures = 4;
-    string status = 5;
-    string version = 6;
-    google.protobuf.Timestamp since = 7;
+    string build_assertion_filename = 3;
+    uint64 sequence = 4;
+    repeated string architectures = 5;
+    string status = 6;
+    string version = 7;
     repeated Error errors = 8;
 }
 
