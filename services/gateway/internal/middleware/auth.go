@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"fmt"
-	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -16,8 +15,8 @@ func AuthMiddleware() gin.HandlerFunc {
 		el := cerror.NewErrorList()
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			el.Add(cerror.BadRequest, "missing Authorization header")
-			c.JSON(http.StatusBadRequest, gin.H{"error_list": el})
+			el.Add(cerror.Unauthorized, "missing Authorization header")
+			c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 			c.Abort()
 			return
 		}
@@ -35,7 +34,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		/*
 			email, err := auth.VerifyDischargeMacaroon(dischargeMacaroon, el)
 			if err != nil {
-				el.Add(cerror.BadRequest, "Invalid discharge macaroon")
+				el.Add(cerror.Unauthorized, "Invalid discharge macaroon")
 				c.JSON(el.GetHTTPStatus(), el)
 				c.Abort()
 				return
@@ -57,7 +56,7 @@ func parseMacaroon(authHeader string, el *cerror.ErrorList) (*macaroon.Macaroon,
 	// Expected format: "Macaroon root=<root-macaroon> discharge=<discharge-macaroon>"
 	parts := strings.Split(authHeader, " ")
 	if len(parts) < 3 {
-		el.Add(cerror.BadRequest, "Invalid Authorization header")
+		el.Add(cerror.Unauthorized, "Invalid Authorization header")
 		return nil, nil, fmt.Errorf("Invalid Authorization header: %s", authHeader)
 	}
 
@@ -73,11 +72,11 @@ func parseMacaroon(authHeader string, el *cerror.ErrorList) (*macaroon.Macaroon,
 	}
 
 	if rootMacaroon == "" {
-		el.Add(cerror.BadRequest, "Missing root macaroon")
+		el.Add(cerror.Unauthorized, "Missing root macaroon")
 		return nil, nil, fmt.Errorf("Missing root macaroon")
 	}
 	if dischargeMacaroon == "" {
-		el.Add(cerror.BadRequest, "Missing discharge macaroon")
+		el.Add(cerror.Unauthorized, "Missing discharge macaroon")
 		return nil, nil, fmt.Errorf("Missing discharge macaroon")
 	}
 
@@ -85,19 +84,19 @@ func parseMacaroon(authHeader string, el *cerror.ErrorList) (*macaroon.Macaroon,
 	// Verify the root macaroon
 	err := auth.VerifyRootMacaroon(rootMacaroon, el)
 	if err != nil {
-		el.Add(cerror.BadRequest, "Invalid root macaroon")
+		el.Add(cerror.Unauthorized, "Invalid root macaroon")
 	}
 
 	// deserialize the macaroon
 	deserializedRootMacaroon, err := auth.MacaroonDeserialize(rootMacaroon)
 	if err != nil {
-		el.Add(cerror.BadRequest, "Invalid root macaroon")
+		el.Add(cerror.Unauthorized, "Invalid root macaroon")
 	}
 
 	// Verify the discharge macaroon
 	deserializedDischargeMacaroon, err := auth.MacaroonDeserialize(dischargeMacaroon)
 	if err != nil {
-		el.Add(cerror.BadRequest, "Invalid discharge macaroon")
+		el.Add(cerror.Unauthorized, "Invalid discharge macaroon")
 	}
 
 	if len(*el) > 0 {

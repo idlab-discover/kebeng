@@ -14,7 +14,6 @@ import (
 	"github.com/idlab-discover/kebeng/services/gateway/internal/middleware"
 	storeClient "github.com/idlab-discover/kebeng/services/store/client"
 	storepb "github.com/idlab-discover/kebeng/services/store/proto"
-	"github.com/sirupsen/logrus"
 	"gopkg.in/macaroon.v2"
 )
 
@@ -415,7 +414,6 @@ func (h *Handler) patchAccount(c *gin.Context) {
 
 	// check permissions of macaroon to include "edit_account" permission
 	if !auth.HasPermission(rootMacaroon.(*macaroon.Macaroon), "edit_account") {
-		logrus.Errorf("************************ missing permission to edit account ")
 		el.Add(cerror.ResourceForbidden, "missing permission to edit account")
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
