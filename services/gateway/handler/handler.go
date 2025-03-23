@@ -14,6 +14,7 @@ import (
 	"github.com/idlab-discover/kebeng/services/gateway/internal/middleware"
 	storeClient "github.com/idlab-discover/kebeng/services/store/client"
 	storepb "github.com/idlab-discover/kebeng/services/store/proto"
+	"github.com/sirupsen/logrus"
 )
 
 // this file handles all the http requests and maps it to the correct client
@@ -67,9 +68,100 @@ func (h *Handler) RequestStoreDeviceSessions(c *gin.Context) {
 }
 
 // TODO: Implement this function properly
-// Right now it's just a placeholder to make sure Snapcraft can be installed in the lxc container
+// Add all the cases for the different refresh actions
 func (h *Handler) RefreshSnap(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"status": "success"})
+	el := errors.New()
+	var req message.RefreshSnapRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		el.Add(errors.BadRequest, errors.FormatBindError(err))
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
+
+	var resp message.RefreshSnapResponses
+	for _, action := range req.Actions {
+		if action.Action == "install" {
+			logrus.Infof("%v", action)
+			res := h.refreshSnapInstall(c, action, el)
+			resp.Responses = append(resp.Responses, res)
+		} else {
+			el.Add(errors.NotImplemented, "Action not implemented")
+			c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, resp)
+}
+
+// TODO: Implement this function properly
+func (h *Handler) refreshSnapInstall(c *gin.Context, action *message.Action, el *errors.ErrorList) *message.RefreshSnapResult {
+	var res message.RefreshSnapResult
+
+	// Get snap entry -> will return 1 snap entry
+	snapEntries := h.StoreClient.GetEntries(&storepb.GetEntriesRequest{
+		Entries: []*storepb.GetEntryRequest{
+			{
+				Name:                action.Name,
+				Id:                  action.SnapID,
+				PreloadAssociations: []string{"REVISIONS"},
+			},
+		},
+	})
+	if len(snapEntries.Errors) > 0 {
+		el.ExtendStoreError(snapEntries.Errors)
+		res.Result = nil
+		return &res
+	}
+
+	// Get the snap entry -> should only be 1
+	snapEntry := snapEntries.Entries[0]
+
+	// Get a set of all the architectures of the snapEntry's revisions
+	architectureSet := make(map[string]struct{})
+	for _, snapRevision := range snapEntry.Revisions {
+		for _, arch := range snapRevision.Architectures {
+			architectureSet[arch] = struct{}{}
+		}
+	}
+
+	// Convert the set to a slice
+	architectures := make([]string, 0, len(architectureSet))
+	for arch := range architectureSet {
+		architectures = append(architectures, arch)
+	}
+
+	latest_revision := float64(snapEntry.Revisions[len(snapEntry.Revisions)-1].Sequence)
+
+	// Get the publisher of the snap entry
+	publisher := h.AccountClient.GetAccountByID(snapEntry.PublisherId)
+
+	result := "install"
+
+	res.Result = &result
+	res.InstanceKey = &action.InstanceKey
+	res.SnapId = &snapEntry.Id
+	res.Name = &snapEntry.SnapName
+	res.Snap = &message.RefreshSnap{
+		Architectures: &architectures,
+		SnapId:        &snapEntry.Id,
+		Name:          &snapEntry.SnapName,
+		Publisher: &message.Publisher{
+			Username: publisher.Username,
+			ID:       publisher.Id,
+		},
+		Download: &message.Download{
+			URL:      nil, // TODO: implement
+			Sha3_384: nil, // TODO: implement
+			Size:     nil, // TODO: implement
+		},
+		Version:     nil, // TODO: implement
+		Revision:    &latest_revision,
+		Confinement: snapEntry.Confinement,
+		Type:        snapEntry.Type,
+		Base:        snapEntry.Base,
+	}
+	return &res
 }
 
 func (h *Handler) FindSnaps(c *gin.Context) {
@@ -159,8 +251,8 @@ func (h *Handler) generateMacaroon(c *gin.Context) {
 	entries := make([]*storepb.GetEntryRequest, len(req.Packages))
 	for i, p := range req.Packages {
 		entries[i] = &storepb.GetEntryRequest{
-			Name: p.Name,
-			Id:   p.SnapId,
+			Name: &p.Name,
+			Id:   &p.SnapId,
 		}
 	}
 
@@ -219,7 +311,6 @@ func (h *Handler) ProcessSnapBuildAssertion(c *gin.Context) {
 			"snap-sha3-384":     resp.SnapSha3_384,
 			"snap-size":         resp.SnapSize,
 			"timestamp":         resp.Timestamp,
-			"revision":          resp.Revision,
 			"type":              resp.Type,
 		},
 	})
@@ -326,7 +417,6 @@ func (h *Handler) getAccount(c *gin.Context) {
 		for _, rev := range revs.Revisions {
 			revisionMap[entryID] = append(revisionMap[entryID], message.SnapRevision{
 				Revision:      int(rev.Sequence),
-				Since:         rev.Since.AsTime(),
 				Version:       rev.Version,
 				Status:        rev.Status,
 				Architectures: rev.Architectures,
@@ -340,8 +430,8 @@ func (h *Handler) getAccount(c *gin.Context) {
 		snapName := e.SnapName // Example: "hello-published"
 
 		// Ensure series exists in the map
-		if snaps[series] == nil {
-			snaps[series] = make(map[string]message.Snap)
+		if snaps[*series] == nil {
+			snaps[*series] = make(map[string]message.Snap)
 		}
 
 		// Get publisher
@@ -361,20 +451,20 @@ func (h *Handler) getAccount(c *gin.Context) {
 
 		// TODO: fix this
 		snap := message.Snap{
-			Status: e.Status,
-			Price:  e.Price,
+			Status: *e.Status,
+			Price:  *e.Price,
 			Since:  e.Since.AsTime(),
 			SnapID: e.Id,
 			// Store:           e.Store, // not yet implemented
-			Private:         e.Private,
-			IconURL:         &e.IconUrl,
+			Private:         *e.Private,
+			IconURL:         e.IconUrl,
 			Publisher:       *publisher,
 			LatestComments:  []message.SnapComment{}, // No comments available yet
 			LatestRevisions: latestRevisions,
 		}
 
 		// Assign snap to the correct series and snap name
-		snaps[series][snapName] = snap
+		snaps[*series][snapName] = snap
 	}
 
 	// not yet implemented don't support brandstores yet
@@ -444,12 +534,4 @@ func (h *Handler) verifyMacaroon(c *gin.Context) {
 		    }
 		    return
 	*/
-}
-
-func formatErrors(errors []*storepb.Error) []map[string]string {
-	errs := make([]map[string]string, len(errors))
-	for i, e := range errors {
-		errs[i] = map[string]string{"code": e.GetCode(), "message": e.GetMessage()}
-	}
-	return errs
 }
