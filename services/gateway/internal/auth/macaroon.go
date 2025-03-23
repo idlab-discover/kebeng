@@ -43,6 +43,8 @@ func MacaroonDeserialize(serializedMacaroon string) (*macaroon.Macaroon, error) 
 func GenerateMacaroon(ctx context.Context, req *message.GenerateMacaroonRequest, snapIDs map[string]bool, macaroonConfig *config.MacaroonConfig) *message.MacaroonResponse {
 	el := cerror.NewErrorList()
 
+	// NOTE: don't need to check if macaroonconfig is okay since we do that at startup
+
 	// start creating the macaroon
 	m, err := macaroon.New(
 		[]byte(macaroonConfig.RootKey),
@@ -112,6 +114,12 @@ func GenerateMacaroon(ctx context.Context, req *message.GenerateMacaroonRequest,
 	// set expiry to one year from now.
 	var expiryTimestamp string
 	if req.Expires != "" {
+		// try parsing input to check if it is a valid time
+		_, err := time.Parse(time.RFC3339, req.Expires)
+		if err != nil {
+			el.Add(cerror.InvalidField, fmt.Sprintf("invalid expires format: %v", err))
+			return &message.MacaroonResponse{Errors: *el}
+		}
 		expiryTimestamp = req.Expires
 	} else {
 		defaultExpiryPermissions := map[string]bool{
@@ -221,6 +229,8 @@ func ValidateGenerateMacaroonRequest(req *message.GenerateMacaroonRequest, el *c
 	return
 }
 
+// TODO: fix this function alot of issues
+// can only do this if we know format of discharge macaroon
 func VerifyAndGetEmail(cfg *config.Config, el *cerror.ErrorList, authData string) *string {
 	rootS, dischargeS := GetRootMacaroonsFromString(authData)
 
