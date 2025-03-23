@@ -21,7 +21,6 @@ const (
 	DatabaseError              = "database-error"
 	FailedToRegister           = "failed-to-register"
 	FeatureDisabled            = "feature-disabled"
-	Forbidden                  = "forbidden"
 	InternalServerError        = "internal-server-error"
 	Invalid                    = "invalid"
 	InvalidChoice              = "invalid-choice"
