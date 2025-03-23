@@ -45,7 +45,7 @@ func TestParseMacaroon_InvalidHeader(t *testing.T) {
 	assert.Nil(t, root)
 	assert.Nil(t, discharge)
 	// Optionally, check that the error list contains the expected message.
-	assert.Equal(t, http.StatusBadRequest, el.GetHTTPStatus())
+	assert.Equal(t, http.StatusUnauthorized, el.GetHTTPStatus())
 }
 
 func TestParseMacaroon_MissingRoot(t *testing.T) {
@@ -56,7 +56,7 @@ func TestParseMacaroon_MissingRoot(t *testing.T) {
 	assert.Error(t, err, "Expected error when root macaroon is missing")
 	assert.Nil(t, root)
 	assert.Nil(t, discharge)
-	assert.Equal(t, http.StatusBadRequest, el.GetHTTPStatus())
+	assert.Equal(t, http.StatusUnauthorized, el.GetHTTPStatus())
 }
 
 func TestParseMacaroon_MissingDischarge(t *testing.T) {
@@ -68,7 +68,7 @@ func TestParseMacaroon_MissingDischarge(t *testing.T) {
 	assert.Error(t, err, "Expected error when discharge macaroon is missing")
 	assert.Nil(t, root)
 	assert.Nil(t, discharge)
-	assert.Equal(t, http.StatusBadRequest, el.GetHTTPStatus())
+	assert.Equal(t, http.StatusUnauthorized, el.GetHTTPStatus())
 }
 
 func TestParseMacaroon_ValidHeader(t *testing.T) {
@@ -101,7 +101,7 @@ func TestAuthMiddleware_MissingAuthorizationHeader(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	// Expect unauthorized status.
-	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
 	body := w.Body.String()
 	assert.Contains(t, body, "missing Authorization header")
 }
@@ -121,7 +121,7 @@ func TestAuthMiddleware_InvalidAuthorizationHeader(t *testing.T) {
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
 	body := w.Body.String()
 	assert.Contains(t, body, "Invalid Authorization header")
 }
@@ -140,7 +140,7 @@ func TestAuthMiddleware_MissingRootMacaroon(t *testing.T) {
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
 	body := w.Body.String()
 	assert.Contains(t, body, "Missing root macaroon")
 }
@@ -159,7 +159,7 @@ func TestAuthMiddleware_MissingDischargeMacaroon(t *testing.T) {
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
 	body := w.Body.String()
 	assert.Contains(t, body, "Missing discharge macaroon")
 }
