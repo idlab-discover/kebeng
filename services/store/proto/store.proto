@@ -43,8 +43,8 @@ message RegisterSnapNameResponse {
 }
 
 message GetEntryRequest {
-    string id = 1;
-    string name = 2;
+    optional string id = 1;
+    optional string name = 2;
     repeated string preload_associations = 3;
 }
 // TODO: add snapComments
