@@ -5,11 +5,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	accClient "github.com/idlab-discover/kebeng/services/account/client"
 	assertionClient "github.com/idlab-discover/kebeng/services/assertion/client"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/auth"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/config"
-	"github.com/idlab-discover/kebeng/services/gateway/internal/errors"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/message"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/middleware"
 	storeClient "github.com/idlab-discover/kebeng/services/store/client"
@@ -75,10 +75,10 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 }
 
 func (h *Handler) FindSnaps(c *gin.Context) {
-	el := errors.New()
+	el := cerror.NewErrorList()
 	var req message.FindSnapsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		el.Add(errors.BadRequest, errors.FormatBindError(err))
+		el.Add(cerror.BadRequest, cerror.FormatBindError(err))
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
@@ -86,9 +86,9 @@ func (h *Handler) FindSnaps(c *gin.Context) {
 
 func (h *Handler) createAccount(c *gin.Context) {
 	var req message.CreateAccountRequest
-	el := errors.New()
+	el := cerror.NewErrorList()
 	if err := c.ShouldBindJSON(&req); err != nil {
-		el.Add(errors.BadRequest, errors.FormatBindError(err))
+		el.Add(cerror.BadRequest, cerror.FormatBindError(err))
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
@@ -103,10 +103,10 @@ func (h *Handler) createAccount(c *gin.Context) {
 }
 
 func (h *Handler) RegisterSnapName(c *gin.Context) {
-	el := errors.New()
+	el := cerror.NewErrorList()
 	var req message.RegisterSnapNameReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		el.Add(errors.BadRequest, errors.FormatBindError(err))
+		el.Add(cerror.BadRequest, cerror.FormatBindError(err))
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
@@ -133,16 +133,16 @@ func (h *Handler) RegisterSnapName(c *gin.Context) {
 // disputes should be handled by a natural person, not by the system,
 // which is not possible at the moment.
 func (h *Handler) RegisterSnapNameDispute(c *gin.Context) {
-	el := errors.New()
-	el.Add(errors.NotImplemented, "Not implemented")
+	el := cerror.NewErrorList()
+	el.Add(cerror.NotImplemented, "Not implemented")
 	c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 }
 
 func (h *Handler) generateMacaroon(c *gin.Context) {
-	el := errors.New()
+	el := cerror.NewErrorList()
 	var req *message.GenerateMacaroonRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		el.Add(errors.BadRequest, errors.FormatBindError(err))
+		el.Add(cerror.BadRequest, cerror.FormatBindError(err))
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
@@ -188,17 +188,17 @@ func (h *Handler) generateMacaroon(c *gin.Context) {
 }
 
 func (h *Handler) ProcessSnapBuildAssertion(c *gin.Context) {
-	el := errors.New()
+	el := cerror.NewErrorList()
 	var req *message.SnapBuildAssertionReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		el.Add(errors.BadRequest, errors.FormatBindError(err))
+		el.Add(cerror.BadRequest, cerror.FormatBindError(err))
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
 	// SnapID is a path parameter
 	snapID := c.Param("snap_id")
 	if snapID == "" {
-		el.Add(errors.BadRequest, "snap_id is required")
+		el.Add(cerror.BadRequest, "snap_id is required")
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
@@ -208,7 +208,7 @@ func (h *Handler) ProcessSnapBuildAssertion(c *gin.Context) {
 	if len(resp.Errors) > 0 {
 		el.ExtendAssertionError(resp.Errors)
 		//c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el}) // This would be the prefered way to return the error, but the documentation handles this error differently
-		c.JSON(http.StatusBadRequest, gin.H{"succes": false, "errors": el})
+		c.JSON(http.StatusBadRequest, gin.H{"succes": false, "cerror": el})
 		return
 	}
 
@@ -228,10 +228,10 @@ func (h *Handler) ProcessSnapBuildAssertion(c *gin.Context) {
 }
 
 func (h *Handler) getAccount(c *gin.Context) {
-	el := errors.New()
+	el := cerror.NewErrorList()
 	email, isThere := c.Get("email")
 	if !isThere {
-		el.Add(errors.BadRequest, "missing email")
+		el.Add(cerror.BadRequest, "missing email")
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
@@ -245,7 +245,7 @@ func (h *Handler) getAccount(c *gin.Context) {
 	accId, err := uuid.Parse(account.Id)
 	if err != nil {
 		// should never happen really
-		el.Add(errors.InternalServerError, err.Error())
+		el.Add(cerror.InternalServerError, err.Error())
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
@@ -397,31 +397,31 @@ func (h *Handler) getAccount(c *gin.Context) {
 }
 
 func (h *Handler) updateAccount(c *gin.Context) {
-	el := errors.New()
+	el := cerror.NewErrorList()
 	email, ok := c.Get("email")
 	if !ok {
-		el.Add(errors.BadRequest, "missing email")
+		el.Add(cerror.BadRequest, "missing email")
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
 
 	rootMacaroon, ok := c.Get("macaroon")
 	if !ok {
-		el.Add(errors.BadRequest, "missing macaroon")
+		el.Add(cerror.BadRequest, "missing macaroon")
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
 
 	// check permissions of macaroon to include "edit_account" permission
 	if !auth.HasPermission(rootMacaroon.(*macaroon.Macaroon), "edit_account") {
-		el.Add(errors.Forbidden, "missing permission to edit account")
+		el.Add(cerror.Forbidden, "missing permission to edit account")
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
 
 	var req *message.AccountPatchRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		el.Add(errors.BadRequest, errors.FormatBindError(err))
+		el.Add(cerror.BadRequest, cerror.FormatBindError(err))
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
@@ -440,13 +440,13 @@ func (h *Handler) updateAccount(c *gin.Context) {
 // TODO: implement correctly to many unknows of what has to be included and what not, need good source
 func (h *Handler) verifyMacaroon(c *gin.Context) {
 	// not implemented for now
-	c.JSON(http.StatusNotImplemented, gin.H{"error_list": errors.NewError(errors.NotImplemented, "not implemented too many unknowns of implementation")})
+	c.JSON(http.StatusNotImplemented, gin.H{"error_list": cerror.NewError(cerror.NotImplemented, "not implemented too many unknowns of implementation")})
 	return
 	/*
 			var req *message.VerifyRequest
-			el := errors.New()
+			el := cerror.NewErrorList()
 			if err := c.ShouldBindJSON(&req); err != nil {
-				el.Add(errors.BadRequest, errors.FormatBindError(err))
+				el.Add(cerror.BadRequest, cerror.FormatBindError(err))
 				c.JSON(el.GetHTTPStatus(),gin.H{"error_list": el,})
 				return
 			}
@@ -462,7 +462,7 @@ func (h *Handler) verifyMacaroon(c *gin.Context) {
 		    // TODO: change account client to use errorList
 			user, _ := h.AccountClient.GetAccountByEmail(*userEmail)
 		    if user == nil {
-		        el.Add(errors.ResourceNotFound, fmt.Sprintf("user with email %s not found", *userEmail))
+		        el.Add(cerror.ResourceNotFound, fmt.Sprintf("user with email %s not found", *userEmail))
 		        c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		        return
 		    }

@@ -10,8 +10,8 @@ import (
 	"encoding/binary"
 	"encoding/json"
 
+	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/config"
-	"github.com/idlab-discover/kebeng/services/gateway/internal/errors"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/message"
 	macaroon "gopkg.in/macaroon.v2"
 )
@@ -41,7 +41,7 @@ func MacaroonDeserialize(serializedMacaroon string) (*macaroon.Macaroon, error) 
 }
 
 func GenerateMacaroon(ctx context.Context, req *message.GenerateMacaroonRequest, snapIDs map[string]bool, macaroonConfig *config.MacaroonConfig) *message.MacaroonResponse {
-	el := errors.New()
+	el := cerror.NewErrorList()
 
 	// start creating the macaroon
 	m, err := macaroon.New(
@@ -51,7 +51,7 @@ func GenerateMacaroon(ctx context.Context, req *message.GenerateMacaroonRequest,
 		macaroon.V1,
 	)
 	if err != nil {
-		el.Add(errors.InternalServerError, fmt.Sprintf("failed to create macaroon: %v", err))
+		el.Add(cerror.InternalServerError, fmt.Sprintf("failed to create macaroon: %v", err))
 		return &message.MacaroonResponse{Errors: *el}
 	}
 
@@ -59,7 +59,7 @@ func GenerateMacaroon(ctx context.Context, req *message.GenerateMacaroonRequest,
 	validSince := time.Now().Format(time.RFC3339Nano)
 	err = m.AddFirstPartyCaveat([]byte(fmt.Sprintf("%s|valid_since|%s", macaroonConfig.RootLocation, validSince)))
 	if err != nil {
-		el.Add(errors.InternalServerError, fmt.Sprintf("failed to add valid_since caveat: %v", err))
+		el.Add(cerror.InternalServerError, fmt.Sprintf("failed to add valid_since caveat: %v", err))
 	}
 
 	// TODO: change version maybe? don't know what the version refers to
@@ -71,7 +71,7 @@ func GenerateMacaroon(ctx context.Context, req *message.GenerateMacaroonRequest,
 		macaroonConfig.ThirdPartyLocation,
 	)
 	if err != nil {
-		el.Add(errors.InternalServerError, fmt.Sprintf("failed to add third party caveat: %v", err))
+		el.Add(cerror.InternalServerError, fmt.Sprintf("failed to add third party caveat: %v", err))
 	}
 
 	// check generated macaroon requesting it from API and was in this format
@@ -79,11 +79,11 @@ func GenerateMacaroon(ctx context.Context, req *message.GenerateMacaroonRequest,
 	if len(req.Permissions) > 0 {
 		permsJson, err := json.Marshal(req.Permissions)
 		if err != nil {
-			el.Add(errors.InternalServerError, fmt.Sprintf("failed to marshal permissions: %v", err))
+			el.Add(cerror.InternalServerError, fmt.Sprintf("failed to marshal permissions: %v", err))
 		} else {
 			err = m.AddFirstPartyCaveat([]byte(fmt.Sprintf("%s|acl|%s", macaroonConfig.RootLocation, permsJson)))
 			if err != nil {
-				el.Add(errors.InternalServerError, fmt.Sprintf("failed to add acl caveat: %v", err))
+				el.Add(cerror.InternalServerError, fmt.Sprintf("failed to add acl caveat: %v", err))
 			}
 		}
 	}
@@ -93,7 +93,7 @@ func GenerateMacaroon(ctx context.Context, req *message.GenerateMacaroonRequest,
 		caveat := fmt.Sprintf("%s|channel|%s", macaroonConfig.RootLocation, channel)
 		err = m.AddFirstPartyCaveat([]byte(caveat))
 		if err != nil {
-			el.Add(errors.InternalServerError, fmt.Sprintf("failed to add channel: %v, err:%v", channel, err))
+			el.Add(cerror.InternalServerError, fmt.Sprintf("failed to add channel: %v, err:%v", channel, err))
 		}
 	}
 
@@ -103,7 +103,7 @@ func GenerateMacaroon(ctx context.Context, req *message.GenerateMacaroonRequest,
 		caveat := fmt.Sprintf("%s|snap_id|%s", macaroonConfig.RootLocation, snapID)
 		err = m.AddFirstPartyCaveat([]byte(caveat))
 		if err != nil {
-			el.Add(errors.InternalServerError, fmt.Sprintf("failed to add snap_id: %s, err: %v", snapID, err))
+			el.Add(cerror.InternalServerError, fmt.Sprintf("failed to add snap_id: %s, err: %v", snapID, err))
 		}
 	}
 
@@ -131,7 +131,7 @@ func GenerateMacaroon(ctx context.Context, req *message.GenerateMacaroonRequest,
 	if expiryTimestamp != "" {
 		err = m.AddFirstPartyCaveat([]byte(fmt.Sprintf("%s|expires|%s", macaroonConfig.RootLocation, expiryTimestamp)))
 		if err != nil {
-			el.Add(errors.InternalServerError, fmt.Sprintf("failed to add expires caveat: %v", err))
+			el.Add(cerror.InternalServerError, fmt.Sprintf("failed to add expires caveat: %v", err))
 		}
 	}
 
@@ -142,7 +142,7 @@ func GenerateMacaroon(ctx context.Context, req *message.GenerateMacaroonRequest,
 
 	serializedMacaroon, err := MacaroonSerialize(m)
 	if err != nil {
-		el.Add(errors.InternalServerError, fmt.Sprintf("failed to serialize macaroon: %v", err))
+		el.Add(cerror.InternalServerError, fmt.Sprintf("failed to serialize macaroon: %v", err))
 		return &message.MacaroonResponse{Errors: *el}
 	}
 
@@ -152,7 +152,7 @@ func GenerateMacaroon(ctx context.Context, req *message.GenerateMacaroonRequest,
 	}
 }
 
-func ValidateGenerateMacaroonRequest(req *message.GenerateMacaroonRequest, el *errors.ErrorList) {
+func ValidateGenerateMacaroonRequest(req *message.GenerateMacaroonRequest, el *cerror.ErrorList) {
 
 	// Allowed permissions.
 	validPermissions := map[string]struct{}{
@@ -179,19 +179,13 @@ func ValidateGenerateMacaroonRequest(req *message.GenerateMacaroonRequest, el *e
 
 	for _, perm := range req.Permissions {
 		if _, ok := validPermissions[perm]; !ok {
-			*el = append(*el, map[string]string{
-				"code":    errors.InvalidField,
-				"message": fmt.Sprintf("permission '%s' is not valid", perm),
-			})
+			*el = append(*el, cerror.NewCustomError(cerror.InvalidField, fmt.Sprintf("permission value '%s' is not allowed", perm)))
 		}
 	}
 
 	for _, ch := range req.Channels {
 		if _, ok := validChannels[ch]; !ok {
-			*el = append(*el, map[string]string{
-				"code":    errors.InvalidField,
-				"message": "channel value cannot be empty",
-			})
+			*el = append(*el, cerror.NewCustomError(cerror.InvalidField, fmt.Sprintf("channel value '%s' is not allowed", ch)))
 		}
 	}
 
@@ -200,59 +194,47 @@ func ValidateGenerateMacaroonRequest(req *message.GenerateMacaroonRequest, el *e
 	for i, pkg := range req.Packages {
 		// Case 1: Nothing provided.
 		if pkg.Name == "" && pkg.Series == "" && pkg.SnapId == "" {
-			*el = append(*el, map[string]string{
-				"code":    errors.InvalidField,
-				"message": fmt.Sprintf("package at index %d: must specify either name/series or snap_id in format: {'name': 'the-name', 'series': '16'} or {'snap_id': 'some-snap-id-1234'}", i),
-			})
+			*el = append(*el, cerror.NewCustomError(cerror.InvalidField, fmt.Sprintf("package at index %d: must provide either name/series or snap_id", i)))
 			continue
 		}
 		// Case 2: snap_id is provided.
 		if pkg.SnapId != "" {
 			// If snap_id is provided, name and series should be empty.
 			if pkg.Name != "" || pkg.Series != "" {
-				*el = append(*el, map[string]string{
-					"code":    errors.InvalidField,
-					"message": fmt.Sprintf("package at index %d: cannot provide both snap_id and name/series", i),
-				})
+				*el = append(*el, cerror.NewCustomError(cerror.InvalidField, fmt.Sprintf("package at index %d: snap_id should be provided alone", i)))
 			}
 			// This package is valid, so we can continue.
 			continue
 		}
 		// Case 3: snap_id is not provided, so name and series must both be provided.
 		if pkg.Name == "" || pkg.Series == "" {
-			*el = append(*el, map[string]string{
-				"code":    errors.InvalidField,
-				"message": fmt.Sprintf("package at index %d: both name and series must be provided if snap_id is not specified", i),
-			})
+			*el = append(*el, cerror.NewCustomError(cerror.InvalidField, fmt.Sprintf("package at index %d: must provide both name and series", i)))
 		}
 	}
 
 	// validate expires: if provided, must be in valid ISO8601 (RFC3339) format.
 	if req.Expires != "" {
 		if _, err := time.Parse(time.RFC3339, req.Expires); err != nil {
-			*el = append(*el, map[string]string{
-				"code":    errors.InvalidField,
-				"message": fmt.Sprintf("expires field is not a valid ISO8601 timestamp: %v", err),
-			})
+			*el = append(*el, cerror.NewCustomError(cerror.InvalidField, fmt.Sprintf("expires: %v", err)))
 		}
 	}
 	return
 }
 
-func VerifyAndGetEmail(cfg *config.Config, el *errors.ErrorList, authData string) *string {
+func VerifyAndGetEmail(cfg *config.Config, el *cerror.ErrorList, authData string) *string {
 	rootS, dischargeS := GetRootMacaroonsFromString(authData)
 
 	root, err := MacaroonDeserialize(rootS)
 	if err != nil {
-		el.Add(errors.InternalServerError, fmt.Sprintf("failed to deserialize root macaroon: %v", err))
+		el.Add(cerror.InternalServerError, fmt.Sprintf("failed to deserialize root macaroon: %v", err))
 	}
 
 	discharge, err := MacaroonDeserialize(dischargeS)
 	if err != nil {
-		el.Add(errors.InternalServerError, fmt.Sprintf("failed to deserialize discharge macaroon: %v", err))
+		el.Add(cerror.InternalServerError, fmt.Sprintf("failed to deserialize discharge macaroon: %v", err))
 	}
 	if root == nil || discharge == nil {
-		el.Add(errors.Unauthorized, "missing macaroons")
+		el.Add(cerror.Unauthorized, "missing macaroons")
 		return nil
 	}
 
@@ -288,7 +270,7 @@ func VerifyAndGetEmail(cfg *config.Config, el *errors.ErrorList, authData string
 
 		return nil
 	}, []*macaroon.Macaroon{discharge}); err != nil {
-		el.Add(errors.Unauthorized, fmt.Sprintf("failed to verify macaroon: %v", err))
+		el.Add(cerror.Unauthorized, fmt.Sprintf("failed to verify macaroon: %v", err))
 		return nil
 	}
 
@@ -302,7 +284,7 @@ func VerifyAndGetEmail(cfg *config.Config, el *errors.ErrorList, authData string
 		}
 	}
 	if !authorized {
-		el.Add(errors.Unauthorized, "unauthorized: missing authorization indicator")
+		el.Add(cerror.Unauthorized, "unauthorized: missing authorization indicator")
 		return nil
 	}
 
@@ -315,7 +297,7 @@ func VerifyAndGetEmail(cfg *config.Config, el *errors.ErrorList, authData string
 		if strings.Contains(caveatStr, "email") {
 			parts := strings.SplitN(caveatStr, "=", 2)
 			if len(parts) != 2 {
-				el.Add(errors.BadRequest, "email caveat malformed")
+				el.Add(cerror.BadRequest, "email caveat malformed")
 				return nil
 			}
 			email = parts[1]
@@ -323,7 +305,7 @@ func VerifyAndGetEmail(cfg *config.Config, el *errors.ErrorList, authData string
 		}
 	}
 	if email == "" {
-		el.Add(errors.Unauthorized, "unauthorized: missing email in discharge macaroon")
+		el.Add(cerror.Unauthorized, "unauthorized: missing email in discharge macaroon")
 		return nil
 	}
 	return &email
@@ -347,12 +329,12 @@ func GetRootMacaroonsFromString(macaroonAuth string) (string, string) {
 
 // TODO: implement
 // returns email or id that is extracted out of discharge macaroon
-func VerifyDischargeMacaroon(dischargeMacaroon string, el *errors.ErrorList) (string, error) {
+func VerifyDischargeMacaroon(dischargeMacaroon string, el *cerror.ErrorList) (string, error) {
 	return "", nil
 }
 
 // TODO: implement
-func VerifyRootMacaroon(rootMacaroon string, el *errors.ErrorList) error {
+func VerifyRootMacaroon(rootMacaroon string, el *cerror.ErrorList) error {
 	return nil
 }
 
