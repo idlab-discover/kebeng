@@ -10,6 +10,10 @@ type MockAccountClient struct {
 	mock.Mock
 }
 
+func (m *MockAccountClient) Close() {
+	m.Called()
+}
+
 func (m *MockAccountClient) CreateAccount(displayName, username, email string) *proto.AccountResponse {
 	args := m.Called(displayName, username, email)
 	resp := args.Get(0)
