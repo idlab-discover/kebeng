@@ -14,6 +14,7 @@ import (
 	"github.com/idlab-discover/kebeng/services/gateway/internal/middleware"
 	storeClient "github.com/idlab-discover/kebeng/services/store/client"
 	storepb "github.com/idlab-discover/kebeng/services/store/proto"
+	"github.com/sirupsen/logrus"
 	"gopkg.in/macaroon.v2"
 )
 
@@ -21,12 +22,12 @@ import (
 
 type Handler struct {
 	config          *config.Config
-	AccountClient   *accClient.AccountClient
+	AccountClient   accClient.AccountClientInterface
 	StoreClient     storeClient.StoreClientInterface
-	AssertionClient *assertionClient.AssertionClient
+	AssertionClient *assertionClient.AssertionClient // TODO: change to interface
 }
 
-func NewHandler(accountClient *accClient.AccountClient, storeClient storeClient.StoreClientInterface, config *config.Config) *Handler {
+func NewHandler(accountClient accClient.AccountClientInterface, storeClient storeClient.StoreClientInterface, config *config.Config) *Handler {
 	return &Handler{
 		config:        config,
 		AccountClient: accountClient,
@@ -48,7 +49,7 @@ func (h *Handler) SetupEndpoints(r *gin.Engine) {
 	r.POST("/dev/api/acl/", h.generateMacaroon)
 
 	authGroup.GET("/account/", h.getAccount)
-	authGroup.PATCH("/account", h.updateAccount)
+	authGroup.PATCH("/account", h.patchAccount)
 	r.POST("/dev/api/register-name-dispute/", h.RegisterSnapNameDispute)
 	r.POST("/dev/api/snaps/:snap_id/builds", h.ProcessSnapBuildAssertion)
 	r.POST("/dev/api/acl/verify/", h.verifyMacaroon) //TODO: implement correctly to many unknows of what has to be included and what not, need good source
@@ -396,7 +397,7 @@ func (h *Handler) getAccount(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
-func (h *Handler) updateAccount(c *gin.Context) {
+func (h *Handler) patchAccount(c *gin.Context) {
 	el := cerror.NewErrorList()
 	email, ok := c.Get("email")
 	if !ok {
@@ -414,7 +415,8 @@ func (h *Handler) updateAccount(c *gin.Context) {
 
 	// check permissions of macaroon to include "edit_account" permission
 	if !auth.HasPermission(rootMacaroon.(*macaroon.Macaroon), "edit_account") {
-		el.Add(cerror.Forbidden, "missing permission to edit account")
+		logrus.Errorf("************************ missing permission to edit account ")
+		el.Add(cerror.ResourceForbidden, "missing permission to edit account")
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
@@ -430,7 +432,7 @@ func (h *Handler) updateAccount(c *gin.Context) {
 	account := h.AccountClient.PatchAccountByEmail(email.(string), req.ShortNameSpace)
 	if len(account.Errors) > 0 {
 		el.ExtendAccountError(account.Errors)
-		c.JSON(http.StatusInternalServerError, gin.H{"error_list": el})
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
 
