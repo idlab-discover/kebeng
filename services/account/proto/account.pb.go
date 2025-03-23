@@ -911,6 +911,110 @@ func (x *GetAccountsByIdsResponse) GetErrors() []*Error {
 	return nil
 }
 
+type PatchAccountByEmailRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	Username      string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PatchAccountByEmailRequest) Reset() {
+	*x = PatchAccountByEmailRequest{}
+	mi := &file_account_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PatchAccountByEmailRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PatchAccountByEmailRequest) ProtoMessage() {}
+
+func (x *PatchAccountByEmailRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_account_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PatchAccountByEmailRequest.ProtoReflect.Descriptor instead.
+func (*PatchAccountByEmailRequest) Descriptor() ([]byte, []int) {
+	return file_account_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *PatchAccountByEmailRequest) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+func (x *PatchAccountByEmailRequest) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
+type PatchAccountByEmailResponse struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	ShortNamespace string                 `protobuf:"bytes,1,opt,name=short_namespace,json=shortNamespace,proto3" json:"short_namespace,omitempty"` // this is just the username
+	Errors         []*Error               `protobuf:"bytes,2,rep,name=errors,proto3" json:"errors,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *PatchAccountByEmailResponse) Reset() {
+	*x = PatchAccountByEmailResponse{}
+	mi := &file_account_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PatchAccountByEmailResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PatchAccountByEmailResponse) ProtoMessage() {}
+
+func (x *PatchAccountByEmailResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_account_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PatchAccountByEmailResponse.ProtoReflect.Descriptor instead.
+func (*PatchAccountByEmailResponse) Descriptor() ([]byte, []int) {
+	return file_account_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *PatchAccountByEmailResponse) GetShortNamespace() string {
+	if x != nil {
+		return x.ShortNamespace
+	}
+	return ""
+}
+
+func (x *PatchAccountByEmailResponse) GetErrors() []*Error {
+	if x != nil {
+		return x.Errors
+	}
+	return nil
+}
+
 var File_account_proto protoreflect.FileDescriptor
 
 var file_account_proto_rawDesc = string([]byte{
@@ -1018,7 +1122,19 @@ var file_account_proto_rawDesc = string([]byte{
 	0x08, 0x61, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x73, 0x12, 0x26, 0x0a, 0x06, 0x65, 0x72, 0x72,
 	0x6f, 0x72, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x0e, 0x2e, 0x61, 0x63, 0x63, 0x6f,
 	0x75, 0x6e, 0x74, 0x2e, 0x45, 0x72, 0x72, 0x6f, 0x72, 0x52, 0x06, 0x65, 0x72, 0x72, 0x6f, 0x72,
-	0x73, 0x32, 0x96, 0x06, 0x0a, 0x0e, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x53, 0x65, 0x72,
+	0x73, 0x22, 0x4e, 0x0a, 0x1a, 0x50, 0x61, 0x74, 0x63, 0x68, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e,
+	0x74, 0x42, 0x79, 0x45, 0x6d, 0x61, 0x69, 0x6c, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12,
+	0x14, 0x0a, 0x05, 0x65, 0x6d, 0x61, 0x69, 0x6c, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05,
+	0x65, 0x6d, 0x61, 0x69, 0x6c, 0x12, 0x1a, 0x0a, 0x08, 0x75, 0x73, 0x65, 0x72, 0x6e, 0x61, 0x6d,
+	0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x75, 0x73, 0x65, 0x72, 0x6e, 0x61, 0x6d,
+	0x65, 0x22, 0x6e, 0x0a, 0x1b, 0x50, 0x61, 0x74, 0x63, 0x68, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e,
+	0x74, 0x42, 0x79, 0x45, 0x6d, 0x61, 0x69, 0x6c, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
+	0x12, 0x27, 0x0a, 0x0f, 0x73, 0x68, 0x6f, 0x72, 0x74, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x73, 0x70,
+	0x61, 0x63, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0e, 0x73, 0x68, 0x6f, 0x72, 0x74,
+	0x4e, 0x61, 0x6d, 0x65, 0x73, 0x70, 0x61, 0x63, 0x65, 0x12, 0x26, 0x0a, 0x06, 0x65, 0x72, 0x72,
+	0x6f, 0x72, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x0e, 0x2e, 0x61, 0x63, 0x63, 0x6f,
+	0x75, 0x6e, 0x74, 0x2e, 0x45, 0x72, 0x72, 0x6f, 0x72, 0x52, 0x06, 0x65, 0x72, 0x72, 0x6f, 0x72,
+	0x73, 0x32, 0xf8, 0x06, 0x0a, 0x0e, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x53, 0x65, 0x72,
 	0x76, 0x69, 0x63, 0x65, 0x12, 0x48, 0x0a, 0x0d, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x41, 0x63,
 	0x63, 0x6f, 0x75, 0x6e, 0x74, 0x12, 0x1d, 0x2e, 0x61, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x2e,
 	0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x52, 0x65, 0x71,
@@ -1067,12 +1183,18 @@ var file_account_proto_rawDesc = string([]byte{
 	0x22, 0x2e, 0x61, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x2e, 0x47, 0x65, 0x74, 0x4b, 0x65, 0x79,
 	0x73, 0x42, 0x79, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x49, 0x64, 0x52, 0x65, 0x71, 0x75,
 	0x65, 0x73, 0x74, 0x1a, 0x15, 0x2e, 0x61, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x2e, 0x4b, 0x65,
-	0x79, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x42, 0x41, 0x5a, 0x3f, 0x67, 0x69,
-	0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x69, 0x64, 0x6c, 0x61, 0x62, 0x2d, 0x64,
-	0x69, 0x73, 0x63, 0x6f, 0x76, 0x65, 0x72, 0x2f, 0x6b, 0x65, 0x62, 0x65, 0x6e, 0x67, 0x2f, 0x73,
-	0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x73, 0x2f, 0x61, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x2f,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x3b, 0x61, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x62, 0x06, 0x70,
-	0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x79, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x60, 0x0a, 0x13, 0x50, 0x61,
+	0x74, 0x63, 0x68, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x42, 0x79, 0x45, 0x6d, 0x61, 0x69,
+	0x6c, 0x12, 0x23, 0x2e, 0x61, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x2e, 0x50, 0x61, 0x74, 0x63,
+	0x68, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x42, 0x79, 0x45, 0x6d, 0x61, 0x69, 0x6c, 0x52,
+	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x24, 0x2e, 0x61, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74,
+	0x2e, 0x50, 0x61, 0x74, 0x63, 0x68, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x42, 0x79, 0x45,
+	0x6d, 0x61, 0x69, 0x6c, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x42, 0x41, 0x5a, 0x3f,
+	0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x69, 0x64, 0x6c, 0x61, 0x62,
+	0x2d, 0x64, 0x69, 0x73, 0x63, 0x6f, 0x76, 0x65, 0x72, 0x2f, 0x6b, 0x65, 0x62, 0x65, 0x6e, 0x67,
+	0x2f, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x73, 0x2f, 0x61, 0x63, 0x63, 0x6f, 0x75, 0x6e,
+	0x74, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x3b, 0x61, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x62,
+	0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 })
 
 var (
@@ -1087,7 +1209,7 @@ func file_account_proto_rawDescGZIP() []byte {
 	return file_account_proto_rawDescData
 }
 
-var file_account_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
+var file_account_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
 var file_account_proto_goTypes = []any{
 	(*Error)(nil),                       // 0: account.Error
 	(*AccountResponse)(nil),             // 1: account.AccountResponse
@@ -1105,43 +1227,48 @@ var file_account_proto_goTypes = []any{
 	(*GetKeysByAccountIdRequest)(nil),   // 13: account.GetKeysByAccountIdRequest
 	(*GetAccountsByIdsRequest)(nil),     // 14: account.GetAccountsByIdsRequest
 	(*GetAccountsByIdsResponse)(nil),    // 15: account.GetAccountsByIdsResponse
-	(*timestamppb.Timestamp)(nil),       // 16: google.protobuf.Timestamp
+	(*PatchAccountByEmailRequest)(nil),  // 16: account.PatchAccountByEmailRequest
+	(*PatchAccountByEmailResponse)(nil), // 17: account.PatchAccountByEmailResponse
+	(*timestamppb.Timestamp)(nil),       // 18: google.protobuf.Timestamp
 }
 var file_account_proto_depIdxs = []int32{
 	0,  // 0: account.AccountResponse.errors:type_name -> account.Error
 	10, // 1: account.KeysResponse.keys:type_name -> account.KeyResponse
 	0,  // 2: account.KeysResponse.errors:type_name -> account.Error
 	0,  // 3: account.DeleteAccountResponse.errors:type_name -> account.Error
-	16, // 4: account.KeyResponse.since:type_name -> google.protobuf.Timestamp
-	16, // 5: account.KeyResponse.until:type_name -> google.protobuf.Timestamp
+	18, // 4: account.KeyResponse.since:type_name -> google.protobuf.Timestamp
+	18, // 5: account.KeyResponse.until:type_name -> google.protobuf.Timestamp
 	0,  // 6: account.KeyResponse.errors:type_name -> account.Error
 	1,  // 7: account.GetAccountsByIdsResponse.accounts:type_name -> account.AccountResponse
 	0,  // 8: account.GetAccountsByIdsResponse.errors:type_name -> account.Error
-	3,  // 9: account.AccountService.CreateAccount:input_type -> account.CreateAccountRequest
-	4,  // 10: account.AccountService.UpdateAccount:input_type -> account.UpdateAccountRequest
-	5,  // 11: account.AccountService.DeleteAccount:input_type -> account.DeleteAccountRequest
-	7,  // 12: account.AccountService.GetAccountByEmail:input_type -> account.GetAccountByEmailRequest
-	8,  // 13: account.AccountService.GetAccountByID:input_type -> account.GetAccountByIDRequest
-	14, // 14: account.AccountService.GetAccountsByIds:input_type -> account.GetAccountsByIdsRequest
-	9,  // 15: account.AccountService.GetAccountByUsername:input_type -> account.GetAccountByUsernameRequest
-	11, // 16: account.AccountService.AddKey:input_type -> account.AddKeyRequest
-	12, // 17: account.AccountService.GetKeyBySHA3384:input_type -> account.GetKeyBySHA3384Request
-	13, // 18: account.AccountService.GetKeysByAccountId:input_type -> account.GetKeysByAccountIdRequest
-	1,  // 19: account.AccountService.CreateAccount:output_type -> account.AccountResponse
-	1,  // 20: account.AccountService.UpdateAccount:output_type -> account.AccountResponse
-	6,  // 21: account.AccountService.DeleteAccount:output_type -> account.DeleteAccountResponse
-	1,  // 22: account.AccountService.GetAccountByEmail:output_type -> account.AccountResponse
-	1,  // 23: account.AccountService.GetAccountByID:output_type -> account.AccountResponse
-	15, // 24: account.AccountService.GetAccountsByIds:output_type -> account.GetAccountsByIdsResponse
-	1,  // 25: account.AccountService.GetAccountByUsername:output_type -> account.AccountResponse
-	10, // 26: account.AccountService.AddKey:output_type -> account.KeyResponse
-	10, // 27: account.AccountService.GetKeyBySHA3384:output_type -> account.KeyResponse
-	2,  // 28: account.AccountService.GetKeysByAccountId:output_type -> account.KeysResponse
-	19, // [19:29] is the sub-list for method output_type
-	9,  // [9:19] is the sub-list for method input_type
-	9,  // [9:9] is the sub-list for extension type_name
-	9,  // [9:9] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	0,  // 9: account.PatchAccountByEmailResponse.errors:type_name -> account.Error
+	3,  // 10: account.AccountService.CreateAccount:input_type -> account.CreateAccountRequest
+	4,  // 11: account.AccountService.UpdateAccount:input_type -> account.UpdateAccountRequest
+	5,  // 12: account.AccountService.DeleteAccount:input_type -> account.DeleteAccountRequest
+	7,  // 13: account.AccountService.GetAccountByEmail:input_type -> account.GetAccountByEmailRequest
+	8,  // 14: account.AccountService.GetAccountByID:input_type -> account.GetAccountByIDRequest
+	14, // 15: account.AccountService.GetAccountsByIds:input_type -> account.GetAccountsByIdsRequest
+	9,  // 16: account.AccountService.GetAccountByUsername:input_type -> account.GetAccountByUsernameRequest
+	11, // 17: account.AccountService.AddKey:input_type -> account.AddKeyRequest
+	12, // 18: account.AccountService.GetKeyBySHA3384:input_type -> account.GetKeyBySHA3384Request
+	13, // 19: account.AccountService.GetKeysByAccountId:input_type -> account.GetKeysByAccountIdRequest
+	16, // 20: account.AccountService.PatchAccountByEmail:input_type -> account.PatchAccountByEmailRequest
+	1,  // 21: account.AccountService.CreateAccount:output_type -> account.AccountResponse
+	1,  // 22: account.AccountService.UpdateAccount:output_type -> account.AccountResponse
+	6,  // 23: account.AccountService.DeleteAccount:output_type -> account.DeleteAccountResponse
+	1,  // 24: account.AccountService.GetAccountByEmail:output_type -> account.AccountResponse
+	1,  // 25: account.AccountService.GetAccountByID:output_type -> account.AccountResponse
+	15, // 26: account.AccountService.GetAccountsByIds:output_type -> account.GetAccountsByIdsResponse
+	1,  // 27: account.AccountService.GetAccountByUsername:output_type -> account.AccountResponse
+	10, // 28: account.AccountService.AddKey:output_type -> account.KeyResponse
+	10, // 29: account.AccountService.GetKeyBySHA3384:output_type -> account.KeyResponse
+	2,  // 30: account.AccountService.GetKeysByAccountId:output_type -> account.KeysResponse
+	17, // 31: account.AccountService.PatchAccountByEmail:output_type -> account.PatchAccountByEmailResponse
+	21, // [21:32] is the sub-list for method output_type
+	10, // [10:21] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_account_proto_init() }
@@ -1157,7 +1284,7 @@ func file_account_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_account_proto_rawDesc), len(file_account_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   16,
+			NumMessages:   18,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
