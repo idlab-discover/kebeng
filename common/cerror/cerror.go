@@ -21,6 +21,7 @@ const (
 	DatabaseError              = "database-error"
 	FailedToRegister           = "failed-to-register"
 	FeatureDisabled            = "feature-disabled"
+	Forbidden                  = "forbidden"
 	InternalServerError        = "internal-server-error"
 	Invalid                    = "invalid"
 	InvalidChoice              = "invalid-choice"
@@ -51,7 +52,6 @@ type CustomError struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
 }
-
 
 func (e *CustomError) GetCode() string {
 	return e.Code
@@ -89,7 +89,6 @@ func ConvertError(err error, message ...string) *CustomError {
 		Message: err.Error(),
 	}
 }
-
 
 func buildCustomError(code, defaultMessage string, message ...string) *CustomError {
 	msg := defaultMessage
