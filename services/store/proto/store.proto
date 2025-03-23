@@ -12,6 +12,7 @@ service StoreService {
     rpc GetEntries(GetEntriesRequest) returns (GetEntriesResponse);
     rpc GetEntriesByAccountId(GetEntriesByAccountIdRequest) returns (GetEntriesResponse);
     rpc GetRevisionsByEntryIds(GetRevisionsByEntryIdRequests) returns (GetRevisionsByEntryIdResponses);
+    rpc RefreshSnap(RefreshSnapRequest) returns (RefreshSnapResponse);
 }
 
 message UploadSnapRequest {
@@ -44,6 +45,7 @@ message RegisterSnapNameResponse {
 message GetEntryRequest {
     string id = 1;
     string name = 2;
+    bool preload_associations = 3;
 }
 // TODO: add snapComments
 message GetEntryResponse {
@@ -122,4 +124,72 @@ message GetRevisionsByEntryIdResponse {
 message GetRevisionsByEntryIdResponses {
     repeated GetRevisionsByEntryIdResponse responses = 1;
     repeated Error errors = 2;
+}
+
+message RefreshSnapRequest {
+    message Context {
+        string snap_id = 1;
+        string instance_key = 2;
+        uint64 revision = 3;
+        string tracking_channel = 4;
+        message Epoch {
+            repeated uint64 read = 1;
+            repeated uint64 write = 2;
+        }
+        Epoch epoch = 5;
+        google.protobuf.Timestamp refreshed_date = 6;
+    }
+    repeated Context context = 1;
+
+    message Action {
+        string action = 1;
+        string instance_key = 2;
+        string name = 3;
+        string channel = 4;
+        message Epoch {
+            repeated uint64 read = 1;
+            repeated uint64 write = 2;
+        }
+        Epoch epoch = 5;
+    }
+    repeated Action actions = 2;
+
+    repeated string fields = 3;
+}
+
+message RefreshSnapResponse {
+    repeated Error errors = 1;
+
+    message Result {
+        string result = 1;
+        string instance_key = 2;
+        string snap_id = 3;
+        string name = 4;
+
+        message Snap {
+            repeated string architectures = 1;
+            string snap_id = 2;
+            string name = 3;
+
+            message Publisher {
+                string username = 1;
+                string id = 2;
+            }
+            Publisher publisher = 4;
+
+            message Download {
+                string url = 1;
+                string sha3_384 = 2;
+                double size = 3;
+            }
+            Download download = 5;
+
+            string version = 6;
+            uint64 revision = 7;
+            string confinement = 8;
+            string type = 9;
+        }
+        Snap snap = 5;
+    }
+    repeated Result results = 2;
 }
