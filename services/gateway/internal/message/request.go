@@ -54,3 +54,7 @@ type VerifyRequest struct {
 type AccountRequest struct {
 	Authorization AuthData `header:"Authorization" binding:"required"`
 }
+
+type AccountPatchRequest struct {
+	ShortNameSpace string `json:"short_namespace"`
+}
