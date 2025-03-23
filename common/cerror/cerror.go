@@ -146,12 +146,15 @@ func NewError(code, message string) *ErrorList {
 }
 
 func (el *ErrorList) getCode() string {
-	// Take the first error code in the list
+	// Take the first error in the list
 	first := el.getFirst()
 	if first == nil {
 		return ""
 	}
-	return first.(map[string]string)["code"]
+	if ce, ok := first.(*CustomError); ok {
+		return ce.Code
+	}
+	return ""
 }
 
 func (el *ErrorList) getFirst() any {
