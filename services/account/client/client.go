@@ -22,6 +22,11 @@ type AccountClient struct {
 	client proto.AccountServiceClient
 }
 
+func NewAccountClientWithClient(client proto.AccountServiceClient) *AccountClient {
+	return &AccountClient{client: client}
+}
+
+// hard to test with unit test
 func NewAccountClient(accountHost string, accountPort int) (*AccountClient, error) {
 	logrus.Infof("Connecting to account service at %s:%d", accountHost, accountPort)
 	conn, err := grpc.NewClient(config.GetAccountServiceAddress(accountHost, accountPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
