@@ -3,6 +3,8 @@ package auth
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -211,4 +213,38 @@ func TestValidateGenerateMacaroonRequest(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestHasPermission(t *testing.T) {
+	// Test case 1: Macaroon with no ACL caveats returns false.
+	m1, err := macaroon.New([]byte("secret"), []byte("id"), "location", macaroon.V1)
+	assert.NoError(t, err)
+	assert.False(t, HasPermission(m1, "edit_account"), "Expected false when no ACL caveats exist")
+
+	// Test case 2: Valid ACL caveat that includes "edit_account".
+	m2, err := macaroon.New([]byte("secret"), []byte("id"), "location", macaroon.V1)
+	assert.NoError(t, err)
+	permissions := []string{"edit_account", "other_perm"}
+	permsJSON, err := json.Marshal(permissions)
+	assert.NoError(t, err)
+	aclCaveat := fmt.Sprintf("location|acl|%s", permsJSON)
+	err = m2.AddFirstPartyCaveat([]byte(aclCaveat))
+	assert.NoError(t, err)
+	assert.True(t, HasPermission(m2, "edit_account"), "Expected true for permission 'edit_account'")
+	assert.False(t, HasPermission(m2, "nonexistent"), "Expected false for non-existent permission")
+
+	// Test case 3: Malformed ACL caveat: missing JSON part.
+	m3, err := macaroon.New([]byte("secret"), []byte("id"), "location", macaroon.V1)
+	assert.NoError(t, err)
+	// Intentionally not including the JSON array after "|acl|"
+	err = m3.AddFirstPartyCaveat([]byte("location|acl"))
+	assert.NoError(t, err)
+	assert.False(t, HasPermission(m3, "edit_account"), "Expected false when ACL caveat is malformed")
+
+	// Test case 4: ACL caveat with invalid JSON.
+	m4, err := macaroon.New([]byte("secret"), []byte("id"), "location", macaroon.V1)
+	assert.NoError(t, err)
+	err = m4.AddFirstPartyCaveat([]byte("location|acl|notjson"))
+	assert.NoError(t, err)
+	assert.False(t, HasPermission(m4, "edit_account"), "Expected false when JSON in ACL caveat is invalid")
 }
