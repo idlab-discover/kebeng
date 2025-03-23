@@ -17,6 +17,23 @@ import (
 // there is an err field in the proto functions because proto incists on it so if that is != nil the request failed
 // but the actual error is in the cerror field
 
+type AccountClientInterface interface {
+	Close()
+	CreateAccount(displayName, username, email string) *proto.AccountResponse
+	UpdateAccount(id, displayName, username, email string) *proto.AccountResponse
+	DeleteAccount(id string) *proto.DeleteAccountResponse
+	GetAccountByEmail(email string) *proto.AccountResponse
+	GetAccountByID(id string) *proto.AccountResponse
+	GetAccountsByIds(ids []string) *proto.GetAccountsByIdsResponse
+	GetAccountByUsername(username string) *proto.AccountResponse
+	AddKey(accountEmail, keyName, sha3384, encodedPublicKey string) *proto.KeyResponse
+	GetAccountKey(Sha3384 string) *proto.KeyResponse
+	GetAccountKeysByAccountID(accountID string) *proto.KeysResponse
+	PatchAccountByEmail(email, username string) *proto.PatchAccountByEmailResponse
+}
+
+var _ AccountClientInterface = (*AccountClient)(nil)
+
 type AccountClient struct {
 	conn   *grpc.ClientConn
 	client proto.AccountServiceClient
