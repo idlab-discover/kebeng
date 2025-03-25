@@ -5,10 +5,10 @@ go 1.22.2
 require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/google/uuid v1.6.0
-	github.com/idlab-discover/kebeng v0.0.0-20250323114831-5b263f357e59
-	github.com/idlab-discover/kebeng/services/account v0.0.0-20250323160457-f3aba5081b7f
-	github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250322181040-9bb2d5503548
-	github.com/idlab-discover/kebeng/services/store v0.0.0-20250318141246-77a544f56023
+	github.com/idlab-discover/kebeng v0.0.0-20250323201900-57114201b487
+	github.com/idlab-discover/kebeng/services/account v0.0.0-20250323201900-57114201b487
+	github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250318141246-77a544f56023
+	github.com/idlab-discover/kebeng/services/store v0.0.0-20250323154338-d9335363279c
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.10.0
@@ -28,11 +28,7 @@ require (
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.20.0 // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
-	github.com/golang-migrate/migrate/v4 v4.18.2 // indirect
-	github.com/hashicorp/errwrap v1.1.0 // indirect
-	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/jmoiron/sqlx v1.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.9 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect

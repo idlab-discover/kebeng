@@ -337,7 +337,7 @@ func (sp *SnapsRepository) GetEntryByName(name string, preloadAssociations []str
 	`
 	err := sp.db.Get(&snapEntry, query, name)
 	if err != nil {
-		logrus.Errorf("FUNCTION GetEntryByName: %s", err)
+		logrus.Errorf("FUNCTION GetEntryByName while searching for snap with name '%s': %s", name, err)
 		return nil, cerror.ConvertError(err, fmt.Sprintf("resource not found: snap with name = '%s'", name))
 	}
 

@@ -48,6 +48,7 @@ type SnapEntry struct {
 	Store          *string        `db:"store"`    // NOT YET IMPLEMENTED
 	IconURL        *string        `db:"icon_url"` // NOT YET IMPLEMENTED
 	LatestComments []*SnapComment // NOT YET IMPLEMENTED
+
 }
 
 // Track = latest, or things like 2.0, 2.1, 2.2

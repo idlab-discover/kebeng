@@ -18,8 +18,8 @@ type StoreClientInterface interface {
 	RegisterSnapName(snapName string, isPrivate bool, storeName string, dryRun bool) *proto.RegisterSnapNameResponse
 	GetEntries(entries *proto.GetEntriesRequest) *proto.GetEntriesResponse
 	GetRevisions(revisions *proto.GetRevisionsRequest) *proto.GetRevisionsResponse
-    GetEntriesByAccountID(accountID string) *proto.GetEntriesResponse
-    GetRevisionsByEntryIds(entryIds *proto.GetRevisionsByEntryIdRequests) *proto.GetRevisionsByEntryIdResponses
+	GetEntriesByAccountID(accountID string) *proto.GetEntriesResponse
+	GetRevisionsByEntryIds(entryIds *proto.GetRevisionsByEntryIdRequests) *proto.GetRevisionsByEntryIdResponses
 }
 
 var _ StoreClientInterface = (*StoreClient)(nil)
@@ -112,32 +112,28 @@ func (c *StoreClient) GetRevisions(revisions *proto.GetRevisionsRequest) *proto.
 }
 
 func (c *StoreClient) GetEntriesByAccountID(accountID string) *proto.GetEntriesResponse {
-    req := &proto.GetEntriesByAccountIdRequest{AccountId: accountID}
-    resp, err := c.client.GetEntriesByAccountId(context.Background(), req)
-    if err != nil {
-        resp = &proto.GetEntriesResponse{
-            Errors: []*proto.Error{{
-                Code:    errors.InternalServerError,
-                Message: err.Error()},
-            },
-        }
-    }
-    return resp
+	req := &proto.GetEntriesByAccountIdRequest{AccountId: accountID}
+	resp, err := c.client.GetEntriesByAccountId(context.Background(), req)
+	if err != nil {
+		resp = &proto.GetEntriesResponse{
+			Errors: []*proto.Error{{
+				Code:    errors.InternalServerError,
+				Message: err.Error()},
+			},
+		}
+	}
+	return resp
 }
 
 func (c *StoreClient) GetRevisionsByEntryIds(entryIds *proto.GetRevisionsByEntryIdRequests) *proto.GetRevisionsByEntryIdResponses {
-    resp, err := c.client.GetRevisionsByEntryIds(context.Background(), entryIds)
-    if err != nil {
-        resp = &proto.GetRevisionsByEntryIdResponses{
-            Errors: []*proto.Error{{
-                Code:    errors.InternalServerError,
-                Message: err.Error()},
-            },
-        }
-    }
-    return resp
+	resp, err := c.client.GetRevisionsByEntryIds(context.Background(), entryIds)
+	if err != nil {
+		resp = &proto.GetRevisionsByEntryIdResponses{
+			Errors: []*proto.Error{{
+				Code:    errors.InternalServerError,
+				Message: err.Error()},
+			},
+		}
+	}
+	return resp
 }
-
-
-
-
