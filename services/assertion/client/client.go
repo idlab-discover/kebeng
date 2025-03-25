@@ -14,6 +14,7 @@ import (
 
 type AssertionClientInterface interface {
 	ProcessSnapBuildAssertion(assertion []byte) *proto.SnapBuildAssertionResponse
+	Close()
 }
 
 var _ AssertionClientInterface = (*AssertionClient)(nil)

@@ -22,8 +22,8 @@ type Handler struct {
 	authHandler    auth.Handler
 }
 
-func NewHandler(accountClient accClient.AccountClientInterface, storeClient storeClient.StoreClientInterface, assertionClient assertionClient.AssertionClient, config *config.Config) *Handler {
-	baseHandler := util.NewBaseHandler(accountClient, storeClient, &assertionClient, config)
+func NewHandler(accountClient accClient.AccountClientInterface, storeClient storeClient.StoreClientInterface, assertionClient assertionClient.AssertionClientInterface, config *config.Config) *Handler {
+	baseHandler := util.NewBaseHandler(accountClient, storeClient, assertionClient, config)
 
 	return &Handler{
 		snapHandler:    snap.Handler{BaseHandler: baseHandler},
