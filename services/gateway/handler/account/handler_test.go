@@ -35,6 +35,13 @@ func TestPatchAccountHandler(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	mockAccClient := new(accClient.MockAccountClient)
 
+	baseHandler := util.NewBaseHandler(mockAccClient, nil, nil, nil)
+
+	// Create a handler with our mock account client.
+	h := &Handler{
+		BaseHandler: baseHandler,
+	}
+
 	type testCase struct {
 		name                      string
 		setEmail                  bool
@@ -136,12 +143,6 @@ func TestPatchAccountHandler(t *testing.T) {
 			if tc.setEmail && tc.setMacaroon && tc.macaroonHasPermission && tc.accountClientResponse != nil {
 				mockAccClient.On("PatchAccountByEmail", "test@example.com", "new_username").
 					Return(tc.accountClientResponse).Once()
-			}
-			baseHandler := util.NewBaseHandler(mockAccClient, nil, nil, nil)
-
-			// Create a handler with our mock account client.
-			h := &Handler{
-				BaseHandler: baseHandler,
 			}
 
 			// Call the patchAccount handler.

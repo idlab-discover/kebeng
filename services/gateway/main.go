@@ -40,7 +40,7 @@ func main() {
 		logrus.Errorf("could not create assertion client: %v", err)
 	}
 
-	handler := handler.NewHandler(accountClient, storeClient, *assertionClient, cfg)
+	handler := handler.NewHandler(accountClient, storeClient, assertionClient, cfg)
 
 	// Setup gin and routes
 	r := gin.Default()
