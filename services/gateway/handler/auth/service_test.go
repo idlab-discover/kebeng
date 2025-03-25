@@ -11,9 +11,9 @@ import (
 
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/config"
-	"github.com/idlab-discover/kebeng/services/gateway/internal/message"
 	"github.com/stretchr/testify/assert"
 	macaroon "gopkg.in/macaroon.v2"
+	mc "github.com/idlab-discover/kebeng/services/gateway/internal/macaroon"
 )
 
 // validMacaroonForTest is a helper that deserializes a macaroon string using our MacaroonDeserialize.
@@ -30,7 +30,7 @@ func validMacaroonForTest(t *testing.T, m *macaroon.Macaroon) string {
 // TestGenerateMacaroon_Success tests a successful generation.
 func TestGenerateMacaroon_Success(t *testing.T) {
 	ctx := context.Background()
-	req := &message.GenerateMacaroonRequest{
+	req := &GenerateMacaroonRequest{
 		Permissions: []string{"edit_account", "modify_account_key"},
 		Channels:    []string{"stable", "beta"},
 		Expires:     "", // let expiry be computed automatically if a default permission is found
@@ -56,7 +56,7 @@ func TestGenerateMacaroon_Success(t *testing.T) {
 	assert.NotEmpty(t, resp.Macaroon, "Expected non-empty macaroon string")
 
 	// Verify we can deserialize the generated macaroon.
-	m, err := MacaroonDeserialize(resp.Macaroon)
+	m, err := mc.MacaroonDeserialize(resp.Macaroon)
 	assert.NoError(t, err, "Expected to deserialize macaroon without error")
 
 	// Check that at least one caveat contains the ACL prefix.
@@ -81,7 +81,7 @@ func TestGenerateMacaroon_Success(t *testing.T) {
 func TestGenerateMacaroon_Failure(t *testing.T) {
 	ctx := context.Background()
 	// lets pass in a bad expires field
-	req := &message.GenerateMacaroonRequest{
+	req := &GenerateMacaroonRequest{
 		Permissions: []string{"edit_account"},
 		Channels:    []string{"stable"},
 		Expires:     "bad-expires", // invalid expiry
@@ -104,15 +104,15 @@ func TestGenerateMacaroon_Failure(t *testing.T) {
 func TestValidateGenerateMacaroonRequest(t *testing.T) {
 	tests := []struct {
 		name         string
-		req          *message.GenerateMacaroonRequest
+		req          *GenerateMacaroonRequest
 		expectErrors []string
 	}{
 		{
 			name: "valid request",
-			req: &message.GenerateMacaroonRequest{
+			req: &GenerateMacaroonRequest{
 				Permissions: []string{"edit_account", "package_access"},
 				Channels:    []string{"stable", "edge"},
-				Packages: []message.PackageRestriction{
+				Packages: []PackageRestriction{
 					// Valid package using snap_id only.
 					{SnapId: "snap1"},
 					// Valid package using name and series.
@@ -124,30 +124,30 @@ func TestValidateGenerateMacaroonRequest(t *testing.T) {
 		},
 		{
 			name: "invalid permission",
-			req: &message.GenerateMacaroonRequest{
+			req: &GenerateMacaroonRequest{
 				Permissions: []string{"edit_account", "invalid_perm"},
 				Channels:    []string{"stable"},
-				Packages:    []message.PackageRestriction{},
+				Packages:    []PackageRestriction{},
 				Expires:     "",
 			},
 			expectErrors: []string{"permission value 'invalid_perm' is not allowed"},
 		},
 		{
 			name: "invalid channel",
-			req: &message.GenerateMacaroonRequest{
+			req: &GenerateMacaroonRequest{
 				Permissions: []string{"edit_account"},
 				Channels:    []string{"invalid_channel"},
-				Packages:    []message.PackageRestriction{},
+				Packages:    []PackageRestriction{},
 				Expires:     "",
 			},
 			expectErrors: []string{"channel value 'invalid_channel' is not allowed"},
 		},
 		{
 			name: "package with nothing provided",
-			req: &message.GenerateMacaroonRequest{
+			req: &GenerateMacaroonRequest{
 				Permissions: []string{"edit_account"},
 				Channels:    []string{"stable"},
-				Packages: []message.PackageRestriction{
+				Packages: []PackageRestriction{
 					{Name: "", Series: "", SnapId: ""},
 				},
 				Expires: "",
@@ -156,10 +156,10 @@ func TestValidateGenerateMacaroonRequest(t *testing.T) {
 		},
 		{
 			name: "package with snap_id and extra fields",
-			req: &message.GenerateMacaroonRequest{
+			req: &GenerateMacaroonRequest{
 				Permissions: []string{"edit_account"},
 				Channels:    []string{"stable"},
-				Packages: []message.PackageRestriction{
+				Packages: []PackageRestriction{
 					{Name: "pkg1", Series: "16", SnapId: "snap1"},
 				},
 				Expires: "",
@@ -168,10 +168,10 @@ func TestValidateGenerateMacaroonRequest(t *testing.T) {
 		},
 		{
 			name: "package missing name or series",
-			req: &message.GenerateMacaroonRequest{
+			req: &GenerateMacaroonRequest{
 				Permissions: []string{"edit_account"},
 				Channels:    []string{"stable"},
-				Packages: []message.PackageRestriction{
+				Packages: []PackageRestriction{
 					{Name: "pkg1", Series: "", SnapId: ""},
 					{Name: "", Series: "16", SnapId: ""},
 				},
@@ -184,10 +184,10 @@ func TestValidateGenerateMacaroonRequest(t *testing.T) {
 		},
 		{
 			name: "invalid expires format",
-			req: &message.GenerateMacaroonRequest{
+			req: &GenerateMacaroonRequest{
 				Permissions: []string{"edit_account"},
 				Channels:    []string{"stable"},
-				Packages:    []message.PackageRestriction{},
+				Packages:    []PackageRestriction{},
 				Expires:     "invalid-date",
 			},
 			expectErrors: []string{"expires:"}, // we look for the substring "expires:" in the error

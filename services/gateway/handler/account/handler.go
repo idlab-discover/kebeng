@@ -6,8 +6,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/idlab-discover/kebeng/common/cerror"
+	"github.com/idlab-discover/kebeng/services/gateway/handler/auth"
 	"github.com/idlab-discover/kebeng/services/gateway/handler/util"
-	"github.com/idlab-discover/kebeng/services/gateway/internal/auth"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/message"
 	storepb "github.com/idlab-discover/kebeng/services/store/proto"
 	"gopkg.in/macaroon.v2"
@@ -18,7 +18,7 @@ type Handler struct {
 }
 
 func (h *Handler) CreateAccount(c *gin.Context) {
-	var req message.CreateAccountRequest
+	var req CreateAccountRequest
 	el := cerror.NewErrorList()
 	if err := c.ShouldBindJSON(&req); err != nil {
 		el.Add(cerror.BadRequest, cerror.FormatBindError(err))
@@ -32,7 +32,7 @@ func (h *Handler) CreateAccount(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, message.CreateAccountResponse{Id: account.Id})
+	c.JSON(http.StatusOK, CreateAccountResponse{Id: account.Id})
 }
 
 func (h *Handler) GetAccount(c *gin.Context) {
@@ -226,7 +226,7 @@ func (h *Handler) PatchAccount(c *gin.Context) {
 		return
 	}
 
-	var req *message.AccountPatchRequest
+	var req *AccountPatchRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		el.Add(cerror.BadRequest, cerror.FormatBindError(err))
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})

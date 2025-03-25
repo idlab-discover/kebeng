@@ -7,18 +7,11 @@ import (
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
 )
 
-type CreateAccountResponse struct {
-	Id string `json:"id"`
-}
+
 
 type RegisterSnapNameRes struct {
 	SnapId   string `json:"snap_id"`
 	SnapName string `json:"snap_name"`
-}
-
-type MacaroonResponse struct {
-	Macaroon string           `json:"macaroon"`
-	Errors   cerror.ErrorList `json:"error_list"`
 }
 
 type VerifyAccount struct {

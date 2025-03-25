@@ -18,7 +18,7 @@ type Handler struct {
 // TODO: Implement this function properly
 // Right now it's just a placeholder to make sure Snapcraft can be installed in the lxc container
 func (h *Handler) RequestStoreDeviceNonce(c *gin.Context) {
-	c.JSON(http.StatusOK, message.RequestStoreDeviceNonceRes{Nonce: "this-nonce"})
+	c.JSON(http.StatusOK, RequestStoreDeviceNonceResponse{Nonce: "this-nonce"})
 }
 
 // TODO: Implement this function properly
@@ -31,7 +31,7 @@ func (h *Handler) RequestStoreDeviceSessions(c *gin.Context) {
 // Add all the cases for the different refresh actions
 func (h *Handler) RefreshSnap(c *gin.Context) {
 	el := cerror.NewErrorList()
-	var req message.RefreshSnapRequest
+	var req RefreshSnapRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		el.Add(cerror.BadRequest, cerror.FormatBindError(err))
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
@@ -55,7 +55,7 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 }
 
 // TODO: Implement this function properly
-func (h *Handler) refreshSnapInstall(c *gin.Context, action *message.Action, el *cerror.ErrorList) *message.RefreshSnapResult {
+func (h *Handler) refreshSnapInstall(c *gin.Context, action *Action, el *cerror.ErrorList) *message.RefreshSnapResult {
 	var res message.RefreshSnapResult
 
 	// Get snap entry -> will return 1 snap entry
@@ -126,7 +126,7 @@ func (h *Handler) refreshSnapInstall(c *gin.Context, action *message.Action, el 
 
 func (h *Handler) FindSnaps(c *gin.Context) {
 	el := cerror.NewErrorList()
-	var req message.FindSnapsRequest
+	var req FindSnapsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		el.Add(cerror.BadRequest, cerror.FormatBindError(err))
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
@@ -136,7 +136,7 @@ func (h *Handler) FindSnaps(c *gin.Context) {
 
 func (h *Handler) RegisterSnapName(c *gin.Context) {
 	el := cerror.NewErrorList()
-	var req message.RegisterSnapNameReq
+	var req RegisterSnapNameRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		el.Add(cerror.BadRequest, cerror.FormatBindError(err))
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
@@ -172,7 +172,7 @@ func (h *Handler) RegisterSnapNameDispute(c *gin.Context) {
 
 func (h *Handler) ProcessSnapBuildAssertion(c *gin.Context) {
 	el := cerror.NewErrorList()
-	var req *message.SnapBuildAssertionReq
+	var req *SnapBuildAssertionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		el.Add(cerror.BadRequest, cerror.FormatBindError(err))
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
