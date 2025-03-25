@@ -6,10 +6,10 @@ import (
 	assertionClient "github.com/idlab-discover/kebeng/services/assertion/client"
 	account "github.com/idlab-discover/kebeng/services/gateway/handler/account"
 	auth "github.com/idlab-discover/kebeng/services/gateway/handler/auth"
-	"github.com/idlab-discover/kebeng/services/gateway/handler/internal/util"
 	snap "github.com/idlab-discover/kebeng/services/gateway/handler/snap"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/config"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/middleware"
+	"github.com/idlab-discover/kebeng/services/gateway/internal/util"
 	storeClient "github.com/idlab-discover/kebeng/services/store/client"
 )
 
