@@ -5,28 +5,29 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	accClient "github.com/idlab-discover/kebeng/services/account/client"
 	assertionClient "github.com/idlab-discover/kebeng/services/assertion/client"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/auth"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/config"
-	"github.com/idlab-discover/kebeng/services/gateway/internal/errors"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/message"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/middleware"
 	storeClient "github.com/idlab-discover/kebeng/services/store/client"
 	storepb "github.com/idlab-discover/kebeng/services/store/proto"
 	"github.com/sirupsen/logrus"
+	"gopkg.in/macaroon.v2"
 )
 
 // this file handles all the http requests and maps it to the correct client
 
 type Handler struct {
 	config          *config.Config
-	AccountClient   *accClient.AccountClient
+	AccountClient   accClient.AccountClientInterface
 	StoreClient     storeClient.StoreClientInterface
-	AssertionClient *assertionClient.AssertionClient
+	AssertionClient *assertionClient.AssertionClient // TODO: change to interface
 }
 
-func NewHandler(accountClient *accClient.AccountClient, storeClient storeClient.StoreClientInterface, config *config.Config) *Handler {
+func NewHandler(accountClient accClient.AccountClientInterface, storeClient storeClient.StoreClientInterface, config *config.Config) *Handler {
 	return &Handler{
 		config:        config,
 		AccountClient: accountClient,
@@ -48,6 +49,7 @@ func (h *Handler) SetupEndpoints(r *gin.Engine) {
 	r.POST("/dev/api/acl/", h.generateMacaroon)
 
 	authGroup.GET("/account/", h.getAccount)
+	authGroup.PATCH("/account", h.patchAccount)
 	r.POST("/dev/api/register-name-dispute/", h.RegisterSnapNameDispute)
 	r.POST("/dev/api/snaps/:snap_id/builds", h.ProcessSnapBuildAssertion)
 	r.POST("/dev/api/acl/verify/", h.verifyMacaroon) //TODO: implement correctly to many unknows of what has to be included and what not, need good source
@@ -70,10 +72,10 @@ func (h *Handler) RequestStoreDeviceSessions(c *gin.Context) {
 // TODO: Implement this function properly
 // Add all the cases for the different refresh actions
 func (h *Handler) RefreshSnap(c *gin.Context) {
-	el := errors.New()
+	el := cerror.NewErrorList()
 	var req message.RefreshSnapRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		el.Add(errors.BadRequest, errors.FormatBindError(err))
+		el.Add(cerror.BadRequest, cerror.FormatBindError(err))
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
@@ -85,7 +87,7 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 			res := h.refreshSnapInstall(c, action, el)
 			resp.Responses = append(resp.Responses, res)
 		} else {
-			el.Add(errors.NotImplemented, "Action not implemented")
+			el.Add(cerror.NotImplemented, "Action not implemented")
 			c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 			return
 		}
@@ -95,7 +97,7 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 }
 
 // TODO: Implement this function properly
-func (h *Handler) refreshSnapInstall(c *gin.Context, action *message.Action, el *errors.ErrorList) *message.RefreshSnapResult {
+func (h *Handler) refreshSnapInstall(c *gin.Context, action *message.Action, el *cerror.ErrorList) *message.RefreshSnapResult {
 	var res message.RefreshSnapResult
 
 	// Get snap entry -> will return 1 snap entry
@@ -165,10 +167,10 @@ func (h *Handler) refreshSnapInstall(c *gin.Context, action *message.Action, el 
 }
 
 func (h *Handler) FindSnaps(c *gin.Context) {
-	el := errors.New()
+	el := cerror.NewErrorList()
 	var req message.FindSnapsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		el.Add(errors.BadRequest, errors.FormatBindError(err))
+		el.Add(cerror.BadRequest, cerror.FormatBindError(err))
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
@@ -176,9 +178,9 @@ func (h *Handler) FindSnaps(c *gin.Context) {
 
 func (h *Handler) createAccount(c *gin.Context) {
 	var req message.CreateAccountRequest
-	el := errors.New()
+	el := cerror.NewErrorList()
 	if err := c.ShouldBindJSON(&req); err != nil {
-		el.Add(errors.BadRequest, errors.FormatBindError(err))
+		el.Add(cerror.BadRequest, cerror.FormatBindError(err))
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
@@ -193,10 +195,10 @@ func (h *Handler) createAccount(c *gin.Context) {
 }
 
 func (h *Handler) RegisterSnapName(c *gin.Context) {
-	el := errors.New()
+	el := cerror.NewErrorList()
 	var req message.RegisterSnapNameReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		el.Add(errors.BadRequest, errors.FormatBindError(err))
+		el.Add(cerror.BadRequest, cerror.FormatBindError(err))
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
@@ -223,16 +225,16 @@ func (h *Handler) RegisterSnapName(c *gin.Context) {
 // disputes should be handled by a natural person, not by the system,
 // which is not possible at the moment.
 func (h *Handler) RegisterSnapNameDispute(c *gin.Context) {
-	el := errors.New()
-	el.Add(errors.NotImplemented, "Not implemented")
+	el := cerror.NewErrorList()
+	el.Add(cerror.NotImplemented, "Not implemented")
 	c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 }
 
 func (h *Handler) generateMacaroon(c *gin.Context) {
-	el := errors.New()
+	el := cerror.NewErrorList()
 	var req *message.GenerateMacaroonRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		el.Add(errors.BadRequest, errors.FormatBindError(err))
+		el.Add(cerror.BadRequest, cerror.FormatBindError(err))
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
@@ -278,17 +280,17 @@ func (h *Handler) generateMacaroon(c *gin.Context) {
 }
 
 func (h *Handler) ProcessSnapBuildAssertion(c *gin.Context) {
-	el := errors.New()
+	el := cerror.NewErrorList()
 	var req *message.SnapBuildAssertionReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		el.Add(errors.BadRequest, errors.FormatBindError(err))
+		el.Add(cerror.BadRequest, cerror.FormatBindError(err))
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
 	// SnapID is a path parameter
 	snapID := c.Param("snap_id")
 	if snapID == "" {
-		el.Add(errors.BadRequest, "snap_id is required")
+		el.Add(cerror.BadRequest, "snap_id is required")
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
@@ -298,7 +300,7 @@ func (h *Handler) ProcessSnapBuildAssertion(c *gin.Context) {
 	if len(resp.Errors) > 0 {
 		el.ExtendAssertionError(resp.Errors)
 		//c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el}) // This would be the prefered way to return the error, but the documentation handles this error differently
-		c.JSON(http.StatusBadRequest, gin.H{"succes": false, "errors": el})
+		c.JSON(http.StatusBadRequest, gin.H{"succes": false, "cerror": el})
 		return
 	}
 
@@ -317,10 +319,10 @@ func (h *Handler) ProcessSnapBuildAssertion(c *gin.Context) {
 }
 
 func (h *Handler) getAccount(c *gin.Context) {
-	el := errors.New()
+	el := cerror.NewErrorList()
 	email, isThere := c.Get("email")
 	if !isThere {
-		el.Add(errors.BadRequest, "missing email")
+		el.Add(cerror.BadRequest, "missing email")
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
@@ -334,7 +336,7 @@ func (h *Handler) getAccount(c *gin.Context) {
 	accId, err := uuid.Parse(account.Id)
 	if err != nil {
 		// should never happen really
-		el.Add(errors.InternalServerError, err.Error())
+		el.Add(cerror.InternalServerError, err.Error())
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
@@ -406,7 +408,7 @@ func (h *Handler) getAccount(c *gin.Context) {
 			ID:          p.Id,
 			DisplayName: p.DisplayName,
 			Username:    p.Username,
-			Validation:  p.Validation,
+			Validation:  getString(p.Validation),
 		}
 	}
 
@@ -426,12 +428,12 @@ func (h *Handler) getAccount(c *gin.Context) {
 	}
 
 	for _, e := range entries.Entries {
-		series := e.Base       // Example: "16" //TODO: check if this is series normally but i think its the same as base?
-		snapName := e.SnapName // Example: "hello-published"
+		series := getString(e.Base) // Example: "16" //TODO: check if this is series normally but i think its the same as base?
+		snapName := e.SnapName      // Example: "hello-published"
 
 		// Ensure series exists in the map
-		if snaps[*series] == nil {
-			snaps[*series] = make(map[string]message.Snap)
+		if snaps[series] == nil {
+			snaps[series] = make(map[string]message.Snap)
 		}
 
 		// Get publisher
@@ -451,12 +453,12 @@ func (h *Handler) getAccount(c *gin.Context) {
 
 		// TODO: fix this
 		snap := message.Snap{
-			Status: *e.Status,
-			Price:  *e.Price,
+			Status: getString(e.Status),
+			Price:  getFloat64(e.Price),
 			Since:  e.Since.AsTime(),
 			SnapID: e.Id,
 			// Store:           e.Store, // not yet implemented
-			Private:         *e.Private,
+			Private:         getBool(e.Private), // this isn't the best yet but don't know what to do if its a nil value set to true or false?
 			IconURL:         e.IconUrl,
 			Publisher:       *publisher,
 			LatestComments:  []message.SnapComment{}, // No comments available yet
@@ -464,7 +466,7 @@ func (h *Handler) getAccount(c *gin.Context) {
 		}
 
 		// Assign snap to the correct series and snap name
-		snaps[*series][snapName] = snap
+		snaps[series][snapName] = snap
 	}
 
 	// not yet implemented don't support brandstores yet
@@ -484,16 +486,57 @@ func (h *Handler) getAccount(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
+func (h *Handler) patchAccount(c *gin.Context) {
+	el := cerror.NewErrorList()
+	email, ok := c.Get("email")
+	if !ok {
+		el.Add(cerror.BadRequest, "missing email")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
+
+	rootMacaroon, ok := c.Get("macaroon")
+	if !ok {
+		el.Add(cerror.BadRequest, "missing macaroon")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
+
+	// check permissions of macaroon to include "edit_account" permission
+	if !auth.HasPermission(rootMacaroon.(*macaroon.Macaroon), "edit_account") {
+		el.Add(cerror.ResourceForbidden, "missing permission to edit account")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
+
+	var req *message.AccountPatchRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		el.Add(cerror.BadRequest, cerror.FormatBindError(err))
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
+
+	// patch account by email
+	account := h.AccountClient.PatchAccountByEmail(email.(string), req.ShortNameSpace)
+	if len(account.Errors) > 0 {
+		el.ExtendAccountError(account.Errors)
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
 // TODO: implement correctly to many unknows of what has to be included and what not, need good source
 func (h *Handler) verifyMacaroon(c *gin.Context) {
 	// not implemented for now
-	c.JSON(http.StatusNotImplemented, gin.H{"error_list": errors.NewError(errors.NotImplemented, "not implemented too many unknowns of implementation")})
+	c.JSON(http.StatusNotImplemented, gin.H{"error_list": cerror.NewError(cerror.NotImplemented, "not implemented too many unknowns of implementation")})
 	return
 	/*
 			var req *message.VerifyRequest
-			el := errors.New()
+			el := cerror.NewErrorList()
 			if err := c.ShouldBindJSON(&req); err != nil {
-				el.Add(errors.BadRequest, errors.FormatBindError(err))
+				el.Add(cerror.BadRequest, cerror.FormatBindError(err))
 				c.JSON(el.GetHTTPStatus(),gin.H{"error_list": el,})
 				return
 			}
@@ -509,7 +552,7 @@ func (h *Handler) verifyMacaroon(c *gin.Context) {
 		    // TODO: change account client to use errorList
 			user, _ := h.AccountClient.GetAccountByEmail(*userEmail)
 		    if user == nil {
-		        el.Add(errors.ResourceNotFound, fmt.Sprintf("user with email %s not found", *userEmail))
+		        el.Add(cerror.ResourceNotFound, fmt.Sprintf("user with email %s not found", *userEmail))
 		        c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		        return
 		    }
@@ -534,4 +577,26 @@ func (h *Handler) verifyMacaroon(c *gin.Context) {
 		    }
 		    return
 	*/
+}
+
+// Helper functions for safe pointer dereferencing.
+func getString(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}
+
+func getFloat64(f *float64) float64 {
+	if f == nil {
+		return 0.0
+	}
+	return *f
+}
+
+func getBool(b *bool) bool {
+	if b == nil {
+		return false
+	}
+	return *b
 }

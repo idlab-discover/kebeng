@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/idlab-discover/kebeng/services/gateway/internal/errors"
+	cerror "github.com/idlab-discover/kebeng/common/cerror"
 )
 
 type CreateAccountResponse struct {
@@ -18,7 +18,7 @@ type RegisterSnapNameRes struct {
 
 type MacaroonResponse struct {
 	Macaroon string           `json:"macaroon"`
-	Errors   errors.ErrorList `json:"error_list"`
+	Errors   cerror.ErrorList `json:"error_list"`
 }
 
 type VerifyAccount struct {
@@ -26,7 +26,7 @@ type VerifyAccount struct {
 	DisplayName string           `json:"displayname"`
 	OpenId      string           `json:"openid"`
 	Verified    bool             `json:"verified"`
-	Errors      errors.ErrorList `json:"error_list"`
+	Errors      cerror.ErrorList `json:"error_list"`
 }
 
 type VerifyResponse struct {
@@ -39,7 +39,7 @@ type VerifyResponse struct {
 	Permissions           *[]string        `json:"permissions"`
 	SnapIds               *string          `json:"snap_ids"`
 	Channels              *string          `json:"channels"`
-	Errors                errors.ErrorList `json:"error_list"`
+	Errors                cerror.ErrorList `json:"error_list"`
 }
 
 type SnapBuildAssertionResp struct {
@@ -52,7 +52,7 @@ type SnapBuildAssertionResp struct {
 	Timestamp       string           `json:"timestamp"`
 	Revision        string           `json:"revision"`
 	Type            string           `json:"type"`
-	Errors          errors.ErrorList `json:"error_list"`
+	Errors          cerror.ErrorList `json:"error_list"`
 }
 
 type RefreshSnapResponses struct {
@@ -167,3 +167,11 @@ type AccountResponse struct {
 }
 
 // *************************** End AccountResponse ****************************
+
+// ********************* AccountPatchResponse **************************
+// AccountPatchResponse represents the response returned by the account patch API
+type AccountPatchResponse struct {
+	ShortNamespace string `json:"short_namespace"`
+}
+
+// *************************** End AccountPatchResponse ****************************

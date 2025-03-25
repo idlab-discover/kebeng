@@ -29,6 +29,7 @@ const (
 	AccountService_AddKey_FullMethodName               = "/account.AccountService/AddKey"
 	AccountService_GetKeyBySHA3384_FullMethodName      = "/account.AccountService/GetKeyBySHA3384"
 	AccountService_GetKeysByAccountId_FullMethodName   = "/account.AccountService/GetKeysByAccountId"
+	AccountService_PatchAccountByEmail_FullMethodName  = "/account.AccountService/PatchAccountByEmail"
 )
 
 // AccountServiceClient is the client API for AccountService service.
@@ -45,6 +46,7 @@ type AccountServiceClient interface {
 	AddKey(ctx context.Context, in *AddKeyRequest, opts ...grpc.CallOption) (*KeyResponse, error)
 	GetKeyBySHA3384(ctx context.Context, in *GetKeyBySHA3384Request, opts ...grpc.CallOption) (*KeyResponse, error)
 	GetKeysByAccountId(ctx context.Context, in *GetKeysByAccountIdRequest, opts ...grpc.CallOption) (*KeysResponse, error)
+	PatchAccountByEmail(ctx context.Context, in *PatchAccountByEmailRequest, opts ...grpc.CallOption) (*PatchAccountByEmailResponse, error)
 }
 
 type accountServiceClient struct {
@@ -155,6 +157,16 @@ func (c *accountServiceClient) GetKeysByAccountId(ctx context.Context, in *GetKe
 	return out, nil
 }
 
+func (c *accountServiceClient) PatchAccountByEmail(ctx context.Context, in *PatchAccountByEmailRequest, opts ...grpc.CallOption) (*PatchAccountByEmailResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PatchAccountByEmailResponse)
+	err := c.cc.Invoke(ctx, AccountService_PatchAccountByEmail_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AccountServiceServer is the server API for AccountService service.
 // All implementations must embed UnimplementedAccountServiceServer
 // for forward compatibility.
@@ -169,6 +181,7 @@ type AccountServiceServer interface {
 	AddKey(context.Context, *AddKeyRequest) (*KeyResponse, error)
 	GetKeyBySHA3384(context.Context, *GetKeyBySHA3384Request) (*KeyResponse, error)
 	GetKeysByAccountId(context.Context, *GetKeysByAccountIdRequest) (*KeysResponse, error)
+	PatchAccountByEmail(context.Context, *PatchAccountByEmailRequest) (*PatchAccountByEmailResponse, error)
 	mustEmbedUnimplementedAccountServiceServer()
 }
 
@@ -208,6 +221,9 @@ func (UnimplementedAccountServiceServer) GetKeyBySHA3384(context.Context, *GetKe
 }
 func (UnimplementedAccountServiceServer) GetKeysByAccountId(context.Context, *GetKeysByAccountIdRequest) (*KeysResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetKeysByAccountId not implemented")
+}
+func (UnimplementedAccountServiceServer) PatchAccountByEmail(context.Context, *PatchAccountByEmailRequest) (*PatchAccountByEmailResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PatchAccountByEmail not implemented")
 }
 func (UnimplementedAccountServiceServer) mustEmbedUnimplementedAccountServiceServer() {}
 func (UnimplementedAccountServiceServer) testEmbeddedByValue()                        {}
@@ -410,6 +426,24 @@ func _AccountService_GetKeysByAccountId_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AccountService_PatchAccountByEmail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PatchAccountByEmailRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AccountServiceServer).PatchAccountByEmail(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AccountService_PatchAccountByEmail_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AccountServiceServer).PatchAccountByEmail(ctx, req.(*PatchAccountByEmailRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AccountService_ServiceDesc is the grpc.ServiceDesc for AccountService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -456,6 +490,10 @@ var AccountService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetKeysByAccountId",
 			Handler:    _AccountService_GetKeysByAccountId_Handler,
+		},
+		{
+			MethodName: "PatchAccountByEmail",
+			Handler:    _AccountService_PatchAccountByEmail_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

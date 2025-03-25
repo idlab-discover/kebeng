@@ -276,6 +276,38 @@ func (a *AccountService) GetKeysByAccountId(ctx context.Context, req *proto.GetK
 	}, nil
 }
 
+func (a *AccountService) PatchAccountByEmail(ctx context.Context, req *proto.PatchAccountByEmailRequest) (*proto.PatchAccountByEmailResponse, error) {
+	el := make([]*proto.Error, 0)
+	account, err := a.repo.GetAccountByEmail(ctx, req.Email, nil)
+	if err != nil {
+		el = append(el, &proto.Error{
+			Code:    err.GetCode(),
+			Message: err.GetMessage(),
+		})
+		return &proto.PatchAccountByEmailResponse{Errors: el}, nil
+	}
+
+	// fail safe but should never happen should have been checked sooner
+	if req.Username != "" {
+		account.Username = req.Username
+	}
+
+	updatedAccount, cerr := a.repo.UpdateAccount(ctx, account)
+	if cerr != nil {
+		el = append(el, &proto.Error{
+			Code:    cerr.GetCode(),
+			Message: cerr.GetMessage(),
+		})
+		return &proto.PatchAccountByEmailResponse{Errors: el}, nil
+	}
+
+	return &proto.PatchAccountByEmailResponse{
+		ShortNamespace: updatedAccount.Username,
+		Errors:         el,
+	}, nil
+
+}
+
 func (a *AccountService) convertToProtoAccount(account *models.Account, el []*proto.Error) *proto.AccountResponse {
 	return &proto.AccountResponse{
 		Id:          account.ID.String(),

@@ -4,6 +4,7 @@ go 1.22.2
 
 require (
 	github.com/fergusstrange/embedded-postgres v1.30.0
+	github.com/go-playground/assert/v2 v2.2.0
 	github.com/golang-migrate/migrate/v4 v4.18.2
 	github.com/google/uuid v1.6.0
 	github.com/idlab-discover/kebeng v0.0.0-20250318181307-e419463f7679
