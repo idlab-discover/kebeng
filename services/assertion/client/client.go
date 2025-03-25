@@ -12,6 +12,12 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+type AssertionClientInterface interface {
+	ProcessSnapBuildAssertion(assertion []byte) *proto.SnapBuildAssertionResponse
+}
+
+var _ AssertionClientInterface = (*AssertionClient)(nil)
+
 type AssertionClient struct {
 	conn   *grpc.ClientConn
 	client proto.AssertionServiceClient
