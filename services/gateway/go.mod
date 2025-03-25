@@ -5,7 +5,7 @@ go 1.22.2
 require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/google/uuid v1.6.0
-	github.com/idlab-discover/kebeng v0.0.0-20250318181307-e419463f7679
+	github.com/idlab-discover/kebeng v0.0.0-20250323201900-57114201b487
 	github.com/idlab-discover/kebeng/services/account v0.0.0-20250323201900-57114201b487
 	github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250318141246-77a544f56023
 	github.com/idlab-discover/kebeng/services/store v0.0.0-20250323154338-d9335363279c
