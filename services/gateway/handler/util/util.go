@@ -12,10 +12,10 @@ type BaseHandler struct {
 	Config          *config.Config
 	AccountClient   accClient.AccountClientInterface
 	StoreClient     storeClient.StoreClientInterface
-	AssertionClient *assertionClient.AssertionClient // TODO: change to interface
+	AssertionClient assertionClient.AssertionClientInterface // TODO: change to interface
 }
 
-func NewBaseHandler(accountClient accClient.AccountClientInterface, storeClient storeClient.StoreClientInterface, assertionClient *assertionClient.AssertionClient, config *config.Config) *BaseHandler {
+func NewBaseHandler(accountClient accClient.AccountClientInterface, storeClient storeClient.StoreClientInterface, assertionClient assertionClient.AssertionClientInterface, config *config.Config) *BaseHandler {
 	return &BaseHandler{
 		Config:          config,
 		AccountClient:   accountClient,
