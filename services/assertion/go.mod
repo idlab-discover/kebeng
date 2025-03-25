@@ -15,13 +15,12 @@ require (
 )
 
 require (
-	github.com/idlab-discover/kebeng/services/account v0.0.0-20250311154753-8199d8a8bc52 // indirect
-	github.com/idlab-discover/kebeng/services/store v0.0.0-20250318141246-77a544f56023 // indirect
-	github.com/mattn/go-sqlite3 v1.14.22 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
+	github.com/idlab-discover/kebeng/services/account v0.0.0-20250311154753-8199d8a8bc52 // indirect
+	github.com/idlab-discover/kebeng/services/store v0.0.0-20250318141246-77a544f56023 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
 	github.com/jackc/pgx/v5 v5.5.5 // indirect
