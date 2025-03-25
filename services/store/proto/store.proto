@@ -174,12 +174,6 @@ message RefreshSnapResponse {
             string snap_id = 2;
             string name = 3;
 
-            message Publisher {
-                string username = 1;
-                string id = 2;
-            }
-            Publisher publisher = 4;
-
             message Download {
                 string url = 1;
                 string sha3_384 = 2;
