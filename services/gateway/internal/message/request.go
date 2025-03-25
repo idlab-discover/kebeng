@@ -82,3 +82,7 @@ type Action struct {
 		Write []int `json:"write"`
 	} `json:"epoch"`
 }
+
+type AccountPatchRequest struct {
+	ShortNameSpace string `json:"short_namespace"`
+}

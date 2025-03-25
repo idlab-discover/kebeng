@@ -52,7 +52,6 @@ type CustomError struct {
 	Message string `json:"message"`
 }
 
-
 func (e *CustomError) GetCode() string {
 	return e.Code
 }
@@ -89,7 +88,6 @@ func ConvertError(err error, message ...string) *CustomError {
 		Message: err.Error(),
 	}
 }
-
 
 func buildCustomError(code, defaultMessage string, message ...string) *CustomError {
 	msg := defaultMessage
@@ -147,12 +145,15 @@ func NewError(code, message string) *ErrorList {
 }
 
 func (el *ErrorList) getCode() string {
-	// Take the first error code in the list
+	// Take the first error in the list
 	first := el.getFirst()
 	if first == nil {
 		return ""
 	}
-	return first.(map[string]string)["code"]
+	if ce, ok := first.(*CustomError); ok {
+		return ce.Code
+	}
+	return ""
 }
 
 func (el *ErrorList) getFirst() any {

@@ -16,6 +16,7 @@ service AccountService {
     rpc AddKey(AddKeyRequest) returns (KeyResponse);
     rpc GetKeyBySHA3384(GetKeyBySHA3384Request) returns (KeyResponse);
     rpc GetKeysByAccountId(GetKeysByAccountIdRequest) returns (KeysResponse);
+    rpc PatchAccountByEmail(PatchAccountByEmailRequest) returns (PatchAccountByEmailResponse);
 }
 
 message Error {
@@ -103,5 +104,15 @@ message GetAccountsByIdsRequest {
 
 message GetAccountsByIdsResponse {
     repeated AccountResponse accounts = 1;
+    repeated Error errors = 2;
+}
+
+message PatchAccountByEmailRequest {
+    string email = 1;
+    string username = 2;
+}
+
+message PatchAccountByEmailResponse {
+    string short_namespace = 1; // this is just the username
     repeated Error errors = 2;
 }
