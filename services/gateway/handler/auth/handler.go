@@ -7,6 +7,7 @@ import (
 	"github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/idlab-discover/kebeng/services/gateway/handler/util"
 	storepb "github.com/idlab-discover/kebeng/services/store/proto"
+	"github.com/idlab-discover/kebeng/services/gateway/internal/model"
 )
 
 type Handler struct {
@@ -67,7 +68,7 @@ func (h *Handler) VerifyMacaroon(c *gin.Context) {
 
 func (h *Handler) GenerateMacaroon(c *gin.Context) {
 	el := cerror.NewErrorList()
-	var req *GenerateMacaroonRequest
+	var req *model.GenerateMacaroonRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		el.Add(cerror.BadRequest, cerror.FormatBindError(err))
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})

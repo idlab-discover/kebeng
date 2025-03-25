@@ -8,8 +8,8 @@ import (
 	"github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/idlab-discover/kebeng/services/gateway/handler/auth"
 	"github.com/idlab-discover/kebeng/services/gateway/handler/util"
-	"github.com/idlab-discover/kebeng/services/gateway/internal/message"
 	storepb "github.com/idlab-discover/kebeng/services/store/proto"
+	"github.com/idlab-discover/kebeng/services/gateway/internal/model"
 	"gopkg.in/macaroon.v2"
 )
 
@@ -18,7 +18,7 @@ type Handler struct {
 }
 
 func (h *Handler) CreateAccount(c *gin.Context) {
-	var req CreateAccountRequest
+	var req model.CreateAccountRequest
 	el := cerror.NewErrorList()
 	if err := c.ShouldBindJSON(&req); err != nil {
 		el.Add(cerror.BadRequest, cerror.FormatBindError(err))
@@ -32,7 +32,7 @@ func (h *Handler) CreateAccount(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, CreateAccountResponse{Id: account.Id})
+	c.JSON(http.StatusOK, model.CreateAccountResponse{Id: account.Id})
 }
 
 func (h *Handler) GetAccount(c *gin.Context) {
@@ -64,10 +64,10 @@ func (h *Handler) GetAccount(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error_list": el})
 		return
 	}
-	// convert to message.AccountKey
-	messageKeys := make([]message.AccountKey, len(keys.Keys))
+	// convert to model.AccountKey
+	messageKeys := make([]model.AccountKey, len(keys.Keys))
 	for i, k := range keys.Keys {
-		messageKeys[i] = message.AccountKey{
+		messageKeys[i] = model.AccountKey{
 			Name:            k.Name,
 			PublicKeySHA384: k.Sha3384,
 			Since:           k.Since.AsTime(),
@@ -116,12 +116,12 @@ func (h *Handler) GetAccount(c *gin.Context) {
 
 	// Now we have all the data we need to fill in the snaps object
 	// start filling in
-	snaps := make(map[string]map[string]message.Snap)
+	snaps := make(map[string]map[string]model.Snap)
 
 	// map publishers by ID for quick lookup
-	publisherMap := make(map[string]*message.Publisher)
+	publisherMap := make(map[string]*model.Publisher)
 	for _, p := range publishers.Accounts {
-		publisherMap[p.Id] = &message.Publisher{
+		publisherMap[p.Id] = &model.Publisher{
 			ID:          p.Id,
 			DisplayName: p.DisplayName,
 			Username:    p.Username,
@@ -130,11 +130,11 @@ func (h *Handler) GetAccount(c *gin.Context) {
 	}
 
 	// map revisions by entry ID for quick lookup
-	revisionMap := make(map[string][]message.SnapRevision)
+	revisionMap := make(map[string][]model.SnapRevision)
 	for _, revs := range revisions.Responses {
 		entryID := revs.EntryId
 		for _, rev := range revs.Revisions {
-			revisionMap[entryID] = append(revisionMap[entryID], message.SnapRevision{
+			revisionMap[entryID] = append(revisionMap[entryID], model.SnapRevision{
 				Revision:      int(rev.Sequence),
 				Version:       rev.Version,
 				Status:        rev.Status,
@@ -150,14 +150,14 @@ func (h *Handler) GetAccount(c *gin.Context) {
 
 		// Ensure series exists in the map
 		if snaps[series] == nil {
-			snaps[series] = make(map[string]message.Snap)
+			snaps[series] = make(map[string]model.Snap)
 		}
 
 		// Get publisher
 		publisher, exists := publisherMap[e.PublisherId]
 		if !exists {
 			// should always exist normally otherwise something went wrong in previous processes
-			publisher = &message.Publisher{
+			publisher = &model.Publisher{
 				ID:          e.PublisherId, // Fallback to ID only
 				DisplayName: "Unknown Publisher",
 				Username:    "unknown",
@@ -169,7 +169,7 @@ func (h *Handler) GetAccount(c *gin.Context) {
 		latestRevisions := revisionMap[e.Id]
 
 		// TODO: fix this
-		snap := message.Snap{
+		snap := model.Snap{
 			Status: util.GetString(e.Status),
 			Price:  util.GetFloat64(e.Price),
 			Since:  e.Since.AsTime(),
@@ -178,7 +178,7 @@ func (h *Handler) GetAccount(c *gin.Context) {
 			Private:         util.GetBool(e.Private), // this isn't the best yet but don't know what to do if its a nil value set to true or false?
 			IconURL:         e.IconUrl,
 			Publisher:       *publisher,
-			LatestComments:  []message.SnapComment{}, // No comments available yet
+			LatestComments:  []model.SnapComment{}, // No comments available yet
 			LatestRevisions: latestRevisions,
 		}
 
@@ -190,7 +190,7 @@ func (h *Handler) GetAccount(c *gin.Context) {
 	// stores := h.AccountClient.GetStores(account.Id)
 
 	// leaving out the deprecated fields for now
-	resp := message.AccountResponse{
+	resp := model.AccountResponse{
 		ID:          accId,
 		DisplayName: account.DisplayName,
 		Email:       account.Email,
@@ -226,7 +226,7 @@ func (h *Handler) PatchAccount(c *gin.Context) {
 		return
 	}
 
-	var req *AccountPatchRequest
+	var req *model.AccountPatchRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		el.Add(cerror.BadRequest, cerror.FormatBindError(err))
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})

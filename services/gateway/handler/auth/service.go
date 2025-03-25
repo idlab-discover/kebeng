@@ -13,11 +13,12 @@ import (
 	"github.com/idlab-discover/kebeng/services/gateway/internal/config"
 	macaroon "gopkg.in/macaroon.v2"
 	mc "github.com/idlab-discover/kebeng/services/gateway/internal/macaroon"
+	"github.com/idlab-discover/kebeng/services/gateway/internal/model"
 )
 
 
 
-func GenerateMacaroon(ctx context.Context, req *GenerateMacaroonRequest, snapIDs map[string]bool, macaroonConfig *config.MacaroonConfig) *MacaroonResponse {
+func GenerateMacaroon(ctx context.Context, req *model.GenerateMacaroonRequest, snapIDs map[string]bool, macaroonConfig *config.MacaroonConfig) *model.MacaroonResponse {
 	el := cerror.NewErrorList()
 
 	// NOTE: don't need to check if macaroonconfig is okay since we do that at startup
@@ -31,7 +32,7 @@ func GenerateMacaroon(ctx context.Context, req *GenerateMacaroonRequest, snapIDs
 	)
 	if err != nil {
 		el.Add(cerror.InternalServerError, fmt.Sprintf("failed to create macaroon: %v", err))
-		return &MacaroonResponse{Errors: *el}
+		return &model.MacaroonResponse{Errors: *el}
 	}
 
 	// add valid since is in a macaroon when request from the canonical snapstore
@@ -95,7 +96,7 @@ func GenerateMacaroon(ctx context.Context, req *GenerateMacaroonRequest, snapIDs
 		_, err := time.Parse(time.RFC3339, req.Expires)
 		if err != nil {
 			el.Add(cerror.InvalidField, fmt.Sprintf("invalid expires format: %v", err))
-			return &MacaroonResponse{Errors: *el}
+			return &model.MacaroonResponse{Errors: *el}
 		}
 		expiryTimestamp = req.Expires
 	} else {
@@ -122,22 +123,22 @@ func GenerateMacaroon(ctx context.Context, req *GenerateMacaroonRequest, snapIDs
 
 	// previous actions have to be successful before proceeding
 	if len(*el) > 0 {
-		return &MacaroonResponse{Errors: *el}
+		return &model.MacaroonResponse{Errors: *el}
 	}
 
 	serializedMacaroon, err := mc.MacaroonSerialize(m)
 	if err != nil {
 		el.Add(cerror.InternalServerError, fmt.Sprintf("failed to serialize macaroon: %v", err))
-		return &MacaroonResponse{Errors: *el}
+		return &model.MacaroonResponse{Errors: *el}
 	}
 
-	return &MacaroonResponse{
+	return &model.MacaroonResponse{
 		Macaroon: serializedMacaroon,
 		Errors:   *el,
 	}
 }
 
-func ValidateGenerateMacaroonRequest(req *GenerateMacaroonRequest, el *cerror.ErrorList) {
+func ValidateGenerateMacaroonRequest(req *model.GenerateMacaroonRequest, el *cerror.ErrorList) {
 
 	// Allowed permissions.
 	validPermissions := map[string]struct{}{
