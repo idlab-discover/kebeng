@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/idlab-discover/kebeng/services/assertion/internal/config"
-	"github.com/idlab-discover/kebeng/services/assertion/internal/errors"
 	proto "github.com/idlab-discover/kebeng/services/assertion/proto"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -39,11 +39,11 @@ func (c *AssertionClient) ProcessSnapBuildAssertion(assertion []byte) *proto.Sna
 
 	resp, err := c.client.ProcessSnapBuildAssertion(context.Background(), req)
 	// err is not nil if something goes wrong with the client
-	// errors regarding the request are in the response
+	// cerror regarding the request are in the response
 	if err != nil {
 		resp = &proto.SnapBuildAssertionResponse{
 			Errors: []*proto.Error{{
-				Code:    errors.InternalServerError,
+				Code:    cerror.InternalServerError,
 				Message: err.Error()},
 			},
 		}

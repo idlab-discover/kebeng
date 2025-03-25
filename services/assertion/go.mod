@@ -5,6 +5,7 @@ go 1.22.2
 require (
 	github.com/golang-migrate/migrate/v4 v4.18.2
 	github.com/google/uuid v1.6.0
+	github.com/idlab-discover/kebeng v0.0.0-20250325114346-78051e963813
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.9.0
@@ -14,7 +15,11 @@ require (
 	gorm.io/gorm v1.25.12
 )
 
-require github.com/mattn/go-sqlite3 v1.14.22 // indirect
+require (
+	github.com/idlab-discover/kebeng/services/account v0.0.0-20250311154753-8199d8a8bc52 // indirect
+	github.com/idlab-discover/kebeng/services/store v0.0.0-20250318141246-77a544f56023 // indirect
+	github.com/mattn/go-sqlite3 v1.14.22 // indirect
+)
 
 require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
