@@ -5,7 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/idlab-discover/kebeng/common/cerror"
-	"github.com/idlab-discover/kebeng/services/gateway/handler/internal/util"
+	"github.com/idlab-discover/kebeng/services/gateway/internal/util"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/model"
 	storepb "github.com/idlab-discover/kebeng/services/store/proto"
 )
