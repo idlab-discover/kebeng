@@ -6,7 +6,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
-	"github.com/idlab-discover/kebeng/services/gateway/internal/auth"
+	"github.com/idlab-discover/kebeng/services/gateway/handler/auth"
+	mc "github.com/idlab-discover/kebeng/services/gateway/internal/macaroon"
 	"gopkg.in/macaroon.v2"
 )
 
@@ -88,13 +89,13 @@ func parseMacaroon(authHeader string, el *cerror.ErrorList) (*macaroon.Macaroon,
 	}
 
 	// deserialize the macaroon
-	deserializedRootMacaroon, err := auth.MacaroonDeserialize(rootMacaroon)
+	deserializedRootMacaroon, err := mc.MacaroonDeserialize(rootMacaroon)
 	if err != nil {
 		el.Add(cerror.Unauthorized, "Invalid root macaroon")
 	}
 
 	// Verify the discharge macaroon
-	deserializedDischargeMacaroon, err := auth.MacaroonDeserialize(dischargeMacaroon)
+	deserializedDischargeMacaroon, err := mc.MacaroonDeserialize(dischargeMacaroon)
 	if err != nil {
 		el.Add(cerror.Unauthorized, "Invalid discharge macaroon")
 	}
