@@ -1,4 +1,4 @@
-package handler
+package account
 
 import (
 	"encoding/json"
@@ -11,6 +11,7 @@ import (
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	accClient "github.com/idlab-discover/kebeng/services/account/client"
 	proto "github.com/idlab-discover/kebeng/services/account/proto"
+	"github.com/idlab-discover/kebeng/services/gateway/handler/util"
 	"gopkg.in/macaroon.v2"
 
 	"github.com/stretchr/testify/assert"
@@ -136,14 +137,15 @@ func TestPatchAccountHandler(t *testing.T) {
 				mockAccClient.On("PatchAccountByEmail", "test@example.com", "new_username").
 					Return(tc.accountClientResponse).Once()
 			}
+			baseHandler := util.NewBaseHandler(mockAccClient, nil, nil, nil)
 
 			// Create a handler with our mock account client.
 			h := &Handler{
-				AccountClient: mockAccClient,
+				BaseHandler: baseHandler,
 			}
 
 			// Call the patchAccount handler.
-			h.patchAccount(c) // Note: make sure the function name matches your actual handler function.
+			h.PatchAccount(c) // Note: make sure the function name matches your actual handler function.
 
 			// Verify the HTTP status.
 			assert.Equal(t, tc.expectedHTTPStatus, w.Code, "unexpected HTTP status")

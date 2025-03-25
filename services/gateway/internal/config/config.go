@@ -10,10 +10,10 @@ import (
 
 type MacaroonConfig struct {
 	RootKey            string `mapstructure:"root_key" yaml:"root_key"`
-	RootId             string   `mapstructure:"root_id" yaml:"root_id"`
+	RootId             string `mapstructure:"root_id" yaml:"root_id"`
 	RootLocation       string `mapstructure:"root_location" yaml:"root_location"`
 	DischargeKey       string `mapstructure:"discharge_key" yaml:"discharge_key"`
-	ThirdPartyCaveatId string   `mapstructure:"third_party_caveat_id" yaml:"third_party_caveat_id"`
+	ThirdPartyCaveatId string `mapstructure:"third_party_caveat_id" yaml:"third_party_caveat_id"`
 	ThirdPartyLocation string `mapstructure:"third_party_location" yaml:"third_party_location"`
 }
 
@@ -24,6 +24,9 @@ type Config struct {
 
 	StoreServiceHost string `mapstructure:"store_service_host" yaml:"store_service_host"`
 	StoreServicePort int    `mapstructure:"store_service_port" yaml:"store_service_port"`
+
+	AssertionServiceHost string `mapstructure:"assertion_service_host" yaml:"assertion_service_host"`
+	AssertionServicePort int    `mapstructure:"assertion_service_port" yaml:"assertion_service_port"`
 
 	MacaroonConfig *MacaroonConfig `mapstructure:"macaroon" yaml:"macaroon"`
 }
