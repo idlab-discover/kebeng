@@ -6,41 +6,19 @@ import (
 	"strings"
 	"time"
 
-	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
 
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/config"
-	"github.com/idlab-discover/kebeng/services/gateway/internal/message"
 	macaroon "gopkg.in/macaroon.v2"
+	mc "github.com/idlab-discover/kebeng/services/gateway/internal/macaroon"
+	"github.com/idlab-discover/kebeng/services/gateway/internal/model"
 )
 
-// MacaroonSerialize returns a store-compatible serialized representation of the given macaroon
-func MacaroonSerialize(m *macaroon.Macaroon) (string, error) {
-	marshalled, err := m.MarshalBinary()
-	if err != nil {
-		return "", err
-	}
-	encoded := base64.RawURLEncoding.EncodeToString(marshalled)
-	return encoded, nil
-}
 
-// MacaroonDeserialize returns a deserialized macaroon from a given store-compatible serialization
-func MacaroonDeserialize(serializedMacaroon string) (*macaroon.Macaroon, error) {
-	var m macaroon.Macaroon
-	decoded, err := base64.RawURLEncoding.DecodeString(serializedMacaroon)
-	if err != nil {
-		return nil, err
-	}
-	err = m.UnmarshalBinary(decoded)
-	if err != nil {
-		return nil, err
-	}
-	return &m, nil
-}
 
-func GenerateMacaroon(ctx context.Context, req *message.GenerateMacaroonRequest, snapIDs map[string]bool, macaroonConfig *config.MacaroonConfig) *message.MacaroonResponse {
+func GenerateMacaroon(ctx context.Context, req *model.GenerateMacaroonRequest, snapIDs map[string]bool, macaroonConfig *config.MacaroonConfig) *model.MacaroonResponse {
 	el := cerror.NewErrorList()
 
 	// NOTE: don't need to check if macaroonconfig is okay since we do that at startup
@@ -54,7 +32,7 @@ func GenerateMacaroon(ctx context.Context, req *message.GenerateMacaroonRequest,
 	)
 	if err != nil {
 		el.Add(cerror.InternalServerError, fmt.Sprintf("failed to create macaroon: %v", err))
-		return &message.MacaroonResponse{Errors: *el}
+		return &model.MacaroonResponse{Errors: *el}
 	}
 
 	// add valid since is in a macaroon when request from the canonical snapstore
@@ -118,7 +96,7 @@ func GenerateMacaroon(ctx context.Context, req *message.GenerateMacaroonRequest,
 		_, err := time.Parse(time.RFC3339, req.Expires)
 		if err != nil {
 			el.Add(cerror.InvalidField, fmt.Sprintf("invalid expires format: %v", err))
-			return &message.MacaroonResponse{Errors: *el}
+			return &model.MacaroonResponse{Errors: *el}
 		}
 		expiryTimestamp = req.Expires
 	} else {
@@ -145,22 +123,22 @@ func GenerateMacaroon(ctx context.Context, req *message.GenerateMacaroonRequest,
 
 	// previous actions have to be successful before proceeding
 	if len(*el) > 0 {
-		return &message.MacaroonResponse{Errors: *el}
+		return &model.MacaroonResponse{Errors: *el}
 	}
 
-	serializedMacaroon, err := MacaroonSerialize(m)
+	serializedMacaroon, err := mc.MacaroonSerialize(m)
 	if err != nil {
 		el.Add(cerror.InternalServerError, fmt.Sprintf("failed to serialize macaroon: %v", err))
-		return &message.MacaroonResponse{Errors: *el}
+		return &model.MacaroonResponse{Errors: *el}
 	}
 
-	return &message.MacaroonResponse{
+	return &model.MacaroonResponse{
 		Macaroon: serializedMacaroon,
 		Errors:   *el,
 	}
 }
 
-func ValidateGenerateMacaroonRequest(req *message.GenerateMacaroonRequest, el *cerror.ErrorList) {
+func ValidateGenerateMacaroonRequest(req *model.GenerateMacaroonRequest, el *cerror.ErrorList) {
 
 	// Allowed permissions.
 	validPermissions := map[string]struct{}{
@@ -234,12 +212,12 @@ func ValidateGenerateMacaroonRequest(req *message.GenerateMacaroonRequest, el *c
 func VerifyAndGetEmail(cfg *config.Config, el *cerror.ErrorList, authData string) *string {
 	rootS, dischargeS := GetRootMacaroonsFromString(authData)
 
-	root, err := MacaroonDeserialize(rootS)
+	root, err := mc.MacaroonDeserialize(rootS)
 	if err != nil {
 		el.Add(cerror.InternalServerError, fmt.Sprintf("failed to deserialize root macaroon: %v", err))
 	}
 
-	discharge, err := MacaroonDeserialize(dischargeS)
+	discharge, err := mc.MacaroonDeserialize(dischargeS)
 	if err != nil {
 		el.Add(cerror.InternalServerError, fmt.Sprintf("failed to deserialize discharge macaroon: %v", err))
 	}
