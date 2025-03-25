@@ -11,7 +11,7 @@ import (
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	accClient "github.com/idlab-discover/kebeng/services/account/client"
 	proto "github.com/idlab-discover/kebeng/services/account/proto"
-	"github.com/idlab-discover/kebeng/services/gateway/handler/util"
+	"github.com/idlab-discover/kebeng/services/gateway/handler/internal/util"
 	"gopkg.in/macaroon.v2"
 
 	"github.com/stretchr/testify/assert"
