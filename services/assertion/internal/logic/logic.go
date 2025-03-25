@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/idlab-discover/kebeng/services/assertion/internal/config"
-	"github.com/idlab-discover/kebeng/services/assertion/internal/errors"
 	"github.com/idlab-discover/kebeng/services/assertion/internal/repositories"
 	proto "github.com/idlab-discover/kebeng/services/assertion/proto"
 	"github.com/sirupsen/logrus"
@@ -31,7 +31,7 @@ func (s *AssertionService) ProcessSnapBuildAssertion(ctx context.Context, req *p
 
 	if req.Assertion == nil {
 		errList = append(errList, &proto.Error{
-			Code:    errors.MissingField,
+			Code:    cerror.MissingField,
 			Message: "Assertion field is required",
 		})
 		return &proto.SnapBuildAssertionResponse{
@@ -44,7 +44,7 @@ func (s *AssertionService) ProcessSnapBuildAssertion(ctx context.Context, req *p
 	err := validateSnapBuildAssertion(assertion)
 	if err != nil {
 		errList = append(errList, &proto.Error{
-			Code:    errors.Invalid,
+			Code:    cerror.Invalid,
 			Message: "not a valid snap-build assertion: " + err.Error(),
 		})
 		return &proto.SnapBuildAssertionResponse{
@@ -56,7 +56,7 @@ func (s *AssertionService) ProcessSnapBuildAssertion(ctx context.Context, req *p
 	if err != nil {
 		logrus.Errorf("Failed to create assertion: %v", err)
 		errList = append(errList, &proto.Error{
-			Code:    errors.AssertionCreationFailed,
+			Code:    cerror.AssertionCreationFailed,
 			Message: "Failed to create assertion",
 		})
 		return &proto.SnapBuildAssertionResponse{

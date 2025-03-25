@@ -5,6 +5,7 @@ go 1.22.2
 require (
 	github.com/golang-migrate/migrate/v4 v4.18.2
 	github.com/google/uuid v1.6.0
+	github.com/idlab-discover/kebeng v0.0.0-20250325114346-78051e963813
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/viper v1.19.0
 	google.golang.org/grpc v1.71.0
@@ -14,6 +15,9 @@ require (
 )
 
 require (
+	github.com/idlab-discover/kebeng/services/account v0.0.0-20250311154753-8199d8a8bc52 // indirect
+	github.com/idlab-discover/kebeng/services/store v0.0.0-20250318141246-77a544f56023 // indirect
+	github.com/mattn/go-sqlite3 v1.14.22 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect

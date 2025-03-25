@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
-	"github.com/idlab-discover/kebeng/services/store/internal/errors"
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -57,7 +57,7 @@ func (c *StoreClient) UploadSnap(name string, type_name string, confinement stri
 	if err != nil {
 		resp = &proto.UploadSnapResponse{
 			Errors: []*proto.Error{{
-				Code:    errors.InternalServerError,
+				Code:    cerror.InternalServerError,
 				Message: err.Error()},
 			},
 		}
@@ -77,7 +77,7 @@ func (c *StoreClient) RegisterSnapName(snapName string, isPrivate bool, storeNam
 	if err != nil {
 		resp = &proto.RegisterSnapNameResponse{
 			Errors: []*proto.Error{{
-				Code:    errors.InternalServerError,
+				Code:    cerror.InternalServerError,
 				Message: err.Error()},
 			},
 		}
@@ -90,7 +90,7 @@ func (c *StoreClient) GetEntries(entries *proto.GetEntriesRequest) *proto.GetEnt
 	if err != nil {
 		resp = &proto.GetEntriesResponse{
 			Errors: []*proto.Error{{
-				Code:    errors.InternalServerError,
+				Code:    cerror.InternalServerError,
 				Message: err.Error()},
 			},
 		}
@@ -103,7 +103,7 @@ func (c *StoreClient) GetRevisions(revisions *proto.GetRevisionsRequest) *proto.
 	if err != nil {
 		resp = &proto.GetRevisionsResponse{
 			Errors: []*proto.Error{{
-				Code:    errors.InternalServerError,
+				Code:    cerror.InternalServerError,
 				Message: err.Error()},
 			},
 		}
@@ -117,7 +117,7 @@ func (c *StoreClient) GetEntriesByAccountID(accountID string) *proto.GetEntriesR
 	if err != nil {
 		resp = &proto.GetEntriesResponse{
 			Errors: []*proto.Error{{
-				Code:    errors.InternalServerError,
+				Code:    cerror.InternalServerError,
 				Message: err.Error()},
 			},
 		}
@@ -130,7 +130,7 @@ func (c *StoreClient) GetRevisionsByEntryIds(entryIds *proto.GetRevisionsByEntry
 	if err != nil {
 		resp = &proto.GetRevisionsByEntryIdResponses{
 			Errors: []*proto.Error{{
-				Code:    errors.InternalServerError,
+				Code:    cerror.InternalServerError,
 				Message: err.Error()},
 			},
 		}
