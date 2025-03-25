@@ -43,6 +43,12 @@ github.com/hashicorp/go-multierror v1.1.1 h1:H5DkEtf6CXdFp0N0Em5UCwQpXMWke8IA0+l
 github.com/hashicorp/go-multierror v1.1.1/go.mod h1:iw975J/qwKPdAO1clOe2L8331t/9/fmwbPZ6JB6eMoM=
 github.com/hashicorp/hcl v1.0.0 h1:0Anlzjpi4vEasTeNFn2mLJgTSwt0+6sfsiTG8qcWGx4=
 github.com/hashicorp/hcl v1.0.0/go.mod h1:E5yfLk+7swimpb2L/Alb/PJmXilQ/rhwaUYs4T20WEQ=
+github.com/idlab-discover/kebeng v0.0.0-20250325114346-78051e963813 h1:3HCxNvMVd5gsAfmbkLtXUh2wkNhlzZNzazcahHTpj0g=
+github.com/idlab-discover/kebeng v0.0.0-20250325114346-78051e963813/go.mod h1:sA3WVcQPDn3CbW4Dse26VFKTWvozqSwzKpwU42xrVBU=
+github.com/idlab-discover/kebeng/services/account v0.0.0-20250311154753-8199d8a8bc52 h1:jfMruD8ARh4969adK7B3MbmDbEkBVA42n/WOi2BUrv8=
+github.com/idlab-discover/kebeng/services/account v0.0.0-20250311154753-8199d8a8bc52/go.mod h1:S5vOOfjVpuRRZEVR5mUcNqP076sxG8qsVdtxIW+9iWA=
+github.com/idlab-discover/kebeng/services/store v0.0.0-20250318141246-77a544f56023 h1:0IgSljfB+zeGPJGfVFBXyry8BSd8ZB3KQoKrNdJBPxQ=
+github.com/idlab-discover/kebeng/services/store v0.0.0-20250318141246-77a544f56023/go.mod h1:xVDyFue0/4t84xg9yyB43XpL9Gpa7XHQ+iI//9lpi0I=
 github.com/jackc/pgpassfile v1.0.0 h1:/6Hmqy13Ss2zCq62VdNG8tM1wchn8zjSGOBJ6icpsIM=
 github.com/jackc/pgpassfile v1.0.0/go.mod h1:CEx0iS5ambNFdcRtxPj5JhEz+xB6uRky5eyVu/W2HEg=
 github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a h1:bbPeKD0xmW/Y25WS6cokEszi5g+S0QxI/d45PkRi7Nk=
