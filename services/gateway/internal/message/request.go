@@ -55,6 +55,34 @@ type AccountRequest struct {
 	Authorization AuthData `header:"Authorization" binding:"required"`
 }
 
+type RefreshSnapRequest struct {
+	Context []struct {
+		SnapID          string `json:"snap-id"`
+		InstanceKey     string `json:"instance-key"`
+		Revision        int    `json:"revision"`
+		TrackingChannel string `json:"tracking-channel"`
+		Epoch           struct {
+			Read  []int `json:"read"`
+			Write []int `json:"write"`
+		} `json:"epoch"`
+		RefreshedDate string `json:"refreshed-date"`
+	} `json:"context"`
+	Actions []*Action `json:"actions"`
+	Fields  []string  `json:"fields"`
+}
+
+type Action struct {
+	Action      string  `json:"action"`
+	InstanceKey string  `json:"instance-key"`
+	Name        *string `json:"name"`
+	SnapID      *string `json:"snap-id"`
+	Channel     string  `json:"channel"`
+	Epoch       *struct {
+		Read  []int `json:"read"`
+		Write []int `json:"write"`
+	} `json:"epoch"`
+}
+
 type AccountPatchRequest struct {
 	ShortNameSpace string `json:"short_namespace"`
 }

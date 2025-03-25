@@ -55,6 +55,37 @@ type SnapBuildAssertionResp struct {
 	Errors          cerror.ErrorList `json:"error_list"`
 }
 
+type RefreshSnapResponses struct {
+	Responses []*RefreshSnapResult `json:"results"`
+}
+
+type RefreshSnapResult struct {
+	Result      *string      `json:"result,omitempty"`
+	InstanceKey *string      `json:"instance-key,omitempty"`
+	SnapId      *string      `json:"snap-id,omitempty"`
+	Name        *string      `json:"name,omitempty"`
+	Snap        *RefreshSnap `json:"snap,omitempty"`
+}
+
+type RefreshSnap struct {
+	Architectures *[]string  `json:"architectures,omitempty"`
+	SnapId        *string    `json:"snap-id,omitempty"`
+	Name          *string    `json:"name,omitempty"`
+	Publisher     *Publisher `json:"publisher,omitempty"`
+	Download      *Download  `json:"download,omitempty"`
+	Version       *string    `json:"version,omitempty"`
+	Confinement   *string    `json:"confinement,omitempty"`
+	Revision      *float64   `json:"revision,omitempty"`
+	Type          *string    `json:"type,omitempty"`
+	Base          *string    `json:"base,omitempty"`
+}
+
+type Download struct {
+	URL      *string  `json:"url,omitempty"`
+	Sha3_384 *string  `json:"sha3-384,omitempty"`
+	Size     *float64 `json:"size,omitempty"`
+}
+
 // ********************* AccountResponse **************************
 // AccountKey represents an account key object
 type AccountKey struct {
@@ -67,19 +98,18 @@ type AccountKey struct {
 // Publisher represents a snap publisher
 type Publisher struct {
 	ID          string `json:"id"`
-	DisplayName string `json:"display-name"`
+	DisplayName string `json:"display-name,omitempty"`
 	Username    string `json:"username"`
-	Validation  string `json:"validation"`
+	Validation  string `json:"validation,omitempty"`
 }
 
 // SnapRevision represents a snap revision in the store
 type SnapRevision struct {
-	Revision      int       `json:"revision"`
-	Since         time.Time `json:"since"`
-	Version       string    `json:"version"`
-	Status        string    `json:"status"`
-	Architectures []string  `json:"architectures"`
-	Channels      []string  `json:"channels"`
+	Revision      int      `json:"revision"`
+	Version       string   `json:"version"`
+	Status        string   `json:"status"`
+	Architectures []string `json:"architectures"`
+	Channels      []string `json:"channels"`
 }
 
 // SnapComment represents a comment in the context of an under-review or revoked name

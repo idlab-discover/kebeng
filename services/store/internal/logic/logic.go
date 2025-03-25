@@ -116,11 +116,11 @@ func (s *StoreLogic) GetEntries(ctx context.Context, req *proto.GetEntriesReques
 
 	for _, entry := range req.Entries {
 		// First try to retrieve the entry by its ID
-		if entry.Id != "" {
-			id, err := uuid.Parse(entry.Id)
+		if entry.Id != nil && *entry.Id != "" {
+			id, err := uuid.Parse(*entry.Id)
 			if err != nil {
-				logrus.Errorf("Failed to parse UUID '%s':", entry.Id)
-				el = append(el, &proto.Error{Code: cerror.InvalidField, Message: fmt.Sprintf("Invalid UUID format for id '%s'", entry.Id)})
+				logrus.Errorf("Failed to parse UUID '%s':", *entry.Id)
+				el = append(el, &proto.Error{Code: cerror.InvalidField, Message: fmt.Sprintf("Invalid UUID format for id '%s'", *entry.Id)})
 				continue
 			}
 
@@ -146,8 +146,8 @@ func (s *StoreLogic) GetEntries(ctx context.Context, req *proto.GetEntriesReques
 			})
 
 			// If ID is not given, try to retrieve the entry by its name
-		} else if entry.Name != "" {
-			snapEntry, err := s.repo.GetEntryByName(entry.Name, nil)
+		} else if entry.Name != nil && *entry.Name != "" {
+			snapEntry, err := s.repo.GetEntryByName(*entry.Name, nil)
 			if err != nil {
 				// Already logged in GetEntryByName (repository)
 				el = append(el, &proto.Error{Code: err.GetCode(), Message: err.GetMessage()})
@@ -190,12 +190,12 @@ func (s *StoreLogic) GetEntries(ctx context.Context, req *proto.GetEntriesReques
 //   - error: This error is only not nil of proto fails. Errors while retrieving entry are added to the GetEntriesResponse.
 func (s *StoreLogic) GetEntryById(ctx context.Context, req *proto.GetEntryRequest) (*proto.GetEntryResponse, error) {
 	el := make([]*proto.Error, 0)
-	if req.Id == "" {
+	if req.Id == nil || *req.Id == "" {
 		el = append(el, &proto.Error{Code: cerror.MissingField, Message: "Id is required"})
 		return &proto.GetEntryResponse{Errors: el}, nil
 	}
 
-	id, err := uuid.Parse(req.Id)
+	id, err := uuid.Parse(*req.Id)
 	if err != nil {
 		logrus.Error(err)
 		el = append(el, &proto.Error{Code: cerror.InvalidField, Message: "Invalid UUID format"})
@@ -237,12 +237,12 @@ func (s *StoreLogic) GetEntryById(ctx context.Context, req *proto.GetEntryReques
 //   - error: An error if the operation fails.
 func (s *StoreLogic) GetEntryByName(ctx context.Context, req *proto.GetEntryRequest) (*proto.GetEntryResponse, error) {
 	el := make([]*proto.Error, 0)
-	if req.Name == "" {
+	if req.Name == nil || *req.Name == "" {
 		el = append(el, &proto.Error{Code: cerror.MissingField, Message: "Name is required"})
 		return &proto.GetEntryResponse{Errors: el}, nil
 	}
 
-	snapEntry, err := s.repo.GetEntryByName(req.Name, nil)
+	snapEntry, err := s.repo.GetEntryByName(*req.Name, nil)
 	if err != nil {
 		el = append(el, &proto.Error{Code: err.GetCode(), Message: err.GetMessage()})
 		return &proto.GetEntryResponse{Errors: el}, nil
