@@ -6,8 +6,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/idlab-discover/kebeng/services/gateway/handler/util"
-	"github.com/idlab-discover/kebeng/services/gateway/internal/auth"
-	"github.com/idlab-discover/kebeng/services/gateway/internal/message"
 	storepb "github.com/idlab-discover/kebeng/services/store/proto"
 )
 
@@ -69,7 +67,7 @@ func (h *Handler) VerifyMacaroon(c *gin.Context) {
 
 func (h *Handler) GenerateMacaroon(c *gin.Context) {
 	el := cerror.NewErrorList()
-	var req *message.GenerateMacaroonRequest
+	var req *GenerateMacaroonRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		el.Add(cerror.BadRequest, cerror.FormatBindError(err))
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
@@ -77,7 +75,7 @@ func (h *Handler) GenerateMacaroon(c *gin.Context) {
 	}
 
 	// validate input
-	auth.ValidateGenerateMacaroonRequest(req, el)
+	ValidateGenerateMacaroonRequest(req, el)
 	if len(*el) > 0 {
 		c.JSON(http.StatusBadRequest,
 			gin.H{
@@ -107,7 +105,7 @@ func (h *Handler) GenerateMacaroon(c *gin.Context) {
 		snapIDs[e.Id] = true
 	}
 
-	macaroon := auth.GenerateMacaroon(c, req, snapIDs, h.Config.MacaroonConfig)
+	macaroon := GenerateMacaroon(c, req, snapIDs, h.Config.MacaroonConfig)
 	if len(macaroon.Errors) > 0 {
 		el.Extend(macaroon.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
