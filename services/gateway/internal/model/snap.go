@@ -1,38 +1,64 @@
-package message
+package model
 
 import (
 	"time"
 
 	"github.com/google/uuid"
-	cerror "github.com/idlab-discover/kebeng/common/cerror"
+	"github.com/idlab-discover/kebeng/common/cerror"
 )
 
+type RequestStoreDeviceNonceRequest struct {
+}
 
+type RequestStoreDeviceNonceResponse struct {
+	Nonce string `json:"nonce"`
+}
+
+type FindSnapsRequest struct {
+	Name string `json:"name"`
+}
+
+type RegisterSnapNameRequest struct {
+	SnapName  string `json:"snap_name" binding:"required"` //TODO: check wheter this gets handled correctly
+	IsPrivate bool   `json:"is_private" default:"false"`
+	Store     string `json:"store" default:"default_store"`
+}
 
 type RegisterSnapNameRes struct {
 	SnapId   string `json:"snap_id"`
 	SnapName string `json:"snap_name"`
 }
 
-type VerifyAccount struct {
-	Email       string           `json:"email"`
-	DisplayName string           `json:"displayname"`
-	OpenId      string           `json:"openid"`
-	Verified    bool             `json:"verified"`
-	Errors      cerror.ErrorList `json:"error_list"`
+type SnapBuildAssertionRequest struct {
+	Assertion []byte `json:"assertion"`
 }
 
-type VerifyResponse struct {
-	Allowed               bool             `json:"allowed"`
-	DeviceRefreshRequired bool             `json:"device_refresh_required"`
-	RefreshRequired       bool             `json:"refresh_required"`
-	Account               *VerifyAccount   `json:"account,omitempty"`
-	Device                *string          `json:"device"`
-	LastAuth              string           `json:"last_auth"`
-	Permissions           *[]string        `json:"permissions"`
-	SnapIds               *string          `json:"snap_ids"`
-	Channels              *string          `json:"channels"`
-	Errors                cerror.ErrorList `json:"error_list"`
+type RefreshSnapRequest struct {
+	Context []struct {
+		SnapID          string `json:"snap-id"`
+		InstanceKey     string `json:"instance-key"`
+		Revision        int    `json:"revision"`
+		TrackingChannel string `json:"tracking-channel"`
+		Epoch           struct {
+			Read  []int `json:"read"`
+			Write []int `json:"write"`
+		} `json:"epoch"`
+		RefreshedDate string `json:"refreshed-date"`
+	} `json:"context"`
+	Actions []*Action `json:"actions"`
+	Fields  []string  `json:"fields"`
+}
+
+type Action struct {
+	Action      string  `json:"action"`
+	InstanceKey string  `json:"instance-key"`
+	Name        *string `json:"name"`
+	SnapID      *string `json:"snap-id"`
+	Channel     string  `json:"channel"`
+	Epoch       *struct {
+		Read  []int `json:"read"`
+		Write []int `json:"write"`
+	} `json:"epoch"`
 }
 
 type SnapBuildAssertionResp struct {
@@ -79,23 +105,6 @@ type Download struct {
 	Size     *float64 `json:"size,omitempty"`
 }
 
-// ********************* AccountResponse **************************
-// AccountKey represents an account key object
-type AccountKey struct {
-	Name            string    `json:"name"`
-	PublicKeySHA384 string    `json:"public-key-sha3-384"`
-	Since           time.Time `json:"since"`
-	Until           time.Time `json:"until,omitempty"`
-}
-
-// Publisher represents a snap publisher
-type Publisher struct {
-	ID          string `json:"id"`
-	DisplayName string `json:"display-name,omitempty"`
-	Username    string `json:"username"`
-	Validation  string `json:"validation,omitempty"`
-}
-
 // SnapRevision represents a snap revision in the store
 type SnapRevision struct {
 	Revision      int      `json:"revision"`
@@ -138,33 +147,3 @@ type Store struct {
 	ID    uuid.UUID `json:"id"`
 	Roles []string  `json:"roles"`
 }
-
-// AccountResponse represents the response returned by the account API
-type AccountResponse struct {
-	AccountKeys []AccountKey               `json:"account-keys"`
-	DisplayName string                     `json:"display-name"` // user's full name
-	Email       string                     `json:"email"`
-	ID          uuid.UUID                  `json:"id"`
-	Validation  string                     `json:"validation"` // validation status
-	Snaps       map[string]map[string]Snap `json:"snaps"`      // Properly nested structure (Series -> Snap Name -> Snap)
-	Stores      []Store                    `json:"stores"`     // list of stores the user has access to
-	Username    string                     `json:"username"`   // store username
-
-	// Deprecated Fields, here for backwards compatibility but may not always hold correct values
-	AccountID      string       `json:"account_id,omitempty"`
-	AccountKeysOld []AccountKey `json:"account_keys,omitempty"`
-	DisplayNameOld string       `json:"displayname,omitempty"`
-	Namespace      string       `json:"namespace,omitempty"`
-	OpenID         string       `json:"openid_identifier,omitempty"`
-	ShortNamespace string       `json:"short_namespace,omitempty"`
-}
-
-// *************************** End AccountResponse ****************************
-
-// ********************* AccountPatchResponse **************************
-// AccountPatchResponse represents the response returned by the account patch API
-type AccountPatchResponse struct {
-	ShortNamespace string `json:"short_namespace"`
-}
-
-// *************************** End AccountPatchResponse ****************************

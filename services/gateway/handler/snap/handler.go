@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/idlab-discover/kebeng/services/gateway/handler/util"
-	"github.com/idlab-discover/kebeng/services/gateway/internal/message"
+	"github.com/idlab-discover/kebeng/services/gateway/internal/model"
 	storepb "github.com/idlab-discover/kebeng/services/store/proto"
 	"github.com/sirupsen/logrus"
 )
@@ -18,7 +18,7 @@ type Handler struct {
 // TODO: Implement this function properly
 // Right now it's just a placeholder to make sure Snapcraft can be installed in the lxc container
 func (h *Handler) RequestStoreDeviceNonce(c *gin.Context) {
-	c.JSON(http.StatusOK, RequestStoreDeviceNonceResponse{Nonce: "this-nonce"})
+	c.JSON(http.StatusOK, model.RequestStoreDeviceNonceResponse{Nonce: "this-nonce"})
 }
 
 // TODO: Implement this function properly
@@ -31,14 +31,14 @@ func (h *Handler) RequestStoreDeviceSessions(c *gin.Context) {
 // Add all the cases for the different refresh actions
 func (h *Handler) RefreshSnap(c *gin.Context) {
 	el := cerror.NewErrorList()
-	var req RefreshSnapRequest
+	var req model.RefreshSnapRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		el.Add(cerror.BadRequest, cerror.FormatBindError(err))
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
 
-	var resp message.RefreshSnapResponses
+	var resp model.RefreshSnapResponses
 	for _, action := range req.Actions {
 		if action.Action == "install" {
 			logrus.Infof("%v", action)
@@ -55,8 +55,8 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 }
 
 // TODO: Implement this function properly
-func (h *Handler) refreshSnapInstall(c *gin.Context, action *Action, el *cerror.ErrorList) *message.RefreshSnapResult {
-	var res message.RefreshSnapResult
+func (h *Handler) refreshSnapInstall(c *gin.Context, action *model.Action, el *cerror.ErrorList) *model.RefreshSnapResult {
+	var res model.RefreshSnapResult
 
 	// Get snap entry -> will return 1 snap entry
 	snapEntries := h.StoreClient.GetEntries(&storepb.GetEntriesRequest{
@@ -102,15 +102,15 @@ func (h *Handler) refreshSnapInstall(c *gin.Context, action *Action, el *cerror.
 	res.InstanceKey = &action.InstanceKey
 	res.SnapId = &snapEntry.Id
 	res.Name = &snapEntry.SnapName
-	res.Snap = &message.RefreshSnap{
+	res.Snap = &model.RefreshSnap{
 		Architectures: &architectures,
 		SnapId:        &snapEntry.Id,
 		Name:          &snapEntry.SnapName,
-		Publisher: &message.Publisher{
+		Publisher: &model.Publisher{
 			Username: publisher.Username,
 			ID:       publisher.Id,
 		},
-		Download: &message.Download{
+		Download: &model.Download{
 			URL:      nil, // TODO: implement
 			Sha3_384: nil, // TODO: implement
 			Size:     nil, // TODO: implement
@@ -126,7 +126,7 @@ func (h *Handler) refreshSnapInstall(c *gin.Context, action *Action, el *cerror.
 
 func (h *Handler) FindSnaps(c *gin.Context) {
 	el := cerror.NewErrorList()
-	var req FindSnapsRequest
+	var req model.FindSnapsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		el.Add(cerror.BadRequest, cerror.FormatBindError(err))
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
@@ -136,7 +136,7 @@ func (h *Handler) FindSnaps(c *gin.Context) {
 
 func (h *Handler) RegisterSnapName(c *gin.Context) {
 	el := cerror.NewErrorList()
-	var req RegisterSnapNameRequest
+	var req model.RegisterSnapNameRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		el.Add(cerror.BadRequest, cerror.FormatBindError(err))
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
@@ -156,7 +156,7 @@ func (h *Handler) RegisterSnapName(c *gin.Context) {
 		statusCode = http.StatusOK
 	}
 
-	c.JSON(statusCode, message.RegisterSnapNameRes{SnapId: resp.Id, SnapName: req.SnapName})
+	c.JSON(statusCode, model.RegisterSnapNameRes{SnapId: resp.Id, SnapName: req.SnapName})
 }
 
 // TODO: Implement this function
@@ -172,7 +172,7 @@ func (h *Handler) RegisterSnapNameDispute(c *gin.Context) {
 
 func (h *Handler) ProcessSnapBuildAssertion(c *gin.Context) {
 	el := cerror.NewErrorList()
-	var req *SnapBuildAssertionRequest
+	var req *model.SnapBuildAssertionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		el.Add(cerror.BadRequest, cerror.FormatBindError(err))
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
