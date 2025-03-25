@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	accClient "github.com/idlab-discover/kebeng/services/account/client"
+	assertionClient "github.com/idlab-discover/kebeng/services/assertion/client"
 	"github.com/idlab-discover/kebeng/services/gateway/handler"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/middleware"
 	storeClient "github.com/idlab-discover/kebeng/services/store/client"
@@ -33,7 +34,13 @@ func main() {
 		logrus.Errorf("could not create store client: %v", err)
 	}
 
-	handler := handler.NewHandler(accountClient, storeClient, cfg)
+	// TODO: don't give pointer back here
+	assertionClient, err := assertionClient.NewAssertionClient(cfg.AssertionServiceHost, cfg.AssertionServicePort)
+	if err != nil {
+		logrus.Errorf("could not create assertion client: %v", err)
+	}
+
+	handler := handler.NewHandler(accountClient, storeClient, *assertionClient, cfg)
 
 	// Setup gin and routes
 	r := gin.Default()
