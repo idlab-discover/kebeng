@@ -10,9 +10,9 @@ $$;
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-create sequence public.snap_entries_id_seq;
+create sequence public.entry_id_seq;
 
-CREATE TABLE IF NOT EXISTS public.snap_entries
+CREATE TABLE IF NOT EXISTS public.entry
 (
     id uuid NOT NULL DEFAULT uuid_generate_v4(),
     created_at timestamp with time zone DEFAULT now(),
@@ -28,19 +28,19 @@ CREATE TABLE IF NOT EXISTS public.snap_entries
     price numeric,
     store text COLLATE pg_catalog."default",
     icon_url text COLLATE pg_catalog."default",
-    CONSTRAINT snap_entries_pkey PRIMARY KEY (id)
+    CONSTRAINT entry_pkey PRIMARY KEY (id)
 )
 
 TABLESPACE pg_default;
 
-ALTER TABLE public.snap_entries
+ALTER TABLE public.entry
     OWNER to manager;
 
--- Index: idx_snap_entries_deleted_at
+-- Index: idx_entry_deleted_at
 
--- DROP INDEX public.idx_snap_entries_deleted_at;
+-- DROP INDEX public.idx_entry_deleted_at;
 
-CREATE INDEX idx_snap_entries_deleted_at
-    ON public.snap_entries USING btree
+CREATE INDEX idx_entry_deleted_at
+    ON public.entry USING btree
     (deleted_at ASC NULLS LAST)
     TABLESPACE pg_default;
