@@ -1,3 +1,3 @@
-drop table if exists snap_tracks;
+drop table if exists track;
 
-drop index if exists idx_snap_tracks_deleted_at;
+drop index if exists idx_track_deleted_at;

@@ -45,7 +45,7 @@ func NewStoreLogic(repo *repositories.SnapsRepository) *StoreLogic {
 // 		return &proto.UploadSnapResponse{Errors: el}, nil
 // 	}
 
-// 	// addSnap() adds snap to snap_entries table
+// 	// addSnap() adds snap to entry table
 // 	_, err3 := s.repo.AddSnap(snapFileName, size, uuid.New()) // uuid.New() is a placeholder for account id that is going to be added later throught the context
 // 	if err3 != nil {
 // 		logrus.Error(err2)

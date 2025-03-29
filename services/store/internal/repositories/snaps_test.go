@@ -1148,7 +1148,7 @@ func TestUpdateRevision(t *testing.T) {
 func mockData(db *sqlx.DB) {
 	// Mock snap entry
 	_, err := db.Exec(`
-		INSERT INTO public.snap_entries (id, private, name, type, confinement, status, price, store, icon_url, account_id)
+		INSERT INTO public.entry (id, private, name, type, confinement, status, price, store, icon_url, account_id)
 		VALUES ($1, false, 'mock-snap', 'application', 'strict', 'active', 0.0, 'mock-store', 'http://mock-icon-url.com', $2);
 	`, mockUUID, mockUUID)
 	if err != nil {
@@ -1157,7 +1157,7 @@ func mockData(db *sqlx.DB) {
 
 	// Mock snap revision
 	_, err = db.Exec(`
-		INSERT INTO public.snap_revisions (id, snap_name, snap_entry_id, build_assertion_filename, sha3_384, sha3_384_encoded, size, sequence_number, architectures, status, version)
+		INSERT INTO public.revision (id, snap_name, entry_id, build_assertion_filename, sha3_384, sha3_384_encoded, size, sequence_number, architectures, status, version)
 		VALUES ($1, 'mock-snap', $2, 'mock-build-assertion', 'mock-sha3-384', 'mock-sha3-384-encoded' ,999, 1, ARRAY['mock-arch'], 'active', '1.0.0');
 	`, mockUUID, mockUUID)
 	if err != nil {
@@ -1166,7 +1166,7 @@ func mockData(db *sqlx.DB) {
 
 	// Mock snap track
 	_, err = db.Exec(`
-		INSERT INTO public.snap_tracks (id, name, snap_entry_id)
+		INSERT INTO public.track (id, name, entry_id)
 		VALUES ($1, 'latest', $2);
 	`, mockUUID, mockUUID)
 	if err != nil {
@@ -1175,7 +1175,7 @@ func mockData(db *sqlx.DB) {
 
 	// Mock snap channel
 	_, err = db.Exec(`
-		INSERT INTO public.snap_channels (id, name, snap_track_id, snap_entry_id, revision_id)
+		INSERT INTO public.channel (id, name, snap_track_id, entry_id, revision_id)
 		VALUES ($1, 'stable', $2, $3, $4);
 	`, mockUUID, mockUUID, mockUUID, mockUUID)
 	if err != nil {
@@ -1184,7 +1184,7 @@ func mockData(db *sqlx.DB) {
 
 	// Mock snap comment
 	_, err = db.Exec(`
-		INSERT INTO public.snap_comments (id, snap_entry_id, author_id, reason, comment)
+		INSERT INTO public.comment (id, entry_id, author_id, reason, comment)
 		VALUES ($1, $2, $3, 'mock-reason', 'mock-comment');
 	`, mockUUID, mockUUID, mockUUID)
 	if err != nil {
@@ -1193,7 +1193,7 @@ func mockData(db *sqlx.DB) {
 
 	// Mock snap upload
 	_, err = db.Exec(`
-		INSERT INTO public.snap_uploads (id, up_down_id, snap_entry_id, filesize, channels)
+		INSERT INTO public.upload (id, up_down_id, entry_id, filesize, channels)
 		VALUES ($1, 'test-up-down-id', $2, 999, ARRAY['latest', 'beta']);
 	`, mockUUID, mockUUID)
 	if err != nil {
