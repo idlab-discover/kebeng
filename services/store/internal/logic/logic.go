@@ -76,11 +76,16 @@ func (s *StoreLogic) RegisterSnapName(ctx context.Context, req *proto.RegisterSn
 		}
 	}
 
+	// TODO: if dryRun is true, but snap name is not registered, what should we return?
+
 	// If dryRun is true, we only check if the snap name is already registered
 	if req.DryRun {
-		return &proto.RegisterSnapNameResponse{SnapName: req.SnapName}, nil // Id will be set to empty string, docs say it should be null, but nil can't be assigned to string -> see later if this is a problem
+		if snapEntry != nil {
+			return &proto.RegisterSnapNameResponse{SnapName: req.SnapName}, nil // Id will be set to empty string, docs say it should be null, but nil can't be assigned to string -> TODO: see later if this is a problem
+		} else {
+			return &proto.RegisterSnapNameResponse{SnapName: ""}, nil // Return an empty string if the snap name is not registered
+		}
 	}
-
 	// If dryRun is false, but snap name is already registered, return an error
 	if snapEntry != nil {
 		el = append(el, &proto.Error{Code: cerror.AlreadyRegistered, Message: "The snap name '" + req.SnapName + "' is already registered."})
