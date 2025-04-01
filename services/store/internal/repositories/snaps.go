@@ -102,7 +102,7 @@ func (sp *SnapsRepository) AddTrack(entryId uuid.UUID, trackName string) (*model
 		Name:        trackName,
 		SnapEntryID: entryId,
 	}
-
+	// If track already exists, this simply returns it
 	query := `
 		INSERT INTO track (name, entry_id)
 		VALUES ($1, $2)
@@ -118,6 +118,7 @@ func (sp *SnapsRepository) AddTrack(entryId uuid.UUID, trackName string) (*model
 
 }
 
+// QUESTION: maybe we can just internaly call this AddEntry -> clearer name?
 func (sp *SnapsRepository) RegisterSnap(snapName string, isPrivate bool) (*models.SnapEntry, *cerror.CustomError) {
 	snapEntry := models.SnapEntry{
 		Name:    snapName,

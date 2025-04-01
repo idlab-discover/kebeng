@@ -85,6 +85,50 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
+func TestAddTrack(t *testing.T) {
+	tests := []struct {
+		name              string
+		snapEntryId       uuid.UUID
+		trackName         string
+		expectError       bool
+		expectedErrorCode string
+	}{
+		{
+			name:        "Success adding track",
+			snapEntryId: mockUUID,
+			trackName:   "mock-track",
+			expectError: false,
+		},
+		{
+			name:        "Succes adding track for already existing track",
+			snapEntryId: mockUUID,
+			trackName:   "latest",
+			expectError: false,
+		},
+		{
+			name:              "Fail adding track for non-existing snap entry",
+			snapEntryId:       uuid.New(),
+			trackName:         "mock-track",
+			expectError:       true,
+			expectedErrorCode: cerror.ResourceNotFound,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp, err := globalRepo.AddTrack(tt.snapEntryId, tt.trackName)
+			if tt.expectError {
+				assert.NotNil(t, err)
+				if err != nil {
+					assert.Equal(t, tt.expectedErrorCode, err.GetCode())
+				}
+			} else {
+				assert.Nil(t, err)
+				assert.NotNil(t, resp)
+			}
+		})
+	}
+}
+
 func TestAddRevision(t *testing.T) {
 	tests := []struct {
 		name              string
@@ -865,53 +909,47 @@ func mockData(db *sqlx.DB) {
 	_, err := db.Exec(`
 		INSERT INTO public.entry (id, private, name, type, confinement, status, price, store, icon_url, account_id)
 		VALUES ($1, false, 'mock-snap', 'application', 'strict', 'active', 0.0, 'mock-store', 'http://mock-icon-url.com', $2);
-	`, mockUUID, mockUUID)
+	`, mockUUID, uuid.New())
 	if err != nil {
 		logrus.Fatalf("failed to insert mock data for snap entry: %v", err)
 	}
 
-	// Mock snap revision
-	_, err = db.Exec(`
-		INSERT INTO public.revision (id, snap_name, entry_id, build_assertion_filename, sha3_384, sha3_384_encoded, size, sequence_number, architectures, status, version)
-		VALUES ($1, 'mock-snap', $2, 'mock-build-assertion', 'mock-sha3-384', 'mock-sha3-384-encoded' ,999, 1, ARRAY['mock-arch'], 'active', '1.0.0');
-	`, mockUUID, mockUUID)
-	if err != nil {
-		logrus.Fatalf("failed to insert mock data for snap revision: %v", err)
-	}
-
 	// Mock snap track
+	trackID := mockUUID
 	_, err = db.Exec(`
 		INSERT INTO public.track (id, name, entry_id)
 		VALUES ($1, 'latest', $2);
-	`, mockUUID, mockUUID)
+	`, trackID, mockUUID)
 	if err != nil {
 		logrus.Fatalf("failed to insert mock data for snap track: %v", err)
 	}
 
 	// Mock snap channel
+	channelID := mockUUID
 	_, err = db.Exec(`
-		INSERT INTO public.channel (id, name, snap_track_id, entry_id, revision_id)
-		VALUES ($1, 'stable', $2, $3, $4);
-	`, mockUUID, mockUUID, mockUUID, mockUUID)
+		INSERT INTO public.channel (id, name, snap_track_id, entry_id)
+		VALUES ($1, 'stable', $2, $3);
+	`, channelID, trackID, mockUUID)
 	if err != nil {
 		logrus.Fatalf("failed to insert mock data for snap channel: %v", err)
+	}
+
+	// Mock snap revision
+	revisionID := mockUUID
+	_, err = db.Exec(`
+		INSERT INTO public.revision (id, snap_name, entry_id, build_assertion_filename, sha3_384, sha3_384_encoded, size, sequence_number, architectures, status, version, snap_track_id, snap_channel_id)
+		VALUES ($1, 'mock-snap', $2, 'mock-build-assertion', 'mock-sha3-384', 'mock-sha3-384-encoded', 999, 1, ARRAY['mock-arch'], 'active', '1.0.0', $3, $4);
+	`, revisionID, mockUUID, trackID, channelID)
+	if err != nil {
+		logrus.Fatalf("failed to insert mock data for snap revision: %v", err)
 	}
 
 	// Mock snap comment
 	_, err = db.Exec(`
 		INSERT INTO public.comment (id, entry_id, author_id, reason, comment)
 		VALUES ($1, $2, $3, 'mock-reason', 'mock-comment');
-	`, mockUUID, mockUUID, mockUUID)
+	`, uuid.New(), mockUUID, uuid.New())
 	if err != nil {
 		logrus.Fatalf("failed to insert mock data for snap comment: %v", err)
-	}
-
-	// Mock snap upload
-	_, err = db.Exec(`
-		INSERT INTO public.upload (id, up_down_id, entry_id, filesize, channels)
-		VALUES ($1, 'test-up-down-id', $2, 999, ARRAY['latest', 'beta']);
-	`, mockUUID, mockUUID)
-	if err != nil {
-		logrus.Fatalf("failed to insert mock data for snap upload: %v", err)
 	}
 }
