@@ -8,6 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// TODO: should get snap path out of database instead of getting it as var
 func LoadTestData(client *minio.Client, minioPath string, snapPaths []string) error {
 	// load an actual snap file here and upload it to minio
 	ok, err := client.BucketExists(context.Background(), "snaps")

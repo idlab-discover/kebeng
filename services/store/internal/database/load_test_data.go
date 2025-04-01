@@ -22,6 +22,8 @@ type TestData struct {
 	SnapComments  []models.SnapComment  `json:"snap_comments"`
 }
 
+// TODO: add channel and track and then remove computing path so that
+// the path can be reconstructed from the database
 func LoadTestData(filePath string, repo repositories.ISnapsRepository) ([]string, error) {
 	logrus.Info("Inserting test data")
 
