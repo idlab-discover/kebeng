@@ -188,35 +188,52 @@ func TestAddTrack(t *testing.T) {
 func TestAddRevision(t *testing.T) {
 	tests := []struct {
 		name              string
-		snapEntry         models.SnapEntry
+		entryId           uuid.UUID
+		trackId           uuid.UUID
+		channelId         uuid.UUID
 		size              uint64
 		expectError       bool
 		expectedErrorCode string
 	}{
 		{
-			name: "Success adding revision",
-			snapEntry: models.SnapEntry{
-				ID:   mockUUID,
-				Name: "mock-snap",
-			},
-			size:        999,
+			name:        "Success adding revision",
+			entryId:     mockUUID,
+			trackId:     mockUUID,
+			channelId:   mockUUID,
+			size:        123456,
 			expectError: false,
 		},
 		{
-			name: "Fail adding revision for non-existing snap entry",
-			snapEntry: models.SnapEntry{
-				ID:   uuid.New(),
-				Name: "nonexistent",
-			},
-			size:              999,
+			name:              "Fail adding revision for non-existing entry",
+			entryId:           uuid.New(),
+			trackId:           mockUUID,
+			channelId:         mockUUID,
+			size:              123456,
+			expectError:       true,
+			expectedErrorCode: cerror.ResourceNotFound,
+		},
+		{
+			name:              "Fail adding revision for non-existing track",
+			entryId:           mockUUID,
+			trackId:           uuid.New(),
+			channelId:         mockUUID,
+			size:              123456,
+			expectError:       true,
+			expectedErrorCode: cerror.ResourceNotFound,
+		},
+		{
+			name:              "Fail adding revision for non-existing channel",
+			entryId:           mockUUID,
+			trackId:           mockUUID,
+			channelId:         uuid.New(),
+			size:              123456,
 			expectError:       true,
 			expectedErrorCode: cerror.ResourceNotFound,
 		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := globalRepo.AddRevision(tt.snapEntry, tt.size)
+			revision, err := globalRepo.AddRevision(tt.entryId, tt.trackId, tt.channelId, tt.size)
 			if tt.expectError {
 				assert.NotNil(t, err)
 				if err != nil {
@@ -224,6 +241,7 @@ func TestAddRevision(t *testing.T) {
 				}
 			} else {
 				assert.Nil(t, err)
+				assert.NotNil(t, revision)
 			}
 		})
 	}
@@ -817,81 +835,7 @@ func TestReleaseSnap(t *testing.T) {
 	}
 }
 
-func TestSetChannelRevision(t *testing.T) {
-	tests := []struct {
-		name              string
-		trackName         string
-		channelName       string
-		revisionID        uuid.UUID
-		snapEntryId       uuid.UUID
-		expectError       bool
-		expectedErrorCode string
-	}{
-		{
-			name:              "Success setting channel revision",
-			trackName:         "latest",
-			channelName:       "stable",
-			revisionID:        mockUUID,
-			snapEntryId:       mockUUID,
-			expectError:       false,
-			expectedErrorCode: "",
-		},
-		{
-			name:              "Fail setting channel revision for non-existing track",
-			trackName:         "nonexistent",
-			channelName:       "stable",
-			revisionID:        mockUUID,
-			snapEntryId:       mockUUID,
-			expectError:       true,
-			expectedErrorCode: cerror.ResourceNotFound,
-		},
-		{
-			name:              "Fail setting channel revision for non-existing channel",
-			trackName:         "latest",
-			channelName:       "nonexistent",
-			revisionID:        mockUUID,
-			snapEntryId:       mockUUID,
-			expectError:       true,
-			expectedErrorCode: cerror.ResourceNotFound,
-		},
-		{
-			name:              "Fail setting channel revision for non-existing revision",
-			trackName:         "latest",
-			channelName:       "stable",
-			revisionID:        uuid.New(),
-			snapEntryId:       mockUUID,
-			expectError:       true,
-			expectedErrorCode: cerror.ResourceNotFound,
-		},
-		{
-			name:              "Fail setting channel revision for non-existing snap entry",
-			trackName:         "latest",
-			channelName:       "stable",
-			revisionID:        mockUUID,
-			snapEntryId:       uuid.New(),
-			expectError:       true,
-			expectedErrorCode: cerror.ResourceNotFound,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			snapTrack, err := globalRepo.SetChannelRevision(tt.trackName, tt.channelName, tt.revisionID, tt.snapEntryId)
-			if tt.expectError {
-				assert.NotNil(t, err)
-				if err != nil {
-					assert.Equal(t, tt.expectedErrorCode, err.GetCode())
-				}
-			} else {
-				assert.Nil(t, err)
-				assert.NotNil(t, snapTrack)
-			}
-		})
-	}
-}
-
 func TestUpdateRevision(t *testing.T) {
-	snapName := "mock-snap"
 	buildAssertionFileName := "mock-build-assertion"
 	sha3_384 := "mock-sha3-384"
 	sha3_384_Encoded := "mock-sha3-384-encoded"
@@ -910,7 +854,6 @@ func TestUpdateRevision(t *testing.T) {
 			name: "Success updating revision",
 			revision: models.SnapRevision{
 				ID:                     mockUUID,
-				SnapName:               &snapName,
 				SnapEntryID:            mockUUID,
 				BuildAssertionFileName: &buildAssertionFileName,
 				SHA3_384:               &sha3_384,
@@ -927,7 +870,6 @@ func TestUpdateRevision(t *testing.T) {
 			name: "Fail updating revision for non-existing revision",
 			revision: models.SnapRevision{
 				ID:                     uuid.New(),
-				SnapName:               &snapName,
 				SnapEntryID:            mockUUID,
 				BuildAssertionFileName: &buildAssertionFileName,
 				SHA3_384:               &sha3_384,
@@ -965,7 +907,7 @@ func mockData(db *sqlx.DB) {
 	_, err := db.Exec(`
 		INSERT INTO public.entry (id, private, name, type, confinement, status, price, store, icon_url, account_id)
 		VALUES ($1, false, 'mock-snap', 'application', 'strict', 'active', 0.0, 'mock-store', 'http://mock-icon-url.com', $2);
-	`, mockUUID, uuid.New())
+	`, mockUUID, mockUUID)
 	if err != nil {
 		logrus.Fatalf("failed to insert mock data for snap entry: %v", err)
 	}
@@ -993,8 +935,8 @@ func mockData(db *sqlx.DB) {
 	// Mock snap revision
 	revisionID := mockUUID
 	_, err = db.Exec(`
-		INSERT INTO public.revision (id, snap_name, entry_id, build_assertion_filename, sha3_384, sha3_384_encoded, size, sequence_number, architectures, status, version, snap_track_id, snap_channel_id)
-		VALUES ($1, 'mock-snap', $2, 'mock-build-assertion', 'mock-sha3-384', 'mock-sha3-384-encoded', 999, 1, ARRAY['mock-arch'], 'active', '1.0.0', $3, $4);
+		INSERT INTO public.revision (id, entry_id, build_assertion_filename, sha3_384, sha3_384_encoded, size, sequence_number, architectures, status, version, snap_track_id, snap_channel_id)
+		VALUES ($1, $2, 'mock-build-assertion', 'mock-sha3-384', 'mock-sha3-384-encoded', 999, 1, ARRAY['mock-arch'], 'active', '1.0.0', $3, $4);
 	`, revisionID, mockUUID, trackID, channelID)
 	if err != nil {
 		logrus.Fatalf("failed to insert mock data for snap revision: %v", err)

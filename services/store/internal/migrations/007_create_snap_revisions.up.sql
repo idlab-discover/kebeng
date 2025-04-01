@@ -6,7 +6,6 @@ CREATE TABLE IF NOT EXISTS public.revision
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now(),
     deleted_at timestamp with time zone,
-    snap_name text COLLATE pg_catalog."default",
     build_assertion_filename text COLLATE pg_catalog."default",
     sha3_384 text COLLATE pg_catalog."default",
     sha3_384_encoded text COLLATE pg_catalog."default",
