@@ -4,7 +4,7 @@
       "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
       "display_name": "John Doe",
       "username": "jdoe",
-      "email": "jdoe@example.com",
+      "email": "test@gmail.com",
       "password_hash": "hashedpassword123",
       "created_at": "2025-04-01T12:34:56Z",
       "updated_at": "2025-04-01T12:34:56Z",

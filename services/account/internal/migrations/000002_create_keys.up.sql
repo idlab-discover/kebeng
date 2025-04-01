@@ -2,7 +2,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 create sequence public.keys_id_seq;
 
-CREATE TABLE IF NOT EXISTS public.keys
+CREATE TABLE IF NOT EXISTS public.key
 (
     id uuid NOT NULL DEFAULT uuid_generate_v4(),
     created_at timestamp with time zone DEFAULT now(),
