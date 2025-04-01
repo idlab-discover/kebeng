@@ -698,7 +698,7 @@ func TestGetKeyBySHA3384(t *testing.T) {
 	encodedPublicKey := "uniqueEncodedPublicKeyTest"
 
 	insertKeyQuery := `
-		INSERT INTO keys (id, name, sha3384, encoded_public_key, account_id, until, created_at, updated_at)
+		INSERT INTO key (id, name, sha3384, encoded_public_key, account_id, until, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 	`
 	_, err = globalDB.ExecContext(context.Background(), insertKeyQuery,
@@ -770,14 +770,14 @@ func TestGetKeysByAccountID(t *testing.T) {
 	}
 	t.Logf("Inserted account: %+v", account)
 
-	// Insert two keys for that account.
+	// Insert two key for that account.
 	keyCreatedAt := time.Now()
 	keyUpdatedAt := time.Now()
 	until := time.Now().AddDate(1, 0, 0)
 	key1ID := uuid.New()
 	key2ID := uuid.New()
 	insertKeyQuery := `
-		INSERT INTO keys (id, name, sha3384, encoded_public_key, account_id, until, created_at, updated_at)
+		INSERT INTO key (id, name, sha3384, encoded_public_key, account_id, until, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 	`
 	_, err = globalDB.ExecContext(context.Background(), insertKeyQuery,
@@ -808,16 +808,16 @@ func TestGetKeysByAccountID(t *testing.T) {
 		t.Fatalf("failed to insert key2: %v", err)
 	}
 
-	// Test case: keys found for the account.
-	t.Run("keys found", func(t *testing.T) {
-		keys, cerr := globalRepo.GetKeysByAccountID(context.Background(), account.ID)
-		assert.Nil(t, cerr, "expected no error when keys exist for account")
-		assert.NotNil(t, keys, "expected keys to be returned")
-		assert.Greater(t, len(keys), 0, "expected at least one key")
-		// Check that both inserted keys are found.
+	// Test case: key found for the account.
+	t.Run("key found", func(t *testing.T) {
+		key, cerr := globalRepo.GetKeysByAccountID(context.Background(), account.ID)
+		assert.Nil(t, cerr, "expected no error when key exist for account")
+		assert.NotNil(t, key, "expected key to be returned")
+		assert.Greater(t, len(key), 0, "expected at least one key")
+		// Check that both inserted key are found.
 		foundKeyOne := false
 		foundKeyTwo := false
-		for _, key := range keys {
+		for _, key := range key {
 			if key.ID == key1ID {
 				foundKeyOne = true
 			}
@@ -829,12 +829,12 @@ func TestGetKeysByAccountID(t *testing.T) {
 		assert.True(t, foundKeyTwo, "expected key2 to be found")
 	})
 
-	// Test case: no keys found for a non-existent account.
-	t.Run("no keys found", func(t *testing.T) {
+	// Test case: no key found for a non-existent account.
+	t.Run("no key found", func(t *testing.T) {
 		nonExistentID := uuid.New() // new account ID that doesn't exist
-		keys, cerr := globalRepo.GetKeysByAccountID(context.Background(), nonExistentID)
-		assert.NotNil(t, cerr, "expected an error when no keys exist for account")
-		assert.Nil(t, keys, "expected keys to be nil when not found")
+		key, cerr := globalRepo.GetKeysByAccountID(context.Background(), nonExistentID)
+		assert.NotNil(t, cerr, "expected an error when no key exist for account")
+		assert.Nil(t, key, "expected key to be nil when not found")
 		// Check that the error code is ResourceNotFound.
 		assert.Equal(t, cerror.ResourceNotFound, cerr.Code)
 	})
@@ -889,7 +889,7 @@ func TestFilterKeys(t *testing.T) {
 	}
 
 	insertKeyQuery := `
-		INSERT INTO keys (id, name, sha3384, encoded_public_key, account_id, until, created_at, updated_at)
+		INSERT INTO key (id, name, sha3384, encoded_public_key, account_id, until, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 	`
 	_, err = globalDB.ExecContext(context.Background(), insertKeyQuery,
@@ -926,7 +926,7 @@ func TestFilterKeys(t *testing.T) {
 	}
 
 	insertQuery := `
-	INSERT INTO keys (id, name, sha3384, encoded_public_key, account_id, until, created_at, updated_at, deleted_at)
+	INSERT INTO key (id, name, sha3384, encoded_public_key, account_id, until, created_at, updated_at, deleted_at)
 	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 	`
 	_, err = globalDB.ExecContext(context.Background(), insertQuery,
