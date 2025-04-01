@@ -1,0 +1,145 @@
+services:
+  gateway:
+    build: 
+      context: ./services/gateway
+      dockerfile: Dockerfile.gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - store_service
+      - account_service
+      - minio
+      - store_db
+      - account_db
+    volumes:
+      - ./services/gateway/config.yaml:/app/config.yaml  # config file
+    environment:
+      - CONFIG_FILE_PATH=/app/config.yaml
+      - TEST_MODE=1
+    restart: always
+    networks: 
+      - kebeng-backend
+
+  store_service:
+    build: 
+      context: ./services/store
+      dockerfile: Dockerfile.store
+    ports:
+      - "8081:8081"
+    depends_on:
+      - store_db
+      - minio
+    volumes:
+      - ./services/store/config.yaml:/app/config.yaml  # config file
+      - ./init-config-example.json:/app/init-config-example.json  # init example
+      - ./services/store/internal/keys/:/app/keys/  # keys needed by store
+      - ./test-data/store:/app/test-data
+    environment:
+      - CONFIG_FILE_PATH=/app/config.yaml
+      - TEST_MODE=1
+    restart: always
+    networks: 
+      - kebeng-backend
+
+  store_db:
+    image: postgres:13
+    restart: always
+    volumes:
+      - store_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=store_db
+      - POSTGRES_USER=kebe_user
+      - POSTGRES_PASSWORD=kebe
+    ports:
+      - "5432:5432"
+    networks: 
+      - kebeng-backend
+
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    volumes:
+      - minio_data:/data
+    restart: always
+    networks: 
+      - kebeng-backend
+
+  account_service:
+    build: 
+      context: ./services/account
+      dockerfile: Dockerfile.account
+    ports:
+      - "8082:8082"
+    depends_on:
+      - account_db
+    volumes:
+      - ./services/account/config.yaml:/app/config.yaml  # config file
+      - ./test-data/account:/app/test-data
+    environment:
+      - CONFIG_FILE_PATH=/app/config.yaml
+      - TEST_MODE=1
+    restart: always
+    networks: 
+      - kebeng-backend
+
+  account_db:
+    image: postgres:13
+    restart: always
+    volumes:
+      - account_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=account_db
+      - POSTGRES_USER=kebe_user
+      - POSTGRES_PASSWORD=kebe
+    ports:
+      - "5433:5432"
+    networks: 
+      - kebeng-backend
+
+  assertion_service:
+    build: 
+      context: ./services/assertion
+      dockerfile: Dockerfile.assertion
+    ports:
+      - "8083:8083"
+    depends_on:
+      - assertion_db
+    volumes:
+      - ./services/assertion/config.yaml:/app/config.yaml  # config file
+      - ./test-data/assertion:/app/test-data
+    environment:
+      - CONFIG_FILE_PATH=/app/config.yaml
+      - TEST_MODE=1
+    restart: always
+    networks: 
+      - kebeng-backend
+
+  assertion_db:
+    image: postgres:13
+    restart: always
+    volumes:
+      - assertion_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=assertion_db
+      - POSTGRES_USER=kebe_user
+      - POSTGRES_PASSWORD=kebe
+    ports:
+      - "5434:5432"
+    networks: 
+      - kebeng-backend
+
+volumes:
+  store_data:
+  minio_data:
+  account_data:
+  assertion_data:
+
+networks:
+  kebeng-backend:
+    driver: bridge

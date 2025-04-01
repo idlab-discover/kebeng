@@ -1,3 +1,3 @@
-DROP TABLE IF EXISTS public.keys;
+DROP TABLE IF EXISTS public.key;
 
-DROP SEQUENCE IF EXISTS public.keys_id_seq;
+DROP SEQUENCE IF EXISTS public.key_id_seq;

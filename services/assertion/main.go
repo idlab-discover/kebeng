@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net"
 
-	database "github.com/idlab-discover/kebeng/services/assertion/internal"
 	"github.com/idlab-discover/kebeng/services/assertion/internal/config"
+	"github.com/idlab-discover/kebeng/services/assertion/internal/database"
 	"github.com/idlab-discover/kebeng/services/assertion/internal/logic"
 	"github.com/idlab-discover/kebeng/services/assertion/internal/repositories"
 	proto "github.com/idlab-discover/kebeng/services/assertion/proto"
@@ -30,6 +30,13 @@ func main() {
 	// start grpc server
 	repo := repositories.NewAssertionRepository(db)
 	assertionService := logic.NewAssertionService(repo, cfg)
+
+	if cfg.TestMode {
+		err := database.LoadTestData(cfg.TestDataFilePath, repo)
+		if err != nil {
+			logrus.Fatalf("Failed to load test data: %v", err)
+		}
+	}
 
 	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", cfg.GRPCHost, cfg.GRPCPort))
 	if err != nil {

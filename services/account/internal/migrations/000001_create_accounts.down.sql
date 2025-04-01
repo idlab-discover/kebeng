@@ -1,3 +1,3 @@
-DROP TABLE IF EXISTS public.accounts;
+DROP TABLE IF EXISTS public.account;
 
-DROP SEQUENCE IF EXISTS public.accounts_id_seq;
+DROP SEQUENCE IF EXISTS public.account_id_seq;

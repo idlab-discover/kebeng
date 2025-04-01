@@ -10,9 +10,9 @@ $$;
 -- Enable the uuid-ossp extension for uuid_generate_v4()
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-create sequence public.accounts_id_seq;
+create sequence public.account_id_seq;
 
-CREATE TABLE IF NOT EXISTS public.accounts
+CREATE TABLE IF NOT EXISTS public.account
 (
     id UUID NOT NULL DEFAULT uuid_generate_v4(),
     created_at TIMESTAMPTZ DEFAULT now(),
@@ -30,13 +30,13 @@ CREATE TABLE IF NOT EXISTS public.accounts
 )
 TABLESPACE pg_default;
 
-ALTER TABLE public.accounts
+ALTER TABLE public.account
     OWNER to manager;
 -- Index: idx_accounts_deleted_at
 
 -- DROP INDEX public.idx_accounts_deleted_at;
 
 CREATE INDEX idx_accounts_deleted_at
-    ON public.accounts USING btree
+    ON public.account USING btree
     (deleted_at ASC NULLS LAST)
     TABLESPACE pg_default;

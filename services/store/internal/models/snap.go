@@ -29,112 +29,108 @@ const (
 	COMMENT  = "comment"
 )
 
-// Entry = base information, first entry point, global information...
+// SnapEntry represents the base information for a snap.
 type SnapEntry struct {
-	ID             uuid.UUID  `db:"id"`
-	CreatedAt      time.Time  `db:"created_at"`
-	UpdatedAt      time.Time  `db:"updated_at"`
-	DeletedAt      *time.Time `db:"deleted_at"`
-	Name           string     `json:"name" db:"name"`
-	Revisions      []*SnapRevision
-	Type           *string `json:"type" db:"type"`
-	Confinement    *string `json:"confinement" db:"confinement"`
-	Base           *string `json:"base" db:"base"`
-	Private        *bool   `json:"private" db:"private"`
-	Uploads        []*SnapUpload
-	AccountID      uuid.UUID      `db:"account_id"`
-	Status         *string        `db:"status"`   // NOT YET IMPLEMENTED
-	Price          *float64       `db:"price"`    // NOT YET IMPLEMENTED
-	Store          *string        `db:"store"`    // NOT YET IMPLEMENTED
-	IconURL        *string        `db:"icon_url"` // NOT YET IMPLEMENTED
-	LatestComments []*SnapComment // NOT YET IMPLEMENTED
-
+	ID             uuid.UUID       `json:"id" db:"id"`
+	CreatedAt      time.Time       `json:"created_at" db:"created_at"`
+	UpdatedAt      time.Time       `json:"updated_at" db:"updated_at"`
+	DeletedAt      *time.Time      `json:"deleted_at,omitempty" db:"deleted_at"`
+	Name           string          `json:"name" db:"name"`
+	Revisions      []*SnapRevision `json:"revisions,omitempty"`
+	Type           *string         `json:"type,omitempty" db:"type"`
+	Confinement    *string         `json:"confinement,omitempty" db:"confinement"`
+	Base           *string         `json:"base,omitempty" db:"base"`
+	Private        *bool           `json:"private,omitempty" db:"private"`
+	Uploads        []*SnapUpload   `json:"uploads,omitempty"`
+	AccountID      uuid.UUID       `json:"account_id" db:"account_id"`
+	Status         *string         `json:"status,omitempty" db:"status"`
+	Price          *float64        `json:"price,omitempty" db:"price"`
+	Store          *string         `json:"store,omitempty" db:"store"`
+	IconURL        *string         `json:"icon_url,omitempty" db:"icon_url"`
+	LatestComments []*SnapComment  `json:"latest_comments,omitempty"`
 }
 
-// Track = latest, or things like 2.0, 2.1, 2.2
+// SnapTrack represents a track (e.g., versions like 2.0, 2.1, 2.2).
 type SnapTrack struct {
-	ID          uuid.UUID  `db:"id"`
-	CreatedAt   time.Time  `db:"created_at"`
-	UpdatedAt   time.Time  `db:"updated_at"`
-	DeletedAt   *time.Time `db:"deleted_at"`
-	Name        string     `json:"name" db:"name"`
-	SnapEntryID uuid.UUID  `db:"entry_id"`
-	SnapEntry   *SnapEntry
-	Channels    []*SnapChannel
+	ID          uuid.UUID      `json:"id" db:"id"`
+	CreatedAt   time.Time      `json:"created_at" db:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at" db:"updated_at"`
+	DeletedAt   *time.Time     `json:"deleted_at,omitempty" db:"deleted_at"`
+	Name        string         `json:"name" db:"name"`
+	SnapEntryID uuid.UUID      `json:"snap_entry_id" db:"entry_id"`
+	SnapEntry   *SnapEntry     `json:"snap_entry,omitempty"`
+	Channels    []*SnapChannel `json:"channels,omitempty"`
 }
 
-// Channel = stable, beta, edge, candidate
+// SnapChannel represents a channel (e.g., stable, beta, edge, candidate).
 type SnapChannel struct {
-	ID          uuid.UUID  `db:"id"`
-	CreatedAt   time.Time  `db:"created_at"`
-	UpdatedAt   time.Time  `db:"updated_at"`
-	DeletedAt   *time.Time `db:"deleted_at"`
-	Name        string     `json:"name" db:"name"`
-	SnapTrackID uuid.UUID  `db:"snap_track_id"`
-	SnapEntryID uuid.UUID  `db:"entry_id"`
-	SnapEntry   *SnapEntry
-
-	RevisionID uuid.UUID `db:"revision_id"`
-	Revision   *SnapRevision
-
-	Branches []*SnapBranch
+	ID          uuid.UUID     `json:"id" db:"id"`
+	CreatedAt   time.Time     `json:"created_at" db:"created_at"`
+	UpdatedAt   time.Time     `json:"updated_at" db:"updated_at"`
+	DeletedAt   *time.Time    `json:"deleted_at,omitempty" db:"deleted_at"`
+	Name        string        `json:"name" db:"name"`
+	SnapTrackID uuid.UUID     `json:"snap_track_id" db:"snap_track_id"`
+	SnapEntryID uuid.UUID     `json:"snap_entry_id" db:"entry_id"`
+	SnapEntry   *SnapEntry    `json:"snap_entry,omitempty"`
+	RevisionID  uuid.UUID     `json:"revision_id" db:"revision_id"`
+	Revision    *SnapRevision `json:"revision,omitempty"`
+	Branches    []*SnapBranch `json:"branches,omitempty"`
 }
 
-// keep this for later... maybe
+// SnapBranch represents a branch (for example, "beta") of a snap.
 type SnapBranch struct {
-	ID          uuid.UUID `db:"id"`
-	Name        string    `json:"name" db:"name"`
-	SnapRiskID  uuid.UUID `db:"snap_risk_id"`
-	SnapEntryID uuid.UUID `db:"entry_id"`
-	SnapEntry   *SnapEntry
-
-	RevisionID uuid.UUID `db:"revision_id"`
-	Revision   *SnapRevision
+	ID          uuid.UUID     `json:"id" db:"id"`
+	Name        string        `json:"name" db:"name"`
+	SnapRiskID  uuid.UUID     `json:"snap_risk_id" db:"snap_risk_id"`
+	SnapEntryID uuid.UUID     `json:"snap_entry_id" db:"entry_id"`
+	SnapEntry   *SnapEntry    `json:"snap_entry,omitempty"`
+	RevisionID  uuid.UUID     `json:"revision_id" db:"revision_id"`
+	Revision    *SnapRevision `json:"revision,omitempty"`
 }
 
-// Revision = a specific version of a snap, not necessarily a release
+// SnapRevision represents a specific version (revision) of a snap.
 type SnapRevision struct {
-	ID                     uuid.UUID      `db:"id"`
-	CreatedAt              time.Time      `db:"created_at"`
-	UpdatedAt              time.Time      `db:"updated_at"`
-	DeletedAt              *time.Time     `db:"deleted_at"`
-	SnapName               *string        `db:"snap_name"`
-	BuildAssertionFileName *string        `db:"build_assertion_filename"`
-	SnapEntryID            uuid.UUID      `db:"entry_id"`
-	SHA3_384               *string        `db:"sha3_384"`
-	SHA3_384_Encoded       *string        `db:"sha3_384_encoded"`
-	Size                   *uint64        `db:"size"`
-	SequenceNumber         *uint          `db:"sequence_number"`
-	Architectures          pq.StringArray `db:"architectures"` // TODO: check if this is supposed to be stored here
-	Status                 *string        `db:"status"`
-	Version                *string        `db:"version"`
+	ID                     uuid.UUID      `json:"id" db:"id"`
+	CreatedAt              time.Time      `json:"created_at" db:"created_at"`
+	UpdatedAt              time.Time      `json:"updated_at" db:"updated_at"`
+	DeletedAt              *time.Time     `json:"deleted_at,omitempty" db:"deleted_at"`
+	SnapName               *string        `json:"snap_name,omitempty" db:"snap_name"`
+	BuildAssertionFileName *string        `json:"build_assertion_filename,omitempty" db:"build_assertion_filename"`
+	SnapEntryID            uuid.UUID      `json:"snap_entry_id" db:"entry_id"`
+	SHA3_384               *string        `json:"sha3_384,omitempty" db:"sha3_384"`
+	SHA3_384_Encoded       *string        `json:"sha3_384_encoded,omitempty" db:"sha3_384_encoded"`
+	Size                   *uint64        `json:"size,omitempty" db:"size"`
+	SequenceNumber         *uint          `json:"sequence_number,omitempty" db:"sequence_number"`
+	Architectures          pq.StringArray `json:"architectures,omitempty" db:"architectures"`
+	Status                 *string        `json:"status,omitempty" db:"status"`
+	Version                *string        `json:"version,omitempty" db:"version"`
 }
 
-// SnapUpload = a specific upload of a snap, with a specific file, info about file, etc
+// SnapUpload represents a specific upload of a snap.
 type SnapUpload struct {
-	ID        uuid.UUID  `db:"id"`
-	CreatedAt time.Time  `db:"created_at"`
-	UpdatedAt time.Time  `db:"updated_at"`
-	DeletedAt *time.Time `db:"deleted_at"`
-	UpDownID  string     `db:"up_down_id"`
-	Filesize  uint       `db:"filesize"`
-	// Channels is a comma-separated string of channels
-	Channels    pq.StringArray `db:"channels"`
-	SnapEntryID uuid.UUID      `db:"entry_id"`
-	SnapEntry   *SnapEntry
+	ID          uuid.UUID      `json:"id" db:"id"`
+	CreatedAt   time.Time      `json:"created_at" db:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at" db:"updated_at"`
+	DeletedAt   *time.Time     `json:"deleted_at,omitempty" db:"deleted_at"`
+	UpDownID    string         `json:"up_down_id" db:"up_down_id"`
+	Filesize    uint           `json:"filesize" db:"filesize"`
+	Channels    pq.StringArray `json:"channels" db:"channels"`
+	SnapEntryID uuid.UUID      `json:"snap_entry_id" db:"entry_id"`
+	SnapEntry   *SnapEntry     `json:"snap_entry,omitempty"`
 }
 
+// SnapComment represents a comment on a snap.
 type SnapComment struct {
-	ID          uuid.UUID  `db:"id"`
-	CreatedAt   time.Time  `db:"created_at"`
-	UpdatedAt   time.Time  `db:"updated_at"`
-	DeletedAt   *time.Time `db:"deleted_at"`
-	AuthorID    uuid.UUID  `db:"author_id"`
-	Since       time.Time  `db:"since"`
-	Reason      string     `json:"reason"`
-	Comment     string     `json:"comment"`
-	SnapEntryID uuid.UUID  `db:"entry_id"`
-	SnapEntry   *SnapEntry
+	ID          uuid.UUID  `json:"id" db:"id"`
+	CreatedAt   time.Time  `json:"created_at" db:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at" db:"updated_at"`
+	DeletedAt   *time.Time `json:"deleted_at,omitempty" db:"deleted_at"`
+	AuthorID    uuid.UUID  `json:"author_id" db:"author_id"`
+	Since       time.Time  `json:"since" db:"since"`
+	Reason      string     `json:"reason" db:"reason"`
+	Comment     string     `json:"comment" db:"comment"`
+	SnapEntryID uuid.UUID  `json:"snap_entry_id" db:"entry_id"`
+	SnapEntry   *SnapEntry `json:"snap_entry,omitempty"`
 }
 
 func (se *SnapEntry) ToStoreSnap(snapRevision *SnapRevision) (*responses.StoreSnap, error) {
