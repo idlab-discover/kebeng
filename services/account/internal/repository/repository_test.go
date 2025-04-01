@@ -17,8 +17,8 @@ import (
 
 	_ "github.com/golang-migrate/migrate/v4/source/file" // needed for file source
 
-	accountDB "github.com/idlab-discover/kebeng/services/account/internal"
 	"github.com/idlab-discover/kebeng/services/account/internal/config"
+	accountDB "github.com/idlab-discover/kebeng/services/account/internal/database"
 	"github.com/idlab-discover/kebeng/services/account/internal/models"
 	"github.com/idlab-discover/kebeng/services/account/internal/repository"
 )
