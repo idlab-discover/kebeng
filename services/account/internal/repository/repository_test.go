@@ -211,7 +211,7 @@ func TestUpdateAccount(t *testing.T) {
 	}
 
 	insertQuery := `
-		INSERT INTO accounts (id, display_name, username, email, password_hash, created_at, updated_at)
+		INSERT INTO account (id, display_name, username, email, password_hash, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 	`
 	_, err := globalDB.ExecContext(context.Background(), insertQuery,
@@ -301,7 +301,7 @@ func TestDeleteAccount(t *testing.T) {
 	}
 
 	insertQuery := `
-		INSERT INTO accounts (id, display_name, username, email, password_hash, created_at, updated_at)
+		INSERT INTO account (id, display_name, username, email, password_hash, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 	`
 	_, err := globalDB.ExecContext(context.Background(), insertQuery,
@@ -323,7 +323,7 @@ func TestDeleteAccount(t *testing.T) {
 		assert.Nil(t, cerr, "expected no error when deleting an existing account")
 
 		var count int
-		err := globalDB.GetContext(context.Background(), &count, "SELECT COUNT(*) FROM accounts WHERE id = $1", original.ID)
+		err := globalDB.GetContext(context.Background(), &count, "SELECT COUNT(*) FROM account WHERE id = $1", original.ID)
 		assert.NoError(t, err, "failed to count rows")
 		assert.Equal(t, 0, count, "account should be deleted")
 	})
@@ -350,7 +350,7 @@ func TestGetAccountByEmail(t *testing.T) {
 	}
 
 	insertQuery := `
-		INSERT INTO accounts (id, display_name, username, email, password_hash, created_at, updated_at)
+		INSERT INTO account (id, display_name, username, email, password_hash, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 	`
 	_, err := globalDB.ExecContext(context.Background(), insertQuery,
@@ -442,7 +442,7 @@ func TestGetAccountByID(t *testing.T) {
 	}
 
 	insertQuery := `
-		INSERT INTO accounts (id, display_name, username, email, password_hash, created_at, updated_at)
+		INSERT INTO account (id, display_name, username, email, password_hash, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 	`
 	_, err := globalDB.ExecContext(context.Background(), insertQuery,
@@ -525,7 +525,7 @@ func TestGetAccountByUsername(t *testing.T) {
 	}
 
 	insertQuery := `
-		INSERT INTO accounts (id, display_name, username, email, password_hash, created_at, updated_at)
+		INSERT INTO account (id, display_name, username, email, password_hash, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 	`
 	_, err := globalDB.ExecContext(context.Background(), insertQuery,
@@ -604,7 +604,7 @@ func TestAddKeyToAccountByEmail(t *testing.T) {
 	}
 
 	insertAccountQuery := `
-		INSERT INTO accounts (id, display_name, username, email, password_hash, created_at, updated_at)
+		INSERT INTO account (id, display_name, username, email, password_hash, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 	`
 	_, err := globalDB.ExecContext(context.Background(), insertAccountQuery,
@@ -671,7 +671,7 @@ func TestGetKeyBySHA3384(t *testing.T) {
 	}
 
 	insertAccountQuery := `
-		INSERT INTO accounts (id, display_name, username, email, password_hash, created_at, updated_at)
+		INSERT INTO account (id, display_name, username, email, password_hash, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 	`
 	_, err := globalDB.ExecContext(context.Background(), insertAccountQuery,
@@ -753,7 +753,7 @@ func TestGetKeysByAccountID(t *testing.T) {
 	}
 
 	insertAccountQuery := `
-		INSERT INTO accounts (id, display_name, username, email, password_hash, created_at, updated_at)
+		INSERT INTO account (id, display_name, username, email, password_hash, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 	`
 	_, err := globalDB.ExecContext(context.Background(), insertAccountQuery,
@@ -855,7 +855,7 @@ func TestFilterKeys(t *testing.T) {
 		UpdatedAt:    &accUpdatedAt,
 	}
 	insertAccountQuery := `
-		INSERT INTO accounts (id, display_name, username, email, password_hash, created_at, updated_at)
+		INSERT INTO account (id, display_name, username, email, password_hash, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 	`
 	_, err := globalDB.ExecContext(context.Background(), insertAccountQuery,
@@ -1066,7 +1066,7 @@ func TestFilterAccounts(t *testing.T) {
 		Validation:   &validation,
 	}
 	insertQuery := `
-		INSERT INTO accounts (id, display_name, username, email, password_hash, created_at, updated_at, validation)
+		INSERT INTO account (id, display_name, username, email, password_hash, created_at, updated_at, validation)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 	`
 	_, err := globalDB.ExecContext(context.Background(), insertQuery,
@@ -1098,7 +1098,7 @@ func TestFilterAccounts(t *testing.T) {
 		Validation:   &validation,
 	}
 	insertQuery = `
-		INSERT INTO accounts (id, display_name, username, email, password_hash, created_at, updated_at, deleted_at, validation)
+		INSERT INTO account (id, display_name, username, email, password_hash, created_at, updated_at, deleted_at, validation)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 	`
 	_, err = globalDB.ExecContext(context.Background(), insertQuery,
