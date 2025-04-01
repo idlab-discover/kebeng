@@ -1,25 +1,25 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-create table snap_channels
+create table channel
 (
     id uuid NOT NULL DEFAULT uuid_generate_v4(),
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now(),
     deleted_at timestamp with time zone,
     name          text, -- eg. "stable"
-    snap_entry_id uuid
-        constraint fk_snap_channels_snap_entry
-            references snap_entries,
+    entry_id uuid
+        constraint fk_channel_entry
+            references entry,
     snap_track_id uuid
-        constraint fk_snap_tracks_channels
-            references snap_tracks,
+        constraint fk_track_channels
+            references track,
     revision_id   uuid
-        constraint fk_snap_channels_revision
-            references snap_revisions,
+        constraint fk_channel_revision
+            references revision,
 
-    CONSTRAINT snap_channels_pkey PRIMARY KEY (id)
+    CONSTRAINT channel_pkey PRIMARY KEY (id)
 );
 
-create index idx_snap_channels_deleted_at
-    on snap_channels (deleted_at);
+create index idx_channel_deleted_at
+    on channel (deleted_at);
 

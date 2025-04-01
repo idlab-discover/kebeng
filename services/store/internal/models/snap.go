@@ -58,7 +58,7 @@ type SnapTrack struct {
 	UpdatedAt   time.Time  `db:"updated_at"`
 	DeletedAt   *time.Time `db:"deleted_at"`
 	Name        string     `json:"name" db:"name"`
-	SnapEntryID uuid.UUID  `db:"snap_entry_id"`
+	SnapEntryID uuid.UUID  `db:"entry_id"`
 	SnapEntry   *SnapEntry
 	Channels    []*SnapChannel
 }
@@ -71,7 +71,7 @@ type SnapChannel struct {
 	DeletedAt   *time.Time `db:"deleted_at"`
 	Name        string     `json:"name" db:"name"`
 	SnapTrackID uuid.UUID  `db:"snap_track_id"`
-	SnapEntryID uuid.UUID  `db:"snap_entry_id"`
+	SnapEntryID uuid.UUID  `db:"entry_id"`
 	SnapEntry   *SnapEntry
 
 	RevisionID uuid.UUID `db:"revision_id"`
@@ -85,7 +85,7 @@ type SnapBranch struct {
 	ID          uuid.UUID `db:"id"`
 	Name        string    `json:"name" db:"name"`
 	SnapRiskID  uuid.UUID `db:"snap_risk_id"`
-	SnapEntryID uuid.UUID `db:"snap_entry_id"`
+	SnapEntryID uuid.UUID `db:"entry_id"`
 	SnapEntry   *SnapEntry
 
 	RevisionID uuid.UUID `db:"revision_id"`
@@ -100,7 +100,7 @@ type SnapRevision struct {
 	DeletedAt              *time.Time     `db:"deleted_at"`
 	SnapName               *string        `db:"snap_name"`
 	BuildAssertionFileName *string        `db:"build_assertion_filename"`
-	SnapEntryID            uuid.UUID      `db:"snap_entry_id"`
+	SnapEntryID            uuid.UUID      `db:"entry_id"`
 	SHA3_384               *string        `db:"sha3_384"`
 	SHA3_384_Encoded       *string        `db:"sha3_384_encoded"`
 	Size                   *uint64        `db:"size"`
@@ -120,7 +120,7 @@ type SnapUpload struct {
 	Filesize  uint       `db:"filesize"`
 	// Channels is a comma-separated string of channels
 	Channels    pq.StringArray `db:"channels"`
-	SnapEntryID uuid.UUID      `db:"snap_entry_id"`
+	SnapEntryID uuid.UUID      `db:"entry_id"`
 	SnapEntry   *SnapEntry
 }
 
@@ -133,7 +133,7 @@ type SnapComment struct {
 	Since       time.Time  `db:"since"`
 	Reason      string     `json:"reason"`
 	Comment     string     `json:"comment"`
-	SnapEntryID uuid.UUID  `db:"snap_entry_id"`
+	SnapEntryID uuid.UUID  `db:"entry_id"`
 	SnapEntry   *SnapEntry
 }
 

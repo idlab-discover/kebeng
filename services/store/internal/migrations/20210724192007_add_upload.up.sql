@@ -1,6 +1,6 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-CREATE TABLE IF NOT EXISTS public.snap_uploads
+CREATE TABLE IF NOT EXISTS public.upload
 (
     id uuid NOT NULL DEFAULT uuid_generate_v4(),
     created_at timestamp with time zone DEFAULT now(),
@@ -8,14 +8,14 @@ CREATE TABLE IF NOT EXISTS public.snap_uploads
     deleted_at timestamp with time zone,
     up_down_id text COLLATE pg_catalog."default",
     filesize bigint,
-    snap_entry_id uuid,
+    entry_id uuid,
     channels text[],
-    CONSTRAINT snap_uploads_pkey PRIMARY KEY (id),
-    CONSTRAINT fk_snap_entries_uploads FOREIGN KEY (snap_entry_id)
-        REFERENCES public.snap_entries (id) MATCH SIMPLE
+    CONSTRAINT upload_pkey PRIMARY KEY (id),
+    CONSTRAINT fk_entry_uploads FOREIGN KEY (entry_id)
+        REFERENCES public.entry (id) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE NO ACTION
 ) TABLESPACE pg_default;
 
-ALTER TABLE public.snap_uploads
+ALTER TABLE public.upload
     OWNER to manager;

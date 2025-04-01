@@ -1,3 +1,3 @@
-DROP TABLE IF EXISTS public.snap_revisions;
+DROP TABLE IF EXISTS public.revision;
 
-DROP SEQUENCE IF EXISTS public.snap_revisions_id_seq;
+DROP SEQUENCE IF EXISTS public.revision_id_seq;
