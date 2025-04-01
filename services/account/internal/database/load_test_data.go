@@ -18,6 +18,11 @@ type TestData struct {
 }
 
 func LoadTestData(filePath string, repo repository.IAccountRepository) error {
+	// check if file exists
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		logrus.Warnf("Test data file does not exist: %s", filePath)
+		return nil
+	}
 	file, err := os.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to open test data file: %v", err)
