@@ -1,1 +1,1 @@
--- ALTER TABLE accounts DROP COLUMN password;
+-- ALTER TABLE account DROP COLUMN password;

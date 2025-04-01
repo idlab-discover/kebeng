@@ -9,14 +9,16 @@ import (
 )
 
 type Config struct {
-	DBHost        string `mapstructure:"db_host" yaml:"db_host"`
-	DBPort        int    `mapstructure:"db_port" yaml:"db_port"`
-	DBUser        string `mapstructure:"db_user" yaml:"db_user"`
-	DBPassword    string `mapstructure:"db_password" yaml:"db_password"`
-	DBName        string `mapstructure:"db_name" yaml:"db_name"`
-	GRPCHost      string `mapstructure:"grpc_host" yaml:"grpc_host"`
-	GRPCPort      int    `mapstructure:"grpc_port" yaml:"grpc_port"`
-	MigrationPath string `mapstructure:"migration_path" yaml:"migration_path"`
+	DBHost           string `mapstructure:"db_host" yaml:"db_host"`
+	DBPort           int    `mapstructure:"db_port" yaml:"db_port"`
+	DBUser           string `mapstructure:"db_user" yaml:"db_user"`
+	DBPassword       string `mapstructure:"db_password" yaml:"db_password"`
+	DBName           string `mapstructure:"db_name" yaml:"db_name"`
+	GRPCHost         string `mapstructure:"grpc_host" yaml:"grpc_host"`
+	GRPCPort         int    `mapstructure:"grpc_port" yaml:"grpc_port"`
+	MigrationPath    string `mapstructure:"migration_path" yaml:"migration_path"`
+	TestMode         bool
+	TestDataFilePath string `mapstructure:"test_data_file_path" yaml:"test_data_file_path"`
 }
 
 func LoadConfig() (*Config, error) {
@@ -36,6 +38,12 @@ func LoadConfig() (*Config, error) {
 	cfg := &Config{}
 	if err := viper.Unmarshal(cfg); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %v", err)
+	}
+
+	testMode := os.Getenv("TEST_MODE")
+	if testMode == "1" {
+		logrus.Info("running in test mode")
+		cfg.TestMode = true
 	}
 
 	logrus.Infof("loaded config: %+v", cfg)

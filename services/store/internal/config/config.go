@@ -23,6 +23,10 @@ type Config struct {
 	MinioSecretKey string `mapstructure:"minio_secret_key" yaml:"minio_secret"`
 	MinioHost      string `mapstructure:"minio_host" yaml:"minio_host"`
 	MinioSecure    bool   `mapstructure:"minio_secure" yaml:"minio_secure"`
+
+	TestMode          bool
+	TestDataFilePath  string `mapstructure:"test_data_file_path" yaml:"test_data_file_path"`
+	TestDataMinioPath string `mapstructure:"test_data_minio_path" yaml:"test_data_minio_path"`
 }
 
 func LoadConfig() (*Config, error) {
@@ -42,6 +46,12 @@ func LoadConfig() (*Config, error) {
 	cfg := &Config{}
 	if err := viper.Unmarshal(cfg); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %v", err)
+	}
+
+	testMode := os.Getenv("TEST_MODE")
+	if testMode == "1" {
+		logrus.Info("running in test mode")
+		cfg.TestMode = true
 	}
 
 	logrus.Infof("loaded config: %+v", cfg)

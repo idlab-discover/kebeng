@@ -9,9 +9,10 @@ import (
 	"strings"
 
 	"github.com/idlab-discover/kebeng/pkg/crypto"
-	database "github.com/idlab-discover/kebeng/services/store/internal"
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
+	"github.com/idlab-discover/kebeng/services/store/internal/database"
 	logic "github.com/idlab-discover/kebeng/services/store/internal/logic"
+	"github.com/idlab-discover/kebeng/services/store/internal/objectstore"
 	repositories "github.com/idlab-discover/kebeng/services/store/internal/repositories"
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
 	"github.com/minio/minio-go/v7"
@@ -57,10 +58,25 @@ func main() {
 
 	makeBucketAndAddKey(minioClient, "root", cfg.RootKeyPath, "private-key.pem")
 	makeBucketAndAddKey(minioClient, "generic", cfg.GenericKeyPath, "private-key.pem")
+	minioClient.MakeBucket(context.Background(), "snaps", minio.MakeBucketOptions{})
 
 	// start grpc server
 	repo := repositories.NewSnapsRepository(db)
 	storeLogic := logic.NewStoreLogic(repo)
+
+	if cfg.TestMode {
+		logrus.Infof("Running in test mode, using test data file: %s", cfg.TestDataFilePath)
+		snapPaths, err := database.LoadTestData(cfg.TestDataFilePath, repo)
+		if err != nil {
+			logrus.Fatalf("Failed to load test data: %v", err)
+		}
+
+		logrus.Infof("Loaded test data, uploading to minio: %s", cfg.TestDataMinioPath)
+		err = objectstore.LoadTestData(minioClient, cfg.TestDataMinioPath, snapPaths)
+		if err != nil {
+			logrus.Fatalf("Failed to load test data to minio: %v", err)
+		}
+	}
 
 	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", cfg.GRPCHost, cfg.GRPCPort))
 	if err != nil {

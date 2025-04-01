@@ -43,11 +43,11 @@ func NewAccountRepository(db *sqlx.DB) *AccountRepository {
 func (a *AccountRepository) CreateAccount(ctx context.Context, account *models.Account) (*models.Account, *cerror.CustomError) {
 	resp := &models.Account{}
 	query := `
-        INSERT INTO accounts (display_name, username, email, password_hash, updated_at)
-        VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO account (display_name, username, email, password_hash, updated_at, validation)
+        VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING id, display_name, username, email, password_hash, validation, created_at, updated_at, deleted_at
     `
-	err := a.db.Get(resp, query, account.DisplayName, account.Username, account.Email, account.PasswordHash, account.UpdatedAt)
+	err := a.db.Get(resp, query, account.DisplayName, account.Username, account.Email, account.PasswordHash, account.UpdatedAt, account.Validation)
 	if err != nil {
 		logrus.Error(err)
 		return nil, cerror.ConvertError(err, fmt.Sprintf("could not create account with email '%s'", account.Email))
@@ -58,7 +58,7 @@ func (a *AccountRepository) CreateAccount(ctx context.Context, account *models.A
 func (a *AccountRepository) UpdateAccount(ctx context.Context, account *models.Account) (*models.Account, *cerror.CustomError) {
 	resp := &models.Account{}
 	query := `
-        UPDATE accounts
+        UPDATE account
         SET display_name    = $1,
             username        = $2,
             email           = $3,
@@ -77,7 +77,7 @@ func (a *AccountRepository) UpdateAccount(ctx context.Context, account *models.A
 }
 
 func (a *AccountRepository) DeleteAccount(ctx context.Context, accountID uuid.UUID) *cerror.CustomError {
-	query := `DELETE FROM accounts WHERE id = $1`
+	query := `DELETE FROM account WHERE id = $1`
 	_, err := a.db.ExecContext(ctx, query, accountID)
 	if err != nil {
 		logrus.Error(err)
@@ -88,7 +88,7 @@ func (a *AccountRepository) DeleteAccount(ctx context.Context, accountID uuid.UU
 
 func (a *AccountRepository) GetAccountByEmail(ctx context.Context, email string, associations []string) (*models.Account, *cerror.CustomError) {
 	var account models.Account
-	query := `SELECT * FROM accounts WHERE email = $1`
+	query := `SELECT * FROM account WHERE email = $1`
 
 	err := a.db.Get(&account, query, email)
 	if err != nil {
@@ -107,7 +107,7 @@ func (a *AccountRepository) GetAccountByEmail(ctx context.Context, email string,
 
 func (a *AccountRepository) GetAccountByID(ctx context.Context, accountID uuid.UUID, associations []string) (*models.Account, *cerror.CustomError) {
 	var account models.Account
-	query := `SELECT * FROM accounts WHERE id = $1`
+	query := `SELECT * FROM account WHERE id = $1`
 
 	err := a.db.Get(&account, query, accountID)
 	if err != nil {
@@ -125,7 +125,7 @@ func (a *AccountRepository) GetAccountByID(ctx context.Context, accountID uuid.U
 
 func (a *AccountRepository) GetAccountByUsername(ctx context.Context, username string, associations []string) (*models.Account, *cerror.CustomError) {
 	var account models.Account
-	query := `SELECT * FROM accounts WHERE username = $1`
+	query := `SELECT * FROM account WHERE username = $1`
 
 	err := a.db.Get(&account, query, username)
 	if err != nil {
@@ -158,7 +158,7 @@ func (a *AccountRepository) AddKeyToAccountByEmail(ctx context.Context, name, sh
 	}
 
 	query := `
-	INSERT INTO keys (name, sha3384, encoded_public_key, account_id, until)
+	INSERT INTO key (name, sha3384, encoded_public_key, account_id, until)
 	VALUES ($1, $2, $3, $4, $5)
         RETURNING id, name, sha3384, encoded_public_key, account_id, until, created_at, updated_at, deleted_at
     `
@@ -174,7 +174,7 @@ func (a *AccountRepository) AddKeyToAccountByEmail(ctx context.Context, name, sh
 
 func (a *AccountRepository) GetKeyBySHA3384(ctx context.Context, sha3384 string) (*models.Key, *cerror.CustomError) {
 	var key models.Key
-	query := `SELECT * FROM keys WHERE sha3384 = $1`
+	query := `SELECT * FROM key WHERE sha3384 = $1`
 
 	err := a.db.GetContext(ctx, &key, query, sha3384)
 	if err != nil {
@@ -187,7 +187,7 @@ func (a *AccountRepository) GetKeyBySHA3384(ctx context.Context, sha3384 string)
 
 func (a *AccountRepository) GetKeysByAccountID(ctx context.Context, accountID uuid.UUID) ([]*models.Key, *cerror.CustomError) {
 	var keys []*models.Key
-	query := `SELECT * FROM keys WHERE account_id = $1`
+	query := `SELECT * FROM key WHERE account_id = $1`
 
 	err := a.db.SelectContext(ctx, &keys, query, accountID)
 	if err != nil {
@@ -205,7 +205,7 @@ func (a *AccountRepository) GetKeysByAccountID(ctx context.Context, accountID uu
 
 func (a *AccountRepository) GetSSHKeysByAccountID(ctx context.Context, accountID uuid.UUID) ([]models.SSHKey, *cerror.CustomError) {
 	var sshKeys []models.SSHKey
-	query := "SELECT * FROM ssh_keys WHERE account_id = $1"
+	query := "SELECT * FROM ssh_key WHERE account_id = $1"
 	if err := a.db.SelectContext(ctx, &sshKeys, query, accountID); err != nil {
 		logrus.Error(err)
 		return nil, cerror.ConvertError(err)
@@ -216,8 +216,8 @@ func (a *AccountRepository) GetSSHKeysByAccountID(ctx context.Context, accountID
 // filter function that returns keys based on filter
 func (a *AccountRepository) FilterKeys(ctx context.Context, filter *models.Key, takeFirst bool) (*models.Key, *cerror.CustomError) {
 	// start with base query
-	query := "SELECT * FROM keys WHERE 1=1"
-	params := make(map[string]interface{})
+	query := "SELECT * FROM key WHERE 1=1"
+	params := make(map[string]any)
 
 	if filter.ID != uuid.Nil {
 		query += " AND id = :id"
@@ -288,8 +288,8 @@ func (a *AccountRepository) FilterKeys(ctx context.Context, filter *models.Key, 
 // filter function that returns accounts based on filter
 func (a *AccountRepository) FilterAccounts(ctx context.Context, filter *models.Account, takeFirst bool) ([]*models.Account, *cerror.CustomError) {
 	// do WHERE 1=1 to have base query to append to
-	query := "SELECT * FROM accounts WHERE 1=1"
-	params := make(map[string]interface{})
+	query := "SELECT * FROM account WHERE 1=1"
+	params := make(map[string]any)
 
 	if filter.ID != uuid.Nil {
 		query += " AND id = :id"

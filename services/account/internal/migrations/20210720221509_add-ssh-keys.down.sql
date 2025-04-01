@@ -1,4 +1,4 @@
-drop table if exists ssh_keys;
+drop table if exists ssh_key;
 
 drop sequence if exists ssh_keys_id_seq;
 
