@@ -11,12 +11,10 @@ import (
 
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/config"
-	macaroon "gopkg.in/macaroon.v2"
 	mc "github.com/idlab-discover/kebeng/services/gateway/internal/macaroon"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/model"
+	macaroon "gopkg.in/macaroon.v2"
 )
-
-
 
 func GenerateMacaroon(ctx context.Context, req *model.GenerateMacaroonRequest, snapIDs map[string]bool, macaroonConfig *config.MacaroonConfig) *model.MacaroonResponse {
 	el := cerror.NewErrorList()
@@ -69,21 +67,38 @@ func GenerateMacaroon(ctx context.Context, req *model.GenerateMacaroonRequest, s
 	}
 
 	// add channels as caveats
-	for _, channel := range req.Channels {
-		caveat := fmt.Sprintf("%s|channel|%s", macaroonConfig.RootLocation, channel)
-		err = m.AddFirstPartyCaveat([]byte(caveat))
+	if len(req.Channels) > 0 {
+		channelJson, err := json.Marshal(req.Channels)
 		if err != nil {
-			el.Add(cerror.InternalServerError, fmt.Sprintf("failed to add channel: %v, err:%v", channel, err))
+			el.Add(cerror.InternalServerError, fmt.Sprintf("failed to marshal channel: %v", err))
+		} else {
+			caveat := fmt.Sprintf("%s|channel|%s", macaroonConfig.RootLocation, channelJson)
+			err = m.AddFirstPartyCaveat([]byte(caveat))
+			if err != nil {
+				el.Add(cerror.InternalServerError, fmt.Sprintf("failed to add channel: %v, err:%v", req.Channels, err))
+			}
 		}
 	}
 
 	// add packages as caveats
 	// we get the snapIDs instead of 2 different formats => allows consistency when decoding macaroon
-	for snapID := range snapIDs {
-		caveat := fmt.Sprintf("%s|snap_id|%s", macaroonConfig.RootLocation, snapID)
-		err = m.AddFirstPartyCaveat([]byte(caveat))
+	if len(snapIDs) > 0 {
+		snapIDKeys := make([]string, len(snapIDs))
+		i := 0
+		for k := range snapIDs {
+			snapIDKeys[i] = k
+			i++
+		}
+
+		packagesJson, err := json.Marshal(snapIDKeys)
 		if err != nil {
-			el.Add(cerror.InternalServerError, fmt.Sprintf("failed to add snap_id: %s, err: %v", snapID, err))
+			el.Add(cerror.InternalServerError, fmt.Sprintf("failed to marshal packages: %v", err))
+		} else {
+			caveat := fmt.Sprintf("%s|snap_id|%s", macaroonConfig.RootLocation, packagesJson)
+			err = m.AddFirstPartyCaveat([]byte(caveat))
+			if err != nil {
+				el.Add(cerror.InternalServerError, fmt.Sprintf("failed to add snap_id: %s, err: %v", packagesJson, err))
+			}
 		}
 	}
 
