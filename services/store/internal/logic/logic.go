@@ -468,7 +468,6 @@ func (s *StoreLogic) GetRevisionsByEntryIds(ctx context.Context, req *proto.GetR
 		for i, rev := range revisions {
 			revisionsProto[i] = &proto.GetRevisionResponse{
 				Id:                     rev.ID.String(),
-				SnapName:               *rev.SnapName,
 				BuildAssertionFilename: *rev.BuildAssertionFileName,
 				Sequence:               uint64(*rev.SequenceNumber),
 				Architectures:          rev.Architectures,

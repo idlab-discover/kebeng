@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/google/uuid"
 	"github.com/idlab-discover/kebeng/services/store/internal/models"
@@ -88,7 +87,7 @@ func LoadTestData(filePath string, repo repositories.ISnapsRepository) ([]string
 			size = *rev.Size
 		}
 
-		_, cerr = repo.AddRevision(*snapEntry, size)
+		_, cerr = repo.AddRevision(rev.SnapEntryID, rev.SnapTrackID, rev.SnapChannelID, size)
 		if cerr != nil {
 			return nil, fmt.Errorf("failed to add revision for snap (%s): %v", snapEntry.ID, cerr)
 		}
@@ -145,10 +144,10 @@ func LoadTestData(filePath string, repo repositories.ISnapsRepository) ([]string
 		// Build the path using the format:
 		// snaps/<snap_entry_name>/<track>/<channel>/<snap_revision.snap_name>_<sequence_number>.snap
 		// We assume that rev.SnapName is set (e.g. "test.snap") and rev.SequenceNumber is provided.
-		if rev.SnapName == nil || rev.SequenceNumber == nil {
-			return nil, fmt.Errorf("revision (%s) missing snap_name or sequence_number", rev.ID)
+		if rev.SequenceNumber == nil {
+			return nil, fmt.Errorf("revision (%s) missing sequence_number", rev.ID)
 		}
-		baseName := strings.TrimSuffix(*rev.SnapName, ".snap")
+		baseName := snapEntry.Name
 		path := fmt.Sprintf("%s/%s/%s/%s_%d.snap",
 			snapEntry.Name,
 			trackName,

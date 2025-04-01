@@ -1,21 +1,10 @@
 package models
 
 import (
-	"context"
-	"crypto"
-	"fmt"
-	"io"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/idlab-discover/kebeng/pkg/store/responses"
-	"github.com/idlab-discover/kebeng/services/store/internal/config/configkey"
-	"github.com/idlab-discover/kebeng/services/store/internal/objectstore"
 	"github.com/lib/pq"
-	"github.com/minio/minio-go/v7"
-	"github.com/sirupsen/logrus"
-	"github.com/snapcore/snapd/snap"
-	"github.com/spf13/viper"
 )
 
 const (
@@ -90,7 +79,6 @@ type SnapRevision struct {
 	CreatedAt              time.Time      `json:"created_at" db:"created_at"`
 	UpdatedAt              time.Time      `json:"updated_at" db:"updated_at"`
 	DeletedAt              *time.Time     `json:"deleted_at,omitempty" db:"deleted_at"`
-	SnapName               *string        `json:"snap_name,omitempty" db:"snap_name"`
 	BuildAssertionFileName *string        `json:"build_assertion_filename,omitempty" db:"build_assertion_filename"`
 	SHA3_384               *string        `json:"sha3_384,omitempty" db:"sha3_384"`
 	SHA3_384_Encoded       *string        `json:"sha3_384_encoded,omitempty" db:"sha3_384_encoded"`
@@ -116,36 +104,4 @@ type SnapComment struct {
 	Reason      string     `json:"reason" db:"reason"`
 	Comment     string     `json:"comment" db:"comment"`
 	SnapEntryID uuid.UUID  `json:"snap_entry_id" db:"entry_id"`
-}
-
-func (se *SnapEntry) ToStoreSnap(snapRevision *SnapRevision) (*responses.StoreSnap, error) {
-	downloadURL := fmt.Sprintf(viper.GetString(configkey.StoreAPIURL)+"/download/snaps/%s", snapRevision.SnapName)
-	base := snapRevision.SnapName
-	obs := objectstore.NewObjectStore()
-	h := crypto.SHA3_384.New()
-	objectPtr, err := obs.MinioClient.GetObject(context.Background(), "snaps", *base, minio.GetObjectOptions{})
-	if err != nil {
-		return nil, err
-	}
-	bytes, _ := io.ReadAll(objectPtr)
-	h.Write(bytes)
-	actualSha3 := fmt.Sprintf("%x", h.Sum(nil))
-
-	logrus.Infof("Snap: %s, Revision: %d, URL: %s, SHA3: %s", se.Name, snapRevision.SequenceNumber, downloadURL, actualSha3)
-
-	storeSnap := &responses.StoreSnap{
-		Name:     se.Name,
-		Type:     snap.Type(*se.Type),
-		SnapID:   se.ID,
-		Revision: int(*snapRevision.SequenceNumber),
-		Download: responses.StoreSnapDownload{
-			Sha3_384: actualSha3,
-			Size:     *snapRevision.Size,
-			URL:      downloadURL,
-		},
-		Confinement: *se.Confinement,
-		Base:        se.Base,
-	}
-
-	return storeSnap, nil
 }
