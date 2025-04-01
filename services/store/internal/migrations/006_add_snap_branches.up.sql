@@ -7,15 +7,15 @@ create table snap_branches
     updated_at timestamp with time zone DEFAULT now(),
     deleted_at timestamp with time zone,
     name          text,
-    snap_risk_id  uuid
-        constraint fk_channel_branches
-            references channel,
     entry_id uuid
         constraint fk_snap_branches_entry
             references entry,
-    revision_id   uuid
-        constraint fk_snap_branches_revision
-            references revision,
+    snap_track_id uuid
+        constraint fk_track_branches
+            references track,
+    snap_channel_id  uuid
+        constraint fk_channel_branches
+            references channel,
     CONSTRAINT snap_branches_pkey PRIMARY KEY (id)
 );
 

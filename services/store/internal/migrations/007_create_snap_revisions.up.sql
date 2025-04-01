@@ -7,7 +7,6 @@ CREATE TABLE IF NOT EXISTS public.revision
     updated_at timestamp with time zone DEFAULT now(),
     deleted_at timestamp with time zone,
     snap_name text COLLATE pg_catalog."default",
-    entry_id uuid,   
     build_assertion_filename text COLLATE pg_catalog."default",
     sha3_384 text COLLATE pg_catalog."default",
     sha3_384_encoded text COLLATE pg_catalog."default",
@@ -18,10 +17,13 @@ CREATE TABLE IF NOT EXISTS public.revision
     version TEXT COLLATE pg_catalog."default",
 
     CONSTRAINT revision_pkey PRIMARY KEY (id),
-    CONSTRAINT fk_entry_revisions FOREIGN KEY (entry_id)
-        REFERENCES public.entry (id) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION 
+
+    entry_id uuid constraint fk_revision_entry
+        references entry,
+    snap_track_id uuid constraint fk_revision_track
+        references track,
+    snap_channel_id uuid constraint fk_revision_channel
+        references channel
 )
 
 TABLESPACE pg_default;
