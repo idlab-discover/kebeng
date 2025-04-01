@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/model"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/util"
@@ -143,14 +144,16 @@ func (h *Handler) RegisterSnapName(c *gin.Context) {
 		return
 	}
 
+	// Get email of the user from the macaroon
 	c.Get("email")
 	email, ok := c.Get("email")
 	if !ok {
 		el.Add(cerror.Unauthorized, "email not found in macaroon")
-		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})	
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
-	
+
+	// Get the account by email -> we need the account ID to register the snap name
 	account := h.BaseHandler.AccountClient.GetAccountByEmail(email.(string))
 	if len(account.Errors) > 0 {
 		el.ExtendAccountError(account.Errors)
@@ -158,8 +161,17 @@ func (h *Handler) RegisterSnapName(c *gin.Context) {
 		return
 	}
 
+	// Parse the account ID
+	accountUUID, err := uuid.Parse(account.Id)
+	if err != nil {
+		el.Add(cerror.BadRequest, "invalid account ID format")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
+
 	dryRun := c.Query("dry_run") == "1"
-	resp := h.StoreClient.RegisterSnapName(req.SnapName, req.IsPrivate, req.Store, dryRun, account.Id)
+
+	resp := h.StoreClient.RegisterSnapName(req.SnapName, req.IsPrivate, req.Store, dryRun, accountUUID)
 	if len(resp.Errors) > 0 {
 		el.ExtendStoreError(resp.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
