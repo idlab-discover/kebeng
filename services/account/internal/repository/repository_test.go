@@ -374,7 +374,7 @@ func TestGetAccountByEmail(t *testing.T) {
 	sshUpdatedAt := time.Now()
 
 	insertKeyQuery := `
-		INSERT INTO ssh_keys (id, account_id, public_key_string, created_at, updated_at)
+		INSERT INTO ssh_key (id, account_id, public_key_string, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5)
 	`
 	_, err = globalDB.ExecContext(context.Background(), insertKeyQuery,
@@ -476,7 +476,7 @@ func TestGetAccountByID(t *testing.T) {
 	sshCreatedAt := time.Now()
 	sshUpdatedAt := time.Now()
 	insertKeyQuery := `
-		INSERT INTO ssh_keys (id, account_id, public_key_string, created_at, updated_at)
+		INSERT INTO ssh_key (id, account_id, public_key_string, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5)
 	`
 	_, err = globalDB.ExecContext(context.Background(), insertKeyQuery,
@@ -547,7 +547,7 @@ func TestGetAccountByUsername(t *testing.T) {
 	sshCreatedAt := time.Now()
 	sshUpdatedAt := time.Now()
 	insertKeyQuery := `
-		INSERT INTO ssh_keys (id, account_id, public_key_string, created_at, updated_at)
+		INSERT INTO ssh_key (id, account_id, public_key_string, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5)
 	`
 	_, err = globalDB.ExecContext(context.Background(), insertKeyQuery,
