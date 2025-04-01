@@ -33,6 +33,7 @@ services:
       - ./services/store/config.yaml:/app/config.yaml  # config file
       - ./init-config-example.json:/app/init-config-example.json  # init example
       - ./services/store/internal/keys/:/app/keys/  # keys needed by store
+      - ./test-data/store:/app/test-data
     environment:
       - CONFIG_FILE_PATH=/app/config.yaml
       - TEST_MODE=1
@@ -111,6 +112,7 @@ services:
       - assertion_db
     volumes:
       - ./services/assertion/config.yaml:/app/config.yaml  # config file
+      - ./test-data/assertion:/app/test-data
     environment:
       - CONFIG_FILE_PATH=/app/config.yaml
       - TEST_MODE=1
