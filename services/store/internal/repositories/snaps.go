@@ -19,7 +19,7 @@ import (
 type ISnapsRepository interface {
 	// CREATE
 	AddChannel(snapEntryId uuid.UUID, snapTrackId uuid.UUID, channelName string) (*models.SnapChannel, *cerror.CustomError)
-	AddRevision(entryId uuid.UUID, trackId uuid.UUID, channelId uuid.UUID, size uint64) (*models.SnapRevision, *cerror.CustomError)
+	AddRevision(entryId uuid.UUID, trackId uuid.UUID, channelId uuid.UUID, size uint64, sequenceNumber uint) (*models.SnapRevision, *cerror.CustomError)
 	AddTrack(entryId uuid.UUID, trackName string) (*models.SnapTrack, *cerror.CustomError)
 	RegisterSnap(snapName string, isPrivate bool) (*models.SnapEntry, *cerror.CustomError)
 
@@ -72,7 +72,7 @@ func (sp *SnapsRepository) AddChannel(snapEntryId uuid.UUID, snapTrackId uuid.UU
 	return &channel, nil
 }
 
-func (sp *SnapsRepository) AddRevision(entryId uuid.UUID, trackId uuid.UUID, channelId uuid.UUID, size uint64) (*models.SnapRevision, *cerror.CustomError) {
+func (sp *SnapsRepository) AddRevision(entryId uuid.UUID, trackId uuid.UUID, channelId uuid.UUID, size uint64, sequenceNumber uint) (*models.SnapRevision, *cerror.CustomError) {
 	// TODO: fix the need for an empty revision
 	// TODO: add build_assertion_filename if an assertion exists -> doesn't get checked in official snap store either
 	snapRevision := models.SnapRevision{
@@ -81,13 +81,14 @@ func (sp *SnapsRepository) AddRevision(entryId uuid.UUID, trackId uuid.UUID, cha
 		SnapChannelID: channelId,
 		SHA3_384:      nil, // TODO: calculate sha3_384 in logic and at it to the parameters
 		Size:          &size,
+		SequenceNumber: &sequenceNumber,
 	}
 	query := `
-		INSERT INTO revision (entry_id, snap_track_id, snap_channel_id, sha3_384, size)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO revision (entry_id, snap_track_id, snap_channel_id, sha3_384, size, sequence_number)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id
 	`
-	err := sp.db.Get(&snapRevision.ID, query, snapRevision.SnapEntryID, snapRevision.SnapTrackID, snapRevision.SnapChannelID, snapRevision.SHA3_384, snapRevision.Size)
+	err := sp.db.Get(&snapRevision.ID, query, snapRevision.SnapEntryID, snapRevision.SnapTrackID, snapRevision.SnapChannelID, snapRevision.SHA3_384, snapRevision.Size, snapRevision.SequenceNumber)
 	if err != nil {
 		logrus.Error(err)
 		return nil, cerror.ConvertError(err)
