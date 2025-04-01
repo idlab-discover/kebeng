@@ -48,7 +48,7 @@ func (h *Handler) SetupEndpoints(r *gin.Engine) {
 	r.POST("api/v1/snaps/auth/nonces", h.snapHandler.RequestStoreDeviceNonce)      // TODO
 	r.POST("api/v1/snaps/auth/sessions", h.snapHandler.RequestStoreDeviceSessions) // TODO
 	r.POST("/v2/snaps/refresh", h.snapHandler.RefreshSnap)                         // TODO
-	authGroup.POST("/dev/api/register-name/", h.snapHandler.RegisterSnapName)
+	authGroup.POST("/register-name/", h.snapHandler.RegisterSnapName)
 	r.GET("/v2/snaps/find", h.snapHandler.FindSnaps) // TODO
 	r.POST("/dev/api/register-name-dispute/", h.snapHandler.RegisterSnapNameDispute)
 	r.POST("/dev/api/snaps/:snap_id/builds", h.snapHandler.ProcessSnapBuildAssertion)

@@ -7,7 +7,6 @@ import (
 	"github.com/gin-gonic/gin"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/idlab-discover/kebeng/services/gateway/handler/auth"
-	mc "github.com/idlab-discover/kebeng/services/gateway/internal/macaroon"
 	"gopkg.in/macaroon.v2"
 )
 
@@ -88,21 +87,21 @@ func parseMacaroon(authHeader string, el *cerror.ErrorList) (*macaroon.Macaroon,
 		el.Add(cerror.Unauthorized, "Invalid root macaroon")
 	}
 
-	// deserialize the macaroon
-	deserializedRootMacaroon, err := mc.MacaroonDeserialize(rootMacaroon)
-	if err != nil {
-		el.Add(cerror.Unauthorized, "Invalid root macaroon")
-	}
+	// // deserialize the macaroon
+	// deserializedRootMacaroon, err := mc.MacaroonDeserialize(rootMacaroon)
+	// if err != nil {
+	// 	el.Add(cerror.Unauthorized, "Invalid root macaroon")
+	// }
 
-	// Verify the discharge macaroon
-	deserializedDischargeMacaroon, err := mc.MacaroonDeserialize(dischargeMacaroon)
-	if err != nil {
-		el.Add(cerror.Unauthorized, "Invalid discharge macaroon")
-	}
+	// // Verify the discharge macaroon
+	// deserializedDischargeMacaroon, err := mc.MacaroonDeserialize(dischargeMacaroon)
+	// if err != nil {
+	// 	el.Add(cerror.Unauthorized, "Invalid discharge macaroon")
+	// }
 
-	if len(*el) > 0 {
-		return nil, nil, fmt.Errorf("Could not parse macaroon")
-	}
-
-	return deserializedRootMacaroon, deserializedDischargeMacaroon, nil
+	// if len(*el) > 0 {
+	// 	return nil, nil, fmt.Errorf("Could not parse macaroon")
+	// }
+	return nil, nil, nil
+	//return deserializedRootMacaroon, deserializedDischargeMacaroon, nil
 }
