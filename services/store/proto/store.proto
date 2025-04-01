@@ -34,6 +34,7 @@ message RegisterSnapNameRequest {
     bool isPrivate = 2;
     string store = 3;
     bool dry_run = 4;
+    string account_id = 5;
 }
 
 message RegisterSnapNameResponse {
