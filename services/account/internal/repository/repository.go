@@ -43,11 +43,11 @@ func NewAccountRepository(db *sqlx.DB) *AccountRepository {
 func (a *AccountRepository) CreateAccount(ctx context.Context, account *models.Account) (*models.Account, *cerror.CustomError) {
 	resp := &models.Account{}
 	query := `
-        INSERT INTO accounts (display_name, username, email, password_hash, updated_at)
-        VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO accounts (display_name, username, email, password_hash, updated_at, validation)
+        VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING id, display_name, username, email, password_hash, validation, created_at, updated_at, deleted_at
     `
-	err := a.db.Get(resp, query, account.DisplayName, account.Username, account.Email, account.PasswordHash, account.UpdatedAt)
+	err := a.db.Get(resp, query, account.DisplayName, account.Username, account.Email, account.PasswordHash, account.UpdatedAt, account.Validation)
 	if err != nil {
 		logrus.Error(err)
 		return nil, cerror.ConvertError(err, fmt.Sprintf("could not create account with email '%s'", account.Email))
