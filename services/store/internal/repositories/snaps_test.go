@@ -16,20 +16,20 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file" // needed for file source
 
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
-	storeDB "github.com/idlab-discover/kebeng/services/store/internal"
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
+	storeDB "github.com/idlab-discover/kebeng/services/store/internal/database"
 	"github.com/idlab-discover/kebeng/services/store/internal/models"
 	"github.com/idlab-discover/kebeng/services/store/internal/repositories"
 )
 
 var (
-	globalRepo *repositories.SnapsRepository
+	globalRepo repositories.ISnapsRepository
 	globalDB   *sqlx.DB
 	cleanupDB  func()
 	mockUUID   = uuid.New()
 )
 
-func setupGlobalTestDB() (*repositories.SnapsRepository, *sqlx.DB, func()) {
+func setupGlobalTestDB() (repositories.ISnapsRepository, *sqlx.DB, func()) {
 	postgres := embeddedpostgres.NewDatabase(embeddedpostgres.DefaultConfig().
 		Port(5433).
 		Version(embeddedpostgres.V12).
@@ -116,7 +116,7 @@ func TestAddRevision(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := globalRepo.AddRevision(&tt.snapEntry, tt.size)
+			_, err := globalRepo.AddRevision(tt.snapEntry, tt.size)
 			if tt.expectError {
 				assert.NotNil(t, err)
 				if err != nil {
