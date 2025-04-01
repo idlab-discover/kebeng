@@ -12,17 +12,17 @@ CREATE TABLE IF NOT EXISTS public.ssh_key
     account_id uuid,
     CONSTRAINT ssh_keys_pkey PRIMARY KEY (id),
     CONSTRAINT fk_accounts_ssh_keys FOREIGN KEY (account_id)
-        REFERENCES public.accounts (id) MATCH SIMPLE
+        REFERENCES public.account (id) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE NO ACTION
 )
 
     TABLESPACE pg_default;
 
-ALTER TABLE public.ssh_keys
+ALTER TABLE public.ssh_key
     OWNER to manager;
 
 CREATE INDEX idx_ssh_keys_deleted_at
-    ON public.ssh_keys USING btree
+    ON public.ssh_key USING btree
         (deleted_at ASC NULLS LAST)
     TABLESPACE pg_default;

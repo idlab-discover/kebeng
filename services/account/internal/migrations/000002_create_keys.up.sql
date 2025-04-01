@@ -1,6 +1,6 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-create sequence public.keys_id_seq;
+create sequence public.key_id_seq;
 
 CREATE TABLE IF NOT EXISTS public.key
 (
@@ -16,20 +16,20 @@ CREATE TABLE IF NOT EXISTS public.key
     CONSTRAINT keys_pkey PRIMARY KEY (id),
     CONSTRAINT keys_sha3384_key UNIQUE (sha3384),
     CONSTRAINT fk_accounts_keys FOREIGN KEY (account_id)
-        REFERENCES public.accounts (id) MATCH SIMPLE
+        REFERENCES public.account (id) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE NO ACTION
 )
 
 TABLESPACE pg_default;
 
-ALTER TABLE public.keys
+ALTER TABLE public.key
     OWNER to manager;
 -- Index: idx_keys_deleted_at
 
 -- DROP INDEX public.idx_keys_deleted_at;
 
 CREATE INDEX idx_keys_deleted_at
-    ON public.keys USING btree
+    ON public.key USING btree
     (deleted_at ASC NULLS LAST)
     TABLESPACE pg_default;
