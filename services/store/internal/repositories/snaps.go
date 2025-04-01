@@ -18,6 +18,7 @@ import (
 
 type ISnapsRepository interface {
 	// CREATE
+	AddChannel(snapEntryId uuid.UUID, snapTrackId uuid.UUID, channelName string) (*models.SnapChannel, *cerror.CustomError)
 	AddRevision(snapEntry models.SnapEntry, size uint64) (*models.SnapRevision, *cerror.CustomError)
 	AddTrack(entryId uuid.UUID, trackName string) (*models.SnapTrack, *cerror.CustomError)
 	RegisterSnap(snapName string, isPrivate bool) (*models.SnapEntry, *cerror.CustomError)
@@ -51,6 +52,26 @@ func NewSnapsRepository(db *sqlx.DB) ISnapsRepository {
 }
 
 // ============ CREATE =============
+
+func (sp *SnapsRepository) AddChannel(snapEntryId uuid.UUID, snapTrackId uuid.UUID, channelName string) (*models.SnapChannel, *cerror.CustomError) {
+	channel := models.SnapChannel{
+		Name:        channelName,
+		SnapEntryID: snapEntryId,
+		SnapTrackID: snapTrackId,
+	}
+	query := `
+		INSERT INTO channel (name, entry_id, snap_track_id)
+		VALUES ($1, $2, $3)
+		RETURNING id
+	`
+	err := sp.db.Get(&channel.ID, query, channel.Name, channel.SnapEntryID, channel.SnapTrackID)
+	if err != nil {
+		logrus.Error(err)
+		return nil, cerror.ConvertError(err)
+	}
+
+	return &channel, nil
+}
 
 func (sp *SnapsRepository) AddRevision(snapEntry models.SnapEntry, size uint64) (*models.SnapRevision, *cerror.CustomError) {
 	// TODO: fix the need for an empty revision
