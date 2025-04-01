@@ -12,7 +12,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 create sequence public.accounts_id_seq;
 
-CREATE TABLE IF NOT EXISTS public.accounts
+CREATE TABLE IF NOT EXISTS public.account
 (
     id UUID NOT NULL DEFAULT uuid_generate_v4(),
     created_at TIMESTAMPTZ DEFAULT now(),

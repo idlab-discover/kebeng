@@ -1,1 +1,1 @@
-ALTER TABLE accounts add password TEXT;
+ALTER TABLE account add password TEXT;
