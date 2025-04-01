@@ -1,3 +1,3 @@
-drop table if exists snap_channels;
+drop table if exists channel;
 
-drop index if exists idx_snap_channels_deleted_at
+drop index if exists idx_channel_deleted_at

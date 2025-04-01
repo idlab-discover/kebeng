@@ -1,3 +1,3 @@
-DROP TABLE IF EXISTS public.snap_entries;
+DROP TABLE IF EXISTS public.entry;
 
-DROP SEQUENCE IF EXISTS public.snap_entries_id_seq;
+DROP SEQUENCE IF EXISTS public.entry_id_seq;

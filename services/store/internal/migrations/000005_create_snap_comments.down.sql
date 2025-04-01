@@ -1,1 +1,1 @@
-DROP TABLE IF EXISTS public.snap_comments;
+DROP TABLE IF EXISTS public.comment;

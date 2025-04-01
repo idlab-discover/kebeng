@@ -68,7 +68,7 @@ func (sp *SnapsRepository) AddRevision(snapEntry *models.SnapEntry, size uint64)
 	}
 
 	query := `
-		INSERT INTO snap_revisions (snap_name, snap_entry_id, sha3_384, size)
+		INSERT INTO revision (snap_name, entry_id, sha3_384, size)
 		VALUES ($1, $2, $3, $4)
 		RETURNING id
 	`
@@ -110,9 +110,9 @@ func (sp *SnapsRepository) AddRevision(snapEntry *models.SnapEntry, size uint64)
 // 	//newSnapEntry.Confinement = "strict"
 // 	//newSnapEntry.Base = "core18" // default base
 
-// 	// snap_entries table contains snaps with unique names (doesn't keep track of revisions or channels)
+// 	// entry table contains snaps with unique names (doesn't keep track of revisions or channels)
 // 	query := `
-// 		INSERT INTO snap_entries (name, account_id, type)
+// 		INSERT INTO entry (name, account_id, type)
 // 		VALUES ($1, $2, $3)
 // 		RETURNING id
 // 	`
@@ -122,7 +122,7 @@ func (sp *SnapsRepository) AddRevision(snapEntry *models.SnapEntry, size uint64)
 // 		return nil, cerror.ConvertError(err2)
 // 	}
 //
-// 	// snap_uploads table contains channels where the snap is uploaded
+// 	// upload table contains channels where the snap is uploaded
 // 	sp.AddUpload(name, newSnapEntry.ID.String(), uint(size), []string{"latest/stable"})
 
 // 	// For now when we register a snap we are going to create the default tracks/channels
@@ -131,7 +131,7 @@ func (sp *SnapsRepository) AddRevision(snapEntry *models.SnapEntry, size uint64)
 // 		SnapEntryID: newSnapEntry.ID,
 // 	}
 // 	query = `
-// 		INSERT INTO snap_tracks (name, snap_entry_id)
+// 		INSERT INTO track (name, entry_id)
 // 		VALUES ($1, $2)
 // 		RETURNING id
 // 	`
@@ -153,7 +153,7 @@ func (sp *SnapsRepository) AddUpload(snapName string, upDownId string, fileSize 
 	var snap models.SnapEntry
 	query := `
 		SELECT id
-		FROM snap_entries
+		FROM entry
 		WHERE name = $1
 	`
 	err := sp.db.Get(&snap.ID, query, snapName)
@@ -176,7 +176,7 @@ func (sp *SnapsRepository) AddUpload(snapName string, upDownId string, fileSize 
 	}
 
 	query = `
-		INSERT INTO snap_uploads (up_down_id, filesize, channels, snap_entry_id)
+		INSERT INTO upload (up_down_id, filesize, channels, entry_id)
 		VALUES ($1, $2, $3, $4)
 		RETURNING id
 	`
@@ -196,7 +196,7 @@ func (sp *SnapsRepository) RegisterSnap(snapName string, isPrivate bool) (*model
 	}
 
 	query := `
-		INSERT INTO snap_entries (name, private)
+		INSERT INTO entry (name, private)
 		VALUES ($1, $2)
 		RETURNING id
 	`
@@ -215,7 +215,7 @@ func (sp *SnapsRepository) GetAllSnapEntries() (*[]models.SnapEntry, *cerror.Cus
 	var snaps []models.SnapEntry
 	query := `
 		SELECT *
-		FROM snap_entries
+		FROM entry
 	`
 	err := sp.db.Select(&snaps, query)
 	if err != nil {
@@ -234,7 +234,7 @@ func (sp *SnapsRepository) GetChannelsByTrackId(trackId uuid.UUID) ([]*models.Sn
 	var channels []*models.SnapChannel
 	query := `
 		SELECT *
-		FROM snap_channels
+		FROM channel
 		WHERE snap_track_id = $1
 	`
 	err := sp.db.Select(&channels, query, trackId)
@@ -255,8 +255,8 @@ func (sp *SnapsRepository) GetCommentsByEntryId(entryId uuid.UUID) ([]*models.Sn
 	var comments []*models.SnapComment
 	query := `
 			SELECT *
-			FROM snap_comments
-			WHERE snap_entry_id = $1
+			FROM comment
+			WHERE entry_id = $1
 		`
 	err := sp.db.Select(&comments, query, entryId)
 	if err != nil {
@@ -276,7 +276,7 @@ func (sp *SnapsRepository) GetEntriesByAccountId(accountId uuid.UUID, preloadAss
 	var entries []*models.SnapEntry
 	query := `
             SELECT * 
-            FROM snap_entries 
+            FROM entry 
             WHERE account_id = $1
         `
 	err := sp.db.Select(&entries, query, accountId)
@@ -306,7 +306,7 @@ func (sp *SnapsRepository) GetEntryById(Id uuid.UUID, preloadAssociations []stri
 	var snapEntry models.SnapEntry
 	query := `
 		SELECT *
-		FROM snap_entries
+		FROM entry
 		WHERE id = $1
 	`
 	err := sp.db.Get(&snapEntry, query, Id)
@@ -332,7 +332,7 @@ func (sp *SnapsRepository) GetEntryByName(name string, preloadAssociations []str
 	var snapEntry models.SnapEntry
 	query := `
 		SELECT *
-		FROM snap_entries
+		FROM entry
 		WHERE name = $1
 	`
 	err := sp.db.Get(&snapEntry, query, name)
@@ -378,8 +378,8 @@ func (sp *SnapsRepository) GetRevisionByChannel(channel string, snapName string)
 	var snapTrack models.SnapTrack
 	query := `
 			SELECT id
-			FROM snap_tracks
-			WHERE snap_entry_id = $1 AND name = $2
+			FROM track
+			WHERE entry_id = $1 AND name = $2
 		`
 	err := sp.db.Get(&snapTrack, query, snapEntry.ID, track)
 	if err != nil {
@@ -390,8 +390,8 @@ func (sp *SnapsRepository) GetRevisionByChannel(channel string, snapName string)
 	var snapChannel models.SnapChannel
 	query = `
 			SELECT revision_id
-			FROM snap_channels
-			WHERE snap_entry_id = $1 AND snap_track_id = $2 AND name = $3
+			FROM channel
+			WHERE entry_id = $1 AND snap_track_id = $2 AND name = $3
 		`
 	err = sp.db.Get(&snapChannel, query, snapEntry.ID, snapTrack.ID, channelname)
 	if err != nil {
@@ -402,7 +402,7 @@ func (sp *SnapsRepository) GetRevisionByChannel(channel string, snapName string)
 	var snapRevision models.SnapRevision
 	query = `
 			SELECT *
-			FROM snap_revisions
+			FROM revision
 			WHERE id = $1
 		`
 	err = sp.db.Get(&snapRevision, query, snapChannel.RevisionID)
@@ -418,8 +418,8 @@ func (sp *SnapsRepository) GetRevisionsByEntryId(entryId uuid.UUID) ([]*models.S
 	var revisions []*models.SnapRevision
 	query := `
 			SELECT *
-			FROM snap_revisions
-			WHERE snap_entry_id = $1
+			FROM revision
+			WHERE entry_id = $1
 		`
 	err := sp.db.Select(&revisions, query, entryId)
 	if err != nil {
@@ -439,7 +439,7 @@ func (sp *SnapsRepository) GetRevisionById(id uuid.UUID) (*models.SnapRevision, 
 	var revision models.SnapRevision
 	query := `
 		SELECT *
-		FROM snap_revisions
+		FROM revision
 		WHERE id = $1
 	`
 	err := sp.db.Get(&revision, query, id)
@@ -455,7 +455,7 @@ func (sp *SnapsRepository) GetRevisionByNameAndSequence(name string, sequence ui
 	var entry models.SnapEntry
 	query := `
 		SELECT id
-		FROM snap_entries
+		FROM entry
 		WHERE name = $1
 	`
 	err := sp.db.Get(&entry, query, name)
@@ -467,8 +467,8 @@ func (sp *SnapsRepository) GetRevisionByNameAndSequence(name string, sequence ui
 	var revision models.SnapRevision
 	query = `
 		SELECT *
-		FROM snap_revisions
-		WHERE snap_entry_id = $1 AND sequence_number = $2
+		FROM revision
+		WHERE entry_id = $1 AND sequence_number = $2
 	`
 	err = sp.db.Get(&revision, query, entry.ID, sequence)
 	if err != nil {
@@ -486,7 +486,7 @@ func (sp *SnapsRepository) GetRevisionBySHA(SHA3_384 string, encoded bool) (*mod
 		logrus.Tracef("Getting snap revision by encoded sha3_384: %s", SHA3_384)
 		query := `
 			SELECT *
-			FROM snap_revisions
+			FROM revision
 			WHERE sha3_384_encoded = $1
 		`
 		err := sp.db.Get(&revision, query, SHA3_384)
@@ -498,7 +498,7 @@ func (sp *SnapsRepository) GetRevisionBySHA(SHA3_384 string, encoded bool) (*mod
 		logrus.Tracef("Getting snap revision by sha3_384: %s", SHA3_384)
 		query := `
 			SELECT *
-			FROM snap_revisions
+			FROM revision
 			WHERE sha3_384 = $1
 		`
 		err := sp.db.Get(&revision, query, SHA3_384)
@@ -526,8 +526,8 @@ func (sp *SnapsRepository) GetTracksBySnapId(snapId uuid.UUID) ([]*models.SnapTr
 
 	query := `
 		SELECT *
-		FROM snap_tracks
-		WHERE snap_entry_id = $1
+		FROM track
+		WHERE entry_id = $1
 	`
 	err := sp.db.Select(&tracks, query, snapId)
 	if err != nil {
@@ -547,7 +547,7 @@ func (sp *SnapsRepository) GetUploadByUpDownId(upDownId string) (*models.SnapUpl
 	var snapUpload models.SnapUpload
 	query := `
 		SELECT *
-		FROM snap_uploads
+		FROM upload
 		WHERE up_down_id = $1
 	`
 	err := sp.db.Get(&snapUpload, query, upDownId)
@@ -562,8 +562,8 @@ func (sp *SnapsRepository) GetUploadByUpDownId(upDownId string) (*models.SnapUpl
 func (sp *SnapsRepository) GetUploadsByEntryId(d uuid.UUID) ([]*models.SnapUpload, *cerror.CustomError) {
 	query := `
 			SELECT *
-			FROM snap_uploads
-			WHERE snap_entry_id = $1
+			FROM upload
+			WHERE entry_id = $1
 		`
 	var uploads []*models.SnapUpload
 	err := sp.db.Select(&uploads, query, d)
@@ -632,8 +632,8 @@ func (sp *SnapsRepository) ReleaseSnap(channels []string, snapEntryId uuid.UUID,
 		var track models.SnapTrack
 		query := `
 			SELECT id
-			FROM snap_tracks
-			WHERE snap_entry_id = $1 AND name = $2
+			FROM track
+			WHERE entry_id = $1 AND name = $2
 		`
 		err := sp.db.Get(&track, query, snapEntryId, trackForRelease)
 		if err != nil {
@@ -645,8 +645,8 @@ func (sp *SnapsRepository) ReleaseSnap(channels []string, snapEntryId uuid.UUID,
 		var channel models.SnapChannel
 		query = `
 			SELECT *
-			FROM snap_channels
-			WHERE snap_entry_id = $1 AND name = $2 AND snap_track_id = $3
+			FROM channel
+			WHERE entry_id = $1 AND name = $2 AND snap_track_id = $3
 		`
 		err = sp.db.Get(&channel, query, snapEntryId, channelForRelease, track.ID)
 		if err != nil {
@@ -657,7 +657,7 @@ func (sp *SnapsRepository) ReleaseSnap(channels []string, snapEntryId uuid.UUID,
 		var revision models.SnapRevision
 		query = `
 			SELECT id
-			FROM snap_revisions
+			FROM revision
 			WHERE id = $1
 		`
 		err = sp.db.Get(&revision, query, revisionId)
@@ -667,7 +667,7 @@ func (sp *SnapsRepository) ReleaseSnap(channels []string, snapEntryId uuid.UUID,
 		}
 
 		query = `
-			UPDATE snap_channels
+			UPDATE channel
 			SET revision_id = $1
 			WHERE id = $2
 		`
@@ -706,8 +706,8 @@ func (sp *SnapsRepository) SetChannelRevision(trackName string, channelName stri
 	var track models.SnapTrack
 	query := `
 		SELECT id
-		FROM snap_tracks
-		WHERE snap_entry_id = $1 AND name = $2
+		FROM track
+		WHERE entry_id = $1 AND name = $2
 	`
 	err := sp.db.Get(&track, query, snapEntryId, trackName)
 	if err != nil {
@@ -719,8 +719,8 @@ func (sp *SnapsRepository) SetChannelRevision(trackName string, channelName stri
 	var channel models.SnapChannel
 	query = `
 		SELECT *
-		FROM snap_channels
-		WHERE snap_entry_id = $1 AND name = $2 AND snap_track_id = $3
+		FROM channel
+		WHERE entry_id = $1 AND name = $2 AND snap_track_id = $3
 	`
 	err = sp.db.Get(&channel, query, snapEntryId, channelName, track.ID)
 	if err != nil {
@@ -732,7 +732,7 @@ func (sp *SnapsRepository) SetChannelRevision(trackName string, channelName stri
 	var revision models.SnapRevision
 	query = `
 		SELECT *
-		FROM snap_revisions
+		FROM revision
 		WHERE id = $1
 	`
 	err = sp.db.Get(&revision, query, revisionId)
@@ -743,7 +743,7 @@ func (sp *SnapsRepository) SetChannelRevision(trackName string, channelName stri
 
 	// update the channel's revision id
 	query = `
-		UPDATE snap_channels
+		UPDATE channel
 		SET revision_id = $1
 		WHERE id = $2
 	`
@@ -760,7 +760,7 @@ func (sp *SnapsRepository) SetChannelRevision(trackName string, channelName stri
 func (sp *SnapsRepository) UpdateRevision(revision *models.SnapRevision, revisionBytes *[]byte) (*models.SnapRevision, *cerror.CustomError) {
 	var newRevision models.SnapRevision
 	query := `
-		UPDATE snap_revisions
+		UPDATE revision
 		SET snap_name = $1, sha3_384 = $2, sha3_384_encoded = $3, size = $4, sequence_number = $5, architectures = $6, status = $7, version = $8
 		WHERE id = $9
 		RETURNING *
@@ -789,7 +789,7 @@ func (sp *SnapsRepository) addChannels(snapEntry models.SnapEntry, snapRevision 
 		snapChannel.RevisionID = snapRevision.ID
 
 		query := `
-			INSERT INTO snap_channels (name, snap_entry_id, snap_track_id, revision_id)
+			INSERT INTO channel (name, entry_id, snap_track_id, revision_id)
 			VALUES ($1, $2, $3, $4)
 			RETURNING id
 		`
@@ -817,7 +817,7 @@ func (sp *SnapsRepository) updateMeta(metaBytes *[]byte) *cerror.CustomError {
 	var snapEntry models.SnapEntry
 	query := `
 		SELECT *
-		FROM snap_entries
+		FROM entry
 		WHERE name = $1
 	`
 	err := sp.db.Get(&snapEntry, query, snapMeta.Name)
@@ -848,7 +848,7 @@ func (sp *SnapsRepository) updateMeta(metaBytes *[]byte) *cerror.CustomError {
 	}
 
 	query = `
-		UPDATE snap_entries
+		UPDATE entry
 		SET type = $1, confinement = $2, base = $3
 		WHERE id = $4
 	`

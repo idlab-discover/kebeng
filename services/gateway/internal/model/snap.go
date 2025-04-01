@@ -24,7 +24,7 @@ type RegisterSnapNameRequest struct {
 	Store     string `json:"store" default:"default_store"`
 }
 
-type RegisterSnapNameRes struct {
+type RegisterSnapNameResponse struct {
 	SnapId   string `json:"snap_id"`
 	SnapName string `json:"snap_name"`
 }

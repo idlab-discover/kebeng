@@ -5,8 +5,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
-	"github.com/idlab-discover/kebeng/services/gateway/internal/util"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/model"
+	"github.com/idlab-discover/kebeng/services/gateway/internal/util"
 	storepb "github.com/idlab-discover/kebeng/services/store/proto"
 	"github.com/sirupsen/logrus"
 )
@@ -153,10 +153,14 @@ func (h *Handler) RegisterSnapName(c *gin.Context) {
 
 	statusCode := http.StatusCreated
 	if dryRun {
-		statusCode = http.StatusOK
+		if resp.SnapName == "" {
+			statusCode = http.StatusNoContent
+		} else {
+			statusCode = http.StatusOK
+		}
 	}
 
-	c.JSON(statusCode, model.RegisterSnapNameRes{SnapId: resp.Id, SnapName: req.SnapName})
+	c.JSON(statusCode, model.RegisterSnapNameResponse{SnapId: resp.Id, SnapName: req.SnapName})
 }
 
 // TODO: Implement this function

@@ -1,3 +1,3 @@
-drop table if exists snap_uploads;
+drop table if exists upload;
 
-drop sequence if exists snap_uploads_id_seq;
+drop sequence if exists upload_id_seq;
