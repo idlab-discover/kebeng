@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
@@ -15,7 +16,7 @@ import (
 type StoreClientInterface interface {
 	Close()
 	UploadSnap(name string, type_name string, confinement string, base string, file []byte) *proto.UploadSnapResponse
-	RegisterSnapName(snapName string, isPrivate bool, storeName string, dryRun bool) *proto.RegisterSnapNameResponse
+	RegisterSnapName(snapName string, isPrivate bool, storeName string, dryRun bool, accountId uuid.UUID) *proto.RegisterSnapNameResponse
 	GetEntries(entries *proto.GetEntriesRequest) *proto.GetEntriesResponse
 	GetRevisions(revisions *proto.GetRevisionsRequest) *proto.GetRevisionsResponse
 	GetEntriesByAccountID(accountID string) *proto.GetEntriesResponse
@@ -65,12 +66,13 @@ func (c *StoreClient) UploadSnap(name string, type_name string, confinement stri
 	return resp
 }
 
-func (c *StoreClient) RegisterSnapName(snapName string, isPrivate bool, storeName string, dryRun bool) *proto.RegisterSnapNameResponse {
+func (c *StoreClient) RegisterSnapName(snapName string, isPrivate bool, storeName string, dryRun bool, accountId uuid.UUID) *proto.RegisterSnapNameResponse {
 	req := &proto.RegisterSnapNameRequest{
 		SnapName:  snapName,
 		IsPrivate: isPrivate,
 		Store:     storeName,
 		DryRun:    dryRun,
+		AccountId: accountId.String(),
 	}
 
 	resp, err := c.client.RegisterSnapName(context.Background(), req)
