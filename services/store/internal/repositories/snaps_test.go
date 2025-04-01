@@ -85,6 +85,62 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
+func TestAddChannel(t *testing.T) {
+	tests := []struct {
+		name              string
+		snapEntryId       uuid.UUID
+		trackId           uuid.UUID
+		channelName       string
+		expectError       bool
+		expectedErrorCode string
+	}{
+		{
+			name:        "Success adding channel",
+			snapEntryId: mockUUID,
+			trackId:     mockUUID,
+			channelName: "mock-channel",
+			expectError: false,
+		},
+		{
+			name:        "Succes adding channel for already existing channel",
+			snapEntryId: mockUUID,
+			trackId:     mockUUID,
+			channelName: "stable",
+			expectError: false,
+		},
+		{
+			name:              "Fail adding channel for non-existing snap entry",
+			snapEntryId:       uuid.New(),
+			trackId:           mockUUID,
+			channelName:       "mock-channel",
+			expectError:       true,
+			expectedErrorCode: cerror.ResourceNotFound,
+		},
+		{
+			name:              "Fail adding channel for non-existing track",
+			snapEntryId:       mockUUID,
+			trackId:           uuid.New(),
+			channelName:       "mock-channel",
+			expectError:       true,
+			expectedErrorCode: cerror.ResourceNotFound,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp, err := globalRepo.AddChannel(tt.snapEntryId, tt.trackId, tt.channelName)
+			if tt.expectError {
+				assert.NotNil(t, err)
+				if err != nil {
+					assert.Equal(t, tt.expectedErrorCode, err.GetCode())
+				}
+			} else {
+				assert.Nil(t, err)
+				assert.NotNil(t, resp)
+			}
+		})
+	}
+}
+
 func TestAddTrack(t *testing.T) {
 	tests := []struct {
 		name              string
