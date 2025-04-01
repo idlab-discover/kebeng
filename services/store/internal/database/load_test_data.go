@@ -87,7 +87,7 @@ func LoadTestData(filePath string, repo repositories.ISnapsRepository) ([]string
 			size = *rev.Size
 		}
 
-		_, cerr = repo.AddRevision(rev.SnapEntryID, rev.SnapTrackID, rev.SnapChannelID, size)
+		_, cerr = repo.AddRevision(rev.SnapEntryID, rev.SnapTrackID, rev.SnapChannelID, size, *rev.SequenceNumber)
 		if cerr != nil {
 			return nil, fmt.Errorf("failed to add revision for snap (%s): %v", snapEntry.ID, cerr)
 		}

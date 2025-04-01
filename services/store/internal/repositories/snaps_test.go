@@ -192,16 +192,18 @@ func TestAddRevision(t *testing.T) {
 		trackId           uuid.UUID
 		channelId         uuid.UUID
 		size              uint64
+		sequenceNumber    uint
 		expectError       bool
 		expectedErrorCode string
 	}{
 		{
-			name:        "Success adding revision",
-			entryId:     mockUUID,
-			trackId:     mockUUID,
-			channelId:   mockUUID,
-			size:        123456,
-			expectError: false,
+			name:           "Success adding revision",
+			entryId:        mockUUID,
+			trackId:        mockUUID,
+			channelId:      mockUUID,
+			size:           123456,
+			sequenceNumber: 1,
+			expectError:    false,
 		},
 		{
 			name:              "Fail adding revision for non-existing entry",
@@ -209,6 +211,7 @@ func TestAddRevision(t *testing.T) {
 			trackId:           mockUUID,
 			channelId:         mockUUID,
 			size:              123456,
+			sequenceNumber:    1,
 			expectError:       true,
 			expectedErrorCode: cerror.ResourceNotFound,
 		},
@@ -218,6 +221,7 @@ func TestAddRevision(t *testing.T) {
 			trackId:           uuid.New(),
 			channelId:         mockUUID,
 			size:              123456,
+			sequenceNumber:    1,
 			expectError:       true,
 			expectedErrorCode: cerror.ResourceNotFound,
 		},
@@ -227,13 +231,14 @@ func TestAddRevision(t *testing.T) {
 			trackId:           mockUUID,
 			channelId:         uuid.New(),
 			size:              123456,
+			sequenceNumber:    1,
 			expectError:       true,
 			expectedErrorCode: cerror.ResourceNotFound,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			revision, err := globalRepo.AddRevision(tt.entryId, tt.trackId, tt.channelId, tt.size)
+			revision, err := globalRepo.AddRevision(tt.entryId, tt.trackId, tt.channelId, tt.size, tt.sequenceNumber)
 			if tt.expectError {
 				assert.NotNil(t, err)
 				if err != nil {
