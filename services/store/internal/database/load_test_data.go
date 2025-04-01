@@ -18,7 +18,6 @@ type TestData struct {
 	SnapChannels  []models.SnapChannel  `json:"snap_channels"`
 	SnapBranches  []models.SnapBranch   `json:"snap_branches"`
 	SnapRevisions []models.SnapRevision `json:"snap_revisions"`
-	SnapUploads   []models.SnapUpload   `json:"snap_uploads"`
 	SnapComments  []models.SnapComment  `json:"snap_comments"`
 }
 
@@ -96,29 +95,6 @@ func LoadTestData(filePath string, repo repositories.ISnapsRepository) ([]string
 		logrus.Infof("Inserted Revision for snap entry: %s", snapEntry.ID)
 	}
 
-	// --- Insert SnapUploads ---
-	// For each upload, update its SnapEntryID via the mapping,
-	// then retrieve the snap entry to get its name and call AddUpload.
-	for _, upload := range testData.SnapUploads {
-		newEntryID, ok := snapIDMap[upload.SnapEntryID]
-		if !ok {
-			return nil, fmt.Errorf("no registered snap entry found for upload (%s)", upload.UpDownID)
-		}
-
-		snapEntry, cerr := repo.GetEntryById(newEntryID, nil)
-		if cerr != nil {
-			return nil, fmt.Errorf("failed to get snap entry for upload (%s): %v", upload.UpDownID, cerr)
-		}
-
-		// Convert channels (pq.StringArray) to []string.
-		channels := []string(upload.Channels)
-		_, cerr = repo.AddUpload(snapEntry.Name, upload.UpDownID, upload.Filesize, channels)
-		if cerr != nil {
-			return nil, fmt.Errorf("failed to add upload for snap (%s): %v", snapEntry.Name, cerr)
-		}
-		logrus.Infof("Inserted Upload for snap entry: %s", snapEntry.Name)
-	}
-
 	// --- Insert SnapTracks, SnapChannels, SnapBranches, and SnapComments ---
 	// (Not implemented; we assume the test data for these is present for computing file paths.)
 
@@ -156,8 +132,8 @@ func LoadTestData(filePath string, repo repositories.ISnapsRepository) ([]string
 		// Find a channel for this entry and revision.
 		var channelName string
 		for _, c := range testData.SnapChannels {
-			// Assume the channel is for this snap entry and its revision_id matches the revision's id.
-			if c.SnapEntryID == origEntryID && c.RevisionID == rev.ID {
+			// Assume the channel is for this snap entry and its track_id matches the tracks's id.
+			if c.SnapEntryID == origEntryID && c.SnapTrackID == rev.SnapTrackID {
 				channelName = c.Name
 				break
 			}
