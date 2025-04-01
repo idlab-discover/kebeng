@@ -18,10 +18,10 @@ import (
 
 type StoreLogic struct {
 	proto.UnimplementedStoreServiceServer
-	repo *repositories.SnapsRepository
+	repo repositories.ISnapsRepository
 }
 
-func NewStoreLogic(repo *repositories.SnapsRepository) *StoreLogic {
+func NewStoreLogic(repo repositories.ISnapsRepository) *StoreLogic {
 	return &StoreLogic{repo: repo}
 }
 
