@@ -143,8 +143,23 @@ func (h *Handler) RegisterSnapName(c *gin.Context) {
 		return
 	}
 
+	c.Get("email")
+	email, ok := c.Get("email")
+	if !ok {
+		el.Add(cerror.Unauthorized, "email not found in macaroon")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})	
+		return
+	}
+	
+	account := h.BaseHandler.AccountClient.GetAccountByEmail(email.(string))
+	if len(account.Errors) > 0 {
+		el.ExtendAccountError(account.Errors)
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
+
 	dryRun := c.Query("dry_run") == "1"
-	resp := h.StoreClient.RegisterSnapName(req.SnapName, req.IsPrivate, req.Store, dryRun)
+	resp := h.StoreClient.RegisterSnapName(req.SnapName, req.IsPrivate, req.Store, dryRun, account.Id)
 	if len(resp.Errors) > 0 {
 		el.ExtendStoreError(resp.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
