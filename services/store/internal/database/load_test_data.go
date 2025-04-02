@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/google/uuid"
 	"github.com/idlab-discover/kebeng/services/store/internal/models"
@@ -18,7 +17,6 @@ type TestData struct {
 	SnapChannels  []models.SnapChannel  `json:"snap_channels"`
 	SnapBranches  []models.SnapBranch   `json:"snap_branches"`
 	SnapRevisions []models.SnapRevision `json:"snap_revisions"`
-	SnapUploads   []models.SnapUpload   `json:"snap_uploads"`
 	SnapComments  []models.SnapComment  `json:"snap_comments"`
 }
 
@@ -89,34 +87,11 @@ func LoadTestData(filePath string, repo repositories.ISnapsRepository) ([]string
 			size = *rev.Size
 		}
 
-		_, cerr = repo.AddRevision(*snapEntry, size)
+		_, cerr = repo.AddRevision(rev.SnapEntryID, rev.SnapTrackID, rev.SnapChannelID, size, *rev.SequenceNumber)
 		if cerr != nil {
 			return nil, fmt.Errorf("failed to add revision for snap (%s): %v", snapEntry.ID, cerr)
 		}
 		logrus.Infof("Inserted Revision for snap entry: %s", snapEntry.ID)
-	}
-
-	// --- Insert SnapUploads ---
-	// For each upload, update its SnapEntryID via the mapping,
-	// then retrieve the snap entry to get its name and call AddUpload.
-	for _, upload := range testData.SnapUploads {
-		newEntryID, ok := snapIDMap[upload.SnapEntryID]
-		if !ok {
-			return nil, fmt.Errorf("no registered snap entry found for upload (%s)", upload.UpDownID)
-		}
-
-		snapEntry, cerr := repo.GetEntryById(newEntryID, nil)
-		if cerr != nil {
-			return nil, fmt.Errorf("failed to get snap entry for upload (%s): %v", upload.UpDownID, cerr)
-		}
-
-		// Convert channels (pq.StringArray) to []string.
-		channels := []string(upload.Channels)
-		_, cerr = repo.AddUpload(snapEntry.Name, upload.UpDownID, upload.Filesize, channels)
-		if cerr != nil {
-			return nil, fmt.Errorf("failed to add upload for snap (%s): %v", snapEntry.Name, cerr)
-		}
-		logrus.Infof("Inserted Upload for snap entry: %s", snapEntry.Name)
 	}
 
 	// --- Insert SnapTracks, SnapChannels, SnapBranches, and SnapComments ---
@@ -156,8 +131,8 @@ func LoadTestData(filePath string, repo repositories.ISnapsRepository) ([]string
 		// Find a channel for this entry and revision.
 		var channelName string
 		for _, c := range testData.SnapChannels {
-			// Assume the channel is for this snap entry and its revision_id matches the revision's id.
-			if c.SnapEntryID == origEntryID && c.RevisionID == rev.ID {
+			// Assume the channel is for this snap entry and its track_id matches the tracks's id.
+			if c.SnapEntryID == origEntryID && c.SnapTrackID == rev.SnapTrackID {
 				channelName = c.Name
 				break
 			}
@@ -169,10 +144,10 @@ func LoadTestData(filePath string, repo repositories.ISnapsRepository) ([]string
 		// Build the path using the format:
 		// snaps/<snap_entry_name>/<track>/<channel>/<snap_revision.snap_name>_<sequence_number>.snap
 		// We assume that rev.SnapName is set (e.g. "test.snap") and rev.SequenceNumber is provided.
-		if rev.SnapName == nil || rev.SequenceNumber == nil {
-			return nil, fmt.Errorf("revision (%s) missing snap_name or sequence_number", rev.ID)
+		if rev.SequenceNumber == nil {
+			return nil, fmt.Errorf("revision (%s) missing sequence_number", rev.ID)
 		}
-		baseName := strings.TrimSuffix(*rev.SnapName, ".snap")
+		baseName := snapEntry.Name
 		path := fmt.Sprintf("%s/%s/%s/%s_%d.snap",
 			snapEntry.Name,
 			trackName,
