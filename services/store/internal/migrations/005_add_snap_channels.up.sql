@@ -13,9 +13,6 @@ create table channel
     snap_track_id uuid
         constraint fk_track_channels
             references track,
-    revision_id   uuid
-        constraint fk_channel_revision
-            references revision,
 
     CONSTRAINT channel_pkey PRIMARY KEY (id)
 );
