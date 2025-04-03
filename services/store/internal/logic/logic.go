@@ -484,6 +484,33 @@ func (s *StoreLogic) GetRevisionsByEntryIds(ctx context.Context, req *proto.GetR
 	return &proto.GetRevisionsByEntryIdResponses{Responses: responses}, nil
 }
 
+func (s *StoreLogic) GetLatestRevision(ctx context.Context, req *proto.GetLatestRevisionRequest) (*proto.GetRevisionResponse, error) {
+	el := make([]*proto.Error, 0)
+	if req.SnapName == "" {
+		el = append(el, &proto.Error{Code: cerror.MissingField, Message: "Snap name is required"})
+		return &proto.GetRevisionResponse{Errors: el}, nil
+	}
+
+	revision, cerr := s.repo.GetLatestRevision(req.SnapName, req.Track, req.Channel)
+	if cerr != nil {
+		logrus.Error(cerr)
+		el = append(el, &proto.Error{
+			Code:    cerr.GetCode(),
+			Message: cerr.GetMessage(),
+		})
+		return &proto.GetRevisionResponse{Errors: el}, nil
+	}
+
+	return &proto.GetRevisionResponse{
+		Id:            revision.ID.String(),
+		SnapName:      req.SnapName,
+		Sequence:      uint64(*revision.SequenceNumber),
+		Architectures: revision.Architectures,
+		Version:       *revision.Version,
+		Status:        *revision.Status,
+	}, nil
+}
+
 func saveFileToTemp(snapFile io.Reader) (string, string, *cerror.CustomError) {
 	// Generate random file name for the new uploaded file so it doesn't override the old file with same name
 	snapFileId := uuid.New().String()
