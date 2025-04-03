@@ -7,15 +7,15 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// MockStoreRepository is a mock implementation of ISnapsRepository for testing.
-type MockStoreRepository struct {
+// MockSnapsRepository is a mock implementation of ISnapsRepository for testing.
+type MockSnapsRepository struct {
 	mock.Mock
 }
 
-var _ ISnapsRepository = (*MockStoreRepository)(nil)
+var _ ISnapsRepository = (*MockSnapsRepository)(nil)
 
 // CREATE
-func (m *MockStoreRepository) AddChannel(snapEntryId uuid.UUID, snapTrackId uuid.UUID, channelName string) (*models.SnapChannel, *cerror.CustomError) {
+func (m *MockSnapsRepository) AddChannel(snapEntryId uuid.UUID, snapTrackId uuid.UUID, channelName string) (*models.SnapChannel, *cerror.CustomError) {
 	args := m.Called(snapEntryId, snapTrackId, channelName)
 	if args.Get(0) != nil {
 		return args.Get(0).(*models.SnapChannel), nil
@@ -23,12 +23,12 @@ func (m *MockStoreRepository) AddChannel(snapEntryId uuid.UUID, snapTrackId uuid
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
-func (m *MockStoreRepository) AddDefaultChannels(snapEntryId uuid.UUID, snapTrackId uuid.UUID) *cerror.CustomError {
+func (m *MockSnapsRepository) AddDefaultChannels(snapEntryId uuid.UUID, snapTrackId uuid.UUID) *cerror.CustomError {
 	args := m.Called(snapEntryId, snapTrackId)
 	return args.Get(0).(*cerror.CustomError)
 }
 
-func (m *MockStoreRepository) AddRevision(entryId uuid.UUID, trackId uuid.UUID, channelId uuid.UUID, size uint64, sequenceNumber uint) (*models.SnapRevision, *cerror.CustomError) {
+func (m *MockSnapsRepository) AddRevision(entryId uuid.UUID, trackId uuid.UUID, channelId uuid.UUID, size uint64, sequenceNumber uint) (*models.SnapRevision, *cerror.CustomError) {
 	args := m.Called(entryId, trackId, channelId, size, sequenceNumber)
 	if args.Get(0) != nil {
 		return args.Get(0).(*models.SnapRevision), nil
@@ -36,7 +36,7 @@ func (m *MockStoreRepository) AddRevision(entryId uuid.UUID, trackId uuid.UUID, 
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
-func (m *MockStoreRepository) AddTrack(entryId uuid.UUID, trackName string) (*models.SnapTrack, *cerror.CustomError) {
+func (m *MockSnapsRepository) AddTrack(entryId uuid.UUID, trackName string) (*models.SnapTrack, *cerror.CustomError) {
 	args := m.Called(entryId, trackName)
 	if args.Get(0) != nil {
 		return args.Get(0).(*models.SnapTrack), nil
@@ -44,7 +44,7 @@ func (m *MockStoreRepository) AddTrack(entryId uuid.UUID, trackName string) (*mo
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
-func (m *MockStoreRepository) RegisterSnap(snapName string, isPrivate bool) (*models.SnapEntry, *cerror.CustomError) {
+func (m *MockSnapsRepository) RegisterSnap(snapName string, isPrivate bool) (*models.SnapEntry, *cerror.CustomError) {
 	args := m.Called(snapName, isPrivate)
 	if args.Get(0) != nil {
 		return args.Get(0).(*models.SnapEntry), nil
@@ -53,7 +53,7 @@ func (m *MockStoreRepository) RegisterSnap(snapName string, isPrivate bool) (*mo
 }
 
 // READ
-func (m *MockStoreRepository) GetAllSnapEntries() (*[]models.SnapEntry, *cerror.CustomError) {
+func (m *MockSnapsRepository) GetAllSnapEntries() (*[]models.SnapEntry, *cerror.CustomError) {
 	args := m.Called()
 	if args.Get(0) != nil {
 		return args.Get(0).(*[]models.SnapEntry), nil
@@ -61,7 +61,7 @@ func (m *MockStoreRepository) GetAllSnapEntries() (*[]models.SnapEntry, *cerror.
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
-func (m *MockStoreRepository) GetChannelsByTrackId(trackId uuid.UUID) ([]*models.SnapChannel, *cerror.CustomError) {
+func (m *MockSnapsRepository) GetChannelsByTrackId(trackId uuid.UUID) ([]*models.SnapChannel, *cerror.CustomError) {
 	args := m.Called(trackId)
 	if args.Get(0) != nil {
 		return args.Get(0).([]*models.SnapChannel), nil
@@ -69,7 +69,7 @@ func (m *MockStoreRepository) GetChannelsByTrackId(trackId uuid.UUID) ([]*models
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
-func (m *MockStoreRepository) GetCommentsByEntryId(entryId uuid.UUID) ([]*models.SnapComment, *cerror.CustomError) {
+func (m *MockSnapsRepository) GetCommentsByEntryId(entryId uuid.UUID) ([]*models.SnapComment, *cerror.CustomError) {
 	args := m.Called(entryId)
 	if args.Get(0) != nil {
 		return args.Get(0).([]*models.SnapComment), nil
@@ -77,7 +77,7 @@ func (m *MockStoreRepository) GetCommentsByEntryId(entryId uuid.UUID) ([]*models
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
-func (m *MockStoreRepository) GetEntriesByAccountId(accountId uuid.UUID, preloadAssociations []string) ([]*models.SnapEntry, *cerror.CustomError) {
+func (m *MockSnapsRepository) GetEntriesByAccountId(accountId uuid.UUID, preloadAssociations []string) ([]*models.SnapEntry, *cerror.CustomError) {
 	args := m.Called(accountId, preloadAssociations)
 	if args.Get(0) != nil {
 		return args.Get(0).([]*models.SnapEntry), nil
@@ -85,7 +85,7 @@ func (m *MockStoreRepository) GetEntriesByAccountId(accountId uuid.UUID, preload
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
-func (m *MockStoreRepository) GetEntryById(id uuid.UUID, preloadAssociations []string) (*models.SnapEntry, *cerror.CustomError) {
+func (m *MockSnapsRepository) GetEntryById(id uuid.UUID, preloadAssociations []string) (*models.SnapEntry, *cerror.CustomError) {
 	args := m.Called(id, preloadAssociations)
 	if args.Get(0) != nil {
 		return args.Get(0).(*models.SnapEntry), nil
@@ -93,7 +93,7 @@ func (m *MockStoreRepository) GetEntryById(id uuid.UUID, preloadAssociations []s
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
-func (m *MockStoreRepository) GetEntryByName(name string, preloadAssociations []string) (*models.SnapEntry, *cerror.CustomError) {
+func (m *MockSnapsRepository) GetEntryByName(name string, preloadAssociations []string) (*models.SnapEntry, *cerror.CustomError) {
 	args := m.Called(name, preloadAssociations)
 	if args.Get(0) != nil {
 		return args.Get(0).(*models.SnapEntry), nil
@@ -101,7 +101,7 @@ func (m *MockStoreRepository) GetEntryByName(name string, preloadAssociations []
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
-func (m *MockStoreRepository) GetRevisionsByEntryId(entryId uuid.UUID) ([]*models.SnapRevision, *cerror.CustomError) {
+func (m *MockSnapsRepository) GetRevisionsByEntryId(entryId uuid.UUID) ([]*models.SnapRevision, *cerror.CustomError) {
 	args := m.Called(entryId)
 	if args.Get(0) != nil {
 		return args.Get(0).([]*models.SnapRevision), nil
@@ -109,7 +109,7 @@ func (m *MockStoreRepository) GetRevisionsByEntryId(entryId uuid.UUID) ([]*model
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
-func (m *MockStoreRepository) GetRevisionById(id uuid.UUID) (*models.SnapRevision, *cerror.CustomError) {
+func (m *MockSnapsRepository) GetRevisionById(id uuid.UUID) (*models.SnapRevision, *cerror.CustomError) {
 	args := m.Called(id)
 	if args.Get(0) != nil {
 		return args.Get(0).(*models.SnapRevision), nil
@@ -117,7 +117,7 @@ func (m *MockStoreRepository) GetRevisionById(id uuid.UUID) (*models.SnapRevisio
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
-func (m *MockStoreRepository) GetRevisionByNameAndSequence(name string, sequence uint) (*models.SnapRevision, *cerror.CustomError) {
+func (m *MockSnapsRepository) GetRevisionByNameAndSequence(name string, sequence uint) (*models.SnapRevision, *cerror.CustomError) {
 	args := m.Called(name, sequence)
 	if args.Get(0) != nil {
 		return args.Get(0).(*models.SnapRevision), nil
@@ -125,7 +125,7 @@ func (m *MockStoreRepository) GetRevisionByNameAndSequence(name string, sequence
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
-func (m *MockStoreRepository) GetRevisionBySHA(SHA3_384 string, encoded bool) (*models.SnapRevision, *cerror.CustomError) {
+func (m *MockSnapsRepository) GetRevisionBySHA(SHA3_384 string, encoded bool) (*models.SnapRevision, *cerror.CustomError) {
 	args := m.Called(SHA3_384, encoded)
 	if args.Get(0) != nil {
 		return args.Get(0).(*models.SnapRevision), nil
@@ -133,7 +133,7 @@ func (m *MockStoreRepository) GetRevisionBySHA(SHA3_384 string, encoded bool) (*
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
-func (m *MockStoreRepository) GetSections() (*[]string, *cerror.CustomError) {
+func (m *MockSnapsRepository) GetSections() (*[]string, *cerror.CustomError) {
 	args := m.Called()
 	if args.Get(0) != nil {
 		return args.Get(0).(*[]string), nil
@@ -141,7 +141,7 @@ func (m *MockStoreRepository) GetSections() (*[]string, *cerror.CustomError) {
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
-func (m *MockStoreRepository) GetTracksBySnapId(snapId uuid.UUID) ([]*models.SnapTrack, *cerror.CustomError) {
+func (m *MockSnapsRepository) GetTracksBySnapId(snapId uuid.UUID) ([]*models.SnapTrack, *cerror.CustomError) {
 	args := m.Called(snapId)
 	if args.Get(0) != nil {
 		return args.Get(0).([]*models.SnapTrack), nil
@@ -150,12 +150,12 @@ func (m *MockStoreRepository) GetTracksBySnapId(snapId uuid.UUID) ([]*models.Sna
 }
 
 // UPDATE
-func (m *MockStoreRepository) ReleaseSnap(channels []string, snapEntryId uuid.UUID, revisionId uuid.UUID) *cerror.CustomError {
+func (m *MockSnapsRepository) ReleaseSnap(channels []string, snapEntryId uuid.UUID, revisionId uuid.UUID) *cerror.CustomError {
 	args := m.Called(channels, snapEntryId, revisionId)
 	return args.Get(0).(*cerror.CustomError)
 }
 
-func (m *MockStoreRepository) UpdateRevision(revision *models.SnapRevision, revisionBytes *[]byte) (*models.SnapRevision, *cerror.CustomError) {
+func (m *MockSnapsRepository) UpdateRevision(revision *models.SnapRevision, revisionBytes *[]byte) (*models.SnapRevision, *cerror.CustomError) {
 	args := m.Called(revision, revisionBytes)
 	if args.Get(0) != nil {
 		return args.Get(0).(*models.SnapRevision), nil

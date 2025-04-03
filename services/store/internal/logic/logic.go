@@ -10,19 +10,21 @@ import (
 
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
-	"github.com/idlab-discover/kebeng/services/store/internal/repositories"
+	"github.com/idlab-discover/kebeng/services/store/internal/config"
+	"github.com/idlab-discover/kebeng/services/store/internal/repository"
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type StoreLogic struct {
+	config *config.Config
 	proto.UnimplementedStoreServiceServer
-	repo repositories.ISnapsRepository
+	repo repository.ISnapsRepository
 }
 
-func NewStoreLogic(repo repositories.ISnapsRepository) *StoreLogic {
-	return &StoreLogic{repo: repo}
+func NewStoreLogic(repo repository.ISnapsRepository, config *config.Config) *StoreLogic {
+	return &StoreLogic{repo: repo, config: config}
 }
 
 // func (s *StoreLogic) UploadSnap(ctx context.Context, req *proto.UploadSnapRequest) (*proto.UploadSnapResponse, error) {

@@ -1,4 +1,4 @@
-package repositories_test
+package repository_test
 
 import (
 	"io"
@@ -19,17 +19,17 @@ import (
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
 	storeDB "github.com/idlab-discover/kebeng/services/store/internal/database"
 	"github.com/idlab-discover/kebeng/services/store/internal/models"
-	"github.com/idlab-discover/kebeng/services/store/internal/repositories"
+	"github.com/idlab-discover/kebeng/services/store/internal/repository"
 )
 
 var (
-	globalRepo repositories.ISnapsRepository
+	globalRepo repository.ISnapsRepository
 	globalDB   *sqlx.DB
 	cleanupDB  func()
 	mockUUID   = uuid.New()
 )
 
-func setupGlobalTestDB() (repositories.ISnapsRepository, *sqlx.DB, func()) {
+func setupGlobalTestDB() (repository.ISnapsRepository, *sqlx.DB, func()) {
 	postgres := embeddedpostgres.NewDatabase(embeddedpostgres.DefaultConfig().
 		Port(5433).
 		Version(embeddedpostgres.V12).
@@ -52,7 +52,7 @@ func setupGlobalTestDB() (repositories.ISnapsRepository, *sqlx.DB, func()) {
 		logrus.Fatalf("failed to run migrations: %v", err)
 	}
 
-	repo := repositories.NewSnapsRepository(db)
+	repo := repository.NewSnapsRepository(db)
 
 	_, err2 := repo.RegisterSnap("test", false)
 	if err2 != nil {
