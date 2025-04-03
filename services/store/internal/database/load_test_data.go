@@ -22,27 +22,27 @@ type TestData struct {
 
 // TODO: add channel and track and then remove computing path so that
 // the path can be reconstructed from the database
-func LoadTestData(filePath string, repo repositories.ISnapsRepository) ([]string, error) {
+func LoadTestData(filePath string, repo repositories.ISnapsRepository) error {
 	logrus.Info("Inserting test data")
 
 	// Check if file exists and read its content.
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		logrus.Warnf("Test data file does not exist: %s", filePath)
-		return nil, nil
+		return nil
 	}
 	file, err := os.ReadFile(filePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open test data file: %v", err)
+		return fmt.Errorf("failed to open test data file: %v", err)
 	}
 	if len(file) == 0 {
 		logrus.Info("Test data file is empty")
-		return nil, nil
+		return nil
 	}
 
 	// Unmarshal JSON test data into our TestData struct.
 	testData := &TestData{}
 	if err = json.Unmarshal(file, testData); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal test data: %v", err)
+		return fmt.Errorf("failed to unmarshal test data: %v", err)
 	}
 
 	idMap := make(map[uuid.UUID]uuid.UUID)
@@ -57,7 +57,7 @@ func LoadTestData(filePath string, repo repositories.ISnapsRepository) ([]string
 		// (Note: you may later update this to include the account id.)
 		registeredSnap, cerr := repo.RegisterSnap(entry.Name, isPrivate)
 		if cerr != nil {
-			return nil, fmt.Errorf("failed to register snap (%s): %v", entry.Name, cerr)
+			return fmt.Errorf("failed to register snap (%s): %v", entry.Name, cerr)
 		}
 		logrus.Infof("Registered SnapEntry: %+v", registeredSnap)
 		// Update mapping: original ID -> new generated ID.
@@ -69,11 +69,11 @@ func LoadTestData(filePath string, repo repositories.ISnapsRepository) ([]string
 		newEntryID, ok := idMap[track.SnapEntryID]
 		if !ok {
 			logrus.Warnf("Checking for entryId: %s, Snap ID mapping: %+v", track.SnapEntryID, idMap)
-			return nil, fmt.Errorf("no registered snap entry found for track (%s)", track.ID)
+			return fmt.Errorf("no registered snap entry found for track (%s)", track.ID)
 		}
 		registeredTrack, cerr := repo.AddTrack(newEntryID, track.Name)
 		if cerr != nil {
-			return nil, fmt.Errorf("failed to register track (%s): %v", track.Name, cerr)
+			return fmt.Errorf("failed to register track (%s): %v", track.Name, cerr)
 		}
 		idMap[track.ID] = registeredTrack.ID
 	}
@@ -82,17 +82,17 @@ func LoadTestData(filePath string, repo repositories.ISnapsRepository) ([]string
 		newEntryID, ok := idMap[channel.SnapEntryID]
 		if !ok {
 			logrus.Warnf("Checking for entryId: %s, Snap ID mapping: %+v", channel.SnapEntryID, idMap)
-			return nil, fmt.Errorf("no registered snap entry found for channel (%s)", channel.ID)
+			return fmt.Errorf("no registered snap entry found for channel (%s)", channel.ID)
 		}
 		newTrackId, ok2 := idMap[channel.SnapTrackID]
 		if !ok2 {
 			logrus.Warnf("Checking for trackId: %s, Snap ID mapping: %+v", channel.SnapTrackID, idMap)
-			return nil, fmt.Errorf("no registered snap track found for channel (%s)", channel.ID)
+			return fmt.Errorf("no registered snap track found for channel (%s)", channel.ID)
 		}
 
 		registeredChannel, cerr := repo.AddChannel(newEntryID, newTrackId, channel.Name)
 		if cerr != nil {
-			return nil, fmt.Errorf("failed to register channel (%s): %v", channel.Name, cerr)
+			return fmt.Errorf("failed to register channel (%s): %v", channel.Name, cerr)
 		}
 		logrus.Infof("Registered SnapChannel: %+v", channel)
 		idMap[channel.ID] = registeredChannel.ID
@@ -102,17 +102,17 @@ func LoadTestData(filePath string, repo repositories.ISnapsRepository) ([]string
 		newEntryID, ok := idMap[rev.SnapEntryID]
 		if !ok {
 			logrus.Warnf("Checking for entryId: %s, Snap ID mapping: %+v", rev.SnapEntryID, idMap)
-			return nil, fmt.Errorf("no registered snap entry found for revision (%s)", rev.ID)
+			return fmt.Errorf("no registered snap entry found for revision (%s)", rev.ID)
 		}
 		newTrackId, ok2 := idMap[rev.SnapTrackID]
 		if !ok2 {
 			logrus.Warnf("Checking for trackId: %s, Snap ID mapping: %+v", rev.SnapTrackID, idMap)
-			return nil, fmt.Errorf("no registered snap track found for revision (%s)", rev.ID)
+			return fmt.Errorf("no registered snap track found for revision (%s)", rev.ID)
 		}
 		newChannelId, ok3 := idMap[rev.SnapChannelID]
 		if !ok3 {
 			logrus.Warnf("Checking for channelId: %s, Snap ID mapping: %+v", rev.SnapChannelID, idMap)
-			return nil, fmt.Errorf("no registered snap channel found for revision (%s)", rev.ID)
+			return fmt.Errorf("no registered snap channel found for revision (%s)", rev.ID)
 		}
 
 		var size uint64 = 0
@@ -122,70 +122,10 @@ func LoadTestData(filePath string, repo repositories.ISnapsRepository) ([]string
 
 		registeredRevision, cerr := repo.AddRevision(newEntryID, newTrackId, newChannelId, size, *rev.SequenceNumber)
 		if cerr != nil {
-			return nil, fmt.Errorf("failed to add revision for snap (%s): %v", newEntryID, cerr)
+			return fmt.Errorf("failed to add revision for snap (%s): %v", newEntryID, cerr)
 		}
 		idMap[rev.ID] = registeredRevision.ID
 	}
 
-	var snapPaths []string
-	for _, rev := range testData.Revisions {
-		// Use the original entry_id from test data (this should match one of the testData.snap_entries)
-		origEntryID := rev.SnapEntryID
-
-		// Look up the snap entry in testData.
-		var snapEntry *models.SnapEntry
-		for _, e := range testData.Entries {
-			if e.ID == origEntryID {
-				snapEntry = &e
-				break
-			}
-		}
-		if snapEntry == nil {
-			return nil, fmt.Errorf("no snap entry found in test data for revision (%s)", rev.ID)
-		}
-
-		// Find a track for this entry.
-		var trackName string
-		for _, t := range testData.Tracks {
-			if t.SnapEntryID == origEntryID {
-				trackName = t.Name
-				break
-			}
-		}
-		if trackName == "" {
-			return nil, fmt.Errorf("no snap track found for entry (%s)", origEntryID)
-		}
-
-		// Find a channel for this entry and revision.
-		var channelName string
-		for _, c := range testData.Channels {
-			// Assume the channel is for this snap entry and its track_id matches the tracks's id.
-			if c.SnapEntryID == origEntryID && c.SnapTrackID == rev.SnapTrackID {
-				channelName = c.Name
-				break
-			}
-		}
-		if channelName == "" {
-			return nil, fmt.Errorf("no snap channel found for entry (%s) and revision (%s)", origEntryID, rev.ID)
-		}
-
-		// Build the path using the format:
-		// snaps/<snap_entry_name>/<track>/<channel>/<snap_revision.snap_name>_<sequence_number>.snap
-		// We assume that rev.SnapName is set (e.g. "test.snap") and rev.SequenceNumber is provided.
-		if rev.SequenceNumber == nil {
-			return nil, fmt.Errorf("revision (%s) missing sequence_number", rev.ID)
-		}
-		baseName := snapEntry.Name
-		path := fmt.Sprintf("%s/%s/%s/%s_%d.snap",
-			snapEntry.Name,
-			trackName,
-			channelName,
-			baseName,
-			*rev.SequenceNumber,
-		)
-		snapPaths = append(snapPaths, path)
-		logrus.Infof("Computed snap path: %s", path)
-	}
-
-	return snapPaths, nil
+	return nil
 }
