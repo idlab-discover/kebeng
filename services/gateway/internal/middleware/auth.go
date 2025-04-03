@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/idlab-discover/kebeng/services/gateway/handler/auth"
+	customMacaroon "github.com/idlab-discover/kebeng/services/gateway/internal/macaroon"
 	"gopkg.in/macaroon.v2"
 )
 
@@ -16,7 +17,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
 			el.Add(cerror.Unauthorized, "missing Authorization header")
-			c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+			c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
 			c.Abort()
 			return
 		}
@@ -24,7 +25,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		// Parse macaroon from header
 		rootMacaroon, dischargeMacaroon, err := parseMacaroon(authHeader, el)
 		if err != nil {
-			c.JSON(el.GetHTTPStatus(), el)
+			c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
 			c.Abort()
 			return
 		}
@@ -65,9 +66,11 @@ func parseMacaroon(authHeader string, el *cerror.ErrorList) (*macaroon.Macaroon,
 	for _, part := range parts {
 		if strings.HasPrefix(part, "root=") {
 			rootMacaroon = strings.TrimPrefix(part, "root=")
+			rootMacaroon = strings.TrimSuffix(rootMacaroon, ",")
 		}
 		if strings.HasPrefix(part, "discharge=") {
 			dischargeMacaroon = strings.TrimPrefix(part, "discharge=")
+			rootMacaroon = strings.TrimSuffix(rootMacaroon, ",")
 		}
 	}
 
@@ -87,21 +90,21 @@ func parseMacaroon(authHeader string, el *cerror.ErrorList) (*macaroon.Macaroon,
 		el.Add(cerror.Unauthorized, "Invalid root macaroon")
 	}
 
-	// // deserialize the macaroon
-	// deserializedRootMacaroon, err := mc.MacaroonDeserialize(rootMacaroon)
-	// if err != nil {
-	// 	el.Add(cerror.Unauthorized, "Invalid root macaroon")
-	// }
+	// deserialize the macaroon
+	deserializedRootMacaroon, err := customMacaroon.MacaroonDeserialize(rootMacaroon)
+	if err != nil {
+		el.Add(cerror.Unauthorized, "Invalid root macaroon")
+	}
 
-	// // Verify the discharge macaroon
-	// deserializedDischargeMacaroon, err := mc.MacaroonDeserialize(dischargeMacaroon)
-	// if err != nil {
-	// 	el.Add(cerror.Unauthorized, "Invalid discharge macaroon")
-	// }
+	// Verify the discharge macaroon
+	deserializedDischargeMacaroon, err := customMacaroon.MacaroonDeserialize(dischargeMacaroon)
+	if err != nil {
+		el.Add(cerror.Unauthorized, "Invalid discharge macaroon")
+	}
 
-	// if len(*el) > 0 {
-	// 	return nil, nil, fmt.Errorf("Could not parse macaroon")
-	// }
-	return nil, nil, nil
-	//return deserializedRootMacaroon, deserializedDischargeMacaroon, nil
+	if len(*el) > 0 {
+		return nil, nil, fmt.Errorf("Could not parse macaroon")
+	}
+	// return nil, nil, nil
+	return deserializedRootMacaroon, deserializedDischargeMacaroon, nil
 }

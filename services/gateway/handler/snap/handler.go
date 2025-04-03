@@ -140,7 +140,7 @@ func (h *Handler) RegisterSnapName(c *gin.Context) {
 	var req model.RegisterSnapNameRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		el.Add(cerror.BadRequest, cerror.FormatBindError(err))
-		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
 		return
 	}
 
@@ -149,7 +149,7 @@ func (h *Handler) RegisterSnapName(c *gin.Context) {
 	email, ok := c.Get("email")
 	if !ok {
 		el.Add(cerror.Unauthorized, "email not found in macaroon")
-		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
 		return
 	}
 
@@ -157,7 +157,7 @@ func (h *Handler) RegisterSnapName(c *gin.Context) {
 	account := h.BaseHandler.AccountClient.GetAccountByEmail(email.(string))
 	if len(account.Errors) > 0 {
 		el.ExtendAccountError(account.Errors)
-		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
 		return
 	}
 
@@ -165,7 +165,7 @@ func (h *Handler) RegisterSnapName(c *gin.Context) {
 	accountUUID, err := uuid.Parse(account.Id)
 	if err != nil {
 		el.Add(cerror.BadRequest, "invalid account ID format")
-		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
 		return
 	}
 
@@ -174,7 +174,7 @@ func (h *Handler) RegisterSnapName(c *gin.Context) {
 	resp := h.StoreClient.RegisterSnapName(req.SnapName, req.IsPrivate, req.Store, dryRun, accountUUID)
 	if len(resp.Errors) > 0 {
 		el.ExtendStoreError(resp.Errors)
-		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
 		return
 	}
 
