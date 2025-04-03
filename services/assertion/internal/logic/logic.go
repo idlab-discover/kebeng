@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
-	"github.com/idlab-discover/kebeng/services/assertion/internal/config"
-	"github.com/idlab-discover/kebeng/services/assertion/internal/repositories"
+	"github.com/idlab-discover/kebeng/services/assertion/internal/repository"
 	proto "github.com/idlab-discover/kebeng/services/assertion/proto"
 	"github.com/sirupsen/logrus"
 )
@@ -17,13 +17,12 @@ import (
 // so doing checks and stuff and calling the database logic
 
 type AssertionService struct {
-	config *config.Config
-	repo   *repositories.AssertionRepository
 	proto.UnimplementedAssertionServiceServer
+	repo repository.IAssertionRepository
 }
 
-func NewAssertionService(repo *repositories.AssertionRepository, config *config.Config) *AssertionService {
-	return &AssertionService{repo: repo, config: config}
+func NewAssertionLogic(repo repository.IAssertionRepository) *AssertionService {
+	return &AssertionService{repo: repo}
 }
 
 func (s *AssertionService) ProcessSnapBuildAssertion(ctx context.Context, req *proto.SnapBuildAssertionRequest) (*proto.SnapBuildAssertionResponse, error) {
@@ -52,9 +51,22 @@ func (s *AssertionService) ProcessSnapBuildAssertion(ctx context.Context, req *p
 		}, nil
 	}
 
-	_, err = s.repo.AddAssertion(string(req.Assertion))
+	snapEntryId := assertion["snap-id"]
+	parsedUUID, err := uuid.Parse(snapEntryId)
 	if err != nil {
-		logrus.Errorf("Failed to create assertion: %v", err)
+		logrus.Errorf("Failed to parse snap-id: %v", err)
+		errList = append(errList, &proto.Error{
+			Code:    cerror.Invalid,
+			Message: "Invalid snap-id",
+		})
+		return &proto.SnapBuildAssertionResponse{
+			Errors: errList,
+		}, nil
+	}
+
+	_, err2 := s.repo.AddAssertion(parsedUUID, string(req.Assertion))
+	if err2 != nil {
+		logrus.Errorf("Failed to create assertion: %v", err2)
 		errList = append(errList, &proto.Error{
 			Code:    cerror.AssertionCreationFailed,
 			Message: "Failed to create assertion",
