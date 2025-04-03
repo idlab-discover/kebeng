@@ -36,6 +36,7 @@ type ISnapsRepository interface {
 	GetRevisionBySHA(SHA3_384 string, encoded bool) (*models.SnapRevision, *cerror.CustomError)
 	GetSections() (*[]string, *cerror.CustomError)
 	GetTracksBySnapId(snapId uuid.UUID) ([]*models.SnapTrack, *cerror.CustomError)
+	GetLatestRevision(snapName string, track string, channel string) (*models.SnapRevision, *cerror.CustomError)
 
 	// UPDATE
 	ReleaseSnap(channels []string, snapEntryId uuid.UUID, revisionId uuid.UUID) *cerror.CustomError
@@ -76,11 +77,11 @@ func (sp *SnapsRepository) AddRevision(entryId uuid.UUID, trackId uuid.UUID, cha
 	// TODO: fix the need for an empty revision
 	// TODO: add build_assertion_filename if an assertion exists -> doesn't get checked in official snap store either
 	snapRevision := models.SnapRevision{
-		SnapEntryID:   entryId,
-		SnapTrackID:   trackId,
-		SnapChannelID: channelId,
-		SHA3_384:      nil, // TODO: calculate sha3_384 in logic and at it to the parameters
-		Size:          &size,
+		SnapEntryID:    entryId,
+		SnapTrackID:    trackId,
+		SnapChannelID:  channelId,
+		SHA3_384:       nil, // TODO: calculate sha3_384 in logic and at it to the parameters
+		Size:           &size,
 		SequenceNumber: &sequenceNumber,
 	}
 	query := `
@@ -406,6 +407,33 @@ func (sp *SnapsRepository) GetTracksBySnapId(snapId uuid.UUID) ([]*models.SnapTr
 	}
 
 	return tracks, nil
+}
+
+func (sp *SnapsRepository) GetLatestRevision(snapName string, track string, channel string) (*models.SnapRevision, *cerror.CustomError) {
+	var revision models.SnapRevision
+	// NOTE: this query might be quite expensive if there are a lot of revisions
+	// NOTE split up to make it more efficient perhaps
+	query := `
+		SELECT r.*
+		FROM entry e
+		JOIN track t ON t.entry_id = e.id
+		JOIN channel c ON c.entry_id = e.id AND c.snap_track_id = t.id
+		JOIN revision r ON r.entry_id = e.id 
+					   AND r.snap_track_id = t.id 
+					   AND r.snap_channel_id = c.id
+		WHERE e.name = $1
+		  AND t.name = $2
+		  AND c.name = $3
+		ORDER BY r.updated_at DESC
+		LIMIT 1;
+	`
+	err := sp.db.Get(&revision, query, snapName, track, channel)
+	if err != nil {
+		logrus.Error(err)
+		return nil, cerror.ConvertError(err, fmt.Sprintf("resource not found: latest revision for snap with name = '%s' and track = '%s' and channel = '%s'", snapName, track, channel))
+	}
+
+	return &revision, nil
 }
 
 // ============ UPDATE =============
