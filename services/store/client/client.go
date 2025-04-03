@@ -21,6 +21,7 @@ type StoreClientInterface interface {
 	GetRevisions(revisions *proto.GetRevisionsRequest) *proto.GetRevisionsResponse
 	GetEntriesByAccountID(accountID string) *proto.GetEntriesResponse
 	GetRevisionsByEntryIds(entryIds *proto.GetRevisionsByEntryIdRequests) *proto.GetRevisionsByEntryIdResponses
+	GetLatestRevision(snapName, track, channel string) *proto.GetRevisionResponse
 }
 
 var _ StoreClientInterface = (*StoreClient)(nil)
@@ -131,6 +132,25 @@ func (c *StoreClient) GetRevisionsByEntryIds(entryIds *proto.GetRevisionsByEntry
 	resp, err := c.client.GetRevisionsByEntryIds(context.Background(), entryIds)
 	if err != nil {
 		resp = &proto.GetRevisionsByEntryIdResponses{
+			Errors: []*proto.Error{{
+				Code:    cerror.InternalServerError,
+				Message: err.Error()},
+			},
+		}
+	}
+	return resp
+}
+
+func (c *StoreClient) GetLatestRevision(snapName, track, channel string) *proto.GetRevisionResponse {
+	req := &proto.GetLatestRevisionRequest{
+		SnapName: snapName,
+		Track:    track,
+		Channel:  channel,
+	}
+
+	resp, err := c.client.GetLatestRevision(context.Background(), req)
+	if err != nil {
+		resp = &proto.GetRevisionResponse{
 			Errors: []*proto.Error{{
 				Code:    cerror.InternalServerError,
 				Message: err.Error()},
