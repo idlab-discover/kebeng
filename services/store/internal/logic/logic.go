@@ -76,7 +76,7 @@ func (s *StoreLogic) RegisterSnapName(ctx context.Context, req *proto.RegisterSn
 		}
 	}
 
-	// TODO: if dryRun is true, but snap name is not registered, what should we return?
+	// TODO: if dryRun is true, but snap name is not registered, what should we return? -> right now we return an empty string
 
 	// If dryRun is true, we only check if the snap name is already registered
 	if req.DryRun {
