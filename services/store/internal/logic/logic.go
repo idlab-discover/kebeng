@@ -95,8 +95,22 @@ func (s *StoreLogic) RegisterSnapName(ctx context.Context, req *proto.RegisterSn
 	// If there is no snap with the same name and dry_run == false, register the snap name
 	snapEntry, err = s.repo.RegisterSnap(req.SnapName, req.IsPrivate)
 	if err != nil {
-		logrus.Error(err)
 		el = append(el, &proto.Error{Code: cerror.InternalServerError, Message: "Failed to register snap name"})
+		return &proto.RegisterSnapNameResponse{Errors: el}, nil
+	}
+
+	// Add "latest" track to the snap entry
+	snapTrack, err := s.repo.AddTrack(snapEntry.ID, "latest")
+	if err != nil {
+		el = append(el, &proto.Error{Code: cerror.InternalServerError, Message: "Failed to add latest track"})
+		return &proto.RegisterSnapNameResponse{Errors: el}, nil
+	}
+
+	// Add default channels for the "latest" track to the snap entry
+	err = s.repo.AddDefaultChannels(snapEntry.ID, snapTrack.ID)
+	if err != nil {
+		logrus.Error(err)
+		el = append(el, &proto.Error{Code: cerror.InternalServerError, Message: "Failed to add default channels"})
 		return &proto.RegisterSnapNameResponse{Errors: el}, nil
 	}
 
