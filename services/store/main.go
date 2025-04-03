@@ -66,13 +66,13 @@ func main() {
 
 	if cfg.TestMode {
 		logrus.Infof("Running in test mode, using test data file: %s", cfg.TestDataFilePath)
-		snapPaths, err := database.LoadTestData(cfg.TestDataFilePath, repo)
+		err := database.LoadTestData(cfg.TestDataFilePath, repo)
 		if err != nil {
 			logrus.Fatalf("Failed to load test data: %v", err)
 		}
 
 		logrus.Infof("Loaded test data, uploading to minio: %s", cfg.TestDataMinioPath)
-		err = objectstore.LoadTestData(minioClient, cfg.TestDataMinioPath, snapPaths)
+		err = objectstore.LoadTestData(minioClient, repo, cfg.TestDataMinioPath)
 		if err != nil {
 			logrus.Fatalf("Failed to load test data to minio: %v", err)
 		}
