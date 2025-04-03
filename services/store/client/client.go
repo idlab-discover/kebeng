@@ -142,6 +142,23 @@ func (c *StoreClient) GetRevisionsByEntryIds(entryIds *proto.GetRevisionsByEntry
 }
 
 func (c *StoreClient) GetLatestRevision(snapName, track, channel string) *proto.GetRevisionResponse {
+	// if snapName is empty we cant do anything
+	if snapName == "" {
+		return &proto.GetRevisionResponse{
+			Errors: []*proto.Error{{
+				Code:    cerror.MissingField,
+				Message: "snapName is required"},
+			},
+		}
+	}
+	// Default track to "stable" if not provided
+	if track == "" {
+		track = "stable"
+	}
+	// Default channel to "stable" if not provided
+	if channel == "" {
+		channel = "stable"
+	}
 	req := &proto.GetLatestRevisionRequest{
 		SnapName: snapName,
 		Track:    track,
