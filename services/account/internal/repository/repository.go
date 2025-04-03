@@ -93,7 +93,7 @@ func (a *AccountRepository) GetAccountByEmail(ctx context.Context, email string,
 	err := a.db.Get(&account, query, email)
 	if err != nil {
 		logrus.Error(err)
-		return nil, cerror.ConvertError(err)
+		return nil, cerror.ConvertError(err, fmt.Sprintf("resource not found by email, value = '%s'", email))
 	}
 
 	// TODO: check what difference between SSHKeys and Keys
