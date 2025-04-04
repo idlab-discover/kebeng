@@ -239,3 +239,15 @@ func (h *Handler) ProcessSnapBuildAssertion(c *gin.Context) {
 		},
 	})
 }
+
+func (h *Handler) SnapPush(c *gin.Context) {
+	el := cerror.NewErrorList()
+	var req model.SnapPushRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		el.Add(cerror.BadRequest, cerror.FormatBindError(err))
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true})
+}

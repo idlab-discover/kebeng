@@ -52,6 +52,7 @@ func (h *Handler) SetupEndpoints(r *gin.Engine) {
 	r.GET("/v2/snaps/find", h.snapHandler.FindSnaps) // TODO
 	r.POST("/dev/api/register-name-dispute/", h.snapHandler.RegisterSnapNameDispute)
 	r.POST("/dev/api/snaps/:snap_id/builds", h.snapHandler.ProcessSnapBuildAssertion)
+	authGroup.POST("/snap-push/", h.snapHandler.SnapPush)
 
 	// ********** AUTH **********
 
