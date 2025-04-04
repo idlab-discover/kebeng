@@ -191,3 +191,11 @@ message RefreshSnapResponse {
     }
     repeated Result results = 2;
 }
+
+message SnapPushRequest {
+    string snap_id = 1;
+    string instance_key = 2;
+    uint64 revision = 3;
+    string track = 4;
+    string channel = 5;
+}
