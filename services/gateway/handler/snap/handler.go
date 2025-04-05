@@ -290,7 +290,11 @@ func (h *Handler) SnapPush(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "snap_name": resp.SnapName})
+	c.JSON(http.StatusOK, gin.H{
+		"success":            true,
+		"snap_name":          resp.SnapName,
+		"status_details_url": fmt.Sprintf("https://%s/dev/api/snaps/%s/status", c.ClientIP(), uuid.New().String()), // FIX: this should be the URL to the status of the revision
+	})
 }
 
 func (h *Handler) UnscannedUpload(c *gin.Context) {
@@ -310,14 +314,15 @@ func (h *Handler) UnscannedUpload(c *gin.Context) {
 	header, err := c.FormFile("binary") // vervang 'snap' indien nodig
 	if err != nil {
 		el.Add(cerror.BadRequest, "Missing file in form data: "+err.Error())
-		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
 		return
 	}
 
 	// Test: gewoon even bevestigen dat het gelukt is
 	c.JSON(http.StatusOK, gin.H{
-		"success":  true,
-		"filename": header.Filename,
-		"size":     header.Size,
+		"successful": true,
+		"upload_id":  uuid.New().String(), // FIX: this should be the ID of the revision that is created
+		"filename":   header.Filename,
+		"size":       header.Size,
 	})
 }
