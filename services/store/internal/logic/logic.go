@@ -116,7 +116,6 @@ func (s *StoreLogic) RegisterSnapName(ctx context.Context, req *proto.RegisterSn
 	// Add default channels for the "latest" track to the snap entry
 	err = s.repo.AddDefaultChannels(snapEntry.ID, snapTrack.ID)
 	if err != nil {
-		logrus.Error(err)
 		el = append(el, &proto.Error{Code: cerror.InternalServerError, Message: "Failed to add default channels"})
 		return &proto.RegisterSnapNameResponse{Errors: el}, nil
 	}
