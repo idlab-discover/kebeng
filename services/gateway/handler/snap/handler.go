@@ -1,6 +1,7 @@
 package snap
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -242,7 +243,7 @@ func (h *Handler) ProcessSnapBuildAssertion(c *gin.Context) {
 
 func (h *Handler) SnapPush(c *gin.Context) {
 	el := cerror.NewErrorList()
-	var req model.SnapPushRequest
+	var req *model.SnapPushRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		el.Add(cerror.BadRequest, cerror.FormatBindError(err))
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
@@ -250,4 +251,33 @@ func (h *Handler) SnapPush(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+func (h *Handler) UnscannedUpload(c *gin.Context) {
+	el := cerror.NewErrorList()
+
+	c.Request.ParseMultipartForm(100 << 20) // 100 MB limiet
+
+	if c.Request.MultipartForm != nil {
+		for key, files := range c.Request.MultipartForm.File {
+			fmt.Printf("Multipart file field: %s\n", key)
+			for _, f := range files {
+				fmt.Printf("  File name: %s, size: %d bytes\n", f.Filename, f.Size)
+			}
+		}
+	}
+
+	header, err := c.FormFile("binary") // vervang 'snap' indien nodig
+	if err != nil {
+		el.Add(cerror.BadRequest, "Missing file in form data: "+err.Error())
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
+
+	// Test: gewoon even bevestigen dat het gelukt is
+	c.JSON(http.StatusOK, gin.H{
+		"success":  true,
+		"filename": header.Filename,
+		"size":     header.Size,
+	})
 }
