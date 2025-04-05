@@ -44,8 +44,8 @@ func (m *MockSnapsRepository) AddTrack(entryId uuid.UUID, trackName string) (*mo
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
-func (m *MockSnapsRepository) RegisterSnap(snapName string, isPrivate bool) (*models.SnapEntry, *cerror.CustomError) {
-	args := m.Called(snapName, isPrivate)
+func (m *MockSnapsRepository) RegisterSnap(snapName string, isPrivate bool, storeName string, accountId uuid.UUID) (*models.SnapEntry, *cerror.CustomError) {
+	args := m.Called(snapName, isPrivate, storeName, accountId)
 	if args.Get(0) != nil {
 		return args.Get(0).(*models.SnapEntry), nil
 	}

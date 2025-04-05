@@ -95,7 +95,12 @@ func (s *StoreLogic) RegisterSnapName(ctx context.Context, req *proto.RegisterSn
 	}
 
 	// If there is no snap with the same name and dry_run == false, register the snap name
-	snapEntry, err = s.repo.RegisterSnap(req.SnapName, req.IsPrivate)
+	accountId, err1 := uuid.Parse(req.AccountId)
+	if err1 != nil {
+		el = append(el, &proto.Error{Code: cerror.InvalidField, Message: "Invalid UUID format for AccountId"})
+		return &proto.RegisterSnapNameResponse{Errors: el}, nil
+	}
+	snapEntry, err = s.repo.RegisterSnap(req.SnapName, req.IsPrivate, req.Store, accountId)
 	if err != nil {
 		el = append(el, &proto.Error{Code: cerror.InternalServerError, Message: "Failed to register snap name"})
 		return &proto.RegisterSnapNameResponse{Errors: el}, nil

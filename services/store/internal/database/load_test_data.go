@@ -55,7 +55,7 @@ func LoadTestData(filePath string, repo repository.ISnapsRepository) error {
 		}
 		// Use RegisterSnap to insert the snap entry.
 		// (Note: you may later update this to include the account id.)
-		registeredSnap, cerr := repo.RegisterSnap(entry.Name, isPrivate)
+		registeredSnap, cerr := repo.RegisterSnap(entry.Name, isPrivate, *entry.Store, entry.AccountID)
 		if cerr != nil {
 			return fmt.Errorf("failed to register snap (%s): %v", entry.Name, cerr)
 		}
