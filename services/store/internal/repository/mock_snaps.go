@@ -25,7 +25,10 @@ func (m *MockSnapsRepository) AddChannel(snapEntryId uuid.UUID, snapTrackId uuid
 
 func (m *MockSnapsRepository) AddDefaultChannels(snapEntryId uuid.UUID, snapTrackId uuid.UUID) *cerror.CustomError {
 	args := m.Called(snapEntryId, snapTrackId)
-	return args.Get(0).(*cerror.CustomError)
+	if args.Get(0) != nil {
+		return args.Get(0).(*cerror.CustomError)
+	}
+	return nil
 }
 
 func (m *MockSnapsRepository) AddRevision(entryId uuid.UUID, trackId uuid.UUID, channelId uuid.UUID, size uint64, sequenceNumber uint) (*models.SnapRevision, *cerror.CustomError) {
@@ -94,6 +97,9 @@ func (m *MockSnapsRepository) GetEntryById(id uuid.UUID, preloadAssociations []s
 }
 
 func (m *MockSnapsRepository) GetEntryByName(name string, preloadAssociations []string) (*models.SnapEntry, *cerror.CustomError) {
+	// if preloadAssociations == nil {
+	// 	preloadAssociations = []string{}
+	// }
 	args := m.Called(name, preloadAssociations)
 	if args.Get(0) != nil {
 		return args.Get(0).(*models.SnapEntry), nil

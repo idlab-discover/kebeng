@@ -70,12 +70,9 @@ func (s *StoreLogic) RegisterSnapName(ctx context.Context, req *proto.RegisterSn
 
 	// First check if the snap name is already registered
 	snapEntry, err := s.repo.GetEntryByName(req.SnapName, nil)
-	if err != nil {
-		if err.GetCode() != cerror.ResourceNotFound {
-			logrus.Error(err)
-			el = append(el, &proto.Error{Code: cerror.InternalServerError, Message: "Failed to check if snap name is already registered"})
-			return &proto.RegisterSnapNameResponse{Errors: el}, nil
-		}
+	if err != nil && err.GetCode() != cerror.ResourceNotFound {
+		el = append(el, &proto.Error{Code: err.GetCode(), Message: err.GetMessage()})
+		return &proto.RegisterSnapNameResponse{Errors: el}, nil
 	}
 
 	// TODO: if dryRun is true, but snap name is not registered, what should we return? -> right now we return an empty string
@@ -90,33 +87,33 @@ func (s *StoreLogic) RegisterSnapName(ctx context.Context, req *proto.RegisterSn
 	}
 	// If dryRun is false, but snap name is already registered, return an error
 	if snapEntry != nil {
-		el = append(el, &proto.Error{Code: cerror.AlreadyRegistered, Message: "The snap name '" + req.SnapName + "' is already registered."})
+		el = append(el, &proto.Error{Code: cerror.AlreadyRegistered, Message: "snap name '" + req.SnapName + "' is already registered."})
 		return &proto.RegisterSnapNameResponse{Errors: el}, nil
 	}
 
 	// If there is no snap with the same name and dry_run == false, register the snap name
 	accountId, err1 := uuid.Parse(req.AccountId)
 	if err1 != nil {
-		el = append(el, &proto.Error{Code: cerror.InvalidField, Message: "Invalid UUID format for AccountId"})
+		el = append(el, &proto.Error{Code: cerror.InvalidField, Message: "invalid UUID format for AccountId"})
 		return &proto.RegisterSnapNameResponse{Errors: el}, nil
 	}
 	snapEntry, err = s.repo.RegisterSnap(req.SnapName, req.IsPrivate, req.Store, accountId)
 	if err != nil {
-		el = append(el, &proto.Error{Code: cerror.InternalServerError, Message: "Failed to register snap name"})
+		el = append(el, &proto.Error{Code: err.GetCode(), Message: err.GetMessage()})
 		return &proto.RegisterSnapNameResponse{Errors: el}, nil
 	}
 
 	// Add "latest" track to the snap entry
 	snapTrack, err := s.repo.AddTrack(snapEntry.ID, "latest")
 	if err != nil {
-		el = append(el, &proto.Error{Code: cerror.InternalServerError, Message: "Failed to add latest track"})
+		el = append(el, &proto.Error{Code: err.GetCode(), Message: err.GetMessage()})
 		return &proto.RegisterSnapNameResponse{Errors: el}, nil
 	}
 
 	// Add default channels for the "latest" track to the snap entry
 	err = s.repo.AddDefaultChannels(snapEntry.ID, snapTrack.ID)
 	if err != nil {
-		el = append(el, &proto.Error{Code: cerror.InternalServerError, Message: "Failed to add default channels"})
+		el = append(el, &proto.Error{Code: err.GetCode(), Message: err.GetMessage()})
 		return &proto.RegisterSnapNameResponse{Errors: el}, nil
 	}
 
