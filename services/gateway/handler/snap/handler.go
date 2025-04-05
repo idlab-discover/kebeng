@@ -285,7 +285,7 @@ func (h *Handler) SnapPush(c *gin.Context) {
 	}
 
 	if resp.SnapName == "" {
-		el.AddCustomError(cerror.NewCustomError(cerror.NameNotRegistered, "Snap name not registered"))
+		el.AddCustomError(cerror.NewCustomError(cerror.ResourceNotFound, "Snap name not found for name="+req.Name))
 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
 		return
 	}
