@@ -10,7 +10,7 @@
       "confinement": "strict",
       "base": "test.snap",
       "private": false,
-      "account_id": "4fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "account_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
       "status": "active",
       "price": 0.0,
       "store": "example store",
