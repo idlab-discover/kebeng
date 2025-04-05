@@ -83,3 +83,12 @@ func (m *MockAccountServiceClient) GetRevisionByNameAndSequence(ctx context.Cont
 	}
 	return resp.(*proto.GetRevisionResponse), args.Error(1)
 }
+
+func (m *MockAccountServiceClient) UnscannedUpload(ctx context.Context, in *proto.UnscannedUploadRequest, opts ...grpc.CallOption) (*proto.UnscannedUploadResponse, error) {
+	args := m.Called(ctx, in)
+	resp := args.Get(0)
+	if resp == nil {
+		return nil, args.Error(1)
+	}
+	return resp.(*proto.UnscannedUploadResponse), args.Error(1)
+}

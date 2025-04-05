@@ -13,6 +13,7 @@ service StoreService {
     rpc GetEntriesByAccountId(GetEntriesByAccountIdRequest) returns (GetEntriesResponse);
     rpc GetRevisionsByEntryIds(GetRevisionsByEntryIdRequests) returns (GetRevisionsByEntryIdResponses);
     rpc RefreshSnap(RefreshSnapRequest) returns (RefreshSnapResponse);
+    rpc UnscannedUpload(UnscannedUploadRequest) returns (UnscannedUploadResponse);
 }
 
 message UploadSnapRequest {
@@ -198,4 +199,14 @@ message SnapPushRequest {
     uint64 revision = 3;
     string track = 4;
     string channel = 5;
+}
+
+message UnscannedUploadRequest {
+    bytes snap_file = 1;
+}
+
+message UnscannedUploadResponse {
+    string temp_file_name = 1;
+    uint64 file_size = 2;
+    repeated Error errors = 3;
 }

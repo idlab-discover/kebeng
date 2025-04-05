@@ -1,6 +1,7 @@
 package logic
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
+	"github.com/idlab-discover/kebeng/services/store/internal/objectstore"
 	"github.com/idlab-discover/kebeng/services/store/internal/repository"
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
 	"github.com/sirupsen/logrus"
@@ -26,37 +28,6 @@ type StoreLogic struct {
 func NewStoreLogic(repo repository.ISnapsRepository, config *config.Config) *StoreLogic {
 	return &StoreLogic{repo: repo, config: config}
 }
-
-// func (s *StoreLogic) UploadSnap(ctx context.Context, req *proto.UploadSnapRequest) (*proto.UploadSnapResponse, error) {
-// 	// TODO: check which fields are required and which are optional in req
-// 	el := make([]*proto.Error, 0)
-// 	snapFileName, id, err := saveFileToTemp(bytes.NewReader(req.File))
-// 	if err != nil {
-// 		logrus.Errorf("Failed to save file to temp storage: %v", err)
-// 		el = append(el, &proto.Error{Code: cerror.InternalServerError, Message: "Failed to save file to temp storage"})
-// 		return &proto.UploadSnapResponse{Errors: el}, nil
-// 	}
-
-// 	objectstore := objectstore.NewObjectStore()
-// 	tmpPath := path.Join(os.TempDir(), snapFileName)
-
-// 	size, err2 := objectstore.SaveFileToBucket("unscanned", tmpPath)
-// 	if err2 != nil {
-// 		logrus.Errorf("Failed to save file to object store: %v", err)
-// 		el = append(el, &proto.Error{Code: cerror.InternalServerError, Message: "Failed to save file to object store"})
-// 		return &proto.UploadSnapResponse{Errors: el}, nil
-// 	}
-
-// 	// addSnap() adds snap to entry table
-// 	_, err3 := s.repo.AddSnap(snapFileName, size, uuid.New()) // uuid.New() is a placeholder for account id that is going to be added later throught the context
-// 	if err3 != nil {
-// 		logrus.Error(err2)
-// 		el = append(el, &proto.Error{Code: cerror.InternalServerError, Message: "Failed to add snap to database"})
-// 		return &proto.UploadSnapResponse{Errors: el}, nil
-// 	}
-
-// 	return &proto.UploadSnapResponse{Id: id, DisplayName: snapFileName}, nil
-// }
 
 func (s *StoreLogic) RegisterSnapName(ctx context.Context, req *proto.RegisterSnapNameRequest) (*proto.RegisterSnapNameResponse, error) {
 	el := make([]*proto.Error, 0)
@@ -501,21 +472,74 @@ func (s *StoreLogic) GetRevisionsByEntryIds(ctx context.Context, req *proto.GetR
 	return &proto.GetRevisionsByEntryIdResponses{Responses: responses}, nil
 }
 
-func saveFileToTemp(snapFile io.Reader) (string, string, *cerror.CustomError) {
+// func (s *StoreLogic) UploadSnap(ctx context.Context, req *proto.UploadSnapRequest) (*proto.UploadSnapResponse, error) {
+// 	// TODO: check which fields are required and which are optional in req
+// 	el := make([]*proto.Error, 0)
+// 	snapFileName, id, err := saveFileToTemp(bytes.NewReader(req.File))
+// 	if err != nil {
+// 		logrus.Errorf("Failed to save file to temp storage: %v", err)
+// 		el = append(el, &proto.Error{Code: cerror.InternalServerError, Message: "Failed to save file to temp storage"})
+// 		return &proto.UploadSnapResponse{Errors: el}, nil
+// 	}
+
+// 	objectstore := objectstore.NewObjectStore()
+// 	tmpPath := path.Join(os.TempDir(), snapFileName)
+
+// 	size, err2 := objectstore.SaveFileToBucket("unscanned", tmpPath)
+// 	if err2 != nil {
+// 		logrus.Errorf("Failed to save file to object store: %v", err)
+// 		el = append(el, &proto.Error{Code: cerror.InternalServerError, Message: "Failed to save file to object store"})
+// 		return &proto.UploadSnapResponse{Errors: el}, nil
+// 	}
+
+// 	// addSnap() adds snap to entry table
+// 	_, err3 := s.repo.AddSnap(snapFileName, size, uuid.New()) // uuid.New() is a placeholder for account id that is going to be added later throught the context
+// 	if err3 != nil {
+// 		logrus.Error(err2)
+// 		el = append(el, &proto.Error{Code: cerror.InternalServerError, Message: "Failed to add snap to database"})
+// 		return &proto.UploadSnapResponse{Errors: el}, nil
+// 	}
+
+// 	return &proto.UploadSnapResponse{Id: id, DisplayName: snapFileName}, nil
+// }
+
+func (s *StoreLogic) UnscannedUpload(ctx context.Context, req *proto.UnscannedUploadRequest) (*proto.UnscannedUploadResponse, error) {
+	el := make([]*proto.Error, 0)
+	snapFileName, err := saveFileToTemp(bytes.NewReader(req.SnapFile))
+	if err != nil {
+		logrus.Errorf("Failed to save file to temp storage: %v", err)
+		el = append(el, &proto.Error{Code: cerror.InternalServerError, Message: "Failed to save file to temp storage"})
+		return &proto.UnscannedUploadResponse{Errors: el}, nil
+	}
+
+	objectstore := objectstore.NewObjectStore()
+	tmpPath := path.Join(os.TempDir(), snapFileName)
+
+	size, err2 := objectstore.SaveFileToBucket("unscanned", tmpPath)
+	if err2 != nil {
+		logrus.Errorf("Failed to save file to object store: %v", err)
+		el = append(el, &proto.Error{Code: cerror.InternalServerError, Message: "Failed to save file to object store"})
+		return &proto.UnscannedUploadResponse{Errors: el}, nil
+	}
+
+	return &proto.UnscannedUploadResponse{TempFileName: tmpPath, FileSize: size}, nil
+}
+
+func saveFileToTemp(snapFile io.Reader) (string, *cerror.CustomError) {
 	// Generate random file name for the new uploaded file so it doesn't override the old file with same name
 	snapFileId := uuid.New().String()
 	newFileName := snapFileId + ".snap"
 
 	out, err := os.Create(path.Join("/tmp", newFileName))
 	if err != nil {
-		return "", "", cerror.NewCustomError(cerror.InternalServerError, "Failed to create file")
+		return "", cerror.NewCustomError(cerror.InternalServerError, "Failed to create file")
 	}
 	defer out.Close()
 
 	_, err = io.Copy(out, snapFile)
 	if err != nil {
-		return "", "", cerror.NewCustomError(cerror.InternalServerError, "Failed to copy file")
+		return "", cerror.NewCustomError(cerror.InternalServerError, "Failed to copy file")
 	}
 
-	return newFileName, snapFileId, nil
+	return newFileName, nil
 }

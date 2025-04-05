@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
@@ -21,6 +22,7 @@ type StoreClientInterface interface {
 	GetRevisions(revisions *proto.GetRevisionsRequest) *proto.GetRevisionsResponse
 	GetEntriesByAccountID(accountID string) *proto.GetEntriesResponse
 	GetRevisionsByEntryIds(entryIds *proto.GetRevisionsByEntryIdRequests) *proto.GetRevisionsByEntryIdResponses
+	UnscannedUpload(snapFile io.Reader) *proto.UnscannedUploadResponse
 }
 
 var _ StoreClientInterface = (*StoreClient)(nil)
@@ -131,6 +133,33 @@ func (c *StoreClient) GetRevisionsByEntryIds(entryIds *proto.GetRevisionsByEntry
 	resp, err := c.client.GetRevisionsByEntryIds(context.Background(), entryIds)
 	if err != nil {
 		resp = &proto.GetRevisionsByEntryIdResponses{
+			Errors: []*proto.Error{{
+				Code:    cerror.InternalServerError,
+				Message: err.Error()},
+			},
+		}
+	}
+	return resp
+}
+
+func (c *StoreClient) UnscannedUpload(snapFile io.Reader) *proto.UnscannedUploadResponse {
+	fileData, err := io.ReadAll(snapFile)
+	if err != nil {
+		return &proto.UnscannedUploadResponse{
+			Errors: []*proto.Error{{
+				Code:    cerror.InternalServerError,
+				Message: err.Error(),
+			}},
+		}
+	}
+
+	req := &proto.UnscannedUploadRequest{
+		SnapFile: fileData,
+	}
+
+	resp, err := c.client.UnscannedUpload(context.Background(), req)
+	if err != nil {
+		resp = &proto.UnscannedUploadResponse{
 			Errors: []*proto.Error{{
 				Code:    cerror.InternalServerError,
 				Message: err.Error()},
