@@ -8,13 +8,13 @@ import (
 	"strings"
 
 	"github.com/idlab-discover/kebeng/services/store/internal/models"
-	"github.com/idlab-discover/kebeng/services/store/internal/repositories"
+	"github.com/idlab-discover/kebeng/services/store/internal/repository"
 	"github.com/minio/minio-go/v7"
 	"github.com/sirupsen/logrus"
 )
 
 // TODO: should get snap path out of database instead of getting it as var
-func LoadTestData(client *minio.Client, repo repositories.ISnapsRepository, minioPath string) error {
+func LoadTestData(client *minio.Client, repo repository.ISnapsRepository, minioPath string) error {
 	ok, err := client.BucketExists(context.Background(), "snaps")
 	if err != nil {
 		logrus.Errorf("Error checking if bucket exists: %v", err)
