@@ -22,6 +22,13 @@ import (
 )
 
 func main() {
+	// set logrus to use text formatter
+	logrus.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp:   true,
+		TimestampFormat: "2006-01-02 15:04:05",
+		DisableColors:   true,
+	})
+
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		logrus.Fatalf("Failed to load configuration: %v", err)
