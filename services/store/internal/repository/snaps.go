@@ -133,6 +133,7 @@ func (sp *SnapsRepository) AddTrack(entryId uuid.UUID, trackName string) (*model
 }
 
 // QUESTION: maybe we can just internaly call this AddEntry -> clearer name?
+// QUESTION: right now an snap entry is bound to an account. Wouldn't it be better to bound snap revisions to an account?
 func (sp *SnapsRepository) RegisterSnap(snapName string, isPrivate bool, storeName string, accountId uuid.UUID) (*models.SnapEntry, *cerror.CustomError) {
 	snapEntry := models.SnapEntry{
 		Name:      snapName,
