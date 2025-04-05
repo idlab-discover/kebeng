@@ -1,4 +1,4 @@
-package repositories
+package repository
 
 import (
 	"fmt"
@@ -19,9 +19,10 @@ import (
 type ISnapsRepository interface {
 	// CREATE
 	AddChannel(snapEntryId uuid.UUID, snapTrackId uuid.UUID, channelName string) (*models.SnapChannel, *cerror.CustomError)
+	AddDefaultChannels(snapEntryId uuid.UUID, snapTrackId uuid.UUID) *cerror.CustomError
 	AddRevision(entryId uuid.UUID, trackId uuid.UUID, channelId uuid.UUID, size uint64, sequenceNumber uint) (*models.SnapRevision, *cerror.CustomError)
 	AddTrack(entryId uuid.UUID, trackName string) (*models.SnapTrack, *cerror.CustomError)
-	RegisterSnap(snapName string, isPrivate bool) (*models.SnapEntry, *cerror.CustomError)
+	RegisterSnap(snapName string, isPrivate bool, store string, accountId uuid.UUID) (*models.SnapEntry, *cerror.CustomError)
 
 	// READ
 	GetAllSnapEntries() (*[]models.SnapEntry, *cerror.CustomError)
@@ -72,15 +73,28 @@ func (sp *SnapsRepository) AddChannel(snapEntryId uuid.UUID, snapTrackId uuid.UU
 	return &channel, nil
 }
 
+func (sp *SnapsRepository) AddDefaultChannels(snapEntryId uuid.UUID, snapTrackId uuid.UUID) *cerror.CustomError {
+	channels := []string{"stable", "candidate", "beta", "edge"}
+
+	for _, channel := range channels {
+		_, err := sp.AddChannel(snapEntryId, snapTrackId, channel)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (sp *SnapsRepository) AddRevision(entryId uuid.UUID, trackId uuid.UUID, channelId uuid.UUID, size uint64, sequenceNumber uint) (*models.SnapRevision, *cerror.CustomError) {
 	// TODO: fix the need for an empty revision
 	// TODO: add build_assertion_filename if an assertion exists -> doesn't get checked in official snap store either
 	snapRevision := models.SnapRevision{
-		SnapEntryID:   entryId,
-		SnapTrackID:   trackId,
-		SnapChannelID: channelId,
-		SHA3_384:      nil, // TODO: calculate sha3_384 in logic and at it to the parameters
-		Size:          &size,
+		SnapEntryID:    entryId,
+		SnapTrackID:    trackId,
+		SnapChannelID:  channelId,
+		SHA3_384:       nil, // TODO: calculate sha3_384 in logic and at it to the parameters
+		Size:           &size,
 		SequenceNumber: &sequenceNumber,
 	}
 	query := `
@@ -119,18 +133,21 @@ func (sp *SnapsRepository) AddTrack(entryId uuid.UUID, trackName string) (*model
 }
 
 // QUESTION: maybe we can just internaly call this AddEntry -> clearer name?
-func (sp *SnapsRepository) RegisterSnap(snapName string, isPrivate bool) (*models.SnapEntry, *cerror.CustomError) {
+// QUESTION: right now an snap entry is bound to an account. Wouldn't it be better to bound snap revisions to an account?
+func (sp *SnapsRepository) RegisterSnap(snapName string, isPrivate bool, storeName string, accountId uuid.UUID) (*models.SnapEntry, *cerror.CustomError) {
 	snapEntry := models.SnapEntry{
-		Name:    snapName,
-		Private: &isPrivate,
+		Name:      snapName,
+		Private:   &isPrivate,
+		Store:     &storeName,
+		AccountID: accountId,
 	}
 
 	query := `
-		INSERT INTO entry (name, private)
-		VALUES ($1, $2)
+		INSERT INTO entry (name, private, store, account_id)
+		VALUES ($1, $2, $3, $4)
 		RETURNING id
 	`
-	err := sp.db.Get(&snapEntry.ID, query, snapName, isPrivate)
+	err := sp.db.Get(&snapEntry.ID, query, snapName, isPrivate, storeName, accountId)
 	if err != nil {
 		logrus.Error(err)
 		return nil, cerror.ConvertError(err)
@@ -267,8 +284,8 @@ func (sp *SnapsRepository) GetEntryByName(name string, preloadAssociations []str
 	`
 	err := sp.db.Get(&snapEntry, query, name)
 	if err != nil {
-		logrus.Errorf("FUNCTION GetEntryByName while searching for snap with name '%s': %s", name, err)
-		return nil, cerror.ConvertError(err, fmt.Sprintf("resource not found: snap with name = '%s'", name))
+		logrus.Warnf("FUNCTION GetEntryByName while searching for snap with name '%s': %s", name, err)
+		return nil, cerror.ConvertError(err, fmt.Sprintf("entry not found: snap with name = '%s'", name))
 	}
 
 	cerr := sp.getPreloadAssociations(&snapEntry, &preloadAssociations)
@@ -528,32 +545,7 @@ func (sp *SnapsRepository) UpdateRevision(revision *models.SnapRevision, revisio
 }
 
 // ============ PRIVATE =============
-// ============ HELPER =============
-
-func (sp *SnapsRepository) addDefaultChannels(snapEntry models.SnapEntry, snapRevision models.SnapRevision, trackId uuid.UUID) *cerror.CustomError {
-	// TODO: fix me
-	channels := []string{"stable", "candidate", "beta", "edge"}
-
-	for _, channel := range channels {
-		var snapChannel models.SnapChannel
-		snapChannel.SnapEntryID = snapEntry.ID
-		snapChannel.SnapTrackID = trackId
-		snapChannel.Name = channel
-
-		query := `
-			INSERT INTO channel (name, entry_id, snap_track_id)
-			VALUES ($1, $2, $3)
-			RETURNING id
-		`
-		err := sp.db.Get(&snapChannel.ID, query, snapChannel.Name, snapChannel.SnapEntryID, snapChannel.SnapTrackID)
-		if err != nil {
-			logrus.Error(err)
-			return cerror.ConvertError(err)
-		}
-	}
-
-	return nil
-}
+// ============ HELPER ==============
 
 func (sp *SnapsRepository) updateMeta(metaBytes *[]byte) *cerror.CustomError {
 	snapMeta, err2 := snap.GetSnapMetaFromBytes(*metaBytes, "/tmp")
