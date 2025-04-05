@@ -45,6 +45,8 @@ func LoadTestData(filePath string, repo repositories.ISnapsRepository) error {
 		return fmt.Errorf("failed to unmarshal test data: %v", err)
 	}
 
+	logrus.Infof("Loaded test data Entries: %+v", testData.Entries)
+
 	idMap := make(map[uuid.UUID]uuid.UUID)
 
 	// --- Insert Entries ---

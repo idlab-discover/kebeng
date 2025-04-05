@@ -53,7 +53,6 @@ type Action struct {
 	Action      string  `json:"action"`
 	InstanceKey string  `json:"instance-key"`
 	Name        *string `json:"name"`
-	SnapID      *string `json:"snap-id"`
 	Channel     string  `json:"channel"`
 	Epoch       *struct {
 		Read  []int `json:"read"`
@@ -94,7 +93,7 @@ type RefreshSnap struct {
 	Download      *Download  `json:"download,omitempty"`
 	Version       *string    `json:"version,omitempty"`
 	Confinement   *string    `json:"confinement,omitempty"`
-	Revision      *float64   `json:"revision,omitempty"`
+	Revision      *int       `json:"revision,omitempty"`
 	Type          *string    `json:"type,omitempty"`
 	Base          *string    `json:"base,omitempty"`
 }

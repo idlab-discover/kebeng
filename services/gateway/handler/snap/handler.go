@@ -1,6 +1,7 @@
 package snap
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -43,7 +44,12 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 	for _, action := range req.Actions {
 		if action.Action == "install" {
 			logrus.Infof("%v", action)
-			res := h.refreshSnapInstall(c, action, el)
+			res, err := h.refreshSnapInstall(c, action, el)
+			if err != nil {
+				logrus.Errorf("Error refreshing snap: %v", err)
+				c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+				return
+			}
 			resp.Responses = append(resp.Responses, res)
 		} else {
 			el.Add(cerror.NotImplemented, "Action not implemented")
@@ -56,15 +62,14 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 }
 
 // TODO: Implement this function properly
-func (h *Handler) refreshSnapInstall(c *gin.Context, action *model.Action, el *cerror.ErrorList) *model.RefreshSnapResult {
+func (h *Handler) refreshSnapInstall(c *gin.Context, action *model.Action, el *cerror.ErrorList) (*model.RefreshSnapResult, error) {
 	var res model.RefreshSnapResult
 
-	// Get snap entry -> will return 1 snap entry
+	// should only get 1 entry since name is unique
 	snapEntries := h.StoreClient.GetEntries(&storepb.GetEntriesRequest{
 		Entries: []*storepb.GetEntryRequest{
 			{
 				Name:                action.Name,
-				Id:                  action.SnapID,
 				PreloadAssociations: []string{"REVISIONS"},
 			},
 		},
@@ -72,39 +77,44 @@ func (h *Handler) refreshSnapInstall(c *gin.Context, action *model.Action, el *c
 	if len(snapEntries.Errors) > 0 {
 		el.ExtendStoreError(snapEntries.Errors)
 		res.Result = nil
-		return &res
+		return &res, fmt.Errorf("store error: %v", snapEntries.Errors)
 	}
-
-	// Get the snap entry -> should only be 1
+	logrus.Debugf("******************* Snap entries: %v", snapEntries.Entries)
+	if len(snapEntries.Entries) == 0 {
+		el.Add(cerror.ResourceNotFound, "Snap not found")
+		res.Result = nil
+		return &res, fmt.Errorf("snap not found")
+	}
 	snapEntry := snapEntries.Entries[0]
 
-	// Get a set of all the architectures of the snapEntry's revisions
-	architectureSet := make(map[string]struct{})
-	for _, snapRevision := range snapEntry.Revisions {
-		for _, arch := range snapRevision.Architectures {
-			architectureSet[arch] = struct{}{}
-		}
+	// NOTE: track is not given to use with default "snap install <name>" so put it to default latest now if we do get it with other variations of command
+	// use that and put to default if not passed
+	latestRevision := h.StoreClient.GetLatestRevision(*action.Name, "latest", action.Channel)
+	if len(latestRevision.Errors) > 0 {
+		el.ExtendStoreError(latestRevision.Errors)
+		res.Result = nil
+		return &res, fmt.Errorf("store error: %v", latestRevision.Errors)
 	}
-
-	// Convert the set to a slice
-	architectures := make([]string, 0, len(architectureSet))
-	for arch := range architectureSet {
-		architectures = append(architectures, arch)
-	}
-
-	latest_revision := float64(snapEntry.Revisions[len(snapEntry.Revisions)-1].Sequence)
 
 	// Get the publisher of the snap entry
+	// ERROR: if publisher not found we should error this is not safe if we don't know who published it
 	publisher := h.AccountClient.GetAccountByID(snapEntry.PublisherId)
+	if len(publisher.Errors) > 0 {
+		el.ExtendAccountError(publisher.Errors)
+		res.Result = nil
+		return &res, fmt.Errorf("account error: %v", publisher.Errors)
+	}
 
 	result := "install"
+
+	sequenceNumber := int(latestRevision.Sequence)
 
 	res.Result = &result
 	res.InstanceKey = &action.InstanceKey
 	res.SnapId = &snapEntry.Id
 	res.Name = &snapEntry.SnapName
 	res.Snap = &model.RefreshSnap{
-		Architectures: &architectures,
+		Architectures: &latestRevision.Architectures,
 		SnapId:        &snapEntry.Id,
 		Name:          &snapEntry.SnapName,
 		Publisher: &model.Publisher{
@@ -116,13 +126,13 @@ func (h *Handler) refreshSnapInstall(c *gin.Context, action *model.Action, el *c
 			Sha3_384: nil, // TODO: implement
 			Size:     nil, // TODO: implement
 		},
-		Version:     nil, // TODO: implement
-		Revision:    &latest_revision,
+		Version:     &latestRevision.Version,
+		Revision:    &sequenceNumber,
 		Confinement: snapEntry.Confinement,
 		Type:        snapEntry.Type,
 		Base:        snapEntry.Base,
 	}
-	return &res
+	return &res, nil
 }
 
 func (h *Handler) FindSnaps(c *gin.Context) {
