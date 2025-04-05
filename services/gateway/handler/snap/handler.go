@@ -241,6 +241,8 @@ func (h *Handler) ProcessSnapBuildAssertion(c *gin.Context) {
 	})
 }
 
+// SnapPush checks if there exists a snap entry for the uploaded snap package.
+// It calls the RegisterSnapName function with dryRun = true.
 func (h *Handler) SnapPush(c *gin.Context) {
 	el := cerror.NewErrorList()
 	var req *model.SnapPushRequest
@@ -250,7 +252,45 @@ func (h *Handler) SnapPush(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true})
+	// Get email of the user from the macaroon
+	c.Get("email")
+	email, ok := c.Get("email")
+	if !ok {
+		el.Add(cerror.Unauthorized, "email not found in macaroon")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+
+	// Get the account by email -> we need the account ID to register the snap name
+	account := h.BaseHandler.AccountClient.GetAccountByEmail(email.(string))
+	if len(account.Errors) > 0 {
+		el.ExtendAccountError(account.Errors)
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+
+	// Parse the account ID
+	accountUUID, err := uuid.Parse(account.Id)
+	if err != nil {
+		el.Add(cerror.BadRequest, "invalid account ID format")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+
+	resp := h.StoreClient.RegisterSnapName(req.Name, false, "", true, accountUUID)
+	if len(resp.Errors) > 0 {
+		el.ExtendStoreError(resp.Errors)
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+
+	if resp.SnapName == "" {
+		el.AddCustomError(cerror.NewCustomError(cerror.NameNotRegistered, "Snap name not registered"))
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "snap_name": resp.SnapName})
 }
 
 func (h *Handler) UnscannedUpload(c *gin.Context) {
