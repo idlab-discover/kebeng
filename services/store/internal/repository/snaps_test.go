@@ -54,11 +54,6 @@ func setupGlobalTestDB() (repository.ISnapsRepository, *sqlx.DB, func()) {
 
 	repo := repository.NewSnapsRepository(db)
 
-	_, err2 := repo.RegisterSnap("test", false)
-	if err2 != nil {
-		logrus.Fatalf("failed to register existing snap: %v", err2)
-	}
-
 	cleanup := func() {
 		err := db.Close()
 		if err != nil {
@@ -257,6 +252,8 @@ func TestRegisterSnap(t *testing.T) {
 		name              string
 		entryName         string
 		entryPrivate      bool
+		storeName         string
+		accountId         uuid.UUID
 		expectError       bool
 		expectedErrorCode string
 	}{
@@ -264,6 +261,8 @@ func TestRegisterSnap(t *testing.T) {
 			name:              "Success adding snap",
 			entryName:         "test-1",
 			entryPrivate:      false,
+			storeName:         "test-store",
+			accountId:         mockUUID,
 			expectError:       false,
 			expectedErrorCode: "",
 		},
@@ -271,6 +270,8 @@ func TestRegisterSnap(t *testing.T) {
 			name:              "Fail adding snap",
 			entryName:         "mock-snap",
 			entryPrivate:      false,
+			storeName:         "test-store",
+			accountId:         mockUUID,
 			expectError:       true,
 			expectedErrorCode: cerror.AlreadyRegistered,
 		},
@@ -278,7 +279,7 @@ func TestRegisterSnap(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			entry, err := globalRepo.RegisterSnap(tt.entryName, tt.entryPrivate)
+			entry, err := globalRepo.RegisterSnap(tt.entryName, tt.entryPrivate, tt.storeName, tt.accountId)
 			if tt.expectError {
 				assert.NotNil(t, err)
 				if err != nil {

@@ -22,7 +22,7 @@ type ISnapsRepository interface {
 	AddDefaultChannels(snapEntryId uuid.UUID, snapTrackId uuid.UUID) *cerror.CustomError
 	AddRevision(entryId uuid.UUID, trackId uuid.UUID, channelId uuid.UUID, size uint64, sequenceNumber uint) (*models.SnapRevision, *cerror.CustomError)
 	AddTrack(entryId uuid.UUID, trackName string) (*models.SnapTrack, *cerror.CustomError)
-	RegisterSnap(snapName string, isPrivate bool) (*models.SnapEntry, *cerror.CustomError)
+	RegisterSnap(snapName string, isPrivate bool, store string, accountId uuid.UUID) (*models.SnapEntry, *cerror.CustomError)
 
 	// READ
 	GetAllSnapEntries() (*[]models.SnapEntry, *cerror.CustomError)
@@ -133,18 +133,20 @@ func (sp *SnapsRepository) AddTrack(entryId uuid.UUID, trackName string) (*model
 }
 
 // QUESTION: maybe we can just internaly call this AddEntry -> clearer name?
-func (sp *SnapsRepository) RegisterSnap(snapName string, isPrivate bool) (*models.SnapEntry, *cerror.CustomError) {
+func (sp *SnapsRepository) RegisterSnap(snapName string, isPrivate bool, storeName string, accountId uuid.UUID) (*models.SnapEntry, *cerror.CustomError) {
 	snapEntry := models.SnapEntry{
-		Name:    snapName,
-		Private: &isPrivate,
+		Name:      snapName,
+		Private:   &isPrivate,
+		Store:     &storeName,
+		AccountID: accountId,
 	}
 
 	query := `
-		INSERT INTO entry (name, private)
-		VALUES ($1, $2)
+		INSERT INTO entry (name, private, store, account_id)
+		VALUES ($1, $2, $3, $4)
 		RETURNING id
 	`
-	err := sp.db.Get(&snapEntry.ID, query, snapName, isPrivate)
+	err := sp.db.Get(&snapEntry.ID, query, snapName, isPrivate, storeName, accountId)
 	if err != nil {
 		logrus.Error(err)
 		return nil, cerror.ConvertError(err)
