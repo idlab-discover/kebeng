@@ -7,7 +7,7 @@ import (
 	"github.com/idlab-discover/kebeng/services/assertion/internal/config"
 	"github.com/idlab-discover/kebeng/services/assertion/internal/database"
 	"github.com/idlab-discover/kebeng/services/assertion/internal/logic"
-	"github.com/idlab-discover/kebeng/services/assertion/internal/repositories"
+	"github.com/idlab-discover/kebeng/services/assertion/internal/repository"
 	proto "github.com/idlab-discover/kebeng/services/assertion/proto"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -28,8 +28,8 @@ func main() {
 	logrus.Infof("Connected to database: %v", db)
 
 	// start grpc server
-	repo := repositories.NewAssertionRepository(db)
-	assertionService := logic.NewAssertionService(repo, cfg)
+	repo := repository.NewAssertionRepository(db)
+	assertionLogic := logic.NewAssertionLogic(repo)
 
 	if cfg.TestMode {
 		err := database.LoadTestData(cfg.TestDataFilePath, repo)
@@ -44,7 +44,7 @@ func main() {
 	}
 	grpcServer := grpc.NewServer()
 	// this line will match the logic functionality to the proto interface
-	proto.RegisterAssertionServiceServer(grpcServer, assertionService)
+	proto.RegisterAssertionServiceServer(grpcServer, assertionLogic)
 
 	logrus.Infof("Starting gRPC server on %s:%d", cfg.GRPCHost, cfg.GRPCPort)
 	if err := grpcServer.Serve(lis); err != nil {

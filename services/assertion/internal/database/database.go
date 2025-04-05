@@ -8,31 +8,32 @@ import (
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file" // needed for file source
 	"github.com/idlab-discover/kebeng/services/assertion/internal/config"
+	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
-	gormPostgres "gorm.io/driver/postgres"
-	"gorm.io/gorm"
 )
 
-func NewDatabase(cfg *config.Config) (*gorm.DB, error) {
+// this is really bad for now just to test somehting
+func NewDatabase(cfg *config.Config) (*sqlx.DB, error) {
 	return createDatabaseWithDSN(getDSN(cfg), cfg)
 }
 
-func createDatabaseWithDSN(connectionString string, cfg *config.Config) (*gorm.DB, error) {
-	var db *gorm.DB
+func createDatabaseWithDSN(connectionString string, cfg *config.Config) (*sqlx.DB, error) {
+	var db *sqlx.DB
 	var err error
 
 	maxRetries := 10
 	retryInterval := 3 * time.Second
 
 	for try := 0; try < maxRetries; try++ {
-		db, err = gorm.Open(gormPostgres.Open(connectionString), &gorm.Config{})
+		db, err = sqlx.Connect("postgres", connectionString)
 		if err == nil {
 			logrus.Info("Connected to database")
 
-			err = runMigrations(db, cfg)
+			err = RunMigrations(db, cfg)
 			if err != nil {
 				logrus.Errorf("Migration failed: %v", err)
 			}
+
 			return db, nil
 		}
 		logrus.Errorf("Failed to connect to database at try %d: %v", try, err)
@@ -53,15 +54,10 @@ func getDSN(cfg *config.Config) string {
 }
 
 // runs the migration files in the /migrations folder
-func runMigrations(db *gorm.DB, cfg *config.Config) error {
+func RunMigrations(db *sqlx.DB, cfg *config.Config) error {
 	logrus.Info("Running database migrations")
 
-	sqlDB, err := db.DB()
-	if err != nil {
-		return fmt.Errorf("failed to get raw database connection: %v", err)
-	}
-
-	driver, err := postgres.WithInstance(sqlDB, &postgres.Config{})
+	driver, err := postgres.WithInstance(db.DB, &postgres.Config{})
 	if err != nil {
 		return fmt.Errorf("failed to create migration driver: %v", err)
 	}
