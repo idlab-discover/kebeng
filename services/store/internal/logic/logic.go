@@ -506,8 +506,8 @@ func (s *StoreLogic) GetLatestRevision(ctx context.Context, req *proto.GetLatest
 		SnapName:      req.SnapName,
 		Sequence:      uint64(*revision.SequenceNumber),
 		Architectures: revision.Architectures,
-		Version:       *revision.Version,
-		Status:        *revision.Status,
+		Version:       pointerToString(revision.Version),
+		Status:        pointerToString(revision.Status),
 	}, nil
 }
 
@@ -528,4 +528,11 @@ func saveFileToTemp(snapFile io.Reader) (string, string, *cerror.CustomError) {
 	}
 
 	return newFileName, snapFileId, nil
+}
+
+func pointerToString(s *string) string {
+	if s != nil {
+		return *s
+	}
+	return ""
 }
