@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
+	"github.com/idlab-discover/kebeng/services/store/internal/objectstore"
 	"github.com/idlab-discover/kebeng/services/store/internal/repository"
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
 	"github.com/sirupsen/logrus"
@@ -20,7 +21,8 @@ import (
 type StoreLogic struct {
 	config *config.Config
 	proto.UnimplementedStoreServiceServer
-	repo repository.ISnapsRepository
+	repo     repository.ISnapsRepository
+	objstore objectstore.IObjectStore
 }
 
 func NewStoreLogic(repo repository.ISnapsRepository, config *config.Config) *StoreLogic {
@@ -595,6 +597,30 @@ func (s *StoreLogic) GetLatestRevision(ctx context.Context, req *proto.GetLatest
 		ChannelId:              revision.SnapChannelID.String(),
 		SnapName:               req.SnapName,
 	}, nil
+}
+
+func (s *StoreLogic) SnapDownload(ctx context.Context, req *proto.SnapDownloadRequest) (*proto.SnapDownloadCompleteResponse, error) {
+	el := make([]*proto.Error, 0)
+	if req.RevisionId == "" {
+		el = append(el, &proto.Error{Code: cerror.MissingField, Message: "Revision id is required"})
+		return &proto.SnapDownloadCompleteResponse{Errors: el}, nil
+	}
+
+	revisionId, err := uuid.Parse(req.RevisionId)
+	if err != nil {
+		logrus.Error(err)
+		el = append(el, &proto.Error{Code: cerror.InvalidField, Message: "Invalid UUID format"})
+		return &proto.SnapDownloadCompleteResponse{Errors: el}, nil
+	}
+
+	revision, cerr := s.repo.GetRevisionById(revisionId)
+	if cerr != nil {
+		logrus.Error(cerr)
+		el = append(el, &proto.Error{Code: cerr.GetCode(), Message: cerr.GetMessage()})
+		return &proto.SnapDownloadCompleteResponse{Errors: el}, nil
+	}
+
+	return nil, nil
 }
 
 func saveFileToTemp(snapFile io.Reader) (string, string, *cerror.CustomError) {

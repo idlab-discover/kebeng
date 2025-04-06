@@ -1,8 +1,10 @@
 package client
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
@@ -22,6 +24,7 @@ type StoreClientInterface interface {
 	GetEntriesByAccountID(accountID string) *proto.GetEntriesResponse
 	GetRevisionsByEntryIds(entryIds *proto.GetRevisionsByEntryIdRequests) *proto.GetRevisionsByEntryIdResponses
 	GetLatestRevision(snapName, track, channel string) *proto.GetRevisionResponse
+	SnapDownload(revisionId string) *proto.SnapDownloadResponse
 }
 
 var _ StoreClientInterface = (*StoreClient)(nil)
@@ -175,4 +178,51 @@ func (c *StoreClient) GetLatestRevision(snapName, track, channel string) *proto.
 		}
 	}
 	return resp
+}
+
+func (c *StoreClient) SnapDownload(revisionId string) *proto.SnapDownloadCompleteResponse {
+	req := &proto.SnapDownloadRequest{
+		RevisionId: revisionId,
+	}
+
+	stream, err := c.client.SnapDownload(context.Background(), req)
+	if err != nil {
+		logrus.Errorf("error starting grpc download stream: %v", err)
+		return &proto.SnapDownloadCompleteResponse{
+			Errors: []*proto.Error{{
+				Code:    cerror.InternalServerError,
+				Message: err.Error()},
+			},
+		}
+	}
+	// create buffer for snap data
+	var fileData bytes.Buffer
+	response := &proto.SnapDownloadCompleteResponse{}
+
+	// loop over stream until EOF
+	for {
+		resp, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			logrus.Errorf("error receiving grpc download stream: %v", err)
+			return &proto.SnapDownloadCompleteResponse{
+				Errors: []*proto.Error{{
+					Code:    cerror.InternalServerError,
+					Message: err.Error()},
+				},
+			}
+		}
+
+		// first message contains revision metadata and an initial chunk
+		if initial := resp.GetInitial(); initial != nil {
+			logrus.Debugf("Received revision metadata: %v", initial.Revision)
+			response.Revision = initial.Revision
+		} else if data := resp.GetData(); data != nil {
+			fileData.Write(data.Chunk)
+		}
+	}
+	response.Data = fileData.Bytes()
+	return response
 }
