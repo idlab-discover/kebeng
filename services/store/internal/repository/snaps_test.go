@@ -1056,3 +1056,51 @@ func TestGetLatestRevision(t *testing.T) {
 	assert.Equal(t, int64(3), int64(*revision.SequenceNumber))
 	assert.Equal(t, rev3ID, revision.ID)
 }
+
+func TestGetTrackById(t *testing.T) {
+	trackID := uuid.New()
+
+	_, err := globalDB.Exec(`
+		INSERT INTO track (id, name, entry_id)
+		VALUES ($1, 'latest', $2);
+	`, trackID, mockUUID)
+	assert.NoError(t, err, "failed to insert test track")
+
+	track, cerr := globalRepo.GetTrackById(trackID)
+	assert.Nil(t, cerr, "expected no error when retrieving an existing track")
+	assert.NotNil(t, track, "expected track to be not nil")
+	assert.Equal(t, "latest", track.Name, "expected track name to be 'latest'")
+
+	nonExistingID := uuid.New()
+	track, cerr = globalRepo.GetTrackById(nonExistingID)
+	assert.NotNil(t, cerr, "expected error when retrieving a non-existing track")
+	assert.Nil(t, track, "expected nil track for non-existing id")
+	if cerr != nil {
+		assert.Equal(t, cerror.ResourceNotFound, cerr.GetCode(), "expected error code to be ResourceNotFound")
+	}
+}
+
+func TestGetChannelById(t *testing.T) {
+	channelID := uuid.New()
+
+	_, err := globalDB.Exec(`
+		INSERT INTO channel (id, name, snap_track_id, entry_id)
+		VALUES ($1, 'stable', $2, $3);
+	`, channelID, mockUUID, mockUUID)
+	assert.NoError(t, err, "failed to insert test channel")
+
+	// Test retrieving the inserted channel.
+	channel, cerr := globalRepo.GetChannelById(channelID)
+	assert.Nil(t, cerr, "expected no error when retrieving an existing channel")
+	assert.NotNil(t, channel, "expected channel to be not nil")
+	assert.Equal(t, "stable", channel.Name, "expected channel name to be 'stable'")
+
+	// Test retrieving a non-existing channel.
+	nonExistingID := uuid.New()
+	channel, cerr = globalRepo.GetChannelById(nonExistingID)
+	assert.NotNil(t, cerr, "expected error when retrieving a non-existing channel")
+	assert.Nil(t, channel, "expected nil channel for non-existing id")
+	if cerr != nil {
+		assert.Equal(t, cerror.ResourceNotFound, cerr.GetCode(), "expected error code to be ResourceNotFound")
+	}
+}
