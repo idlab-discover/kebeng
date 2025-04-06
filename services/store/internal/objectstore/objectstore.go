@@ -9,25 +9,31 @@ import (
 	"path"
 
 	"github.com/idlab-discover/kebeng/services/store/internal/config/configkey"
+	"github.com/idlab-discover/kebeng/services/store/internal/repository"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
-type ObjectStore interface {
+type IObjectStore interface {
 	SaveFileToBucket(bucket string, filePath string) (uint64, error)
 	GetFileFromBucket(bucket string, filePath string) (*[]byte, error)
+	LoadTestData(client *minio.Client, repo repository.ISnapsRepository, minioPath string) error
 }
 
-type Impl struct {
+type ObjectStore struct {
 	MinioClient *minio.Client
 }
 
-func NewObjectStore() *Impl {
-	return &Impl{MinioClient: GetMinioClient()}
+func NewObjectStore(minio *minio.Client) IObjectStore {
+	if minio == nil {
+		return &ObjectStore{MinioClient: GetMinioClient()}
+	}
+	return &ObjectStore{MinioClient: minio}
 }
-func (obs *Impl) GetFileFromBucket(bucket string, filePath string) (*[]byte, error) {
+
+func (obs *ObjectStore) GetFileFromBucket(bucket string, filePath string) (*[]byte, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -44,7 +50,7 @@ func (obs *Impl) GetFileFromBucket(bucket string, filePath string) (*[]byte, err
 	return &bytes, err
 }
 
-func (obs *Impl) Move(sourceBucket, destinationBucket, objectName string) error {
+func (obs *ObjectStore) Move(sourceBucket, destinationBucket, objectName string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	sourceBucketExists, err := obs.MinioClient.BucketExists(ctx, sourceBucket)
@@ -68,7 +74,7 @@ func (obs *Impl) Move(sourceBucket, destinationBucket, objectName string) error 
 	return errors.New("something went wrong")
 }
 
-func (obs *Impl) SaveFileToBucket(bucket string, filePath string) (uint64, error) {
+func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string) (uint64, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	exists, _ := obs.MinioClient.BucketExists(ctx, bucket)

@@ -23,10 +23,11 @@ type StoreLogic struct {
 	config *config.Config
 	proto.UnimplementedStoreServiceServer
 	repo repository.ISnapsRepository
+	obs  objectstore.IObjectStore
 }
 
-func NewStoreLogic(repo repository.ISnapsRepository, config *config.Config) *StoreLogic {
-	return &StoreLogic{repo: repo, config: config}
+func NewStoreLogic(repo repository.ISnapsRepository, config *config.Config, obj objectstore.IObjectStore) *StoreLogic {
+	return &StoreLogic{repo: repo, config: config, obs: obj}
 }
 
 func (s *StoreLogic) RegisterSnapName(ctx context.Context, req *proto.RegisterSnapNameRequest) (*proto.RegisterSnapNameResponse, error) {
@@ -511,11 +512,9 @@ func (s *StoreLogic) UnscannedUpload(ctx context.Context, req *proto.UnscannedUp
 		el = append(el, &proto.Error{Code: cerror.InternalServerError, Message: "Failed to save file to temp storage"})
 		return &proto.UnscannedUploadResponse{Errors: el}, nil
 	}
-
-	objectstore := objectstore.NewObjectStore()
 	tmpPath := path.Join(os.TempDir(), snapFileName)
 
-	size, err2 := objectstore.SaveFileToBucket("unscanned", tmpPath)
+	size, err2 := s.obs.SaveFileToBucket("unscanned", tmpPath)
 	if err2 != nil {
 		logrus.Errorf("Failed to save file to object store: %v", err)
 		el = append(el, &proto.Error{Code: cerror.InternalServerError, Message: "Failed to save file to object store"})
