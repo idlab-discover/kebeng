@@ -1,6 +1,8 @@
 package objectstore
 
 import (
+	"io"
+
 	"github.com/idlab-discover/kebeng/services/store/internal/repository"
 	"github.com/minio/minio-go/v7"
 	"github.com/stretchr/testify/mock"
@@ -12,14 +14,9 @@ type MockObjectStore struct {
 
 var _ IObjectStore = (*MockObjectStore)(nil)
 
-// GetFileFromBucket implements ObjectStore.
-func (m *MockObjectStore) GetFileFromBucket(bucket string, filePath string) (*[]byte, error) {
-	args := m.Called(bucket, filePath)
-	if args.Get(0) != nil {
-		bytes := args.Get(0).([]byte)
-		return &bytes, args.Error(1)
-	}
-	return nil, args.Error(1)
+func (m *MockObjectStore) GetSnapFileReader(filePath string) (io.ReadCloser, error) {
+	args := m.Called(filePath)
+	return args.Get(0).(io.ReadCloser), args.Error(1)
 }
 
 // SaveFileToBucket implements ObjectStore.

@@ -3,7 +3,6 @@ package objectstore
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"log"
 	"path"
@@ -18,7 +17,7 @@ import (
 
 type IObjectStore interface {
 	SaveFileToBucket(bucket string, filePath string) (uint64, error)
-	GetFileFromBucket(bucket string, filePath string) (*[]byte, error)
+	GetSnapFileReader(filePath string) (io.ReadCloser, error)
 	LoadTestData(client *minio.Client, repo repository.ISnapsRepository, minioPath string) error
 }
 
@@ -33,21 +32,20 @@ func NewObjectStore(minio *minio.Client) IObjectStore {
 	return &ObjectStore{MinioClient: minio}
 }
 
-func (obs *ObjectStore) GetFileFromBucket(bucket string, filePath string) (*[]byte, error) {
+func (obs *ObjectStore) GetSnapFileReader(filePath string) (io.ReadCloser, error) {
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	// do not defer cancel() here because we want the context to remain active
+	// while the caller reads the file. The caller should close the ReadCloser,
+	// which will eventually close the underlying connection.
 
-	base := path.Base(filePath)
-
-	objectPtr, err := obs.MinioClient.GetObject(ctx, bucket, base, minio.GetObjectOptions{})
+	objectPtr, err := obs.MinioClient.GetObject(ctx, "snaps", filePath, minio.GetObjectOptions{})
 	if err != nil {
+		cancel()
+		logrus.Errorf("error getting object from bucket 'snaps', file path: %s, err: %v", filePath, err)
 		return nil, err
 	}
-	bytes, _ := io.ReadAll(objectPtr)
-	if len(bytes) == 0 { // Error if file not found
-		return nil, fmt.Errorf("no such file in bucket \"%s\", file path: %s", bucket, base)
-	}
-	return &bytes, err
+
+	return objectPtr, nil
 }
 
 func (obs *ObjectStore) Move(sourceBucket, destinationBucket, objectName string) error {
