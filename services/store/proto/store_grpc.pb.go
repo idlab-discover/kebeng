@@ -27,6 +27,7 @@ const (
 	StoreService_GetRevisionsByEntryIds_FullMethodName = "/store.StoreService/GetRevisionsByEntryIds"
 	StoreService_RefreshSnap_FullMethodName            = "/store.StoreService/RefreshSnap"
 	StoreService_GetLatestRevision_FullMethodName      = "/store.StoreService/GetLatestRevision"
+	StoreService_SnapDownload_FullMethodName           = "/store.StoreService/SnapDownload"
 )
 
 // StoreServiceClient is the client API for StoreService service.
@@ -41,6 +42,7 @@ type StoreServiceClient interface {
 	GetRevisionsByEntryIds(ctx context.Context, in *GetRevisionsByEntryIdRequests, opts ...grpc.CallOption) (*GetRevisionsByEntryIdResponses, error)
 	RefreshSnap(ctx context.Context, in *RefreshSnapRequest, opts ...grpc.CallOption) (*RefreshSnapResponse, error)
 	GetLatestRevision(ctx context.Context, in *GetLatestRevisionRequest, opts ...grpc.CallOption) (*GetRevisionResponse, error)
+	SnapDownload(ctx context.Context, in *SnapDownloadRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SnapDownloadResponse], error)
 }
 
 type storeServiceClient struct {
@@ -131,6 +133,25 @@ func (c *storeServiceClient) GetLatestRevision(ctx context.Context, in *GetLates
 	return out, nil
 }
 
+func (c *storeServiceClient) SnapDownload(ctx context.Context, in *SnapDownloadRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SnapDownloadResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &StoreService_ServiceDesc.Streams[0], StoreService_SnapDownload_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[SnapDownloadRequest, SnapDownloadResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type StoreService_SnapDownloadClient = grpc.ServerStreamingClient[SnapDownloadResponse]
+
 // StoreServiceServer is the server API for StoreService service.
 // All implementations must embed UnimplementedStoreServiceServer
 // for forward compatibility.
@@ -143,6 +164,7 @@ type StoreServiceServer interface {
 	GetRevisionsByEntryIds(context.Context, *GetRevisionsByEntryIdRequests) (*GetRevisionsByEntryIdResponses, error)
 	RefreshSnap(context.Context, *RefreshSnapRequest) (*RefreshSnapResponse, error)
 	GetLatestRevision(context.Context, *GetLatestRevisionRequest) (*GetRevisionResponse, error)
+	SnapDownload(*SnapDownloadRequest, grpc.ServerStreamingServer[SnapDownloadResponse]) error
 	mustEmbedUnimplementedStoreServiceServer()
 }
 
@@ -176,6 +198,9 @@ func (UnimplementedStoreServiceServer) RefreshSnap(context.Context, *RefreshSnap
 }
 func (UnimplementedStoreServiceServer) GetLatestRevision(context.Context, *GetLatestRevisionRequest) (*GetRevisionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetLatestRevision not implemented")
+}
+func (UnimplementedStoreServiceServer) SnapDownload(*SnapDownloadRequest, grpc.ServerStreamingServer[SnapDownloadResponse]) error {
+	return status.Errorf(codes.Unimplemented, "method SnapDownload not implemented")
 }
 func (UnimplementedStoreServiceServer) mustEmbedUnimplementedStoreServiceServer() {}
 func (UnimplementedStoreServiceServer) testEmbeddedByValue()                      {}
@@ -342,6 +367,17 @@ func _StoreService_GetLatestRevision_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _StoreService_SnapDownload_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(SnapDownloadRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(StoreServiceServer).SnapDownload(m, &grpc.GenericServerStream[SnapDownloadRequest, SnapDownloadResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type StoreService_SnapDownloadServer = grpc.ServerStreamingServer[SnapDownloadResponse]
+
 // StoreService_ServiceDesc is the grpc.ServiceDesc for StoreService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -382,6 +418,12 @@ var StoreService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _StoreService_GetLatestRevision_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "SnapDownload",
+			Handler:       _StoreService_SnapDownload_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "store.proto",
 }

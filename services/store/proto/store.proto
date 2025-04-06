@@ -14,6 +14,7 @@ service StoreService {
     rpc GetRevisionsByEntryIds(GetRevisionsByEntryIdRequests) returns (GetRevisionsByEntryIdResponses);
     rpc RefreshSnap(RefreshSnapRequest) returns (RefreshSnapResponse);
     rpc GetLatestRevision(GetLatestRevisionRequest) returns (GetRevisionResponse);
+    rpc SnapDownload(SnapDownloadRequest) returns (stream SnapDownloadResponse);
 }
 
 message UploadSnapRequest {
@@ -209,4 +210,33 @@ message GetLatestRevisionRequest {
     string track = 2;
     string channel = 3;
 }
+
+//  ####################### START DOWNLOAD #######################
+message SnapDownloadRequest {
+    string revision_id = 1;
+}
+
+message InitialDownloadResponse {
+    GetRevisionResponse revision = 1;
+}
+
+message DataChunk {
+    bytes chunk = 1;
+}
+
+message SnapDownloadResponse {
+    oneof payload {
+      InitialDownloadResponse initial = 1;
+      DataChunk data = 2;
+    }
+    repeated Error errors = 3;
+}
+
+message SnapDownloadCompleteResponse {
+    GetRevisionResponse revision = 1;
+    bytes data = 2;
+    repeated Error errors = 3;
+}
+
+// ####################### END DOWNLOAD #######################
 

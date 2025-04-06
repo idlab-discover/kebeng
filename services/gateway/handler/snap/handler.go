@@ -113,7 +113,7 @@ func (h *Handler) refreshSnapInstall(c *gin.Context, action *model.Action, el *c
 		res.Result = nil
 		return &res, fmt.Errorf("store URL not set")
 	}
-	downloadUrl := fmt.Sprintf("%s/download/%s/%s/%s/%s", h.Config.StoreUrl, snapEntry.Id, latestRevision.TrackId, latestRevision.ChannelId, latestRevision.Version)
+	downloadUrl := fmt.Sprintf("%s/download/%s", h.Config.StoreUrl, latestRevision.Version)
 
 	res.Result = &result
 	res.InstanceKey = &action.InstanceKey
@@ -139,6 +139,34 @@ func (h *Handler) refreshSnapInstall(c *gin.Context, action *model.Action, el *c
 		Base:        snapEntry.Base,
 	}
 	return &res, nil
+}
+
+func (h *Handler) DownloadSnap(c *gin.Context) {
+	el := cerror.NewErrorList()
+	revisionID := c.Param("revision_id")
+	if revisionID == "" {
+		el.Add(cerror.BadRequest, "revision_id is required")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
+
+	// TODO: implement and check if works
+	bytes, err := h.StoreClient.SnapDownload(revisionID)
+	if err != nil {
+		logrus.Error("error downloading snap: ", err)
+		el.Add(cerror.InternalServerError, "error downloading snap")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
+
+	_, err = c.Writer.Write(*bytes)
+	if err != nil {
+		logrus.Error("error writing snap to response: ", err)
+		el.Add(cerror.InternalServerError, "error writing snap to response")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "snap downloaded successfully"})
 }
 
 func (h *Handler) FindSnaps(c *gin.Context) {
