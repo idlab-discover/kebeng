@@ -14,6 +14,7 @@ service StoreService {
     rpc GetRevisionsByEntryIds(GetRevisionsByEntryIdRequests) returns (GetRevisionsByEntryIdResponses);
     rpc RefreshSnap(RefreshSnapRequest) returns (RefreshSnapResponse);
     rpc UnscannedUpload(UnscannedUploadRequest) returns (UnscannedUploadResponse);
+    rpc AddUpload(AddUploadRequest) returns (AddUploadResponse);
 }
 
 message UploadSnapRequest {

@@ -23,6 +23,7 @@ type StoreClientInterface interface {
 	GetEntriesByAccountID(accountID string) *proto.GetEntriesResponse
 	GetRevisionsByEntryIds(entryIds *proto.GetRevisionsByEntryIdRequests) *proto.GetRevisionsByEntryIdResponses
 	UnscannedUpload(snapFile io.Reader) *proto.UnscannedUploadResponse
+	AddUpload(snapName string, entryId uuid.UUID, status string, accountId uuid.UUID) *proto.AddUploadResponse
 }
 
 var _ StoreClientInterface = (*StoreClient)(nil)
@@ -160,6 +161,26 @@ func (c *StoreClient) UnscannedUpload(snapFile io.Reader) *proto.UnscannedUpload
 	resp, err := c.client.UnscannedUpload(context.Background(), req)
 	if err != nil {
 		resp = &proto.UnscannedUploadResponse{
+			Errors: []*proto.Error{{
+				Code:    cerror.InternalServerError,
+				Message: err.Error()},
+			},
+		}
+	}
+	return resp
+}
+
+func (c *StoreClient) AddUpload(snapName string, entryId uuid.UUID, status string, accountId uuid.UUID) *proto.AddUploadResponse {
+	req := &proto.AddUploadRequest{
+		SnapName: snapName,
+		EntryId:  entryId.String(),
+		Status:   status,
+		AccountId: accountId.String(),
+	}
+
+	resp, err := c.client.AddUpload(context.Background(), req)
+	if err != nil {
+		resp = &proto.AddUploadResponse{
 			Errors: []*proto.Error{{
 				Code:    cerror.InternalServerError,
 				Message: err.Error()},

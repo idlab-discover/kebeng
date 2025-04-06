@@ -26,6 +26,7 @@ type StoreServiceClient interface {
 	GetRevisionsByEntryIds(ctx context.Context, in *GetRevisionsByEntryIdRequests, opts ...grpc.CallOption) (*GetRevisionsByEntryIdResponses, error)
 	RefreshSnap(ctx context.Context, in *RefreshSnapRequest, opts ...grpc.CallOption) (*RefreshSnapResponse, error)
 	UnscannedUpload(ctx context.Context, in *UnscannedUploadRequest, opts ...grpc.CallOption) (*UnscannedUploadResponse, error)
+	AddUpload(ctx context.Context, in *AddUploadRequest, opts ...grpc.CallOption) (*AddUploadResponse, error)
 }
 
 type storeServiceClient struct {
@@ -108,6 +109,15 @@ func (c *storeServiceClient) UnscannedUpload(ctx context.Context, in *UnscannedU
 	return out, nil
 }
 
+func (c *storeServiceClient) AddUpload(ctx context.Context, in *AddUploadRequest, opts ...grpc.CallOption) (*AddUploadResponse, error) {
+	out := new(AddUploadResponse)
+	err := c.cc.Invoke(ctx, "/store.StoreService/AddUpload", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // StoreServiceServer is the server API for StoreService service.
 // All implementations must embed UnimplementedStoreServiceServer
 // for forward compatibility
@@ -120,6 +130,7 @@ type StoreServiceServer interface {
 	GetRevisionsByEntryIds(context.Context, *GetRevisionsByEntryIdRequests) (*GetRevisionsByEntryIdResponses, error)
 	RefreshSnap(context.Context, *RefreshSnapRequest) (*RefreshSnapResponse, error)
 	UnscannedUpload(context.Context, *UnscannedUploadRequest) (*UnscannedUploadResponse, error)
+	AddUpload(context.Context, *AddUploadRequest) (*AddUploadResponse, error)
 	mustEmbedUnimplementedStoreServiceServer()
 }
 
@@ -150,6 +161,9 @@ func (UnimplementedStoreServiceServer) RefreshSnap(context.Context, *RefreshSnap
 }
 func (UnimplementedStoreServiceServer) UnscannedUpload(context.Context, *UnscannedUploadRequest) (*UnscannedUploadResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UnscannedUpload not implemented")
+}
+func (UnimplementedStoreServiceServer) AddUpload(context.Context, *AddUploadRequest) (*AddUploadResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddUpload not implemented")
 }
 func (UnimplementedStoreServiceServer) mustEmbedUnimplementedStoreServiceServer() {}
 
@@ -308,6 +322,24 @@ func _StoreService_UnscannedUpload_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _StoreService_AddUpload_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddUploadRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StoreServiceServer).AddUpload(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/store.StoreService/AddUpload",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StoreServiceServer).AddUpload(ctx, req.(*AddUploadRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // StoreService_ServiceDesc is the grpc.ServiceDesc for StoreService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -346,6 +378,10 @@ var StoreService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UnscannedUpload",
 			Handler:    _StoreService_UnscannedUpload_Handler,
+		},
+		{
+			MethodName: "AddUpload",
+			Handler:    _StoreService_AddUpload_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
