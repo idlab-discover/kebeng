@@ -283,3 +283,147 @@ func (h *Handler) ProcessSnapBuildAssertion(c *gin.Context) {
 		},
 	})
 }
+
+// SnapPush checks if there exists a snap entry for the uploaded snap package.
+// It calls the RegisterSnapName function with dryRun = true.
+func (h *Handler) SnapPush(c *gin.Context) {
+	el := cerror.NewErrorList()
+	var req *model.SnapPushRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		el.Add(cerror.BadRequest, cerror.FormatBindError(err))
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
+
+	// Get email of the user from the macaroon
+	c.Get("email")
+	email, ok := c.Get("email")
+	if !ok {
+		el.Add(cerror.Unauthorized, "email not found in macaroon")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+
+	// Get the account by email -> we need the account ID to register the snap name
+	account := h.BaseHandler.AccountClient.GetAccountByEmail(email.(string))
+	if len(account.Errors) > 0 {
+		el.ExtendAccountError(account.Errors)
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+
+	// Parse the account ID
+	accountUUID, err := uuid.Parse(account.Id)
+	if err != nil {
+		el.Add(cerror.BadRequest, "invalid account ID format")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+
+	// Dry run to check if the snap name is registered
+	entry := h.StoreClient.RegisterSnapName(req.Name, false, "", true, accountUUID)
+	if len(entry.Errors) > 0 {
+		el.ExtendStoreError(entry.Errors)
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+
+	if entry.SnapName == "" {
+		el.AddCustomError(cerror.NewCustomError(cerror.ResourceNotFound, "Snap name not found for name="+req.Name))
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+
+	parsedEntryUUID, err := uuid.Parse(entry.Id)
+	if err != nil {
+		el.Add(cerror.BadRequest, "invalid entry ID format")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+
+	// Create a new snap upload with status "pending"
+	upload := h.StoreClient.AddUpload(entry.SnapName, parsedEntryUUID, "pending", accountUUID)
+	if len(upload.Errors) > 0 {
+		el.ExtendStoreError(upload.Errors)
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+
+	logrus.Infof("status details url: %s", upload.StatusDetailsUrl)
+
+	c.JSON(http.StatusOK, gin.H{
+		"success":            true,
+		"snap_name":          entry.SnapName,
+		"status_details_url": fmt.Sprintf("https://%s%s", c.ClientIP(), upload.StatusDetailsUrl),
+	})
+}
+
+func (h *Handler) UnscannedUpload(c *gin.Context) {
+	el := cerror.NewErrorList()
+
+	header, err := c.FormFile("binary")
+	if err != nil {
+		el.Add(cerror.BadRequest, "Missing file in form data: "+err.Error())
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+
+	file, err := header.Open()
+	if err != nil {
+		el.Add(cerror.InternalServerError, "Error opening file: "+err.Error())
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+	defer func() {
+		if err := file.Close(); err != nil {
+			el.Add(cerror.InternalServerError, "Error closing file: "+err.Error())
+			c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		}
+	}()
+
+	// Upload file to the unscanned bucket, waiting for revision to be created
+	resp := h.StoreClient.UnscannedUpload(file)
+	if len(resp.Errors) > 0 {
+		el.ExtendStoreError(resp.Errors)
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+
+	if resp.GetTempFileName() == "" {
+		el.Add(cerror.InternalServerError, "Upload failed: no ID returned")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+
+	// Test: gewoon even bevestigen dat het gelukt is
+	c.JSON(http.StatusOK, gin.H{
+		"successful": true,
+		"upload_id":  uuid.New().String(), // FIX: this should be the ID of the revision that is created
+		"filename":   header.Filename,
+		"size":       header.Size,
+	})
+}
+
+// func (h *Handler) GetStatus(c *gin.Context) {
+// 	el := cerror.NewErrorList()
+
+// 	// Get the revision ID from the URL
+// 	revisionID := c.Param("rev_id")
+// 	if revisionID == "" {
+// 		el.Add(cerror.BadRequest, "revision_id is required")
+// 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+// 		return
+// 	}
+
+// 	// Get the status of the revision
+// 	status, err := h.StoreClient.GetRevisionStatus(revisionID)
+// 	if err != nil {
+// 		el.Add(cerror.InternalServerError, "Failed to get revision status: "+err.Error())
+// 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+// 		return
+// 	}
+
+// 	c.JSON(http.StatusOK, gin.H{
+// 		"status": status,
+// 	})
+// }

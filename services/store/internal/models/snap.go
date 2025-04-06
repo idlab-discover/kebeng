@@ -105,3 +105,15 @@ type SnapComment struct {
 	Comment     string     `json:"comment" db:"comment"`
 	SnapEntryID uuid.UUID  `json:"snap_entry_id" db:"entry_id"`
 }
+
+type SnapUpload struct {
+	ID               uuid.UUID  `json:"id" db:"id"`
+	CreatedAt        time.Time  `json:"created_at" db:"created_at"`
+	UpdatedAt        time.Time  `json:"updated_at" db:"updated_at"`
+	DeletedAt        *time.Time `json:"deleted_at,omitempty" db:"deleted_at"`
+	EntryID          uuid.UUID  `json:"entry_id" db:"entry_id"`
+	AccountID        uuid.UUID  `json:"account_id" db:"account_id"`
+	SnapName         string     `json:"snap_name" db:"snap_name"`
+	Status           string     `json:"status" db:"status"`
+	StatusDetailsURL string     `json:"status_details_url" db:"status_details_url"`
+}

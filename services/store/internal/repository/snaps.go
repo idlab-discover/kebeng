@@ -22,6 +22,7 @@ type ISnapsRepository interface {
 	AddDefaultChannels(snapEntryId uuid.UUID, snapTrackId uuid.UUID) *cerror.CustomError
 	AddRevision(entryId uuid.UUID, trackId uuid.UUID, channelId uuid.UUID, size uint64, sequenceNumber uint) (*models.SnapRevision, *cerror.CustomError)
 	AddTrack(entryId uuid.UUID, trackName string) (*models.SnapTrack, *cerror.CustomError)
+	AddUpload(snapName string, entrId uuid.UUID, status string, accountId uuid.UUID) (*models.SnapUpload, *cerror.CustomError)
 	RegisterSnap(snapName string, isPrivate bool, store string, accountId uuid.UUID) (*models.SnapEntry, *cerror.CustomError)
 
 	// READ
@@ -131,6 +132,27 @@ func (sp *SnapsRepository) AddTrack(entryId uuid.UUID, trackName string) (*model
 
 	return &track, nil
 
+}
+
+func (sp *SnapsRepository) AddUpload(snapName string, entryId uuid.UUID, status string, accountId uuid.UUID) (*models.SnapUpload, *cerror.CustomError) {
+	upload := models.SnapUpload{
+		SnapName:  snapName,
+		EntryID:   entryId,
+		Status:    status,
+		AccountID: accountId,
+	}
+	query := `
+		INSERT INTO upload (snap_name, entry_id, status, account_id)
+		VALUES ($1, $2, $3, $4)
+		RETURNING id, status_details_url
+	`
+	err := sp.db.Get(&upload, query, upload.SnapName, upload.EntryID, upload.Status, upload.AccountID)
+	if err != nil {
+		logrus.Error(err)
+		return nil, cerror.ConvertError(err)
+	}
+
+	return &upload, nil
 }
 
 // QUESTION: maybe we can just internaly call this AddEntry -> clearer name?

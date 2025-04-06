@@ -67,9 +67,10 @@ func main() {
 		minioClient.MakeBucket(context.Background(), "snaps", minio.MakeBucketOptions{})
 	}
 
+	objectstore := objectstore.NewObjectStore(minioClient)
 	// start grpc server
 	repo := repositories.NewSnapsRepository(db)
-	storeLogic := logic.NewStoreLogic(repo, cfg)
+	storeLogic := logic.NewStoreLogic(repo, cfg, objectstore)
 
 	if cfg.TestMode {
 		logrus.Infof("Running in test mode, using test data file: %s", cfg.TestDataFilePath)

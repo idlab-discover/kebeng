@@ -53,6 +53,9 @@ func (h *Handler) SetupEndpoints(r *gin.Engine) {
 	r.POST("/dev/api/register-name-dispute/", h.snapHandler.RegisterSnapNameDispute)
 	r.POST("/dev/api/snaps/:snap_id/builds", h.snapHandler.ProcessSnapBuildAssertion)
 	r.GET("/download/:revision_id", h.snapHandler.DownloadSnap)
+	authGroup.POST("/snap-push/", h.snapHandler.SnapPush)
+	r.POST("/unscanned-upload/", h.snapHandler.UnscannedUpload)
+	//authGroup.GET("/snaps/:rev_id/status", h.snapHandler.GetStatus)
 
 	// ********** AUTH **********
 
