@@ -10,8 +10,6 @@ $$;
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-create sequence public.entry_id_seq;
-
 CREATE TABLE IF NOT EXISTS public.entry
 (
     id uuid NOT NULL DEFAULT uuid_generate_v4(),

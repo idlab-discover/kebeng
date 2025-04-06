@@ -43,6 +43,8 @@ type StoreServiceClient interface {
 	RefreshSnap(ctx context.Context, in *RefreshSnapRequest, opts ...grpc.CallOption) (*RefreshSnapResponse, error)
 	GetLatestRevision(ctx context.Context, in *GetLatestRevisionRequest, opts ...grpc.CallOption) (*GetRevisionResponse, error)
 	SnapDownload(ctx context.Context, in *SnapDownloadRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SnapDownloadResponse], error)
+	UnscannedUpload(ctx context.Context, in *UnscannedUploadRequest, opts ...grpc.CallOption) (*UnscannedUploadResponse, error)
+	AddUpload(ctx context.Context, in *AddUploadRequest, opts ...grpc.CallOption) (*AddUploadResponse, error)
 }
 
 type storeServiceClient struct {
@@ -127,6 +129,9 @@ func (c *storeServiceClient) GetLatestRevision(ctx context.Context, in *GetLates
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetRevisionResponse)
 	err := c.cc.Invoke(ctx, StoreService_GetLatestRevision_FullMethodName, in, out, cOpts...)
+func (c *storeServiceClient) UnscannedUpload(ctx context.Context, in *UnscannedUploadRequest, opts ...grpc.CallOption) (*UnscannedUploadResponse, error) {
+	out := new(UnscannedUploadResponse)
+	err := c.cc.Invoke(ctx, "/store.StoreService/UnscannedUpload", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -152,6 +157,15 @@ func (c *storeServiceClient) SnapDownload(ctx context.Context, in *SnapDownloadR
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type StoreService_SnapDownloadClient = grpc.ServerStreamingClient[SnapDownloadResponse]
 
+func (c *storeServiceClient) AddUpload(ctx context.Context, in *AddUploadRequest, opts ...grpc.CallOption) (*AddUploadResponse, error) {
+	out := new(AddUploadResponse)
+	err := c.cc.Invoke(ctx, "/store.StoreService/AddUpload", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // StoreServiceServer is the server API for StoreService service.
 // All implementations must embed UnimplementedStoreServiceServer
 // for forward compatibility.
@@ -165,6 +179,8 @@ type StoreServiceServer interface {
 	RefreshSnap(context.Context, *RefreshSnapRequest) (*RefreshSnapResponse, error)
 	GetLatestRevision(context.Context, *GetLatestRevisionRequest) (*GetRevisionResponse, error)
 	SnapDownload(*SnapDownloadRequest, grpc.ServerStreamingServer[SnapDownloadResponse]) error
+	UnscannedUpload(context.Context, *UnscannedUploadRequest) (*UnscannedUploadResponse, error)
+	AddUpload(context.Context, *AddUploadRequest) (*AddUploadResponse, error)
 	mustEmbedUnimplementedStoreServiceServer()
 }
 
@@ -201,6 +217,11 @@ func (UnimplementedStoreServiceServer) GetLatestRevision(context.Context, *GetLa
 }
 func (UnimplementedStoreServiceServer) SnapDownload(*SnapDownloadRequest, grpc.ServerStreamingServer[SnapDownloadResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method SnapDownload not implemented")
+func (UnimplementedStoreServiceServer) UnscannedUpload(context.Context, *UnscannedUploadRequest) (*UnscannedUploadResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UnscannedUpload not implemented")
+}
+func (UnimplementedStoreServiceServer) AddUpload(context.Context, *AddUploadRequest) (*AddUploadResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddUpload not implemented")
 }
 func (UnimplementedStoreServiceServer) mustEmbedUnimplementedStoreServiceServer() {}
 func (UnimplementedStoreServiceServer) testEmbeddedByValue()                      {}
@@ -351,6 +372,8 @@ func _StoreService_RefreshSnap_Handler(srv interface{}, ctx context.Context, dec
 
 func _StoreService_GetLatestRevision_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetLatestRevisionRequest)
+func _StoreService_UnscannedUpload_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UnscannedUploadRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -363,6 +386,14 @@ func _StoreService_GetLatestRevision_Handler(srv interface{}, ctx context.Contex
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(StoreServiceServer).GetLatestRevision(ctx, req.(*GetLatestRevisionRequest))
+		return srv.(StoreServiceServer).UnscannedUpload(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/store.StoreService/UnscannedUpload",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StoreServiceServer).UnscannedUpload(ctx, req.(*UnscannedUploadRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -377,6 +408,24 @@ func _StoreService_SnapDownload_Handler(srv interface{}, stream grpc.ServerStrea
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type StoreService_SnapDownloadServer = grpc.ServerStreamingServer[SnapDownloadResponse]
+
+func _StoreService_AddUpload_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddUploadRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StoreServiceServer).AddUpload(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/store.StoreService/AddUpload",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StoreServiceServer).AddUpload(ctx, req.(*AddUploadRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
 
 // StoreService_ServiceDesc is the grpc.ServiceDesc for StoreService service.
 // It's only intended for direct use with grpc.RegisterService,
@@ -423,6 +472,12 @@ var StoreService_ServiceDesc = grpc.ServiceDesc{
 			StreamName:    "SnapDownload",
 			Handler:       _StoreService_SnapDownload_Handler,
 			ServerStreams: true,
+			MethodName: "UnscannedUpload",
+			Handler:    _StoreService_UnscannedUpload_Handler,
+		},
+		{
+			MethodName: "AddUpload",
+			Handler:    _StoreService_AddUpload_Handler,
 		},
 	},
 	Metadata: "store.proto",

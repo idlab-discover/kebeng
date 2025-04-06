@@ -25,6 +25,8 @@ type StoreClientInterface interface {
 	GetRevisionsByEntryIds(entryIds *proto.GetRevisionsByEntryIdRequests) *proto.GetRevisionsByEntryIdResponses
 	GetLatestRevision(snapName, track, channel string) *proto.GetRevisionResponse
 	SnapDownload(revisionId string) *proto.SnapDownloadResponse
+	UnscannedUpload(snapFile io.Reader) *proto.UnscannedUploadResponse
+	AddUpload(snapName string, entryId uuid.UUID, status string, accountId uuid.UUID) *proto.AddUploadResponse
 }
 
 var _ StoreClientInterface = (*StoreClient)(nil)
@@ -171,6 +173,24 @@ func (c *StoreClient) GetLatestRevision(snapName, track, channel string) *proto.
 	resp, err := c.client.GetLatestRevision(context.Background(), req)
 	if err != nil {
 		resp = &proto.GetRevisionResponse{
+func (c *StoreClient) UnscannedUpload(snapFile io.Reader) *proto.UnscannedUploadResponse {
+	fileData, err := io.ReadAll(snapFile)
+	if err != nil {
+		return &proto.UnscannedUploadResponse{
+			Errors: []*proto.Error{{
+				Code:    cerror.InternalServerError,
+				Message: err.Error(),
+			}},
+		}
+	}
+
+	req := &proto.UnscannedUploadRequest{
+		SnapFile: fileData,
+	}
+
+	resp, err := c.client.UnscannedUpload(context.Background(), req)
+	if err != nil {
+		resp = &proto.UnscannedUploadResponse{
 			Errors: []*proto.Error{{
 				Code:    cerror.InternalServerError,
 				Message: err.Error()},
@@ -189,6 +209,17 @@ func (c *StoreClient) SnapDownload(revisionId string) *proto.SnapDownloadComplet
 	if err != nil {
 		logrus.Errorf("error starting grpc download stream: %v", err)
 		return &proto.SnapDownloadCompleteResponse{
+func (c *StoreClient) AddUpload(snapName string, entryId uuid.UUID, status string, accountId uuid.UUID) *proto.AddUploadResponse {
+	req := &proto.AddUploadRequest{
+		SnapName: snapName,
+		EntryId:  entryId.String(),
+		Status:   status,
+		AccountId: accountId.String(),
+	}
+
+	resp, err := c.client.AddUpload(context.Background(), req)
+	if err != nil {
+		resp = &proto.AddUploadResponse{
 			Errors: []*proto.Error{{
 				Code:    cerror.InternalServerError,
 				Message: err.Error()},
@@ -225,4 +256,5 @@ func (c *StoreClient) SnapDownload(revisionId string) *proto.SnapDownloadComplet
 	}
 	response.Data = fileData.Bytes()
 	return response
+	return resp
 }

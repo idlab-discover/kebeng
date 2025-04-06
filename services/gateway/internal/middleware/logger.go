@@ -26,6 +26,7 @@ func RequestLoggerMiddleware() gin.HandlerFunc {
 
 		if c.ContentType() == "multipart/form-data" {
 			logrus.Infof("Skipping body for multipart/form-data")
+			
 		} else {
 			var buf bytes.Buffer
 			tee := io.TeeReader(c.Request.Body, &buf)

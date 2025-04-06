@@ -146,3 +146,12 @@ type Store struct {
 	ID    uuid.UUID `json:"id"`
 	Roles []string  `json:"roles"`
 }
+
+type SnapPushRequest struct {
+	Name   string `json:"name"`
+	DryRun bool   `json:"dry_run"`
+}
+
+type UnscannedUploadRequest struct {
+	Data string `json:"data"`
+}
