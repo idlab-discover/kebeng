@@ -236,12 +236,19 @@ func (c *StoreClient) SnapDownload(revisionId string) *proto.SnapDownloadComplet
 
 	stream, err := c.client.SnapDownload(context.Background(), req)
 	if err != nil {
+		// if err != nil we should read the stream (if we can) to get the actual error and than return it
+		if stream != nil {
+			if resp, recvErr := stream.Recv(); recvErr == nil && resp != nil && len(resp.Errors) > 0 {
+				logrus.Errorf("error starting grpc download stream, received: %v", resp.Errors)
+				return &proto.SnapDownloadCompleteResponse{Errors: resp.Errors}
+			}
+		}
 		logrus.Errorf("error starting grpc download stream: %v", err)
 		return &proto.SnapDownloadCompleteResponse{
 			Errors: []*proto.Error{{
 				Code:    cerror.InternalServerError,
-				Message: err.Error()},
-			},
+				Message: err.Error(),
+			}},
 		}
 	}
 	// create buffer for snap data
@@ -266,7 +273,7 @@ func (c *StoreClient) SnapDownload(revisionId string) *proto.SnapDownloadComplet
 
 		// first message contains revision metadata and an initial chunk
 		if initial := resp.GetInitial(); initial != nil {
-			logrus.Debugf("Received revision metadata: %v", initial.Revision)
+			logrus.Debugf("received revision metadata: %v", initial.Revision)
 			response.Revision = initial.Revision
 		} else if data := resp.GetData(); data != nil {
 			fileData.Write(data.Chunk)
