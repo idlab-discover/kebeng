@@ -248,7 +248,7 @@ func (h *Handler) SnapPush(c *gin.Context) {
 	var req *model.SnapPushRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		el.Add(cerror.BadRequest, cerror.FormatBindError(err))
-		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
 		return
 	}
 
@@ -291,6 +291,22 @@ func (h *Handler) SnapPush(c *gin.Context) {
 		return
 	}
 
+	// TODO: Dry run to check if the user is allowed to push the snap -> check permissions in root macaroon
+	if req.DryRun {
+		if entry.SnapName != "" {
+			c.JSON(http.StatusOK, gin.H{
+				"success":   true,
+				"snap_name": entry.SnapName,
+				"snap_id":   entry.Id,
+				"status":    "dry-run",
+			})
+		} else {
+			el.Add(cerror.BadRequest, "snap name not found for name="+req.Name)
+			c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+			return
+		}
+	}
+
 	parsedEntryUUID, err := uuid.Parse(entry.Id)
 	if err != nil {
 		el.Add(cerror.BadRequest, "invalid entry ID format")
@@ -306,11 +322,10 @@ func (h *Handler) SnapPush(c *gin.Context) {
 		return
 	}
 
-	logrus.Infof("status details url: %s", upload.StatusDetailsUrl)
-
 	c.JSON(http.StatusOK, gin.H{
 		"success":            true,
 		"snap_name":          entry.SnapName,
+		"upload_id":          upload.Id,
 		"status_details_url": fmt.Sprintf("https://%s%s", c.ClientIP(), upload.StatusDetailsUrl),
 	})
 }
@@ -352,10 +367,10 @@ func (h *Handler) UnscannedUpload(c *gin.Context) {
 		return
 	}
 
-	// Test: gewoon even bevestigen dat het gelukt is
+	// Return the upload ID and file information
 	c.JSON(http.StatusOK, gin.H{
 		"successful": true,
-		"upload_id":  uuid.New().String(), // FIX: this should be the ID of the revision that is created
+		"upload_id":  uuid.New().String(), // ID of the upload
 		"filename":   header.Filename,
 		"size":       header.Size,
 	})
