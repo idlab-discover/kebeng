@@ -2,11 +2,11 @@ package logic
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"path"
-
-	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
@@ -326,12 +326,22 @@ func (s *StoreLogic) GetRevisions(ctx context.Context, req *proto.GetRevisionsRe
 			}
 
 			foundRevisions = append(foundRevisions, &proto.GetRevisionResponse{
-				Id:            rev.ID.String(),
-				SnapName:      entry.Name,
-				Sequence:      uint64(*rev.SequenceNumber),
-				Architectures: rev.Architectures,
-				Version:       *rev.Version,
-				Status:        *rev.Status,
+				Id:                     rev.ID.String(),
+				CreatedAt:              timestamppb.New(rev.CreatedAt),
+				UpdatedAt:              timestamppb.New(rev.UpdatedAt),
+				DeletedAt:              timePointerToTimestamp(rev.DeletedAt),
+				BuildAssertionFilename: *rev.BuildAssertionFileName,
+				Sha3_384:               *rev.SHA3_384,
+				Sha3_384Encoded:        *rev.SHA3_384_Encoded,
+				Size:                   uint64(*rev.Size),
+				SequenceNumber:         uint64(*rev.SequenceNumber),
+				Architectures:          rev.Architectures,
+				Status:                 pointerToString(rev.Status),
+				Version:                pointerToString(rev.Version),
+				EntryId:                rev.SnapEntryID.String(),
+				TrackId:                rev.SnapTrackID.String(),
+				ChannelId:              rev.SnapChannelID.String(),
+				SnapName:               entry.Name,
 			})
 
 			// If id is not provided, check if snapName and sequence are provided
@@ -342,13 +352,30 @@ func (s *StoreLogic) GetRevisions(ctx context.Context, req *proto.GetRevisionsRe
 				continue
 			}
 
+			entry, err := s.repo.GetEntryById(rev.SnapEntryID, nil)
+			if err != nil {
+				// Already logged in GetEntryById (repository)
+				el = append(el, &proto.Error{Code: err.GetCode(), Message: err.GetMessage()})
+				continue
+			}
+
 			foundRevisions = append(foundRevisions, &proto.GetRevisionResponse{
-				Id:            rev.ID.String(),
-				SnapName:      revision.SnapName,
-				Sequence:      uint64(*rev.SequenceNumber),
-				Architectures: rev.Architectures,
-				Version:       *rev.Version,
-				Status:        *rev.Status,
+				Id:                     rev.ID.String(),
+				CreatedAt:              timestamppb.New(rev.CreatedAt),
+				UpdatedAt:              timestamppb.New(rev.UpdatedAt),
+				DeletedAt:              timePointerToTimestamp(rev.DeletedAt),
+				BuildAssertionFilename: *rev.BuildAssertionFileName,
+				Sha3_384:               *rev.SHA3_384,
+				Sha3_384Encoded:        *rev.SHA3_384_Encoded,
+				Size:                   uint64(*rev.Size),
+				SequenceNumber:         uint64(*rev.SequenceNumber),
+				Architectures:          rev.Architectures,
+				Status:                 pointerToString(rev.Status),
+				Version:                pointerToString(rev.Version),
+				EntryId:                rev.SnapEntryID.String(),
+				TrackId:                rev.SnapTrackID.String(),
+				ChannelId:              rev.SnapChannelID.String(),
+				SnapName:               entry.Name,
 			})
 
 		} else {
@@ -380,14 +407,14 @@ func (s *StoreLogic) GetRevisionByNameAndSequence(ctx context.Context, req *prot
 		return &proto.GetRevisionResponse{Errors: el}, nil
 	}
 
-	snapEntry, err := s.repo.GetEntryByName(req.SnapName, nil)
+	entry, err := s.repo.GetEntryByName(req.SnapName, nil)
 	if err != nil {
 		// Already logged in GetEntryByName (repository)
 		el = append(el, &proto.Error{Code: err.GetCode(), Message: err.GetMessage()})
 		return &proto.GetRevisionResponse{Errors: el}, err
 	}
 
-	revision, err := s.repo.GetRevisionByNameAndSequence(snapEntry.Name, uint(req.Sequence))
+	rev, err := s.repo.GetRevisionByNameAndSequence(entry.Name, uint(req.Sequence))
 	if err != nil {
 		// Already logged in GetRevisionByNameAndSequence (repository)
 		el = append(el, &proto.Error{Code: err.GetCode(), Message: err.GetMessage()})
@@ -395,12 +422,22 @@ func (s *StoreLogic) GetRevisionByNameAndSequence(ctx context.Context, req *prot
 	}
 
 	return &proto.GetRevisionResponse{
-		Id:            revision.ID.String(),
-		SnapName:      snapEntry.Name,
-		Sequence:      uint64(*revision.SequenceNumber),
-		Architectures: revision.Architectures,
-		Version:       *revision.Version,
-		Status:        *revision.Status,
+		Id:                     rev.ID.String(),
+		CreatedAt:              timestamppb.New(rev.CreatedAt),
+		UpdatedAt:              timestamppb.New(rev.UpdatedAt),
+		DeletedAt:              timePointerToTimestamp(rev.DeletedAt),
+		BuildAssertionFilename: *rev.BuildAssertionFileName,
+		Sha3_384:               *rev.SHA3_384,
+		Sha3_384Encoded:        *rev.SHA3_384_Encoded,
+		Size:                   uint64(*rev.Size),
+		SequenceNumber:         uint64(*rev.SequenceNumber),
+		Architectures:          rev.Architectures,
+		Status:                 pointerToString(rev.Status),
+		Version:                pointerToString(rev.Version),
+		EntryId:                rev.SnapEntryID.String(),
+		TrackId:                rev.SnapTrackID.String(),
+		ChannelId:              rev.SnapChannelID.String(),
+		SnapName:               entry.Name,
 	}, nil
 }
 
@@ -465,7 +502,19 @@ func (s *StoreLogic) GetRevisionsByEntryIds(ctx context.Context, req *proto.GetR
 			})
 			continue
 		}
-
+		entry, err1 := s.repo.GetEntryById(entryId, nil)
+		if err1 != nil {
+			logrus.Debugf("Failed to get entry from database: %v", err1)
+			el = append(el, &proto.Error{
+				Code:    err1.GetCode(),
+				Message: err1.GetMessage(),
+			})
+			responses = append(responses, &proto.GetRevisionsByEntryIdResponse{
+				EntryId: entryId.String(),
+				Errors:  el,
+			})
+			continue
+		}
 		revisions, err2 := s.repo.GetRevisionsByEntryId(entryId)
 		if err2 != nil {
 			logrus.Debugf("Failed to get revisions from database: %v", err2)
@@ -485,11 +534,21 @@ func (s *StoreLogic) GetRevisionsByEntryIds(ctx context.Context, req *proto.GetR
 		for i, rev := range revisions {
 			revisionsProto[i] = &proto.GetRevisionResponse{
 				Id:                     rev.ID.String(),
+				CreatedAt:              timestamppb.New(rev.CreatedAt),
+				UpdatedAt:              timestamppb.New(rev.UpdatedAt),
+				DeletedAt:              timePointerToTimestamp(rev.DeletedAt),
 				BuildAssertionFilename: *rev.BuildAssertionFileName,
-				Sequence:               uint64(*rev.SequenceNumber),
+				Sha3_384:               *rev.SHA3_384,
+				Sha3_384Encoded:        *rev.SHA3_384_Encoded,
+				Size:                   uint64(*rev.Size),
+				SequenceNumber:         uint64(*rev.SequenceNumber),
 				Architectures:          rev.Architectures,
-				Version:                *rev.Version,
-				Status:                 *rev.Status,
+				Status:                 pointerToString(rev.Status),
+				Version:                pointerToString(rev.Version),
+				EntryId:                rev.SnapEntryID.String(),
+				TrackId:                rev.SnapTrackID.String(),
+				ChannelId:              rev.SnapChannelID.String(),
+				SnapName:               entry.Name,
 			}
 		}
 		// add to response
@@ -519,12 +578,22 @@ func (s *StoreLogic) GetLatestRevision(ctx context.Context, req *proto.GetLatest
 	}
 
 	return &proto.GetRevisionResponse{
-		Id:            revision.ID.String(),
-		SnapName:      req.SnapName,
-		Sequence:      uint64(*revision.SequenceNumber),
-		Architectures: revision.Architectures,
-		Version:       pointerToString(revision.Version),
-		Status:        pointerToString(revision.Status),
+		Id:                     revision.ID.String(),
+		CreatedAt:              timestamppb.New(revision.CreatedAt),
+		UpdatedAt:              timestamppb.New(revision.UpdatedAt),
+		DeletedAt:              timePointerToTimestamp(revision.DeletedAt),
+		BuildAssertionFilename: *revision.BuildAssertionFileName,
+		Sha3_384:               *revision.SHA3_384,
+		Sha3_384Encoded:        *revision.SHA3_384_Encoded,
+		Size:                   uint64(*revision.Size),
+		SequenceNumber:         uint64(*revision.SequenceNumber),
+		Architectures:          revision.Architectures,
+		Status:                 pointerToString(revision.Status),
+		Version:                pointerToString(revision.Version),
+		EntryId:                revision.SnapEntryID.String(),
+		TrackId:                revision.SnapTrackID.String(),
+		ChannelId:              revision.SnapChannelID.String(),
+		SnapName:               req.SnapName,
 	}, nil
 }
 
@@ -552,4 +621,11 @@ func pointerToString(s *string) string {
 		return *s
 	}
 	return ""
+}
+
+func timePointerToTimestamp(s *time.Time) *timestamppb.Timestamp {
+	if s != nil {
+		return timestamppb.New(*s)
+	}
+	return nil
 }

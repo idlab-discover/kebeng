@@ -73,7 +73,7 @@ func main() {
 
 	if cfg.TestMode {
 		logrus.Infof("Running in test mode, using test data file: %s", cfg.TestDataFilePath)
-		err := database.LoadTestData(cfg.TestDataFilePath, repo)
+		err := database.LoadTestData(cfg.TestDataFilePath, db, repo)
 		if err != nil {
 			logrus.Errorf("Failed to load test data: %v", err)
 		}
