@@ -168,3 +168,11 @@ func (m *MockSnapsRepository) UpdateRevision(revision *models.SnapRevision, revi
 	}
 	return nil, args.Get(1).(*cerror.CustomError)
 }
+
+func (m *MockSnapsRepository) GetLatestRevision(snapName string, track string, channel string) (*models.SnapRevision, *cerror.CustomError) {
+	args := m.Called(snapName, track, channel)
+	if args.Get(0) != nil {
+		return args.Get(0).(*models.SnapRevision), nil
+	}
+	return nil, args.Get(1).(*cerror.CustomError)
+}
