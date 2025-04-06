@@ -33,6 +33,7 @@ func NewObjectStore(minio *minio.Client) IObjectStore {
 }
 
 func (obs *ObjectStore) GetSnapFileReader(filePath string) (io.ReadCloser, error) {
+	logrus.Infof("Getting file reader for file path: %s", filePath)
 	ctx, cancel := context.WithCancel(context.Background())
 	// do not defer cancel() here because we want the context to remain active
 	// while the caller reads the file. The caller should close the ReadCloser,

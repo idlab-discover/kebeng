@@ -585,11 +585,16 @@ func (s *StoreLogic) SnapDownload(req *proto.SnapDownloadRequest, stream proto.S
 		logrus.Error(err)
 		el = append(el, &proto.Error{
 			Code:    cerror.InvalidField,
-			Message: "Invalid UUID format",
+			Message: "invalid UUID format",
 		})
-		return stream.Send(&proto.SnapDownloadResponse{
+		err := stream.Send(&proto.SnapDownloadResponse{
 			Errors: el,
 		})
+		if err != nil {
+			logrus.Error("failed to send error response: ", err)
+			return err
+		}
+		return err
 	}
 	revision, cerr := s.repo.GetRevisionById(parsedRevisionId)
 	if cerr != nil {
@@ -597,9 +602,14 @@ func (s *StoreLogic) SnapDownload(req *proto.SnapDownloadRequest, stream proto.S
 			Code:    cerr.GetCode(),
 			Message: cerr.GetMessage(),
 		})
-		return stream.Send(&proto.SnapDownloadResponse{
+		err := stream.Send(&proto.SnapDownloadResponse{
 			Errors: el,
 		})
+		if err != nil {
+			logrus.Error("failed to send error response: ", err)
+			return err
+		}
+		return fmt.Errorf("failed to get revision by id: %v", cerr)
 	}
 
 	// retrieve file path inside minio to find correct snap package
@@ -609,19 +619,30 @@ func (s *StoreLogic) SnapDownload(req *proto.SnapDownloadRequest, stream proto.S
 			Code:    cerr.GetCode(),
 			Message: cerr.GetMessage(),
 		})
-		return stream.Send(&proto.SnapDownloadResponse{
+		err := stream.Send(&proto.SnapDownloadResponse{
 			Errors: el,
 		})
+		if err != nil {
+			logrus.Error("failed to send error response: ", err)
+			return err
+		}
+		return fmt.Errorf("failed to retrieve snap from objectstore with filePath: %v", filePath)
 	}
 
 	snapFileReader, err := s.obs.GetSnapFileReader(filePath)
 	if err != nil {
-		return stream.Send(&proto.SnapDownloadResponse{
-			Errors: []*proto.Error{{
-				Code:    cerror.ResourceNotFound,
-				Message: "snap file not found",
-			}},
+		el = append(el, &proto.Error{
+			Code:    cerror.InternalServerError,
+			Message: "failed to get snap file reader",
 		})
+		err := stream.Send(&proto.SnapDownloadResponse{
+			Errors: el,
+		})
+		if err != nil {
+			logrus.Error("failed to send error response: ", err)
+			return err
+		}
+		return fmt.Errorf("failed to get revision by id: %v", cerr)
 	}
 	defer snapFileReader.Close()
 
@@ -629,6 +650,7 @@ func (s *StoreLogic) SnapDownload(req *proto.SnapDownloadRequest, stream proto.S
 	const chunkSize = 64 * 1024
 	buffer := make([]byte, chunkSize)
 
+	// TODO: add snapName to Revision
 	protoRevision := convertRevisionToProto(revision)
 
 	// send the initial message with revision metadata.
@@ -743,6 +765,22 @@ func (s *StoreLogic) AddUpload(ctx context.Context, req *proto.AddUploadRequest)
 
 // ################# HELPERS #################
 
+func (s *StoreLogic) retrieveObjectStoreFilePath(revision *models.SnapRevision) (string, *cerror.CustomError) {
+	entry, cerr := s.repo.GetEntryById(revision.SnapEntryID, nil)
+	if cerr != nil {
+		return "", cerr
+	}
+	track, cerr := s.repo.GetTrackById(revision.SnapTrackID)
+	if cerr != nil {
+		return "", cerr
+	}
+	channel, cerr := s.repo.GetChannelById(revision.SnapChannelID)
+	if cerr != nil {
+		return "", cerr
+	}
+	return fmt.Sprintf("%s/%s/%s/%s_%d.snap", entry.Name, track.Name, channel.Name, entry.Name, uintPointerToUint(revision.SequenceNumber)), nil
+}
+
 func pointerToString(s *string) string {
 	if s != nil {
 		return *s
@@ -757,20 +795,11 @@ func timePointerToTimestamp(s *time.Time) *timestamppb.Timestamp {
 	return nil
 }
 
-func (s *StoreLogic) retrieveObjectStoreFilePath(revision *models.SnapRevision) (string, *cerror.CustomError) {
-	entry, cerr := s.repo.GetEntryById(revision.SnapEntryID, nil)
-	if cerr != nil {
-		return "", cerr
+func uintPointerToUint(s *uint) uint {
+	if s != nil {
+		return *s
 	}
-	track, cerr := s.repo.GetTrackById(revision.SnapTrackID)
-	if cerr != nil {
-		return "", cerr
-	}
-	channel, cerr := s.repo.GetChannelById(revision.SnapChannelID)
-	if cerr != nil {
-		return "", cerr
-	}
-	return fmt.Sprintf("%s/%s/%s/%s_%d", entry.Name, track.Name, channel.Name, entry.Name, revision.SequenceNumber), nil
+	return 0
 }
 
 func convertRevisionToProto(revision *models.SnapRevision) *proto.GetRevisionResponse {
