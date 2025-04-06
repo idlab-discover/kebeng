@@ -210,3 +210,18 @@ message UnscannedUploadResponse {
     uint64 file_size = 2;
     repeated Error errors = 3;
 }
+
+message AddUploadRequest {
+    string snap_name = 1;
+    string entry_id = 2;
+    string status = 3;
+    string account_id = 4;
+}
+
+message AddUploadResponse {
+    string id = 1;
+    string snap_name = 2;
+    string status = 3;
+    string status_details_url = 4;
+    repeated Error errors = 5;
+}
