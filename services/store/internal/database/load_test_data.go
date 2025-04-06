@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/idlab-discover/kebeng/services/store/internal/models"
 	"github.com/idlab-discover/kebeng/services/store/internal/repository"
+	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
 )
 
@@ -22,7 +23,7 @@ type TestData struct {
 
 // TODO: add channel and track and then remove computing path so that
 // the path can be reconstructed from the database
-func LoadTestData(filePath string, repo repository.ISnapsRepository) error {
+func LoadTestData(filePath string, db *sqlx.DB, repo repository.ISnapsRepository) error {
 	logrus.Info("Inserting test data")
 
 	// Check if file exists and read its content.
@@ -60,6 +61,12 @@ func LoadTestData(filePath string, repo repository.ISnapsRepository) error {
 		registeredSnap, cerr := repo.RegisterSnap(entry.Name, isPrivate, *entry.Store, entry.AccountID)
 		if cerr != nil {
 			return fmt.Errorf("failed to register snap (%s): %v", entry.Name, cerr)
+		}
+		// TODO: update RegisterSnap to include the Type remove this code when done
+		query := `UPDATE entry SET type = $2 WHERE id = $1`
+		_, err := db.Exec(query, registeredSnap.ID, entry.Type)
+		if err != nil {
+			return fmt.Errorf("failed to update type for snap (%s): %v", registeredSnap.ID, err)
 		}
 		logrus.Infof("Registered SnapEntry: %+v", registeredSnap)
 		// Update mapping: original ID -> new generated ID.
@@ -126,6 +133,15 @@ func LoadTestData(filePath string, repo repository.ISnapsRepository) error {
 		if cerr != nil {
 			return fmt.Errorf("failed to add revision for snap (%s): %v", newEntryID, cerr)
 		}
+
+		// TODO: if bram updates the AddRevision to include the architecture remove this and use the function instead
+		logrus.Infof("Inserting architectures for revision (%s): %v", registeredRevision.ID, rev.Architectures)
+		query := `UPDATE revision SET architectures = $2 WHERE id = $1`
+		_, err := db.Exec(query, registeredRevision.ID, rev.Architectures)
+		if err != nil {
+			return fmt.Errorf("failed to update architectures for revision (%s): %v", registeredRevision.ID, err)
+		}
+
 		idMap[rev.ID] = registeredRevision.ID
 	}
 
