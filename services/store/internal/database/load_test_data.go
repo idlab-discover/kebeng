@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/idlab-discover/kebeng/services/store/internal/models"
-	"github.com/idlab-discover/kebeng/services/store/internal/repositories"
+	"github.com/idlab-discover/kebeng/services/store/internal/repository"
 	"github.com/sirupsen/logrus"
 )
 
@@ -22,7 +22,7 @@ type TestData struct {
 
 // TODO: add channel and track and then remove computing path so that
 // the path can be reconstructed from the database
-func LoadTestData(filePath string, repo repositories.ISnapsRepository) error {
+func LoadTestData(filePath string, repo repository.ISnapsRepository) error {
 	logrus.Info("Inserting test data")
 
 	// Check if file exists and read its content.
@@ -57,7 +57,7 @@ func LoadTestData(filePath string, repo repositories.ISnapsRepository) error {
 		}
 		// Use RegisterSnap to insert the snap entry.
 		// (Note: you may later update this to include the account id.)
-		registeredSnap, cerr := repo.RegisterSnap(entry.Name, isPrivate)
+		registeredSnap, cerr := repo.RegisterSnap(entry.Name, isPrivate, *entry.Store, entry.AccountID)
 		if cerr != nil {
 			return fmt.Errorf("failed to register snap (%s): %v", entry.Name, cerr)
 		}

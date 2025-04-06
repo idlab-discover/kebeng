@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/idlab-discover/kebeng/services/assertion/internal/repositories"
+	"github.com/idlab-discover/kebeng/services/assertion/internal/repository"
 	"github.com/sirupsen/logrus"
 )
 
@@ -13,7 +13,7 @@ import (
 type TestData struct {
 }
 
-func LoadTestData(filePath string, repo repositories.IAssertionRepository) error {
+func LoadTestData(filePath string, repo repository.IAssertionRepository) error {
 	logrus.Info("inserting test data")
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		logrus.Warnf("Test data file does not exist: %s", filePath)

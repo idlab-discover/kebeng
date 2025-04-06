@@ -13,7 +13,7 @@ import (
 	"github.com/idlab-discover/kebeng/services/store/internal/database"
 	logic "github.com/idlab-discover/kebeng/services/store/internal/logic"
 	"github.com/idlab-discover/kebeng/services/store/internal/objectstore"
-	repositories "github.com/idlab-discover/kebeng/services/store/internal/repositories"
+	repositories "github.com/idlab-discover/kebeng/services/store/internal/repository"
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -69,7 +69,7 @@ func main() {
 
 	// start grpc server
 	repo := repositories.NewSnapsRepository(db)
-	storeLogic := logic.NewStoreLogic(repo)
+	storeLogic := logic.NewStoreLogic(repo, cfg)
 
 	if cfg.TestMode {
 		logrus.Infof("Running in test mode, using test data file: %s", cfg.TestDataFilePath)
