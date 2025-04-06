@@ -42,7 +42,7 @@ func main() {
 		panic(err)
 	}
 	if exists {
-		fmt.Println("Bucket exists, please use destroy command if you are sure you want to start over.")
+		fmt.Printf("Bucket '%s' exists, please use destroy command if you are sure you want to start over.", "root")
 		return
 	}
 
@@ -52,7 +52,7 @@ func main() {
 	}
 
 	if exists {
-		fmt.Println("Bucket exists, please use destroy command if you are sure you want to start over.")
+		fmt.Printf("Bucket '%s' exists, please use destroy command if you are sure you want to start over.", "generic")
 		return
 	}
 
@@ -60,9 +60,10 @@ func main() {
 	makeBucketAndAddKey(minioClient, "generic", cfg.GenericKeyPath, "private-key.pem")
 	minioClient.MakeBucket(context.Background(), "snaps", minio.MakeBucketOptions{})
 
+	objectstore := objectstore.NewObjectStore(minioClient)
 	// start grpc server
 	repo := repositories.NewSnapsRepository(db)
-	storeLogic := logic.NewStoreLogic(repo, cfg)
+	storeLogic := logic.NewStoreLogic(repo, cfg, objectstore)
 
 	if cfg.TestMode {
 		logrus.Infof("Running in test mode, using test data file: %s", cfg.TestDataFilePath)

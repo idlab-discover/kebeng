@@ -8,6 +8,7 @@ import (
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
 	"github.com/idlab-discover/kebeng/services/store/internal/models"
+	"github.com/idlab-discover/kebeng/services/store/internal/objectstore"
 	"github.com/idlab-discover/kebeng/services/store/internal/repository"
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
 	"github.com/stretchr/testify/assert"
@@ -16,7 +17,8 @@ import (
 
 func TestRegisterSnapName(t *testing.T) {
 	mockRepo := new(repository.MockSnapsRepository)
-	service := NewStoreLogic(mockRepo, &config.Config{})
+	mockObj := new(objectstore.MockObjectStore)
+	service := NewStoreLogic(mockRepo, &config.Config{}, mockObj)
 
 	mockUUID := uuid.New()
 

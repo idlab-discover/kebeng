@@ -318,6 +318,33 @@ func (h *Handler) UnscannedUpload(c *gin.Context) {
 		return
 	}
 
+	file, err := header.Open()
+	if err != nil {
+		el.Add(cerror.InternalServerError, "Error opening file: "+err.Error())
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+	defer func() {
+		if err := file.Close(); err != nil {
+			el.Add(cerror.InternalServerError, "Error closing file: "+err.Error())
+			c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		}
+	}()
+
+	// TODO: Here we need to upload the file to the unscanned bucket
+	resp := h.StoreClient.UnscannedUpload(file)
+	if len(resp.Errors) > 0 {
+		el.ExtendStoreError(resp.Errors)
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+
+	if resp.GetTempFileName() == "" {
+		el.Add(cerror.InternalServerError, "Upload failed: no ID returned")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+
 	// Test: gewoon even bevestigen dat het gelukt is
 	c.JSON(http.StatusOK, gin.H{
 		"successful": true,
@@ -326,3 +353,27 @@ func (h *Handler) UnscannedUpload(c *gin.Context) {
 		"size":       header.Size,
 	})
 }
+
+// func (h *Handler) GetStatus(c *gin.Context) {
+// 	el := cerror.NewErrorList()
+
+// 	// Get the revision ID from the URL
+// 	revisionID := c.Param("rev_id")
+// 	if revisionID == "" {
+// 		el.Add(cerror.BadRequest, "revision_id is required")
+// 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+// 		return
+// 	}
+
+// 	// Get the status of the revision
+// 	status, err := h.StoreClient.GetRevisionStatus(revisionID)
+// 	if err != nil {
+// 		el.Add(cerror.InternalServerError, "Failed to get revision status: "+err.Error())
+// 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+// 		return
+// 	}
+
+// 	c.JSON(http.StatusOK, gin.H{
+// 		"status": status,
+// 	})
+// }

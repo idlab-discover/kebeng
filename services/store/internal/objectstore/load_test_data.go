@@ -14,7 +14,7 @@ import (
 )
 
 // TODO: should get snap path out of database instead of getting it as var
-func LoadTestData(client *minio.Client, repo repository.ISnapsRepository, minioPath string) error {
+func (obs *ObjectStore) LoadTestData(client *minio.Client, repo repository.ISnapsRepository, minioPath string) error {
 	ok, err := client.BucketExists(context.Background(), "snaps")
 	if err != nil {
 		logrus.Errorf("Error checking if bucket exists: %v", err)
