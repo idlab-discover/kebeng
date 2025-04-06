@@ -123,7 +123,7 @@ func TestAuthMiddleware_InvalidAuthorizationHeader(t *testing.T) {
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 	body := w.Body.String()
-	assert.Contains(t, body, "Invalid Authorization header")
+	assert.Contains(t, body, "invalid Authorization header")
 }
 
 func TestAuthMiddleware_MissingRootMacaroon(t *testing.T) {
@@ -142,7 +142,7 @@ func TestAuthMiddleware_MissingRootMacaroon(t *testing.T) {
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 	body := w.Body.String()
-	assert.Contains(t, body, "Missing root macaroon")
+	assert.Contains(t, body, "missing root macaroon")
 }
 
 func TestAuthMiddleware_MissingDischargeMacaroon(t *testing.T) {
@@ -161,7 +161,7 @@ func TestAuthMiddleware_MissingDischargeMacaroon(t *testing.T) {
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 	body := w.Body.String()
-	assert.Contains(t, body, "Missing discharge macaroon")
+	assert.Contains(t, body, "missing discharge macaroon")
 }
 
 func TestAuthMiddleware_ValidHeader(t *testing.T) {
