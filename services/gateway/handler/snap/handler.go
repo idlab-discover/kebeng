@@ -96,8 +96,7 @@ func (h *Handler) refreshSnapInstall(c *gin.Context, action *model.Action, el *c
 		return &res, fmt.Errorf("store error: %v", latestRevision.Errors)
 	}
 
-	// Get the publisher of the snap entry
-	// ERROR: if publisher not found we should error this is not safe if we don't know who published it
+	// if publisher not found we should error this is not safe if we don't know who published it
 	publisher := h.AccountClient.GetAccountByID(snapEntry.PublisherId)
 	if len(publisher.Errors) > 0 {
 		el.ExtendAccountError(publisher.Errors)
@@ -107,7 +106,14 @@ func (h *Handler) refreshSnapInstall(c *gin.Context, action *model.Action, el *c
 
 	result := "install"
 
-	sequenceNumber := int(latestRevision.Sequence)
+	sequenceNumber := int(latestRevision.SequenceNumber)
+
+	if h.Config.StoreUrl == "" {
+		el.Add(cerror.InternalServerError, "store URL not set")
+		res.Result = nil
+		return &res, fmt.Errorf("store URL not set")
+	}
+	downloadUrl := fmt.Sprintf("%s/download/%s/%s/%s/%s", h.Config.StoreUrl, snapEntry.Id, latestRevision.TrackId, latestRevision.ChannelId, latestRevision.Version)
 
 	res.Result = &result
 	res.InstanceKey = &action.InstanceKey
@@ -122,9 +128,9 @@ func (h *Handler) refreshSnapInstall(c *gin.Context, action *model.Action, el *c
 			ID:       publisher.Id,
 		},
 		Download: &model.Download{
-			URL:      nil, // TODO: implement
-			Sha3_384: nil, // TODO: implement
-			Size:     nil, // TODO: implement
+			URL:      &downloadUrl,
+			Sha3_384: &latestRevision.Sha3_384,
+			Size:     &latestRevision.Size,
 		},
 		Version:     &latestRevision.Version,
 		Revision:    &sequenceNumber,
