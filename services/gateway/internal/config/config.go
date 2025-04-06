@@ -29,6 +29,8 @@ type Config struct {
 	AssertionServicePort int    `mapstructure:"assertion_service_port" yaml:"assertion_service_port"`
 
 	MacaroonConfig *MacaroonConfig `mapstructure:"macaroon" yaml:"macaroon"`
+
+	StoreUrl string `mapstructure:"store_url" yaml:"store_url"`
 }
 
 func LoadConfig() (*Config, error) {

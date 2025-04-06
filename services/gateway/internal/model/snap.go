@@ -99,9 +99,9 @@ type RefreshSnap struct {
 }
 
 type Download struct {
-	URL      *string  `json:"url,omitempty"`
-	Sha3_384 *string  `json:"sha3-384,omitempty"`
-	Size     *float64 `json:"size,omitempty"`
+	URL      *string `json:"url,omitempty"`
+	Sha3_384 *string `json:"sha3-384,omitempty"`
+	Size     *uint64 `json:"size,omitempty"`
 }
 
 // SnapRevision represents a snap revision in the store
