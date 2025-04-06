@@ -277,41 +277,48 @@ func (h *Handler) SnapPush(c *gin.Context) {
 		return
 	}
 
-	resp := h.StoreClient.RegisterSnapName(req.Name, false, "", true, accountUUID)
-	if len(resp.Errors) > 0 {
-		el.ExtendStoreError(resp.Errors)
+	// Dry run to check if the snap name is registered
+	entry := h.StoreClient.RegisterSnapName(req.Name, false, "", true, accountUUID)
+	if len(entry.Errors) > 0 {
+		el.ExtendStoreError(entry.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
 		return
 	}
 
-	if resp.SnapName == "" {
+	if entry.SnapName == "" {
 		el.AddCustomError(cerror.NewCustomError(cerror.ResourceNotFound, "Snap name not found for name="+req.Name))
 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
 		return
 	}
 
+	parsedEntryUUID, err := uuid.Parse(entry.Id)
+	if err != nil {
+		el.Add(cerror.BadRequest, "invalid entry ID format")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+
+	// Create a new snap upload with status "pending"
+	upload := h.StoreClient.AddUpload(entry.SnapName, parsedEntryUUID, "pending", accountUUID)
+	if len(upload.Errors) > 0 {
+		el.ExtendStoreError(upload.Errors)
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+
+	logrus.Infof("status details url: %s", upload.StatusDetailsUrl)
+
 	c.JSON(http.StatusOK, gin.H{
 		"success":            true,
-		"snap_name":          resp.SnapName,
-		"status_details_url": fmt.Sprintf("https://%s/dev/api/snaps/%s/status", c.ClientIP(), uuid.New().String()), // FIX: this should be the URL to the status of the revision
+		"snap_name":          entry.SnapName,
+		"status_details_url": fmt.Sprintf("https://%s%s", c.ClientIP(), upload.StatusDetailsUrl),
 	})
 }
 
 func (h *Handler) UnscannedUpload(c *gin.Context) {
 	el := cerror.NewErrorList()
 
-	c.Request.ParseMultipartForm(100 << 20) // 100 MB limiet
-
-	if c.Request.MultipartForm != nil {
-		for key, files := range c.Request.MultipartForm.File {
-			fmt.Printf("Multipart file field: %s\n", key)
-			for _, f := range files {
-				fmt.Printf("  File name: %s, size: %d bytes\n", f.Filename, f.Size)
-			}
-		}
-	}
-
-	header, err := c.FormFile("binary") // vervang 'snap' indien nodig
+	header, err := c.FormFile("binary")
 	if err != nil {
 		el.Add(cerror.BadRequest, "Missing file in form data: "+err.Error())
 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
@@ -331,7 +338,7 @@ func (h *Handler) UnscannedUpload(c *gin.Context) {
 		}
 	}()
 
-	// TODO: Here we need to upload the file to the unscanned bucket
+	// Upload file to the unscanned bucket, waiting for revision to be created
 	resp := h.StoreClient.UnscannedUpload(file)
 	if len(resp.Errors) > 0 {
 		el.ExtendStoreError(resp.Errors)
