@@ -52,7 +52,7 @@ func (s *StoreLogic) RegisterSnapName(ctx context.Context, req *proto.RegisterSn
 	// If dryRun is true, we only check if the snap name is already registered
 	if req.DryRun {
 		if snapEntry != nil {
-			return &proto.RegisterSnapNameResponse{SnapName: req.SnapName}, nil // Id will be set to empty string, docs say it should be null, but nil can't be assigned to string -> TODO: see later if this is a problem
+			return &proto.RegisterSnapNameResponse{Id: snapEntry.ID.String(), SnapName: req.SnapName}, nil // Id will be set to empty string, docs say it should be null, but nil can't be assigned to string -> TODO: see later if this is a problem
 		} else {
 			return &proto.RegisterSnapNameResponse{SnapName: ""}, nil // Return an empty string if the snap name is not registered
 		}
