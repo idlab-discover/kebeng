@@ -907,6 +907,43 @@ func TestUpdateRevision(t *testing.T) {
 	}
 }
 
+func TestAddUpload(t *testing.T) {
+	tests := []struct {
+		name              string
+		snapName          string
+		entryId           uuid.UUID
+		accountId         uuid.UUID
+		status            string
+		expectError       bool
+		expectedErrorCode string
+	}{
+		{
+			name:        "Success adding upload",
+			snapName:    "mock-snap",
+			entryId:     mockUUID,
+			accountId:   mockUUID,
+			status:      "pending",
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			upload, err := globalRepo.AddUpload(tt.snapName, tt.entryId, tt.status, tt.accountId)
+			if tt.expectError {
+				assert.NotNil(t, err)
+				if err != nil {
+					assert.Equal(t, tt.expectedErrorCode, err.GetCode())
+				}
+			} else {
+				assert.Nil(t, err)
+				assert.NotNil(t, upload)
+				assert.NotEmpty(t, upload.StatusDetailsURL)
+			}
+		})
+	}
+}
+
 // Helper function to insert mock data
 func mockData(db *sqlx.DB) {
 	// Mock snap entry
