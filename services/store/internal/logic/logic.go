@@ -1,7 +1,6 @@
 package logic
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -12,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
+	"github.com/idlab-discover/kebeng/services/store/internal/models"
 	"github.com/idlab-discover/kebeng/services/store/internal/objectstore"
 	"github.com/idlab-discover/kebeng/services/store/internal/repository"
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
@@ -569,31 +569,111 @@ func (s *StoreLogic) GetLatestRevision(ctx context.Context, req *proto.GetLatest
 	}, nil
 }
 
-func (s *StoreLogic) SnapDownload(ctx context.Context, req *proto.SnapDownloadRequest) (*proto.SnapDownloadCompleteResponse, error) {
+func (s *StoreLogic) SnapDownload(req *proto.SnapDownloadRequest, stream proto.StoreService_SnapDownloadServer) error {
 	el := make([]*proto.Error, 0)
 	if req.RevisionId == "" {
-		el = append(el, &proto.Error{Code: cerror.MissingField, Message: "Revision id is required"})
-		return &proto.SnapDownloadCompleteResponse{Errors: el}, nil
+		return stream.Send(&proto.SnapDownloadResponse{
+			Errors: []*proto.Error{{
+				Code:    cerror.MissingField,
+				Message: "revision id is required",
+			}},
+		})
 	}
 
-	revisionId, err := uuid.Parse(req.RevisionId)
+	parsedRevisionId, err := uuid.Parse(req.RevisionId)
 	if err != nil {
 		logrus.Error(err)
-		el = append(el, &proto.Error{Code: cerror.InvalidField, Message: "Invalid UUID format"})
-		return &proto.SnapDownloadCompleteResponse{Errors: el}, nil
+		el = append(el, &proto.Error{
+			Code:    cerror.InvalidField,
+			Message: "Invalid UUID format",
+		})
+		return stream.Send(&proto.SnapDownloadResponse{
+			Errors: el,
+		})
 	}
-
-	revision, cerr := s.repo.GetRevisionById(revisionId)
+	revision, cerr := s.repo.GetRevisionById(parsedRevisionId)
 	if cerr != nil {
-		logrus.Error(cerr)
-		el = append(el, &proto.Error{Code: cerr.GetCode(), Message: cerr.GetMessage()})
-		return &proto.SnapDownloadCompleteResponse{Errors: el}, nil
+		el = append(el, &proto.Error{
+			Code:    cerr.GetCode(),
+			Message: cerr.GetMessage(),
+		})
+		return stream.Send(&proto.SnapDownloadResponse{
+			Errors: el,
+		})
 	}
 
-	return nil, nil
+	// retrieve file path inside minio to find correct snap package
+	filePath, cerr := s.retrieveObjectStoreFilePath(revision)
+	if cerr != nil {
+		el = append(el, &proto.Error{
+			Code:    cerr.GetCode(),
+			Message: cerr.GetMessage(),
+		})
+		return stream.Send(&proto.SnapDownloadResponse{
+			Errors: el,
+		})
+	}
+
+	snapFileReader, err := s.obs.GetSnapFileReader(filePath)
+	if err != nil {
+		return stream.Send(&proto.SnapDownloadResponse{
+			Errors: []*proto.Error{{
+				Code:    cerror.ResourceNotFound,
+				Message: "snap file not found",
+			}},
+		})
+	}
+	defer snapFileReader.Close()
+
+	// define chunksize for reading the file
+	const chunkSize = 64 * 1024
+	buffer := make([]byte, chunkSize)
+
+	protoRevision := convertRevisionToProto(revision)
+
+	// send the initial message with revision metadata.
+	initialResp := &proto.SnapDownloadResponse{
+		Payload: &proto.SnapDownloadResponse_Initial{
+			Initial: &proto.InitialDownloadResponse{
+				Revision: protoRevision,
+			},
+		},
+		Errors: nil,
+	}
+	if err := stream.Send(initialResp); err != nil {
+		logrus.Error("failed to send initial gRPC stream response: ", err)
+		return err
+	}
+
+	for {
+		n, err := snapFileReader.Read(buffer)
+		if n > 0 {
+			dataResp := &proto.SnapDownloadResponse{
+				Payload: &proto.SnapDownloadResponse_Data{
+					Data: &proto.DataChunk{
+						Chunk: buffer[:n],
+					},
+				},
+				Errors: nil,
+			}
+			if err := stream.Send(dataResp); err != nil {
+				logrus.Error("failed to send data chunk: ", err)
+				return err
+			}
+		}
+		if err == io.EOF {
+			break
+		}
+		// only check error down here since io.EOF is not an error and it can return some bytes and io.EOF at the same time, we would miss the last few bytes
+		if err != nil {
+			logrus.Error("failed to read snap file: ", err)
+			return err
+		}
+	}
+	return nil
 }
 
-func saveFileToTemp(snapFile io.Reader) (string, string, *cerror.CustomError) {
+func saveFileToTemp(snapFile io.Reader) (string, *cerror.CustomError) {
 	// Generate random file name for the new uploaded file so it doesn't override the old file with same name
 	snapFileId := uuid.New().String()
 	newFileName := snapFileId + ".snap"
@@ -661,6 +741,8 @@ func (s *StoreLogic) AddUpload(ctx context.Context, req *proto.AddUploadRequest)
 	}, nil
 }
 
+// ################# HELPERS #################
+
 func pointerToString(s *string) string {
 	if s != nil {
 		return *s
@@ -673,4 +755,37 @@ func timePointerToTimestamp(s *time.Time) *timestamppb.Timestamp {
 		return timestamppb.New(*s)
 	}
 	return nil
+}
+
+func (s *StoreLogic) retrieveObjectStoreFilePath(revision *models.SnapRevision) (string, *cerror.CustomError) {
+	entry, cerr := s.repo.GetEntryById(revision.SnapEntryID, nil)
+	if cerr != nil {
+		return "", cerr
+	}
+	track, cerr := s.repo.GetTrackById(revision.SnapTrackID)
+	if cerr != nil {
+		return "", cerr
+	}
+	channel, cerr := s.repo.GetChannelById(revision.SnapChannelID)
+	if cerr != nil {
+		return "", cerr
+	}
+	return fmt.Sprintf("%s/%s/%s/%s_%d", entry.Name, track.Name, channel.Name, entry.Name, revision.SequenceNumber), nil
+}
+
+func convertRevisionToProto(revision *models.SnapRevision) *proto.GetRevisionResponse {
+	return &proto.GetRevisionResponse{
+		Id:                     revision.ID.String(),
+		CreatedAt:              timestamppb.New(revision.CreatedAt),
+		UpdatedAt:              timestamppb.New(revision.UpdatedAt),
+		DeletedAt:              timePointerToTimestamp(revision.DeletedAt),
+		BuildAssertionFilename: pointerToString(revision.BuildAssertionFileName),
+		Sha3_384:               pointerToString(revision.SHA3_384),
+		Sha3_384Encoded:        pointerToString(revision.SHA3_384_Encoded),
+		Size:                   uint64(*revision.Size),
+		SequenceNumber:         uint64(*revision.SequenceNumber),
+		Architectures:          revision.Architectures,
+		Status:                 pointerToString(revision.Status),
+		Version:                pointerToString(revision.Version),
+	}
 }

@@ -24,7 +24,7 @@ type StoreClientInterface interface {
 	GetEntriesByAccountID(accountID string) *proto.GetEntriesResponse
 	GetRevisionsByEntryIds(entryIds *proto.GetRevisionsByEntryIdRequests) *proto.GetRevisionsByEntryIdResponses
 	GetLatestRevision(snapName, track, channel string) *proto.GetRevisionResponse
-	SnapDownload(revisionId string) *proto.SnapDownloadResponse
+	SnapDownload(revisionId string) *proto.SnapDownloadCompleteResponse
 	UnscannedUpload(snapFile io.Reader) *proto.UnscannedUploadResponse
 	AddUpload(snapName string, entryId uuid.UUID, status string, accountId uuid.UUID) *proto.AddUploadResponse
 }
@@ -173,6 +173,15 @@ func (c *StoreClient) GetLatestRevision(snapName, track, channel string) *proto.
 	resp, err := c.client.GetLatestRevision(context.Background(), req)
 	if err != nil {
 		resp = &proto.GetRevisionResponse{
+			Errors: []*proto.Error{{
+				Code:    cerror.InternalServerError,
+				Message: err.Error()},
+			},
+		}
+	}
+	return resp
+}
+
 func (c *StoreClient) UnscannedUpload(snapFile io.Reader) *proto.UnscannedUploadResponse {
 	fileData, err := io.ReadAll(snapFile)
 	if err != nil {
@@ -200,6 +209,26 @@ func (c *StoreClient) UnscannedUpload(snapFile io.Reader) *proto.UnscannedUpload
 	return resp
 }
 
+func (c *StoreClient) AddUpload(snapName string, entryId uuid.UUID, status string, accountId uuid.UUID) *proto.AddUploadResponse {
+	req := &proto.AddUploadRequest{
+		SnapName:  snapName,
+		EntryId:   entryId.String(),
+		Status:    status,
+		AccountId: accountId.String(),
+	}
+
+	resp, err := c.client.AddUpload(context.Background(), req)
+	if err != nil {
+		resp = &proto.AddUploadResponse{
+			Errors: []*proto.Error{{
+				Code:    cerror.InternalServerError,
+				Message: err.Error()},
+			},
+		}
+	}
+	return resp
+}
+
 func (c *StoreClient) SnapDownload(revisionId string) *proto.SnapDownloadCompleteResponse {
 	req := &proto.SnapDownloadRequest{
 		RevisionId: revisionId,
@@ -209,17 +238,6 @@ func (c *StoreClient) SnapDownload(revisionId string) *proto.SnapDownloadComplet
 	if err != nil {
 		logrus.Errorf("error starting grpc download stream: %v", err)
 		return &proto.SnapDownloadCompleteResponse{
-func (c *StoreClient) AddUpload(snapName string, entryId uuid.UUID, status string, accountId uuid.UUID) *proto.AddUploadResponse {
-	req := &proto.AddUploadRequest{
-		SnapName: snapName,
-		EntryId:  entryId.String(),
-		Status:   status,
-		AccountId: accountId.String(),
-	}
-
-	resp, err := c.client.AddUpload(context.Background(), req)
-	if err != nil {
-		resp = &proto.AddUploadResponse{
 			Errors: []*proto.Error{{
 				Code:    cerror.InternalServerError,
 				Message: err.Error()},
@@ -256,5 +274,4 @@ func (c *StoreClient) AddUpload(snapName string, entryId uuid.UUID, status strin
 	}
 	response.Data = fileData.Bytes()
 	return response
-	return resp
 }
