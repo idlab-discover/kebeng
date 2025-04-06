@@ -260,3 +260,166 @@ func TestRegisterSnapName(t *testing.T) {
 	}
 
 }
+
+func TestAddUpload(t *testing.T) {
+	mockRepo := new(repository.MockSnapsRepository)
+	mockObj := new(objectstore.MockObjectStore)
+	service := NewStoreLogic(mockRepo, &config.Config{}, mockObj)
+
+	mockUUID := uuid.New()
+
+	tests := []struct {
+		name          string
+		req           *proto.AddUploadRequest
+		mockReturn    map[string]any // either *models.SnapUpload or cerror.CustomError
+		expectedError bool
+		errorCode     string
+	}{
+		{
+			name: "Successful upload",
+			req: &proto.AddUploadRequest{
+				SnapName:  "test-snap-name",
+				EntryId:   mockUUID.String(),
+				AccountId: mockUUID.String(),
+				Status:    "pending",
+			},
+			mockReturn: map[string]any{
+				"AddUpload": &models.SnapUpload{
+					ID:               mockUUID,
+					SnapName:         "test-snap-name",
+					Status:           "pending",
+					StatusDetailsURL: "/dev/api/snaps/" + mockUUID.String() + "/status",
+				},
+			},
+			expectedError: false,
+		},
+		{
+			name: "Missing SnapName",
+			req: &proto.AddUploadRequest{
+				SnapName:  "",
+				EntryId:   mockUUID.String(),
+				AccountId: mockUUID.String(),
+				Status:    "pending",
+			},
+			mockReturn:    map[string]any{},
+			expectedError: true,
+			errorCode:     cerror.MissingField,
+		},
+		{
+			name: "Missing EntryId",
+			req: &proto.AddUploadRequest{
+				SnapName:  "test-snap-name",
+				EntryId:   "",
+				AccountId: mockUUID.String(),
+				Status:    "pending",
+			},
+			mockReturn:    map[string]any{},
+			expectedError: true,
+			errorCode:     cerror.MissingField,
+		},
+		{
+			name: "Invalid EntryId format",
+			req: &proto.AddUploadRequest{
+				SnapName:  "test-snap-name",
+				EntryId:   "invalid-uuid",
+				AccountId: mockUUID.String(),
+				Status:    "pending",
+			},
+			mockReturn:    map[string]any{},
+			expectedError: true,
+			errorCode:     cerror.InvalidField,
+		},
+		{
+			name: "Invalid AccountId format",
+			req: &proto.AddUploadRequest{
+				SnapName:  "test-snap-name",
+				EntryId:   mockUUID.String(),
+				AccountId: "invalid-uuid",
+				Status:    "pending",
+			},
+			mockReturn:    map[string]any{},
+			expectedError: true,
+			errorCode:     cerror.InvalidField,
+		},
+		{
+			name: "Database error during AddUpload",
+			req: &proto.AddUploadRequest{
+				SnapName:  "test-snap-name",
+				EntryId:   mockUUID.String(),
+				AccountId: mockUUID.String(),
+				Status:    "pending",
+			},
+			mockReturn: map[string]any{
+				"AddUpload": &cerror.CustomError{
+					Code:    cerror.DatabaseError,
+					Message: "Database error",
+				},
+			},
+			expectedError: true,
+			errorCode:     cerror.DatabaseError,
+		},
+		{
+			name: "Missing AccountId",
+			req: &proto.AddUploadRequest{
+				SnapName:  "test-snap-name",
+				EntryId:   mockUUID.String(),
+				AccountId: "",
+				Status:    "pending",
+			},
+			mockReturn:    map[string]any{},
+			expectedError: true,
+			errorCode:     cerror.MissingField,
+		},
+		{
+			name: "Missing Status",
+			req: &proto.AddUploadRequest{
+				SnapName:  "test-snap-name",
+				EntryId:   mockUUID.String(),
+				AccountId: mockUUID.String(),
+				Status:    "",
+			},
+			mockReturn:    map[string]any{},
+			expectedError: true,
+			errorCode:     cerror.MissingField,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			for function, mockReturn := range tt.mockReturn {
+				switch mockReturn := mockReturn.(type) {
+				case *cerror.CustomError:
+					switch function {
+					case "AddUpload":
+						mockRepo.On(function, tt.req.SnapName, mock.Anything, tt.req.Status, mock.Anything).Return(nil, mockReturn).Once()
+					default:
+						t.Fatalf("invalid mock return function for CustomError")
+					}
+				case *models.SnapUpload:
+					switch function {
+					case "AddUpload":
+						mockRepo.On(function, tt.req.SnapName, mock.Anything, tt.req.Status, mock.Anything).Return(mockReturn, nil).Once()
+					default:
+						t.Fatalf("invalid mock return function for SnapUpload")
+					}
+				default:
+					t.Fatalf("invalid mock return type")
+				}
+			}
+
+			// Call the method under test
+			resp, _ := service.AddUpload(context.Background(), tt.req)
+
+			if tt.expectedError {
+				assert.NotNil(t, resp.Errors)
+				assert.GreaterOrEqual(t, 1, len(resp.Errors), "Expected at least one error")
+				assert.Equal(t, tt.errorCode, resp.Errors[0].Code, "Expected error code to match")
+			} else {
+				assert.Equal(t, 0, len(resp.Errors), "Did not expect errors in response")
+				assert.NotNil(t, resp, "Expected a valid response")
+				assert.Equal(t, tt.req.SnapName, resp.SnapName, "Expected SnapName to match")
+				assert.Equal(t, tt.mockReturn["AddUpload"].(*models.SnapUpload).StatusDetailsURL, resp.StatusDetailsUrl, "Expected StatusDetailsURL to match")
+			}
+		})
+	}
+}

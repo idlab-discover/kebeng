@@ -92,3 +92,12 @@ func (m *MockAccountServiceClient) UnscannedUpload(ctx context.Context, in *prot
 	}
 	return resp.(*proto.UnscannedUploadResponse), args.Error(1)
 }
+
+func (m *MockAccountServiceClient) AddUpload(ctx context.Context, in *proto.AddUploadRequest, opts ...grpc.CallOption) (*proto.AddUploadResponse, error) {
+	args := m.Called(ctx, in)
+	resp := args.Get(0)
+	if resp == nil {
+		return nil, args.Error(1)
+	}
+	return resp.(*proto.AddUploadResponse), args.Error(1)
+}

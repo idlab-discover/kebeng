@@ -473,37 +473,6 @@ func (s *StoreLogic) GetRevisionsByEntryIds(ctx context.Context, req *proto.GetR
 	return &proto.GetRevisionsByEntryIdResponses{Responses: responses}, nil
 }
 
-// func (s *StoreLogic) UploadSnap(ctx context.Context, req *proto.UploadSnapRequest) (*proto.UploadSnapResponse, error) {
-// 	// TODO: check which fields are required and which are optional in req
-// 	el := make([]*proto.Error, 0)
-// 	snapFileName, id, err := saveFileToTemp(bytes.NewReader(req.File))
-// 	if err != nil {
-// 		logrus.Errorf("Failed to save file to temp storage: %v", err)
-// 		el = append(el, &proto.Error{Code: cerror.InternalServerError, Message: "Failed to save file to temp storage"})
-// 		return &proto.UploadSnapResponse{Errors: el}, nil
-// 	}
-
-// 	objectstore := objectstore.NewObjectStore()
-// 	tmpPath := path.Join(os.TempDir(), snapFileName)
-
-// 	size, err2 := objectstore.SaveFileToBucket("unscanned", tmpPath)
-// 	if err2 != nil {
-// 		logrus.Errorf("Failed to save file to object store: %v", err)
-// 		el = append(el, &proto.Error{Code: cerror.InternalServerError, Message: "Failed to save file to object store"})
-// 		return &proto.UploadSnapResponse{Errors: el}, nil
-// 	}
-
-// 	// addSnap() adds snap to entry table
-// 	_, err3 := s.repo.AddSnap(snapFileName, size, uuid.New()) // uuid.New() is a placeholder for account id that is going to be added later throught the context
-// 	if err3 != nil {
-// 		logrus.Error(err2)
-// 		el = append(el, &proto.Error{Code: cerror.InternalServerError, Message: "Failed to add snap to database"})
-// 		return &proto.UploadSnapResponse{Errors: el}, nil
-// 	}
-
-// 	return &proto.UploadSnapResponse{Id: id, DisplayName: snapFileName}, nil
-// }
-
 func (s *StoreLogic) UnscannedUpload(ctx context.Context, req *proto.UnscannedUploadRequest) (*proto.UnscannedUploadResponse, error) {
 	el := make([]*proto.Error, 0)
 	snapFileName, err := saveFileToTemp(bytes.NewReader(req.SnapFile))
@@ -541,4 +510,53 @@ func saveFileToTemp(snapFile io.Reader) (string, *cerror.CustomError) {
 	}
 
 	return newFileName, nil
+}
+
+func (s *StoreLogic) AddUpload(ctx context.Context, req *proto.AddUploadRequest) (*proto.AddUploadResponse, error) {
+	el := make([]*proto.Error, 0)
+
+	// Check on empry fields
+	if req.SnapName == "" {
+		el = append(el, &proto.Error{Code: cerror.MissingField, Message: "Snap name is required"})
+	}
+	if req.EntryId == "" {
+		el = append(el, &proto.Error{Code: cerror.MissingField, Message: "Entry id is required"})
+	}
+	if req.Status == "" {
+		el = append(el, &proto.Error{Code: cerror.MissingField, Message: "Status is required"})
+	}
+	if req.AccountId == "" {
+		el = append(el, &proto.Error{Code: cerror.MissingField, Message: "Account id is required"})
+	}
+	if len(el) > 0 {
+		return &proto.AddUploadResponse{Errors: el}, nil
+	}
+
+	// Parse UUIDs
+	entryId, err := uuid.Parse(req.EntryId)
+	if err != nil {
+		logrus.Error(err)
+		el = append(el, &proto.Error{Code: cerror.InvalidField, Message: "Invalid UUID format"})
+		return &proto.AddUploadResponse{Errors: el}, nil
+	}
+	accountId, err := uuid.Parse(req.AccountId)
+	if err != nil {
+		logrus.Error(err)
+		el = append(el, &proto.Error{Code: cerror.InvalidField, Message: "Invalid UUID format"})
+		return &proto.AddUploadResponse{Errors: el}, nil
+	}
+
+	// Add upload to the database
+	snapUpload, err1 := s.repo.AddUpload(req.SnapName, entryId, req.Status, accountId)
+	if err1 != nil {
+		el = append(el, &proto.Error{Code: err1.GetCode(), Message: err1.GetMessage()})
+		return &proto.AddUploadResponse{Errors: el}, nil
+	}
+
+	return &proto.AddUploadResponse{
+		Id:               snapUpload.ID.String(),
+		SnapName:         snapUpload.SnapName,
+		Status:           snapUpload.Status,
+		StatusDetailsUrl: snapUpload.StatusDetailsURL,
+	}, nil
 }
