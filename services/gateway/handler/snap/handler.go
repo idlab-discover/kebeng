@@ -79,7 +79,6 @@ func (h *Handler) refreshSnapInstall(c *gin.Context, action *model.Action, el *c
 		res.Result = nil
 		return &res, fmt.Errorf("store error: %v", snapEntries.Errors)
 	}
-	logrus.Debugf("******************* Snap entries: %v", snapEntries.Entries)
 	if len(snapEntries.Entries) == 0 {
 		el.Add(cerror.ResourceNotFound, "Snap not found")
 		res.Result = nil
@@ -113,7 +112,7 @@ func (h *Handler) refreshSnapInstall(c *gin.Context, action *model.Action, el *c
 		res.Result = nil
 		return &res, fmt.Errorf("store URL not set")
 	}
-	downloadUrl := fmt.Sprintf("%s/download/%s", h.Config.StoreUrl, latestRevision.Version)
+	downloadUrl := fmt.Sprintf("%s/download/%s", h.Config.StoreUrl, latestRevision.Id)
 
 	res.Result = &result
 	res.InstanceKey = &action.InstanceKey
@@ -150,16 +149,24 @@ func (h *Handler) DownloadSnap(c *gin.Context) {
 		return
 	}
 
-	// TODO: implement and check if works
-	bytes, err := h.StoreClient.SnapDownload(revisionID)
-	if err != nil {
-		logrus.Error("error downloading snap: ", err)
-		el.Add(cerror.InternalServerError, "error downloading snap")
+	response := h.StoreClient.SnapDownload(revisionID)
+	if len(response.Errors) > 0 {
+		el.ExtendStoreError(response.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
 
-	_, err = c.Writer.Write(*bytes)
+	filename := "downloaded.snap"
+	logrus.Infof("*************************** revision: %+v", response.Revision)
+	if response.Revision != nil && response.Revision.SnapName != "" {
+		// Optionally, you can incorporate the revision number or sequence too.
+		filename = fmt.Sprintf("%s_%d.snap", response.Revision.SnapName, response.Revision.SequenceNumber)
+	}
+
+	// set correct headers for file download
+	c.Writer.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filename))
+	c.Writer.Header().Set("Content-Type", "application/octet-stream")
+	_, err := c.Writer.Write(response.Data)
 	if err != nil {
 		logrus.Error("error writing snap to response: ", err)
 		el.Add(cerror.InternalServerError, "error writing snap to response")
