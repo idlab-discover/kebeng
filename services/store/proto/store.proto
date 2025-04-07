@@ -271,6 +271,7 @@ message AddUploadResponse {
     string id = 1;
     string snap_name = 2;
     string status = 3;
-    string status_details_url = 4;
-    repeated Error errors = 5;
+    repeated Error errors = 4;
 }
+
+

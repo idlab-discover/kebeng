@@ -26,7 +26,6 @@ func RequestLoggerMiddleware() gin.HandlerFunc {
 
 		if c.ContentType() == "multipart/form-data" {
 			logrus.Infof("Skipping body for multipart/form-data")
-
 		} else if c.ContentType() == "application/octet-stream" {
 			logrus.Infof("Skipping body for application/octet-stream")
 		} else {

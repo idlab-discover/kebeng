@@ -148,8 +148,13 @@ type Store struct {
 }
 
 type SnapPushRequest struct {
-	Name   string `json:"name"`
-	DryRun bool   `json:"dry_run"`
+	Name           string    `json:"name"`
+	DryRun         bool      `json:"dry_run"`
+	UploadId       uuid.UUID `json:"updown_id"`
+	Series         string    `json:"series"`
+	BinaryFileSize int64     `json:"binary_filesize"`
+	SourceUploaded bool      `json:"source_uploaded"`
+	Channels       []string  `json:"channels"`
 }
 
 type UnscannedUploadRequest struct {

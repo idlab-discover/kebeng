@@ -418,7 +418,6 @@ func TestAddUpload(t *testing.T) {
 				assert.Equal(t, 0, len(resp.Errors), "Did not expect errors in response")
 				assert.NotNil(t, resp, "Expected a valid response")
 				assert.Equal(t, tt.req.SnapName, resp.SnapName, "Expected SnapName to match")
-				assert.Equal(t, tt.mockReturn["AddUpload"].(*models.SnapUpload).StatusDetailsURL, resp.StatusDetailsUrl, "Expected StatusDetailsURL to match")
 			}
 		})
 	}

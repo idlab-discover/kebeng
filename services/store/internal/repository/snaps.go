@@ -146,7 +146,7 @@ func (sp *SnapsRepository) AddUpload(snapName string, entryId uuid.UUID, status 
 	query := `
 		INSERT INTO upload (snap_name, entry_id, status, account_id)
 		VALUES ($1, $2, $3, $4)
-		RETURNING id, status_details_url
+		RETURNING id
 	`
 	err := sp.db.Get(&upload, query, upload.SnapName, upload.EntryID, upload.Status, upload.AccountID)
 	if err != nil {

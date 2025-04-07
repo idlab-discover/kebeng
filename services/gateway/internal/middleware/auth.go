@@ -57,8 +57,8 @@ func parseMacaroon(authHeader string, el *cerror.ErrorList) (*macaroon.Macaroon,
 	// Expected format: "Macaroon root=<root-macaroon> discharge=<discharge-macaroon>"
 	parts := strings.Split(authHeader, " ")
 	if len(parts) < 3 {
-		el.Add(cerror.Unauthorized, "Invalid Authorization header")
-		return nil, nil, fmt.Errorf("Invalid Authorization header: %s", authHeader)
+		el.Add(cerror.Unauthorized, "invalid Authorization header")
+		return nil, nil, fmt.Errorf("invalid Authorization header: %s", authHeader)
 	}
 
 	var dischargeMacaroon string
@@ -75,35 +75,35 @@ func parseMacaroon(authHeader string, el *cerror.ErrorList) (*macaroon.Macaroon,
 	}
 
 	if rootMacaroon == "" {
-		el.Add(cerror.Unauthorized, "Missing root macaroon")
-		return nil, nil, fmt.Errorf("Missing root macaroon")
+		el.Add(cerror.Unauthorized, "missing root macaroon")
+		return nil, nil, fmt.Errorf("missing root macaroon")
 	}
 	if dischargeMacaroon == "" {
-		el.Add(cerror.Unauthorized, "Missing discharge macaroon")
-		return nil, nil, fmt.Errorf("Missing discharge macaroon")
+		el.Add(cerror.Unauthorized, "missing discharge macaroon")
+		return nil, nil, fmt.Errorf("missing discharge macaroon")
 	}
 
 	// TODO: actually check the macaroons as of now don't know format, just template functions
 	// Verify the root macaroon
 	err := auth.VerifyRootMacaroon(rootMacaroon, el)
 	if err != nil {
-		el.Add(cerror.Unauthorized, "Invalid root macaroon")
+		el.Add(cerror.Unauthorized, "invalid root macaroon")
 	}
 
 	// deserialize the macaroon
 	deserializedRootMacaroon, err := customMacaroon.MacaroonDeserialize(rootMacaroon)
 	if err != nil {
-		el.Add(cerror.Unauthorized, "Invalid root macaroon")
+		el.Add(cerror.Unauthorized, "invalid root macaroon")
 	}
 
 	// Verify the discharge macaroon
 	deserializedDischargeMacaroon, err := customMacaroon.MacaroonDeserialize(dischargeMacaroon)
 	if err != nil {
-		el.Add(cerror.Unauthorized, "Invalid discharge macaroon")
+		el.Add(cerror.Unauthorized, "invalid discharge macaroon")
 	}
 
 	if len(*el) > 0 {
-		return nil, nil, fmt.Errorf("Could not parse macaroon")
+		return nil, nil, fmt.Errorf("could not parse macaroon")
 	}
 	// return nil, nil, nil
 	return deserializedRootMacaroon, deserializedDischargeMacaroon, nil
