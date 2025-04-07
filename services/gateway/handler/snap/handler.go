@@ -42,16 +42,30 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 
 	var resp model.RefreshSnapResponses
 	for _, action := range req.Actions {
-		if action.Action == "install" {
+		switch action.Action {
+		case "download":
 			logrus.Infof("%v", action)
-			res, cerr := h.refreshSnapInstall(c, action, el)
+			res, cerr := h.refreshSnapDownload(action, el)
 			if cerr != nil {
 				el.Add(cerr.Code, cerr.Message)
 				c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 				return
 			}
+			result := "download"
+			res.Result = &result
 			resp.Responses = append(resp.Responses, res)
-		} else {
+		case "install": // same as download just different result value, for now
+			logrus.Infof("%v", action)
+			res, cerr := h.refreshSnapDownload(action, el)
+			if cerr != nil {
+				el.Add(cerr.Code, cerr.Message)
+				c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+				return
+			}
+			result := "install"
+			res.Result = &result
+			resp.Responses = append(resp.Responses, res)
+		default:
 			el.Add(cerror.NotImplemented, "Action not implemented")
 			c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 			return
@@ -61,39 +75,9 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
-// TODO: Implement this function properly
-func (h *Handler) refreshSnapInstall(c *gin.Context, action *model.Action, el *cerror.ErrorList) (*model.RefreshSnapResult, *cerror.CustomError) {
+func (h *Handler) refreshSnapDownload(action *model.Action, el *cerror.ErrorList) (*model.RefreshSnapResult, *cerror.CustomError) {
 	var res model.RefreshSnapResult
-
-	// should only get 1 entry since name is unique
-	snapEntries := h.StoreClient.GetEntries(&storepb.GetEntriesRequest{
-		Entries: []*storepb.GetEntryRequest{
-			{
-				Name:                action.Name,
-				PreloadAssociations: []string{"REVISIONS"},
-			},
-		},
-	})
-	if len(snapEntries.Errors) > 0 {
-		el.ExtendStoreError(snapEntries.Errors)
-		res.Result = nil
-		return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("store error: %v", snapEntries.Errors))
-	}
-	if len(snapEntries.Entries) == 0 {
-		el.Add(cerror.ResourceNotFound, "Snap not found")
-		res.Result = nil
-		return &res, cerror.NewCustomError(cerror.ResourceNotFound, "Snap not found")
-	}
-	snapEntry := snapEntries.Entries[0]
-
-	// NOTE: track is not given to use with default "snap install <name>" so put it to default latest now if we do get it with other variations of command
-	// use that and put to default if not passed
-	latestRevision := h.StoreClient.GetLatestRevision(*action.Name, "latest", action.Channel)
-	if len(latestRevision.Errors) > 0 {
-		el.ExtendStoreError(latestRevision.Errors)
-		res.Result = nil
-		return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("store error: %v", latestRevision.Errors))
-	}
+	snapEntry, latestRevision := h.getLatestRevisionByEntryName(action.Name, el, action.Channel)
 
 	// if publisher not found we should error this is not safe if we don't know who published it
 	publisher := h.AccountClient.GetAccountByID(snapEntry.PublisherId)
@@ -103,11 +87,8 @@ func (h *Handler) refreshSnapInstall(c *gin.Context, action *model.Action, el *c
 		return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("account error: %v", publisher.Errors))
 	}
 
-	result := "install"
-
 	downloadUrl := fmt.Sprintf("%s/download/%s", h.Config.StoreUrl, latestRevision.Id)
 
-	res.Result = &result
 	res.InstanceKey = &action.InstanceKey
 	res.SnapId = &snapEntry.Id
 	res.Name = &snapEntry.SnapName
@@ -133,37 +114,16 @@ func (h *Handler) refreshSnapInstall(c *gin.Context, action *model.Action, el *c
 	return &res, nil
 }
 
+// This endpoint is used to download when doing snap install since they ask for a seperate endpoint that just immediately downloads
 func (h *Handler) DownloadSnap(c *gin.Context) {
 	el := cerror.NewErrorList()
-	revisionID := c.Param("revision_id")
-	if revisionID == "" {
+	revisionId := c.Param("revision_id")
+	if revisionId == "" {
 		el.Add(cerror.BadRequest, "revision_id is required")
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
-
-	response := h.StoreClient.SnapDownload(revisionID)
-	if len(response.Errors) > 0 {
-		el.ExtendStoreError(response.Errors)
-		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
-		return
-	}
-
-	filename := "downloaded.snap"
-	if response.Revision != nil && response.Revision.SnapName != "" {
-		// Optionally, you can incorporate the revision number or sequence too.
-		filename = fmt.Sprintf("%s_%d.snap", response.Revision.SnapName, response.Revision.SequenceNumber)
-	}
-
-	// set correct headers for file download
-	c.Writer.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filename))
-	c.Writer.Header().Set("Content-Type", "application/octet-stream")
-
-	if _, err := c.Writer.Write(response.Data); err != nil {
-		logrus.Error("error writing snap to response: ", err)
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error_list": el})
-		return
-	}
+	h.downloadSnap(c, revisionId, el)
 }
 
 func (h *Handler) FindSnaps(c *gin.Context) {
@@ -416,19 +376,121 @@ func (h *Handler) UnscannedUpload(c *gin.Context) {
 	})
 }
 
+// ########################## HELPER FUNCTIONS ##########################
+
+// download helper function that just downloads a snap nothing else
+func (h *Handler) downloadSnap(c *gin.Context, revisionId string, el *cerror.ErrorList) {
+	if revisionId == "" {
+		el.Add(cerror.BadRequest, "revision_id is required")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
+
+	response := h.StoreClient.SnapDownload(revisionId)
+	if len(response.Errors) > 0 {
+		el.ExtendStoreError(response.Errors)
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
+
+	filename := "downloaded.snap"
+	if response.Revision != nil && response.Revision.SnapName != "" {
+		// Optionally, you can incorporate the revision number or sequence too.
+		filename = fmt.Sprintf("%s_%d.snap", response.Revision.SnapName, response.Revision.SequenceNumber)
+	}
+
+	// set correct headers for file download
+	c.Writer.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filename))
+	c.Writer.Header().Set("Content-Type", "application/octet-stream")
+
+	if _, err := c.Writer.Write(response.Data); err != nil {
+		logrus.Error("error writing snap to response: ", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error_list": el})
+		return
+	}
+}
+
+func (h *Handler) getLatestRevisionByEntryName(entryName string, el *cerror.ErrorList, channelAndTrack ...string) (*storepb.GetEntryResponse, *storepb.GetRevisionResponse) {
+	// should only get 1 entry since name is unique
+	snapEntries := h.StoreClient.GetEntries(&storepb.GetEntriesRequest{
+		Entries: []*storepb.GetEntryRequest{
+			{
+				Name:                &entryName,
+				PreloadAssociations: []string{"REVISIONS"},
+			},
+		},
+	})
+	if len(snapEntries.Errors) > 0 {
+		el.ExtendStoreError(snapEntries.Errors)
+		return nil, nil
+	}
+	if len(snapEntries.Entries) == 0 {
+		el.Add(cerror.ResourceNotFound, "Snap not found")
+		return nil, nil
+	}
+	snapEntry := snapEntries.Entries[0]
+
+	track := "latest"
+	channel := "stable"
+
+	// Determine track and channel from variadic parameters.
+	switch len(channelAndTrack) {
+	case 0:
+		// Use defaults.
+	case 1:
+		if isChannel(channelAndTrack[0]) {
+			channel = channelAndTrack[0]
+		} else {
+			track = channelAndTrack[0]
+		}
+	default: // len >= 2; we only use the first two.
+		a, b := channelAndTrack[0], channelAndTrack[1]
+		// If one value is a valid channel and the other is not, assign accordingly.
+		if isChannel(a) && !isChannel(b) {
+			channel = a
+			track = b
+		} else {
+			// Otherwise, just assign the first as track and the second as channel.
+			track = a
+			channel = b
+		}
+	}
+
+	// NOTE: track is not given to use with default "snap install <name>" so put it to default latest now if we do get it with other variations of command
+	// use that and put to default if not passed
+	latestRevision := h.StoreClient.GetLatestRevision(entryName, track, channel)
+	if len(latestRevision.Errors) > 0 {
+		el.ExtendStoreError(latestRevision.Errors)
+		return snapEntry, nil
+	}
+
+	return snapEntry, latestRevision
+}
+
+func isChannel(s string) bool {
+	// List of allowed channels.
+	allowedChannels := []string{"stable", "candidate", "beta", "edge"}
+	for _, v := range allowedChannels {
+		if s == v {
+			return true
+		}
+	}
+	return false
+}
+
 // func (h *Handler) GetStatus(c *gin.Context) {
 // 	el := cerror.NewErrorList()
 
 // 	// Get the revision ID from the URL
-// 	revisionID := c.Param("rev_id")
-// 	if revisionID == "" {
+// 	revisionId := c.Param("rev_id")
+// 	if revisionId == "" {
 // 		el.Add(cerror.BadRequest, "revision_id is required")
 // 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
 // 		return
 // 	}
 
 // 	// Get the status of the revision
-// 	status, err := h.StoreClient.GetRevisionStatus(revisionID)
+// 	status, err := h.StoreClient.GetRevisionStatus(revisionId)
 // 	if err != nil {
 // 		el.Add(cerror.InternalServerError, fmt.Sprintf("error getting status: %s", err.Error()))
 // 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
