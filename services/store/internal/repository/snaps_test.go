@@ -938,7 +938,6 @@ func TestAddUpload(t *testing.T) {
 			} else {
 				assert.Nil(t, err)
 				assert.NotNil(t, upload)
-				assert.NotEmpty(t, upload.StatusDetailsURL)
 			}
 		})
 	}

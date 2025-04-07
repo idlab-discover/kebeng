@@ -51,14 +51,6 @@ github.com/idlab-discover/kebeng/services/account v0.0.0-20250323201900-57114201
 github.com/idlab-discover/kebeng/services/account v0.0.0-20250323201900-57114201b487/go.mod h1:6GB7b7alfZIK8wfSrf+96arlOYPwgFPx5vjJmxTaO7E=
 github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250325112841-7150606707e2 h1:ZTq5IznZMbyuIqUtE8XmrWOUWEqow0sTvdoqQGZ5yEM=
 github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250325112841-7150606707e2/go.mod h1:APZyWXsXGZpKm4VRTmIUbuG50dQYXcKbOHIizqBIGzQ=
-github.com/idlab-discover/kebeng/services/store v0.0.0-20250401122058-cdfa0f847613 h1:xJw032nFhE/FTlm8V3H3AVrJzPvKQCbXOh4nv3d1RAU=
-github.com/idlab-discover/kebeng/services/store v0.0.0-20250401122058-cdfa0f847613/go.mod h1:qFgRw7OE/YlDNwv5eLA2JfDnwcwhBzO4fjVXpT/va3Q=
-github.com/idlab-discover/kebeng/services/store v0.0.0-20250404213959-2eb8e430f2c9 h1:7AUXs25L8AMXtEtuWLItgh2fezW9X8El9nDB0KSO+jc=
-github.com/idlab-discover/kebeng/services/store v0.0.0-20250404213959-2eb8e430f2c9/go.mod h1:qFgRw7OE/YlDNwv5eLA2JfDnwcwhBzO4fjVXpT/va3Q=
-github.com/idlab-discover/kebeng/services/store v0.0.0-20250405231418-612c5d1d11cc h1:FxlSlZqQ3om0fo0yac3DbOTbYzixei8v2O0oANStnhA=
-github.com/idlab-discover/kebeng/services/store v0.0.0-20250405231418-612c5d1d11cc/go.mod h1:hltL5eObyxkKLfWzUZiE//eAtdYt1+ybdniYN/NG5yQ=
-github.com/idlab-discover/kebeng/services/store v0.0.0-20250406124602-e7e7a9811a43 h1:+Vg4oxhMPhNTW4tsjgyTeJ4hAyOrtvD6z6CSsg/TIVU=
-github.com/idlab-discover/kebeng/services/store v0.0.0-20250406124602-e7e7a9811a43/go.mod h1:hltL5eObyxkKLfWzUZiE//eAtdYt1+ybdniYN/NG5yQ=
 github.com/idlab-discover/kebeng/services/store v0.0.0-20250406133358-2e52c222e1bf h1:W1wIyq4GPBhhkzpv7vK9U+1eSBbCUc/tIaNlZo/xid0=
 github.com/idlab-discover/kebeng/services/store v0.0.0-20250406133358-2e52c222e1bf/go.mod h1:hltL5eObyxkKLfWzUZiE//eAtdYt1+ybdniYN/NG5yQ=
 github.com/jmoiron/sqlx v1.4.0 h1:1PLqN7S1UYp5t4SrVVnt4nUVNemrDAtxlulVe+Qgm3o=

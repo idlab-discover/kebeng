@@ -326,29 +326,29 @@ func (h *Handler) SnapPush(c *gin.Context) {
 		"success":            true,
 		"snap_name":          entry.SnapName,
 		"upload_id":          upload.Id,
-		"status_details_url": fmt.Sprintf("https://%s%s", c.ClientIP(), upload.StatusDetailsUrl),
+		"status_details_url": fmt.Sprintf("https://%s/dev/api/snaps/%s", c.ClientIP(), upload.Id), // FIX: change ClientIP to value in config
 	})
 }
 
 func (h *Handler) UnscannedUpload(c *gin.Context) {
 	el := cerror.NewErrorList()
 
-	header, err := c.FormFile("binary")
+	binaryFile, err := c.FormFile("binary")
 	if err != nil {
-		el.Add(cerror.BadRequest, "Missing file in form data: "+err.Error())
+		el.Add(cerror.BadRequest, fmt.Sprintf("binary file not found: %s", err.Error()))
 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
 		return
 	}
 
-	file, err := header.Open()
+	file, err := binaryFile.Open()
 	if err != nil {
-		el.Add(cerror.InternalServerError, "Error opening file: "+err.Error())
+		el.Add(cerror.InternalServerError, fmt.Sprintf("error opening file: %s", err.Error()))
 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
 		return
 	}
 	defer func() {
 		if err := file.Close(); err != nil {
-			el.Add(cerror.InternalServerError, "Error closing file: "+err.Error())
+			el.Add(cerror.InternalServerError, fmt.Sprintf("error closing file: %s", err.Error()))
 			c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
 		}
 	}()
@@ -370,9 +370,9 @@ func (h *Handler) UnscannedUpload(c *gin.Context) {
 	// Return the upload ID and file information
 	c.JSON(http.StatusOK, gin.H{
 		"successful": true,
-		"upload_id":  uuid.New().String(), // ID of the upload
-		"filename":   header.Filename,
-		"size":       header.Size,
+		"upload_id":  uuid.New().String(), // TODO: fix this -> ID of the upload
+		"filename":   binaryFile.Filename,
+		"size":       binaryFile.Size,
 	})
 }
 
@@ -390,7 +390,7 @@ func (h *Handler) UnscannedUpload(c *gin.Context) {
 // 	// Get the status of the revision
 // 	status, err := h.StoreClient.GetRevisionStatus(revisionID)
 // 	if err != nil {
-// 		el.Add(cerror.InternalServerError, "Failed to get revision status: "+err.Error())
+// 		el.Add(cerror.InternalServerError, fmt.Sprintf("error getting status: %s", err.Error()))
 // 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
 // 		return
 // 	}
