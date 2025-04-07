@@ -101,6 +101,13 @@ func buildCustomError(code, defaultMessage string, message ...string) *CustomErr
 	}
 }
 
+func (el *ErrorList) HasError() bool {
+	if el == nil {
+		return false
+	}
+	return len(*el) > 0
+}
+
 // AddCustomError adds a custom error to the error-list.
 func (el *ErrorList) AddCustomError(err *CustomError) {
 	*el = append(*el, err)
