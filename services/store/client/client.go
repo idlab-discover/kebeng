@@ -158,7 +158,7 @@ func (c *StoreClient) GetLatestRevision(snapName, track, channel string) *proto.
 	}
 	// Default track to "stable" if not provided
 	if track == "" {
-		track = "stable"
+		track = "latest"
 	}
 	// Default channel to "stable" if not provided
 	if channel == "" {
@@ -234,6 +234,8 @@ func (c *StoreClient) SnapDownload(revisionId string) *proto.SnapDownloadComplet
 		RevisionId: revisionId,
 	}
 
+	// TODO: refactor to return 3 values stream, cerror, error
+	// this way we can distuingish between a lower layer error and a grpc error in a cleaner way
 	stream, err := c.client.SnapDownload(context.Background(), req)
 	if err != nil {
 		// if err != nil we should read the stream (if we can) to get the actual error and than return it

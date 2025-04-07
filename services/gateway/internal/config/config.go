@@ -66,5 +66,9 @@ func LoadConfig() (*Config, error) {
 		return nil, fmt.Errorf("root key is required")
 	}
 
+	if cfg.StoreUrl == "" {
+		return nil, fmt.Errorf("store url is required")
+	}
+
 	return cfg, nil
 }
