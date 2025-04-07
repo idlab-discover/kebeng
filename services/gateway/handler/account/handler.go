@@ -135,7 +135,7 @@ func (h *Handler) GetAccount(c *gin.Context) {
 		entryID := revs.EntryId
 		for _, rev := range revs.Revisions {
 			revisionMap[entryID] = append(revisionMap[entryID], model.SnapRevision{
-				Revision:      int(rev.Sequence),
+				Revision:      int(rev.SequenceNumber),
 				Version:       rev.Version,
 				Status:        rev.Status,
 				Architectures: rev.Architectures,

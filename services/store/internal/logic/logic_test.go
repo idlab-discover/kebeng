@@ -412,7 +412,7 @@ func TestAddUpload(t *testing.T) {
 
 			if tt.expectedError {
 				assert.NotNil(t, resp.Errors)
-				assert.GreaterOrEqual(t, 1, len(resp.Errors), "Expected at least one error")
+				assert.GreaterOrEqual(t, len(resp.Errors), 1, "Expected at least one error")
 				assert.Equal(t, tt.errorCode, resp.Errors[0].Code, "Expected error code to match")
 			} else {
 				assert.Equal(t, 0, len(resp.Errors), "Did not expect errors in response")

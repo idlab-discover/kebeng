@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"testing"
+	"time"
 
 	embeddedpostgres "github.com/fergusstrange/embedded-postgres"
 	"github.com/google/uuid"
@@ -963,7 +964,6 @@ func mockData(db *sqlx.DB) {
 	if err != nil {
 		logrus.Fatalf("failed to insert mock data for snap track: %v", err)
 	}
-
 	// Mock snap channel
 	channelID := mockUUID
 	_, err = db.Exec(`
@@ -991,5 +991,115 @@ func mockData(db *sqlx.DB) {
 	`, uuid.New(), mockUUID, uuid.New())
 	if err != nil {
 		logrus.Fatalf("failed to insert mock data for snap comment: %v", err)
+	}
+}
+
+func TestGetLatestRevision(t *testing.T) {
+	entryID := uuid.New()
+	trackID := uuid.New()
+	channelID := uuid.New()
+	altTrackID := uuid.New()
+	altChannelID := uuid.New()
+
+	// Insert mock entry
+	_, err := globalDB.Exec(`
+		INSERT INTO entry (id, name, private, type, confinement, status, price, store, icon_url, account_id)
+		VALUES ($1, 'getLatestRevision', false, 'app', 'strict', 'active', 0.0, 'mock-store', 'http://icon', $1);
+	`, entryID)
+	assert.NoError(t, err)
+
+	// Insert two tracks
+	_, err = globalDB.Exec(`
+		INSERT INTO track (id, name, entry_id) 
+		VALUES ($1, 'latest', $2), ($3, 'beta', $2);
+	`, trackID, entryID, altTrackID)
+	assert.NoError(t, err)
+
+	// Insert two channels
+	_, err = globalDB.Exec(`
+		INSERT INTO channel (id, name, snap_track_id, entry_id) 
+		VALUES ($1, 'stable', $2, $3), ($4, 'edge', $5, $3);
+	`, channelID, trackID, entryID, altChannelID, altTrackID)
+	assert.NoError(t, err)
+
+	// Insert 3 revisions in the correct track/channel
+	now := time.Now()
+	rev1ID := uuid.New()
+	rev2ID := uuid.New()
+	rev3ID := uuid.New()
+	_, err = globalDB.Exec(`
+		INSERT INTO revision (id, entry_id, snap_track_id, snap_channel_id, updated_at, sequence_number, version, status)
+		VALUES 
+		($1, $2, $3, $4, $5, 1, '1.0.0', 'active'),
+		($6, $2, $3, $4, $7, 2, '1.0.1', 'active'),
+		($8, $2, $3, $4, $9, 3, '1.0.2', 'active');
+	`, rev1ID, entryID, trackID, channelID, now.Add(-10*time.Minute),
+		rev2ID, now.Add(-5*time.Minute),
+		rev3ID, now.Add(-1*time.Minute))
+	assert.NoError(t, err)
+
+	// Insert 1 revision in a different track/channel but with the most recent update
+	altRevID := uuid.New()
+	_, err = globalDB.Exec(`
+		INSERT INTO revision (id, entry_id, snap_track_id, snap_channel_id, updated_at, sequence_number, version, status)
+		VALUES ($1, $2, $3, $4, $5, 99, '9.9.9', 'active');
+	`, altRevID, entryID, altTrackID, altChannelID, now.Add(1*time.Minute))
+	assert.NoError(t, err)
+
+	// Call the method under test
+	revision, errObj := globalRepo.GetLatestRevision("getLatestRevision", "latest", "stable")
+	assert.Nil(t, errObj)
+	assert.NotNil(t, revision)
+
+	assert.Equal(t, "1.0.2", *revision.Version)
+	assert.Equal(t, int64(3), int64(*revision.SequenceNumber))
+	assert.Equal(t, rev3ID, revision.ID)
+}
+
+func TestGetTrackById(t *testing.T) {
+	trackID := uuid.New()
+
+	_, err := globalDB.Exec(`
+		INSERT INTO track (id, name, entry_id)
+		VALUES ($1, 'latest', $2);
+	`, trackID, mockUUID)
+	assert.NoError(t, err, "failed to insert test track")
+
+	track, cerr := globalRepo.GetTrackById(trackID)
+	assert.Nil(t, cerr, "expected no error when retrieving an existing track")
+	assert.NotNil(t, track, "expected track to be not nil")
+	assert.Equal(t, "latest", track.Name, "expected track name to be 'latest'")
+
+	nonExistingID := uuid.New()
+	track, cerr = globalRepo.GetTrackById(nonExistingID)
+	assert.NotNil(t, cerr, "expected error when retrieving a non-existing track")
+	assert.Nil(t, track, "expected nil track for non-existing id")
+	if cerr != nil {
+		assert.Equal(t, cerror.ResourceNotFound, cerr.GetCode(), "expected error code to be ResourceNotFound")
+	}
+}
+
+func TestGetChannelById(t *testing.T) {
+	channelID := uuid.New()
+
+	_, err := globalDB.Exec(`
+		INSERT INTO channel (id, name, snap_track_id, entry_id)
+		VALUES ($1, 'stable', $2, $3);
+	`, channelID, mockUUID, mockUUID)
+	assert.NoError(t, err, "failed to insert test channel")
+
+	// Test retrieving the inserted channel.
+	channel, cerr := globalRepo.GetChannelById(channelID)
+	assert.Nil(t, cerr, "expected no error when retrieving an existing channel")
+	assert.NotNil(t, channel, "expected channel to be not nil")
+	assert.Equal(t, "stable", channel.Name, "expected channel name to be 'stable'")
+
+	// Test retrieving a non-existing channel.
+	nonExistingID := uuid.New()
+	channel, cerr = globalRepo.GetChannelById(nonExistingID)
+	assert.NotNil(t, cerr, "expected error when retrieving a non-existing channel")
+	assert.Nil(t, channel, "expected nil channel for non-existing id")
+	if cerr != nil {
+		assert.Equal(t, cerror.ResourceNotFound, cerr.GetCode(), "expected error code to be ResourceNotFound")
 	}
 }
