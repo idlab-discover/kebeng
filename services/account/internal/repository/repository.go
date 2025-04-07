@@ -81,7 +81,7 @@ func (a *AccountRepository) DeleteAccount(ctx context.Context, accountID uuid.UU
 	_, err := a.db.ExecContext(ctx, query, accountID)
 	if err != nil {
 		logrus.Error(err)
-		return cerror.ConvertError(err)
+		return cerror.ConvertError(err, fmt.Sprintf("could not delete account with id '%s'", accountID))
 	}
 	return nil
 }
@@ -93,7 +93,7 @@ func (a *AccountRepository) GetAccountByEmail(ctx context.Context, email string,
 	err := a.db.Get(&account, query, email)
 	if err != nil {
 		logrus.Error(err)
-		return nil, cerror.ConvertError(err, fmt.Sprintf("resource not found by email, value = '%s'", email))
+		return nil, cerror.ConvertError(err, fmt.Sprintf("account not found by email, value = '%s'", email))
 	}
 
 	// TODO: check what difference between SSHKeys and Keys
@@ -112,7 +112,7 @@ func (a *AccountRepository) GetAccountByID(ctx context.Context, accountID uuid.U
 	err := a.db.Get(&account, query, accountID)
 	if err != nil {
 		logrus.Error(err)
-		return nil, cerror.ConvertError(err)
+		return nil, cerror.ConvertError(err, fmt.Sprintf("account not found by id, value = '%s'", accountID))
 	}
 
 	cerr := a.handleAssociations(ctx, &account, associations)
@@ -130,7 +130,7 @@ func (a *AccountRepository) GetAccountByUsername(ctx context.Context, username s
 	err := a.db.Get(&account, query, username)
 	if err != nil {
 		logrus.Error(err)
-		return nil, cerror.ConvertError(err)
+		return nil, cerror.ConvertError(err, fmt.Sprintf("account not found by username, value = '%s'", username))
 	}
 
 	cerr := a.handleAssociations(ctx, &account, associations)
@@ -179,7 +179,7 @@ func (a *AccountRepository) GetKeyBySHA3384(ctx context.Context, sha3384 string)
 	err := a.db.GetContext(ctx, &key, query, sha3384)
 	if err != nil {
 		logrus.Error(err)
-		return nil, cerror.ConvertError(err, fmt.Sprintf("resource not found by SHA3384, value = '%s'", sha3384))
+		return nil, cerror.ConvertError(err, fmt.Sprintf("key not found by SHA3384, value = '%s'", sha3384))
 	}
 
 	return &key, nil
@@ -192,7 +192,7 @@ func (a *AccountRepository) GetKeysByAccountID(ctx context.Context, accountID uu
 	err := a.db.SelectContext(ctx, &keys, query, accountID)
 	if err != nil {
 		logrus.Error(err)
-		return nil, cerror.ConvertError(err)
+		return nil, cerror.ConvertError(err, fmt.Sprintf("keys not found by account id, value = '%s'", accountID))
 	}
 
 	if len(keys) == 0 {
@@ -208,7 +208,7 @@ func (a *AccountRepository) GetSSHKeysByAccountID(ctx context.Context, accountID
 	query := "SELECT * FROM ssh_key WHERE account_id = $1"
 	if err := a.db.SelectContext(ctx, &sshKeys, query, accountID); err != nil {
 		logrus.Error(err)
-		return nil, cerror.ConvertError(err)
+		return nil, cerror.ConvertError(err, fmt.Sprintf("ssh keys not found by account id, value = '%s'", accountID))
 	}
 	return sshKeys, nil
 }
@@ -263,7 +263,7 @@ func (a *AccountRepository) FilterKeys(ctx context.Context, filter *models.Key, 
 	rows, err := a.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
 		logrus.Error(err)
-		return nil, cerror.ConvertError(err)
+		return nil, cerror.ConvertError(err, "could not filter keys")
 	}
 	defer rows.Close()
 
@@ -272,7 +272,7 @@ func (a *AccountRepository) FilterKeys(ctx context.Context, filter *models.Key, 
 		var key models.Key
 		if err := rows.StructScan(&key); err != nil {
 			logrus.Error(err)
-			return nil, cerror.ConvertError(err)
+			return nil, cerror.ConvertError(err, "could not scan key")
 		}
 		keys = append(keys, &key)
 	}
@@ -331,7 +331,7 @@ func (a *AccountRepository) FilterAccounts(ctx context.Context, filter *models.A
 	rows, err := a.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
 		logrus.Error(err)
-		return nil, cerror.ConvertError(err)
+		return nil, cerror.ConvertError(err, "could not filter accounts")
 	}
 	defer rows.Close()
 
@@ -340,7 +340,7 @@ func (a *AccountRepository) FilterAccounts(ctx context.Context, filter *models.A
 		var account models.Account
 		if err := rows.StructScan(&account); err != nil {
 			logrus.Error(err)
-			return nil, cerror.ConvertError(err)
+			return nil, cerror.ConvertError(err, "could not scan account")
 		}
 		accounts = append(accounts, &account)
 	}

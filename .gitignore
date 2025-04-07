@@ -11,3 +11,4 @@ userinfo.json
 keys
 config.yaml
 *.cov
+*.snap
