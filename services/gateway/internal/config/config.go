@@ -29,6 +29,8 @@ type Config struct {
 	AssertionServicePort int    `mapstructure:"assertion_service_port" yaml:"assertion_service_port"`
 
 	MacaroonConfig *MacaroonConfig `mapstructure:"macaroon" yaml:"macaroon"`
+
+	StoreUrl string `mapstructure:"store_url" yaml:"store_url"`
 }
 
 func LoadConfig() (*Config, error) {
@@ -62,6 +64,10 @@ func LoadConfig() (*Config, error) {
 
 	if cfg.MacaroonConfig.RootKey == "" {
 		return nil, fmt.Errorf("root key is required")
+	}
+
+	if cfg.StoreUrl == "" {
+		return nil, fmt.Errorf("store url is required")
 	}
 
 	return cfg, nil

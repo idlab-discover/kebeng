@@ -38,6 +38,9 @@ type ISnapsRepository interface {
 	GetRevisionBySHA(SHA3_384 string, encoded bool) (*models.SnapRevision, *cerror.CustomError)
 	GetSections() (*[]string, *cerror.CustomError)
 	GetTracksBySnapId(snapId uuid.UUID) ([]*models.SnapTrack, *cerror.CustomError)
+	GetTrackById(id uuid.UUID) (*models.SnapTrack, *cerror.CustomError)
+	GetChannelById(id uuid.UUID) (*models.SnapChannel, *cerror.CustomError)
+	GetLatestRevision(snapName string, track string, channel string) (*models.SnapRevision, *cerror.CustomError)
 
 	// UPDATE
 	ReleaseSnap(channels []string, snapEntryId uuid.UUID, revisionId uuid.UUID) *cerror.CustomError
@@ -447,6 +450,33 @@ func (sp *SnapsRepository) GetTracksBySnapId(snapId uuid.UUID) ([]*models.SnapTr
 	return tracks, nil
 }
 
+func (sp *SnapsRepository) GetLatestRevision(snapName string, track string, channel string) (*models.SnapRevision, *cerror.CustomError) {
+	var revision models.SnapRevision
+	// NOTE: this query might be quite expensive if there are a lot of revisions
+	// NOTE split up to make it more efficient perhaps
+	query := `
+		SELECT r.*
+		FROM entry e
+		JOIN track t ON t.entry_id = e.id
+		JOIN channel c ON c.entry_id = e.id AND c.snap_track_id = t.id
+		JOIN revision r ON r.entry_id = e.id 
+					   AND r.snap_track_id = t.id 
+					   AND r.snap_channel_id = c.id
+		WHERE e.name = $1
+		  AND t.name = $2
+		  AND c.name = $3
+		ORDER BY r.updated_at DESC
+		LIMIT 1;
+	`
+	err := sp.db.Get(&revision, query, snapName, track, channel)
+	if err != nil {
+		logrus.Error(err)
+		return nil, cerror.ConvertError(err, fmt.Sprintf("resource not found: latest revision for snap with name = '%s' and track = '%s' and channel = '%s'", snapName, track, channel))
+	}
+
+	return &revision, nil
+}
+
 // ============ UPDATE =============
 
 // ReleaseSnap releases a snap to the specified channels. It supports releasing to multiple
@@ -564,6 +594,36 @@ func (sp *SnapsRepository) UpdateRevision(revision *models.SnapRevision, revisio
 	}
 
 	return &newRevision, nil
+}
+
+func (sp *SnapsRepository) GetTrackById(id uuid.UUID) (*models.SnapTrack, *cerror.CustomError) {
+	var track models.SnapTrack
+	query := `
+		SELECT *
+		FROM track
+		WHERE id = $1
+	`
+	err := sp.db.Get(&track, query, id)
+	if err != nil {
+		logrus.Error(err)
+		return nil, cerror.ConvertError(err, fmt.Sprintf("resource not found: track with id = '%s'", id.String()))
+	}
+	return &track, nil
+}
+
+func (sp *SnapsRepository) GetChannelById(id uuid.UUID) (*models.SnapChannel, *cerror.CustomError) {
+	var channel models.SnapChannel
+	query := `
+		SELECT *
+		FROM channel
+		WHERE id = $1
+	`
+	err := sp.db.Get(&channel, query, id)
+	if err != nil {
+		logrus.Error(err)
+		return nil, cerror.ConvertError(err, fmt.Sprintf("resource not found: channel with id = '%s'", id.String()))
+	}
+	return &channel, nil
 }
 
 // ============ PRIVATE =============

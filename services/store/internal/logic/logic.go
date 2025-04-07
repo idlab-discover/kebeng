@@ -1,17 +1,17 @@
 package logic
 
 import (
-	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"path"
-
-	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
+	"github.com/idlab-discover/kebeng/services/store/internal/models"
 	"github.com/idlab-discover/kebeng/services/store/internal/objectstore"
 	"github.com/idlab-discover/kebeng/services/store/internal/repository"
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
@@ -298,12 +298,22 @@ func (s *StoreLogic) GetRevisions(ctx context.Context, req *proto.GetRevisionsRe
 			}
 
 			foundRevisions = append(foundRevisions, &proto.GetRevisionResponse{
-				Id:            rev.ID.String(),
-				SnapName:      entry.Name,
-				Sequence:      uint64(*rev.SequenceNumber),
-				Architectures: rev.Architectures,
-				Version:       *rev.Version,
-				Status:        *rev.Status,
+				Id:                     rev.ID.String(),
+				CreatedAt:              timestamppb.New(rev.CreatedAt),
+				UpdatedAt:              timestamppb.New(rev.UpdatedAt),
+				DeletedAt:              timePointerToTimestamp(rev.DeletedAt),
+				BuildAssertionFilename: pointerToString(rev.BuildAssertionFileName),
+				Sha3_384:               pointerToString(rev.SHA3_384),
+				Sha3_384Encoded:        pointerToString(rev.SHA3_384_Encoded),
+				Size:                   uint64(*rev.Size),
+				SequenceNumber:         uint64(*rev.SequenceNumber),
+				Architectures:          rev.Architectures,
+				Status:                 pointerToString(rev.Status),
+				Version:                pointerToString(rev.Version),
+				EntryId:                rev.SnapEntryID.String(),
+				TrackId:                rev.SnapTrackID.String(),
+				ChannelId:              rev.SnapChannelID.String(),
+				SnapName:               entry.Name,
 			})
 
 			// If id is not provided, check if snapName and sequence are provided
@@ -314,13 +324,30 @@ func (s *StoreLogic) GetRevisions(ctx context.Context, req *proto.GetRevisionsRe
 				continue
 			}
 
+			entry, err := s.repo.GetEntryById(rev.SnapEntryID, nil)
+			if err != nil {
+				// Already logged in GetEntryById (repository)
+				el = append(el, &proto.Error{Code: err.GetCode(), Message: err.GetMessage()})
+				continue
+			}
+
 			foundRevisions = append(foundRevisions, &proto.GetRevisionResponse{
-				Id:            rev.ID.String(),
-				SnapName:      revision.SnapName,
-				Sequence:      uint64(*rev.SequenceNumber),
-				Architectures: rev.Architectures,
-				Version:       *rev.Version,
-				Status:        *rev.Status,
+				Id:                     rev.ID.String(),
+				CreatedAt:              timestamppb.New(rev.CreatedAt),
+				UpdatedAt:              timestamppb.New(rev.UpdatedAt),
+				DeletedAt:              timePointerToTimestamp(rev.DeletedAt),
+				BuildAssertionFilename: pointerToString(rev.BuildAssertionFileName),
+				Sha3_384:               pointerToString(rev.SHA3_384),
+				Sha3_384Encoded:        pointerToString(rev.SHA3_384_Encoded),
+				Size:                   uint64(*rev.Size),
+				SequenceNumber:         uint64(*rev.SequenceNumber),
+				Architectures:          rev.Architectures,
+				Status:                 pointerToString(rev.Status),
+				Version:                pointerToString(rev.Version),
+				EntryId:                rev.SnapEntryID.String(),
+				TrackId:                rev.SnapTrackID.String(),
+				ChannelId:              rev.SnapChannelID.String(),
+				SnapName:               entry.Name,
 			})
 
 		} else {
@@ -352,14 +379,14 @@ func (s *StoreLogic) GetRevisionByNameAndSequence(ctx context.Context, req *prot
 		return &proto.GetRevisionResponse{Errors: el}, nil
 	}
 
-	snapEntry, err := s.repo.GetEntryByName(req.SnapName, nil)
+	entry, err := s.repo.GetEntryByName(req.SnapName, nil)
 	if err != nil {
 		// Already logged in GetEntryByName (repository)
 		el = append(el, &proto.Error{Code: err.GetCode(), Message: err.GetMessage()})
 		return &proto.GetRevisionResponse{Errors: el}, err
 	}
 
-	revision, err := s.repo.GetRevisionByNameAndSequence(snapEntry.Name, uint(req.Sequence))
+	rev, err := s.repo.GetRevisionByNameAndSequence(entry.Name, uint(req.Sequence))
 	if err != nil {
 		// Already logged in GetRevisionByNameAndSequence (repository)
 		el = append(el, &proto.Error{Code: err.GetCode(), Message: err.GetMessage()})
@@ -367,12 +394,22 @@ func (s *StoreLogic) GetRevisionByNameAndSequence(ctx context.Context, req *prot
 	}
 
 	return &proto.GetRevisionResponse{
-		Id:            revision.ID.String(),
-		SnapName:      snapEntry.Name,
-		Sequence:      uint64(*revision.SequenceNumber),
-		Architectures: revision.Architectures,
-		Version:       *revision.Version,
-		Status:        *revision.Status,
+		Id:                     rev.ID.String(),
+		CreatedAt:              timestamppb.New(rev.CreatedAt),
+		UpdatedAt:              timestamppb.New(rev.UpdatedAt),
+		DeletedAt:              timePointerToTimestamp(rev.DeletedAt),
+		BuildAssertionFilename: pointerToString(rev.BuildAssertionFileName),
+		Sha3_384:               pointerToString(rev.SHA3_384),
+		Sha3_384Encoded:        pointerToString(rev.SHA3_384_Encoded),
+		Size:                   uint64(*rev.Size),
+		SequenceNumber:         uint64(*rev.SequenceNumber),
+		Architectures:          rev.Architectures,
+		Status:                 pointerToString(rev.Status),
+		Version:                pointerToString(rev.Version),
+		EntryId:                rev.SnapEntryID.String(),
+		TrackId:                rev.SnapTrackID.String(),
+		ChannelId:              rev.SnapChannelID.String(),
+		SnapName:               entry.Name,
 	}, nil
 }
 
@@ -437,7 +474,19 @@ func (s *StoreLogic) GetRevisionsByEntryIds(ctx context.Context, req *proto.GetR
 			})
 			continue
 		}
-
+		entry, err1 := s.repo.GetEntryById(entryId, nil)
+		if err1 != nil {
+			logrus.Debugf("Failed to get entry from database: %v", err1)
+			el = append(el, &proto.Error{
+				Code:    err1.GetCode(),
+				Message: err1.GetMessage(),
+			})
+			responses = append(responses, &proto.GetRevisionsByEntryIdResponse{
+				EntryId: entryId.String(),
+				Errors:  el,
+			})
+			continue
+		}
 		revisions, err2 := s.repo.GetRevisionsByEntryId(entryId)
 		if err2 != nil {
 			logrus.Debugf("Failed to get revisions from database: %v", err2)
@@ -457,11 +506,21 @@ func (s *StoreLogic) GetRevisionsByEntryIds(ctx context.Context, req *proto.GetR
 		for i, rev := range revisions {
 			revisionsProto[i] = &proto.GetRevisionResponse{
 				Id:                     rev.ID.String(),
-				BuildAssertionFilename: *rev.BuildAssertionFileName,
-				Sequence:               uint64(*rev.SequenceNumber),
+				CreatedAt:              timestamppb.New(rev.CreatedAt),
+				UpdatedAt:              timestamppb.New(rev.UpdatedAt),
+				DeletedAt:              timePointerToTimestamp(rev.DeletedAt),
+				BuildAssertionFilename: pointerToString(rev.BuildAssertionFileName),
+				Sha3_384:               pointerToString(rev.SHA3_384),
+				Sha3_384Encoded:        pointerToString(rev.SHA3_384_Encoded),
+				Size:                   uint64(*rev.Size),
+				SequenceNumber:         uint64(*rev.SequenceNumber),
 				Architectures:          rev.Architectures,
-				Version:                *rev.Version,
-				Status:                 *rev.Status,
+				Status:                 pointerToString(rev.Status),
+				Version:                pointerToString(rev.Version),
+				EntryId:                rev.SnapEntryID.String(),
+				TrackId:                rev.SnapTrackID.String(),
+				ChannelId:              rev.SnapChannelID.String(),
+				SnapName:               entry.Name,
 			}
 		}
 		// add to response
@@ -473,24 +532,167 @@ func (s *StoreLogic) GetRevisionsByEntryIds(ctx context.Context, req *proto.GetR
 	return &proto.GetRevisionsByEntryIdResponses{Responses: responses}, nil
 }
 
-func (s *StoreLogic) UnscannedUpload(ctx context.Context, req *proto.UnscannedUploadRequest) (*proto.UnscannedUploadResponse, error) {
+func (s *StoreLogic) GetLatestRevision(ctx context.Context, req *proto.GetLatestRevisionRequest) (*proto.GetRevisionResponse, error) {
 	el := make([]*proto.Error, 0)
-	snapFileName, err := saveFileToTemp(bytes.NewReader(req.SnapFile))
+	if req.SnapName == "" {
+		el = append(el, &proto.Error{Code: cerror.MissingField, Message: "Snap name is required"})
+		return &proto.GetRevisionResponse{Errors: el}, nil
+	}
+
+	revision, cerr := s.repo.GetLatestRevision(req.SnapName, req.Track, req.Channel)
+	if cerr != nil {
+		logrus.Error(cerr)
+		el = append(el, &proto.Error{
+			Code:    cerr.GetCode(),
+			Message: cerr.GetMessage(),
+		})
+		return &proto.GetRevisionResponse{Errors: el}, nil
+	}
+
+	return &proto.GetRevisionResponse{
+		Id:                     revision.ID.String(),
+		CreatedAt:              timestamppb.New(revision.CreatedAt),
+		UpdatedAt:              timestamppb.New(revision.UpdatedAt),
+		DeletedAt:              timePointerToTimestamp(revision.DeletedAt),
+		BuildAssertionFilename: pointerToString(revision.BuildAssertionFileName),
+		Sha3_384:               pointerToString(revision.SHA3_384),
+		Sha3_384Encoded:        pointerToString(revision.SHA3_384_Encoded),
+		Size:                   uint64(*revision.Size),
+		SequenceNumber:         uint64(*revision.SequenceNumber),
+		Architectures:          revision.Architectures,
+		Status:                 pointerToString(revision.Status),
+		Version:                pointerToString(revision.Version),
+		EntryId:                revision.SnapEntryID.String(),
+		TrackId:                revision.SnapTrackID.String(),
+		ChannelId:              revision.SnapChannelID.String(),
+		SnapName:               req.SnapName,
+	}, nil
+}
+
+func (s *StoreLogic) SnapDownload(req *proto.SnapDownloadRequest, stream proto.StoreService_SnapDownloadServer) error {
+	el := make([]*proto.Error, 0)
+	if req.RevisionId == "" {
+		return stream.Send(&proto.SnapDownloadResponse{
+			Errors: []*proto.Error{{
+				Code:    cerror.MissingField,
+				Message: "revision id is required",
+			}},
+		})
+	}
+
+	parsedRevisionId, err := uuid.Parse(req.RevisionId)
 	if err != nil {
-		logrus.Errorf("Failed to save file to temp storage: %v", err)
-		el = append(el, &proto.Error{Code: cerror.InternalServerError, Message: "Failed to save file to temp storage"})
-		return &proto.UnscannedUploadResponse{Errors: el}, nil
+		logrus.Error(err)
+		el = append(el, &proto.Error{
+			Code:    cerror.InvalidField,
+			Message: "invalid UUID format",
+		})
+		err := stream.Send(&proto.SnapDownloadResponse{
+			Errors: el,
+		})
+		if err != nil {
+			logrus.Error("failed to send error response: ", err)
+			return err
+		}
+		return err
 	}
-	tmpPath := path.Join(os.TempDir(), snapFileName)
-
-	size, err2 := s.obs.SaveFileToBucket("unscanned", tmpPath)
-	if err2 != nil {
-		logrus.Errorf("Failed to save file to object store: %v", err)
-		el = append(el, &proto.Error{Code: cerror.InternalServerError, Message: "Failed to save file to object store"})
-		return &proto.UnscannedUploadResponse{Errors: el}, nil
+	revision, cerr := s.repo.GetRevisionById(parsedRevisionId)
+	if cerr != nil {
+		el = append(el, &proto.Error{
+			Code:    cerr.GetCode(),
+			Message: cerr.GetMessage(),
+		})
+		err := stream.Send(&proto.SnapDownloadResponse{
+			Errors: el,
+		})
+		if err != nil {
+			logrus.Error("failed to send error response: ", err)
+			return err
+		}
+		return fmt.Errorf("failed to get revision by id: %v", cerr)
 	}
 
-	return &proto.UnscannedUploadResponse{TempFileName: tmpPath, FileSize: size}, nil
+	// retrieve file path inside minio to find correct snap package
+	filePath, cerr := s.retrieveObjectStoreFilePath(revision)
+	if cerr != nil {
+		el = append(el, &proto.Error{
+			Code:    cerr.GetCode(),
+			Message: cerr.GetMessage(),
+		})
+		err := stream.Send(&proto.SnapDownloadResponse{
+			Errors: el,
+		})
+		if err != nil {
+			logrus.Error("failed to send error response: ", err)
+			return err
+		}
+		return fmt.Errorf("failed to retrieve snap from objectstore with filePath: %v", filePath)
+	}
+
+	snapFileReader, err := s.obs.GetSnapFileReader(filePath)
+	if err != nil {
+		el = append(el, &proto.Error{
+			Code:    cerror.InternalServerError,
+			Message: "failed to get snap file reader",
+		})
+		err := stream.Send(&proto.SnapDownloadResponse{
+			Errors: el,
+		})
+		if err != nil {
+			logrus.Error("failed to send error response: ", err)
+			return err
+		}
+		return fmt.Errorf("failed to get revision by id: %v", cerr)
+	}
+	defer snapFileReader.Close()
+
+	// define chunksize for reading the file
+	const chunkSize = 64 * 1024
+	buffer := make([]byte, chunkSize)
+
+	// TODO: add snapName to Revision
+	protoRevision := convertRevisionToProto(revision)
+
+	// send the initial message with revision metadata.
+	initialResp := &proto.SnapDownloadResponse{
+		Payload: &proto.SnapDownloadResponse_Initial{
+			Initial: &proto.InitialDownloadResponse{
+				Revision: protoRevision,
+			},
+		},
+		Errors: nil,
+	}
+	if err := stream.Send(initialResp); err != nil {
+		logrus.Error("failed to send initial gRPC stream response: ", err)
+		return err
+	}
+
+	for {
+		n, err := snapFileReader.Read(buffer)
+		if n > 0 {
+			dataResp := &proto.SnapDownloadResponse{
+				Payload: &proto.SnapDownloadResponse_Data{
+					Data: &proto.DataChunk{
+						Chunk: buffer[:n],
+					},
+				},
+				Errors: nil,
+			}
+			if err := stream.Send(dataResp); err != nil {
+				logrus.Error("failed to send data chunk: ", err)
+				return err
+			}
+		}
+		if err == io.EOF {
+			break
+		}
+		// only check error down here since io.EOF is not an error and it can return some bytes and io.EOF at the same time, we would miss the last few bytes
+		if err != nil {
+			logrus.Error("failed to read snap file: ", err)
+			return err
+		}
+	}
+	return nil
 }
 
 func saveFileToTemp(snapFile io.Reader) (string, *cerror.CustomError) {
@@ -558,4 +760,60 @@ func (s *StoreLogic) AddUpload(ctx context.Context, req *proto.AddUploadRequest)
 		SnapName:         snapUpload.SnapName,
 		Status:           snapUpload.Status,
 	}, nil
+}
+
+// ################# HELPERS #################
+
+func (s *StoreLogic) retrieveObjectStoreFilePath(revision *models.SnapRevision) (string, *cerror.CustomError) {
+	entry, cerr := s.repo.GetEntryById(revision.SnapEntryID, nil)
+	if cerr != nil {
+		return "", cerr
+	}
+	track, cerr := s.repo.GetTrackById(revision.SnapTrackID)
+	if cerr != nil {
+		return "", cerr
+	}
+	channel, cerr := s.repo.GetChannelById(revision.SnapChannelID)
+	if cerr != nil {
+		return "", cerr
+	}
+	return fmt.Sprintf("%s/%s/%s/%s_%d.snap", entry.Name, track.Name, channel.Name, entry.Name, uintPointerToUint(revision.SequenceNumber)), nil
+}
+
+func pointerToString(s *string) string {
+	if s != nil {
+		return *s
+	}
+	return ""
+}
+
+func timePointerToTimestamp(s *time.Time) *timestamppb.Timestamp {
+	if s != nil {
+		return timestamppb.New(*s)
+	}
+	return nil
+}
+
+func uintPointerToUint(s *uint) uint {
+	if s != nil {
+		return *s
+	}
+	return 0
+}
+
+func convertRevisionToProto(revision *models.SnapRevision) *proto.GetRevisionResponse {
+	return &proto.GetRevisionResponse{
+		Id:                     revision.ID.String(),
+		CreatedAt:              timestamppb.New(revision.CreatedAt),
+		UpdatedAt:              timestamppb.New(revision.UpdatedAt),
+		DeletedAt:              timePointerToTimestamp(revision.DeletedAt),
+		BuildAssertionFilename: pointerToString(revision.BuildAssertionFileName),
+		Sha3_384:               pointerToString(revision.SHA3_384),
+		Sha3_384Encoded:        pointerToString(revision.SHA3_384_Encoded),
+		Size:                   uint64(*revision.Size),
+		SequenceNumber:         uint64(*revision.SequenceNumber),
+		Architectures:          revision.Architectures,
+		Status:                 pointerToString(revision.Status),
+		Version:                pointerToString(revision.Version),
+	}
 }
