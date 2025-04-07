@@ -22,6 +22,13 @@ import (
 )
 
 func main() {
+	// set logrus to use text formatter
+	logrus.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp:   true,
+		TimestampFormat: "2006-01-02 15:04:05",
+		DisableColors:   true,
+	})
+
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		logrus.Fatalf("Failed to load configuration: %v", err)
@@ -42,8 +49,7 @@ func main() {
 		panic(err)
 	}
 	if exists {
-		fmt.Println("Bucket exists, please use destroy command if you are sure you want to start over.")
-		return
+		logrus.Warnf("Bucket exists, please use destroy command if you are sure you want to start over.")
 	}
 
 	exists, err = minioClient.BucketExists(context.Background(), "generic")
@@ -52,29 +58,31 @@ func main() {
 	}
 
 	if exists {
-		fmt.Println("Bucket exists, please use destroy command if you are sure you want to start over.")
-		return
+		logrus.Warnf("Bucket exists, please use destroy command if you are sure you want to start over.")
 	}
 
-	makeBucketAndAddKey(minioClient, "root", cfg.RootKeyPath, "private-key.pem")
-	makeBucketAndAddKey(minioClient, "generic", cfg.GenericKeyPath, "private-key.pem")
-	minioClient.MakeBucket(context.Background(), "snaps", minio.MakeBucketOptions{})
+	if !exists {
+		makeBucketAndAddKey(minioClient, "root", cfg.RootKeyPath, "private-key.pem")
+		makeBucketAndAddKey(minioClient, "generic", cfg.GenericKeyPath, "private-key.pem")
+		minioClient.MakeBucket(context.Background(), "snaps", minio.MakeBucketOptions{})
+	}
 
+	objectstore := objectstore.NewObjectStore(minioClient)
 	// start grpc server
 	repo := repositories.NewSnapsRepository(db)
-	storeLogic := logic.NewStoreLogic(repo, cfg)
+	storeLogic := logic.NewStoreLogic(repo, cfg, objectstore)
 
 	if cfg.TestMode {
 		logrus.Infof("Running in test mode, using test data file: %s", cfg.TestDataFilePath)
-		err := database.LoadTestData(cfg.TestDataFilePath, repo)
+		err := database.LoadTestData(cfg.TestDataFilePath, db, repo)
 		if err != nil {
-			logrus.Fatalf("Failed to load test data: %v", err)
+			logrus.Errorf("Failed to load test data: %v", err)
 		}
 
 		logrus.Infof("Loaded test data, uploading to minio: %s", cfg.TestDataMinioPath)
 		err = objectstore.LoadTestData(minioClient, repo, cfg.TestDataMinioPath)
 		if err != nil {
-			logrus.Fatalf("Failed to load test data to minio: %v", err)
+			logrus.Errorf("Failed to load test data to minio: %v", err)
 		}
 	}
 

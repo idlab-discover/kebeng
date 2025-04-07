@@ -101,6 +101,7 @@ func buildCustomError(code, defaultMessage string, message ...string) *CustomErr
 	}
 }
 
+// AddCustomError adds a custom error to the error-list.
 func (el *ErrorList) AddCustomError(err *CustomError) {
 	*el = append(*el, err)
 }

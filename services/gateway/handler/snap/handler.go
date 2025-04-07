@@ -1,6 +1,7 @@
 package snap
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -43,7 +44,12 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 	for _, action := range req.Actions {
 		if action.Action == "install" {
 			logrus.Infof("%v", action)
-			res := h.refreshSnapInstall(c, action, el)
+			res, cerr := h.refreshSnapInstall(c, action, el)
+			if cerr != nil {
+				el.Add(cerr.Code, cerr.Message)
+				c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+				return
+			}
 			resp.Responses = append(resp.Responses, res)
 		} else {
 			el.Add(cerror.NotImplemented, "Action not implemented")
@@ -56,15 +62,14 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 }
 
 // TODO: Implement this function properly
-func (h *Handler) refreshSnapInstall(c *gin.Context, action *model.Action, el *cerror.ErrorList) *model.RefreshSnapResult {
+func (h *Handler) refreshSnapInstall(c *gin.Context, action *model.Action, el *cerror.ErrorList) (*model.RefreshSnapResult, *cerror.CustomError) {
 	var res model.RefreshSnapResult
 
-	// Get snap entry -> will return 1 snap entry
+	// should only get 1 entry since name is unique
 	snapEntries := h.StoreClient.GetEntries(&storepb.GetEntriesRequest{
 		Entries: []*storepb.GetEntryRequest{
 			{
 				Name:                action.Name,
-				Id:                  action.SnapID,
 				PreloadAssociations: []string{"REVISIONS"},
 			},
 		},
@@ -72,39 +77,42 @@ func (h *Handler) refreshSnapInstall(c *gin.Context, action *model.Action, el *c
 	if len(snapEntries.Errors) > 0 {
 		el.ExtendStoreError(snapEntries.Errors)
 		res.Result = nil
-		return &res
+		return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("store error: %v", snapEntries.Errors))
 	}
-
-	// Get the snap entry -> should only be 1
+	if len(snapEntries.Entries) == 0 {
+		el.Add(cerror.ResourceNotFound, "Snap not found")
+		res.Result = nil
+		return &res, cerror.NewCustomError(cerror.ResourceNotFound, "Snap not found")
+	}
 	snapEntry := snapEntries.Entries[0]
 
-	// Get a set of all the architectures of the snapEntry's revisions
-	architectureSet := make(map[string]struct{})
-	for _, snapRevision := range snapEntry.Revisions {
-		for _, arch := range snapRevision.Architectures {
-			architectureSet[arch] = struct{}{}
-		}
+	// NOTE: track is not given to use with default "snap install <name>" so put it to default latest now if we do get it with other variations of command
+	// use that and put to default if not passed
+	latestRevision := h.StoreClient.GetLatestRevision(*action.Name, "latest", action.Channel)
+	if len(latestRevision.Errors) > 0 {
+		el.ExtendStoreError(latestRevision.Errors)
+		res.Result = nil
+		return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("store error: %v", latestRevision.Errors))
 	}
 
-	// Convert the set to a slice
-	architectures := make([]string, 0, len(architectureSet))
-	for arch := range architectureSet {
-		architectures = append(architectures, arch)
-	}
-
-	latest_revision := float64(snapEntry.Revisions[len(snapEntry.Revisions)-1].Sequence)
-
-	// Get the publisher of the snap entry
+	// if publisher not found we should error this is not safe if we don't know who published it
 	publisher := h.AccountClient.GetAccountByID(snapEntry.PublisherId)
+	if len(publisher.Errors) > 0 {
+		el.ExtendAccountError(publisher.Errors)
+		res.Result = nil
+		return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("account error: %v", publisher.Errors))
+	}
 
 	result := "install"
+
+	downloadUrl := fmt.Sprintf("%s/download/%s", h.Config.StoreUrl, latestRevision.Id)
 
 	res.Result = &result
 	res.InstanceKey = &action.InstanceKey
 	res.SnapId = &snapEntry.Id
 	res.Name = &snapEntry.SnapName
 	res.Snap = &model.RefreshSnap{
-		Architectures: &architectures,
+		Architectures: &latestRevision.Architectures,
 		SnapId:        &snapEntry.Id,
 		Name:          &snapEntry.SnapName,
 		Publisher: &model.Publisher{
@@ -112,17 +120,50 @@ func (h *Handler) refreshSnapInstall(c *gin.Context, action *model.Action, el *c
 			ID:       publisher.Id,
 		},
 		Download: &model.Download{
-			URL:      nil, // TODO: implement
-			Sha3_384: nil, // TODO: implement
-			Size:     nil, // TODO: implement
+			URL:      &downloadUrl,
+			Sha3_384: &latestRevision.Sha3_384,
+			Size:     &latestRevision.Size,
 		},
-		Version:     nil, // TODO: implement
-		Revision:    &latest_revision,
+		Version:     &latestRevision.Version,
+		Revision:    &latestRevision.SequenceNumber,
 		Confinement: snapEntry.Confinement,
 		Type:        snapEntry.Type,
 		Base:        snapEntry.Base,
 	}
-	return &res
+	return &res, nil
+}
+
+func (h *Handler) DownloadSnap(c *gin.Context) {
+	el := cerror.NewErrorList()
+	revisionID := c.Param("revision_id")
+	if revisionID == "" {
+		el.Add(cerror.BadRequest, "revision_id is required")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
+
+	response := h.StoreClient.SnapDownload(revisionID)
+	if len(response.Errors) > 0 {
+		el.ExtendStoreError(response.Errors)
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
+
+	filename := "downloaded.snap"
+	if response.Revision != nil && response.Revision.SnapName != "" {
+		// Optionally, you can incorporate the revision number or sequence too.
+		filename = fmt.Sprintf("%s_%d.snap", response.Revision.SnapName, response.Revision.SequenceNumber)
+	}
+
+	// set correct headers for file download
+	c.Writer.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filename))
+	c.Writer.Header().Set("Content-Type", "application/octet-stream")
+
+	if _, err := c.Writer.Write(response.Data); err != nil {
+		logrus.Error("error writing snap to response: ", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error_list": el})
+		return
+	}
 }
 
 func (h *Handler) FindSnaps(c *gin.Context) {
@@ -239,3 +280,147 @@ func (h *Handler) ProcessSnapBuildAssertion(c *gin.Context) {
 		},
 	})
 }
+
+// SnapPush checks if there exists a snap entry for the uploaded snap package.
+// It calls the RegisterSnapName function with dryRun = true.
+func (h *Handler) SnapPush(c *gin.Context) {
+	el := cerror.NewErrorList()
+	var req *model.SnapPushRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		el.Add(cerror.BadRequest, cerror.FormatBindError(err))
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
+
+	// Get email of the user from the macaroon
+	c.Get("email")
+	email, ok := c.Get("email")
+	if !ok {
+		el.Add(cerror.Unauthorized, "email not found in macaroon")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+
+	// Get the account by email -> we need the account ID to register the snap name
+	account := h.BaseHandler.AccountClient.GetAccountByEmail(email.(string))
+	if len(account.Errors) > 0 {
+		el.ExtendAccountError(account.Errors)
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+
+	// Parse the account ID
+	accountUUID, err := uuid.Parse(account.Id)
+	if err != nil {
+		el.Add(cerror.BadRequest, "invalid account ID format")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+
+	// Dry run to check if the snap name is registered
+	entry := h.StoreClient.RegisterSnapName(req.Name, false, "", true, accountUUID)
+	if len(entry.Errors) > 0 {
+		el.ExtendStoreError(entry.Errors)
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+
+	if entry.SnapName == "" {
+		el.AddCustomError(cerror.NewCustomError(cerror.ResourceNotFound, "Snap name not found for name="+req.Name))
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+
+	parsedEntryUUID, err := uuid.Parse(entry.Id)
+	if err != nil {
+		el.Add(cerror.BadRequest, "invalid entry ID format")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+
+	// Create a new snap upload with status "pending"
+	upload := h.StoreClient.AddUpload(entry.SnapName, parsedEntryUUID, "pending", accountUUID)
+	if len(upload.Errors) > 0 {
+		el.ExtendStoreError(upload.Errors)
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+
+	logrus.Infof("status details url: %s", upload.StatusDetailsUrl)
+
+	c.JSON(http.StatusOK, gin.H{
+		"success":            true,
+		"snap_name":          entry.SnapName,
+		"status_details_url": fmt.Sprintf("https://%s%s", c.ClientIP(), upload.StatusDetailsUrl),
+	})
+}
+
+func (h *Handler) UnscannedUpload(c *gin.Context) {
+	el := cerror.NewErrorList()
+
+	header, err := c.FormFile("binary")
+	if err != nil {
+		el.Add(cerror.BadRequest, "Missing file in form data: "+err.Error())
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+
+	file, err := header.Open()
+	if err != nil {
+		el.Add(cerror.InternalServerError, "Error opening file: "+err.Error())
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+	defer func() {
+		if err := file.Close(); err != nil {
+			el.Add(cerror.InternalServerError, "Error closing file: "+err.Error())
+			c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		}
+	}()
+
+	// Upload file to the unscanned bucket, waiting for revision to be created
+	resp := h.StoreClient.UnscannedUpload(file)
+	if len(resp.Errors) > 0 {
+		el.ExtendStoreError(resp.Errors)
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+
+	if resp.GetTempFileName() == "" {
+		el.Add(cerror.InternalServerError, "Upload failed: no ID returned")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+
+	// Test: gewoon even bevestigen dat het gelukt is
+	c.JSON(http.StatusOK, gin.H{
+		"successful": true,
+		"upload_id":  uuid.New().String(), // FIX: this should be the ID of the revision that is created
+		"filename":   header.Filename,
+		"size":       header.Size,
+	})
+}
+
+// func (h *Handler) GetStatus(c *gin.Context) {
+// 	el := cerror.NewErrorList()
+
+// 	// Get the revision ID from the URL
+// 	revisionID := c.Param("rev_id")
+// 	if revisionID == "" {
+// 		el.Add(cerror.BadRequest, "revision_id is required")
+// 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+// 		return
+// 	}
+
+// 	// Get the status of the revision
+// 	status, err := h.StoreClient.GetRevisionStatus(revisionID)
+// 	if err != nil {
+// 		el.Add(cerror.InternalServerError, "Failed to get revision status: "+err.Error())
+// 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+// 		return
+// 	}
+
+// 	c.JSON(http.StatusOK, gin.H{
+// 		"status": status,
+// 	})
+// }

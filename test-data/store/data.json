@@ -6,15 +6,36 @@
       "updated_at": "2025-04-01T12:34:56Z",
       "deleted_at": null,
       "name": "test",
-      "type": "example",
+      "type": "application",
       "confinement": "strict",
       "base": "test.snap",
       "private": false,
-      "account_id": "4fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "account_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
       "status": "active",
       "price": 0.0,
       "store": "example store",
       "icon_url": "http://example.com/icon.png",
+      "revisions": [],
+      "tracks": [],
+      "channels": [],
+      "branches": [],
+      "latest_comments": []
+    },
+    {
+      "id": "11111111-2222-3333-4444-555555555555",
+      "created_at": "2025-04-01T12:34:56Z",
+      "updated_at": "2025-04-01T12:34:56Z",
+      "deleted_at": null,
+      "name": "core",
+      "type": "base",
+      "confinement": "strict",
+      "base": "core.snap",
+      "private": false,
+      "account_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "status": "active",
+      "price": 0.0,
+      "store": "core store",
+      "icon_url": "http://example.com/core-icon.png",
       "revisions": [],
       "tracks": [],
       "channels": [],
@@ -31,6 +52,15 @@
       "name": "latest",
       "snap_entry_id": "4fa85f64-5717-4562-b3fc-2c963f66afa6",
       "channels": []
+    },
+    {
+      "id": "22222222-3333-4444-5555-666666666667",
+      "created_at": "2025-04-01T12:34:56Z",
+      "updated_at": "2025-04-01T12:34:56Z",
+      "deleted_at": null,
+      "name": "latest",
+      "snap_entry_id": "11111111-2222-3333-4444-555555555555",
+      "channels": []
     }
   ],
   "snap_channels": [
@@ -42,6 +72,16 @@
       "name": "stable",
       "snap_track_id": "22222222-3333-4444-5555-666666666666",
       "snap_entry_id": "4fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "branches": []
+    },
+    {
+      "id": "33333333-4444-5555-6666-777777777778",
+      "created_at": "2025-04-01T12:34:56Z",
+      "updated_at": "2025-04-01T12:34:56Z",
+      "deleted_at": null,
+      "name": "stable",
+      "snap_track_id": "22222222-3333-4444-5555-666666666667",
+      "snap_entry_id": "11111111-2222-3333-4444-555555555555",
       "branches": []
     }
   ],
@@ -63,6 +103,24 @@
       "snap_track_id": "22222222-3333-4444-5555-666666666666",
       "snap_channel_id": "33333333-4444-5555-6666-777777777777",
       "snap_branch_id": "55555555-6666-7777-8888-999999999999"
+    },
+    {
+      "id": "44444444-5555-6666-7777-888888888889",
+      "created_at": "2025-04-01T12:34:56Z",
+      "updated_at": "2025-04-01T12:34:56Z",
+      "deleted_at": null,
+      "build_assertion_filename": "core-build.assert",
+      "sha3_384": "core-abc123def456",
+      "sha3_384_encoded": "core-def456abc123",
+      "size": 234567,
+      "sequence_number": 1,
+      "architectures": ["amd64", "arm64"],
+      "status": "released",
+      "version": "1.0.0",
+      "snap_entry_id": "11111111-2222-3333-4444-555555555555",
+      "snap_track_id": "22222222-3333-4444-5555-666666666667",
+      "snap_channel_id": "33333333-4444-5555-6666-777777777778",
+      "snap_branch_id": "55555555-6666-7777-8888-999999999990"
     }
   ],
   "snap_branches": [
@@ -72,6 +130,13 @@
       "snap_risk_id": "00000000-1111-2222-3333-444444444444",
       "snap_entry_id": "4fa85f64-5717-4562-b3fc-2c963f66afa6",
       "revision_id": "44444444-5555-6666-7777-888888888888"
+    },
+    {
+      "id": "55555555-6666-7777-8888-999999999990",
+      "name": "beta",
+      "snap_risk_id": "00000000-1111-2222-3333-444444444445",
+      "snap_entry_id": "11111111-2222-3333-4444-555555555555",
+      "revision_id": "44444444-5555-6666-7777-888888888889"
     }
   ],
   "snap_uploads": [
@@ -84,6 +149,16 @@
       "filesize": 789,
       "channels": ["stable", "beta"],
       "snap_entry_id": "4fa85f64-5717-4562-b3fc-2c963f66afa6"
+    },
+    {
+      "id": "66666666-7777-8888-9999-000000000001",
+      "created_at": "2025-04-01T12:34:56Z",
+      "updated_at": "2025-04-01T12:34:56Z",
+      "deleted_at": null,
+      "up_down_id": "core-upload1",
+      "filesize": 1234,
+      "channels": ["stable", "beta"],
+      "snap_entry_id": "11111111-2222-3333-4444-555555555555"
     }
   ],
   "snap_comments": [
@@ -97,6 +172,17 @@
       "reason": "General feedback",
       "comment": "Looks good!",
       "snap_entry_id": "4fa85f64-5717-4562-b3fc-2c963f66afa6"
+    },
+    {
+      "id": "77777777-8888-9999-0000-111111111112",
+      "created_at": "2025-04-01T12:34:56Z",
+      "updated_at": "2025-04-01T12:34:56Z",
+      "deleted_at": null,
+      "author_id": "88888888-9999-0000-1111-222222222223",
+      "since": "2025-04-01T12:34:56Z",
+      "reason": "Core snap feedback",
+      "comment": "Core snap looks good!",
+      "snap_entry_id": "11111111-2222-3333-4444-555555555555"
     }
   ]
 }

@@ -3,48 +3,53 @@ package objectstore
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"log"
 	"path"
 
 	"github.com/idlab-discover/kebeng/services/store/internal/config/configkey"
+	"github.com/idlab-discover/kebeng/services/store/internal/repository"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
-type ObjectStore interface {
+type IObjectStore interface {
 	SaveFileToBucket(bucket string, filePath string) (uint64, error)
-	GetFileFromBucket(bucket string, filePath string) (*[]byte, error)
+	GetSnapFileReader(filePath string) (io.ReadCloser, error)
+	LoadTestData(client *minio.Client, repo repository.ISnapsRepository, minioPath string) error
 }
 
-type Impl struct {
+type ObjectStore struct {
 	MinioClient *minio.Client
 }
 
-func NewObjectStore() *Impl {
-	return &Impl{MinioClient: GetMinioClient()}
+func NewObjectStore(minio *minio.Client) IObjectStore {
+	if minio == nil {
+		return &ObjectStore{MinioClient: GetMinioClient()}
+	}
+	return &ObjectStore{MinioClient: minio}
 }
-func (obs *Impl) GetFileFromBucket(bucket string, filePath string) (*[]byte, error) {
+
+func (obs *ObjectStore) GetSnapFileReader(filePath string) (io.ReadCloser, error) {
+	logrus.Infof("Getting file reader for file path: %s", filePath)
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	// do not defer cancel() here because we want the context to remain active
+	// while the caller reads the file. The caller should close the ReadCloser,
+	// which will eventually close the underlying connection.
 
-	base := path.Base(filePath)
-
-	objectPtr, err := obs.MinioClient.GetObject(ctx, bucket, base, minio.GetObjectOptions{})
+	objectPtr, err := obs.MinioClient.GetObject(ctx, "snaps", filePath, minio.GetObjectOptions{})
 	if err != nil {
+		cancel()
+		logrus.Errorf("error getting object from bucket 'snaps', file path: %s, err: %v", filePath, err)
 		return nil, err
 	}
-	bytes, _ := io.ReadAll(objectPtr)
-	if len(bytes) == 0 { // Error if file not found
-		return nil, fmt.Errorf("no such file in bucket \"%s\", file path: %s", bucket, base)
-	}
-	return &bytes, err
+
+	return objectPtr, nil
 }
 
-func (obs *Impl) Move(sourceBucket, destinationBucket, objectName string) error {
+func (obs *ObjectStore) Move(sourceBucket, destinationBucket, objectName string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	sourceBucketExists, err := obs.MinioClient.BucketExists(ctx, sourceBucket)
@@ -68,7 +73,7 @@ func (obs *Impl) Move(sourceBucket, destinationBucket, objectName string) error 
 	return errors.New("something went wrong")
 }
 
-func (obs *Impl) SaveFileToBucket(bucket string, filePath string) (uint64, error) {
+func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string) (uint64, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	exists, _ := obs.MinioClient.BucketExists(ctx, bucket)

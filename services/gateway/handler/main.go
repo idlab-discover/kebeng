@@ -52,9 +52,13 @@ func (h *Handler) SetupEndpoints(r *gin.Engine) {
 	r.GET("/v2/snaps/find", h.snapHandler.FindSnaps) // TODO
 	r.POST("/dev/api/register-name-dispute/", h.snapHandler.RegisterSnapNameDispute)
 	r.POST("/dev/api/snaps/:snap_id/builds", h.snapHandler.ProcessSnapBuildAssertion)
+	r.GET("/download/:revision_id", h.snapHandler.DownloadSnap)
+	authGroup.POST("/snap-push/", h.snapHandler.SnapPush)
+	r.POST("/unscanned-upload/", h.snapHandler.UnscannedUpload)
+	//authGroup.GET("/snaps/:rev_id/status", h.snapHandler.GetStatus)
 
 	// ********** AUTH **********
 
 	r.POST("/dev/api/acl/", h.authHandler.GenerateMacaroon)
-	r.POST("/dev/api/acl/verify/", h.authHandler.VerifyMacaroon) //TODO: implement correctly to many unknows of what has to be included and what not, need good source
+	r.POST("/dev/api/acl/verify/", h.authHandler.VerifyMacaroon) //TODO: implement correctly too many unknows of what has to be included and what not, need good source
 }

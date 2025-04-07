@@ -13,6 +13,10 @@ service StoreService {
     rpc GetEntriesByAccountId(GetEntriesByAccountIdRequest) returns (GetEntriesResponse);
     rpc GetRevisionsByEntryIds(GetRevisionsByEntryIdRequests) returns (GetRevisionsByEntryIdResponses);
     rpc RefreshSnap(RefreshSnapRequest) returns (RefreshSnapResponse);
+    rpc GetLatestRevision(GetLatestRevisionRequest) returns (GetRevisionResponse);
+    rpc SnapDownload(SnapDownloadRequest) returns (stream SnapDownloadResponse);
+    rpc UnscannedUpload(UnscannedUploadRequest) returns (UnscannedUploadResponse);
+    rpc AddUpload(AddUploadRequest) returns (AddUploadResponse);
 }
 
 message UploadSnapRequest {
@@ -84,13 +88,24 @@ message GetRevisionRequest {
 
 message GetRevisionResponse {
     string id = 1;
-    string snap_name = 2;
-    string build_assertion_filename = 3;
-    uint64 sequence = 4;
-    repeated string architectures = 5;
-    string status = 6;
-    string version = 7;
-    repeated Error errors = 8;
+    google.protobuf.Timestamp created_at = 2;
+    google.protobuf.Timestamp updated_at = 3;
+    optional google.protobuf.Timestamp deleted_at = 4;
+    string build_assertion_filename = 5;
+    string sha3_384 = 6;
+    string sha3_384_encoded = 7;
+    uint64 size = 8;
+    uint64 sequence_number = 9;
+    string snap_name = 10;
+    repeated string architectures = 11;
+    string status = 12;
+    string version = 13;
+    string entry_id = 14;
+    string track_id = 15;
+    string channel_id = 16;
+    string branch_id = 17;
+    
+    repeated Error errors = 18;
 }
 
 message GetRevisionsRequest {
@@ -190,4 +205,72 @@ message RefreshSnapResponse {
         Snap snap = 5;
     }
     repeated Result results = 2;
+}
+
+message GetLatestRevisionRequest {
+    string snap_name = 1;
+    string track = 2;
+    string channel = 3;
+}
+
+//  ####################### START DOWNLOAD #######################
+message SnapDownloadRequest {
+    string revision_id = 1;
+}
+
+message InitialDownloadResponse {
+    GetRevisionResponse revision = 1;
+}
+
+message DataChunk {
+    bytes chunk = 1;
+}
+
+message SnapDownloadResponse {
+    oneof payload {
+      InitialDownloadResponse initial = 1;
+      DataChunk data = 2;
+    }
+    repeated Error errors = 3;
+}
+
+message SnapDownloadCompleteResponse {
+    GetRevisionResponse revision = 1;
+    bytes data = 2;
+    repeated Error errors = 3;
+}
+
+// ####################### END DOWNLOAD #######################
+
+message SnapPushRequest {
+    string snap_id = 1;
+    string instance_key = 2;
+    uint64 revision = 3;
+    string track = 4;
+    string channel = 5;
+}
+
+message UnscannedUploadRequest {
+    bytes snap_file = 1;
+}
+
+message UnscannedUploadResponse {
+    string temp_file_name = 1;
+    uint64 file_size = 2;
+    repeated Error errors = 3;
+}
+
+message AddUploadRequest {
+    string snap_name = 1;
+    string entry_id = 2;
+    string status = 3;
+    string account_id = 4;
+}
+
+message AddUploadResponse {
+    string id = 1;
+    string snap_name = 2;
+    string status = 3;
+    string status_details_url = 4;
+    repeated Error errors = 5;
 }
