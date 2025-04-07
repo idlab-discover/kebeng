@@ -44,9 +44,9 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 	for _, action := range req.Actions {
 		if action.Action == "install" {
 			logrus.Infof("%v", action)
-			res, err := h.refreshSnapInstall(c, action, el)
-			if err != nil {
-				logrus.Errorf("Error refreshing snap: %v", err)
+			res, cerr := h.refreshSnapInstall(c, action, el)
+			if cerr != nil {
+				el.Add(cerr.Code, cerr.Message)
 				c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 				return
 			}
@@ -62,7 +62,7 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 }
 
 // TODO: Implement this function properly
-func (h *Handler) refreshSnapInstall(c *gin.Context, action *model.Action, el *cerror.ErrorList) (*model.RefreshSnapResult, error) {
+func (h *Handler) refreshSnapInstall(c *gin.Context, action *model.Action, el *cerror.ErrorList) (*model.RefreshSnapResult, *cerror.CustomError) {
 	var res model.RefreshSnapResult
 
 	// should only get 1 entry since name is unique
@@ -77,12 +77,12 @@ func (h *Handler) refreshSnapInstall(c *gin.Context, action *model.Action, el *c
 	if len(snapEntries.Errors) > 0 {
 		el.ExtendStoreError(snapEntries.Errors)
 		res.Result = nil
-		return &res, fmt.Errorf("store error: %v", snapEntries.Errors)
+		return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("store error: %v", snapEntries.Errors))
 	}
 	if len(snapEntries.Entries) == 0 {
 		el.Add(cerror.ResourceNotFound, "Snap not found")
 		res.Result = nil
-		return &res, fmt.Errorf("snap not found")
+		return &res, cerror.NewCustomError(cerror.ResourceNotFound, "Snap not found")
 	}
 	snapEntry := snapEntries.Entries[0]
 
@@ -92,7 +92,7 @@ func (h *Handler) refreshSnapInstall(c *gin.Context, action *model.Action, el *c
 	if len(latestRevision.Errors) > 0 {
 		el.ExtendStoreError(latestRevision.Errors)
 		res.Result = nil
-		return &res, fmt.Errorf("store error: %v", latestRevision.Errors)
+		return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("store error: %v", latestRevision.Errors))
 	}
 
 	// if publisher not found we should error this is not safe if we don't know who published it
@@ -100,18 +100,11 @@ func (h *Handler) refreshSnapInstall(c *gin.Context, action *model.Action, el *c
 	if len(publisher.Errors) > 0 {
 		el.ExtendAccountError(publisher.Errors)
 		res.Result = nil
-		return &res, fmt.Errorf("account error: %v", publisher.Errors)
+		return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("account error: %v", publisher.Errors))
 	}
 
 	result := "install"
 
-	sequenceNumber := int(latestRevision.SequenceNumber)
-
-	if h.Config.StoreUrl == "" {
-		el.Add(cerror.InternalServerError, "store URL not set")
-		res.Result = nil
-		return &res, fmt.Errorf("store URL not set")
-	}
 	downloadUrl := fmt.Sprintf("%s/download/%s", h.Config.StoreUrl, latestRevision.Id)
 
 	res.Result = &result
@@ -132,7 +125,7 @@ func (h *Handler) refreshSnapInstall(c *gin.Context, action *model.Action, el *c
 			Size:     &latestRevision.Size,
 		},
 		Version:     &latestRevision.Version,
-		Revision:    &sequenceNumber,
+		Revision:    &latestRevision.SequenceNumber,
 		Confinement: snapEntry.Confinement,
 		Type:        snapEntry.Type,
 		Base:        snapEntry.Base,
@@ -157,7 +150,6 @@ func (h *Handler) DownloadSnap(c *gin.Context) {
 	}
 
 	filename := "downloaded.snap"
-	logrus.Infof("*************************** revision: %+v", response.Revision)
 	if response.Revision != nil && response.Revision.SnapName != "" {
 		// Optionally, you can incorporate the revision number or sequence too.
 		filename = fmt.Sprintf("%s_%d.snap", response.Revision.SnapName, response.Revision.SequenceNumber)
@@ -166,14 +158,12 @@ func (h *Handler) DownloadSnap(c *gin.Context) {
 	// set correct headers for file download
 	c.Writer.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filename))
 	c.Writer.Header().Set("Content-Type", "application/octet-stream")
-	_, err := c.Writer.Write(response.Data)
-	if err != nil {
+
+	if _, err := c.Writer.Write(response.Data); err != nil {
 		logrus.Error("error writing snap to response: ", err)
-		el.Add(cerror.InternalServerError, "error writing snap to response")
-		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error_list": el})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "snap downloaded successfully"})
 }
 
 func (h *Handler) FindSnaps(c *gin.Context) {
