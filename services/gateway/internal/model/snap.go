@@ -50,10 +50,10 @@ type RefreshSnapRequest struct {
 }
 
 type Action struct {
-	Action      string  `json:"action"`
-	InstanceKey string  `json:"instance-key"`
-	Name        *string `json:"name"`
-	Channel     string  `json:"channel"`
+	Action      string `json:"action"`
+	InstanceKey string `json:"instance-key"`
+	Name        string `json:"name"`
+	Channel     string `json:"channel"`
 	Epoch       *struct {
 		Read  []int `json:"read"`
 		Write []int `json:"write"`
@@ -160,4 +160,3 @@ type SnapPushRequest struct {
 type UnscannedUploadRequest struct {
 	Data string `json:"data"`
 }
-
