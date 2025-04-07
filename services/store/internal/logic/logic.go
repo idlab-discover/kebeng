@@ -557,6 +557,5 @@ func (s *StoreLogic) AddUpload(ctx context.Context, req *proto.AddUploadRequest)
 		Id:               snapUpload.ID.String(),
 		SnapName:         snapUpload.SnapName,
 		Status:           snapUpload.Status,
-		StatusDetailsUrl: snapUpload.StatusDetailsURL,
 	}, nil
 }
