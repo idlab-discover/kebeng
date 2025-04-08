@@ -394,7 +394,7 @@ func TestGetAccountByEmail(t *testing.T) {
 		assert.Equal(t, original.ID, acc.ID)
 		assert.Equal(t, original.Email, acc.Email)
 		// Without associations, SSHKeys should be nil or empty.
-		assert.True(t, acc.SSHKeys == nil || len(acc.SSHKeys) == 0, "expected no SSHKeys without association")
+		assert.True(t, len(acc.SSHKeys) == 0, "expected no SSHKeys without association")
 	})
 
 	t.Run("get account by Email with SSHKey association", func(t *testing.T) {
@@ -467,7 +467,7 @@ func TestGetAccountByID(t *testing.T) {
 		assert.Equal(t, original.ID, account.ID)
 		assert.Equal(t, original.Email, account.Email)
 		// Without associations, SSHKeys should be nil or empty.
-		assert.True(t, account.SSHKeys == nil || len(account.SSHKeys) == 0, "expected no SSHKeys without association")
+		assert.True(t, len(account.SSHKeys) == 0, "expected no SSHKeys without association")
 	})
 
 	// Insert an SSH key associated with this account.
@@ -567,7 +567,7 @@ func TestGetAccountByUsername(t *testing.T) {
 		assert.Equal(t, original.ID, acc.ID)
 		assert.Equal(t, original.Email, acc.Email)
 		// Without associations, expect SSHKeys (and others) to be nil or empty.
-		assert.True(t, acc.SSHKeys == nil || len(acc.SSHKeys) == 0, "expected no SSHKeys without association")
+		assert.True(t, len(acc.SSHKeys) == 0, "expected no SSHKeys without association")
 	})
 
 	t.Run("get account by Username with ALL associations", func(t *testing.T) {

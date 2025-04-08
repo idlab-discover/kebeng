@@ -38,7 +38,7 @@ func NewAssertionClient(assertionHost string, assertionPort int) (*AssertionClie
 func (c *AssertionClient) Close() {
 	err := c.conn.Close()
 	if err != nil {
-		logrus.Errorf("Error closing connection: %v", err)
+		logrus.Errorf("error closing connection: %v", err)
 	}
 }
 
