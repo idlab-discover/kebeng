@@ -3,16 +3,19 @@ package objectstore
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"log"
+	"os"
 	"path"
+	"strings"
 
-	"github.com/idlab-discover/kebeng/services/store/internal/config/configkey"
+	"github.com/idlab-discover/kebeng/pkg/crypto"
+	"github.com/idlab-discover/kebeng/services/store/internal/config"
 	"github.com/idlab-discover/kebeng/services/store/internal/repository"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 )
 
 type IObjectStore interface {
@@ -22,22 +25,22 @@ type IObjectStore interface {
 }
 
 type ObjectStore struct {
+	cfg         *config.Config
 	MinioClient *minio.Client
 }
 
-func NewObjectStore(minio *minio.Client) IObjectStore {
+func NewObjectStore(minio *minio.Client, cfg *config.Config) IObjectStore {
 	if minio == nil {
-		return &ObjectStore{MinioClient: GetMinioClient()}
+		return &ObjectStore{cfg: cfg, MinioClient: GetMinioClient(cfg)}
 	}
 	return &ObjectStore{MinioClient: minio}
 }
 
+// don't forget to close the reader after use
 func (obs *ObjectStore) GetSnapFileReader(filePath string) (io.ReadCloser, error) {
 	logrus.Infof("Getting file reader for file path: %s", filePath)
 	ctx, cancel := context.WithCancel(context.Background())
-	// do not defer cancel() here because we want the context to remain active
-	// while the caller reads the file. The caller should close the ReadCloser,
-	// which will eventually close the underlying connection.
+	defer cancel()
 
 	objectPtr, err := obs.MinioClient.GetObject(ctx, "snaps", filePath, minio.GetObjectOptions{})
 	if err != nil {
@@ -96,10 +99,10 @@ func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string) (uint64
 	return uint64(uploadInfo.Size), nil
 }
 
-func GetMinioClient() *minio.Client {
-	accessKey := viper.GetString(configkey.MinioAccessKey)
-	secretKey := viper.GetString(configkey.MinioSecretKey)
-	minioHost := viper.GetString(configkey.MinioHost)
+func GetMinioClient(cfg *config.Config) *minio.Client {
+	accessKey := cfg.MinioAccessKey
+	secretKey := cfg.MinioSecretKey
+	minioHost := cfg.MinioHost
 
 	logrus.Infof("Minio host=%s, accessKey=%s, secretKey=%s", minioHost, accessKey, secretKey)
 
@@ -114,4 +117,39 @@ func GetMinioClient() *minio.Client {
 	}
 
 	return minioClient
+}
+
+func MakeBucketAndAddKey(minioClient *minio.Client, bucketName string, keyPath string, keyName string) {
+	// Make root bucket
+	fmt.Printf("*************************************\nCreating bucket: %s\n, keyPath: %s\n *************************", bucketName, keyPath)
+	ctx, cancel := context.WithCancel(context.Background())
+
+	defer cancel()
+
+	objectCh := minioClient.ListObjects(ctx, bucketName, minio.ListObjectsOptions{
+		Recursive: true,
+	})
+	for object := range objectCh {
+		logrus.Tracef("object: %s", object.Key)
+	}
+
+	err := minioClient.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{})
+	if err != nil {
+		logrus.Error(err)
+	}
+
+	bytes, err := os.ReadFile(keyPath)
+	if err != nil {
+		logrus.Error(err)
+	}
+	rootPrivateKey, err := crypto.ParseRSAPrivateKeyFromPEM(bytes)
+	if err != nil {
+		logrus.Error(err)
+	}
+	keyString := crypto.ExportRsaPrivateKeyAsPemStr(rootPrivateKey)
+
+	_, err = minioClient.PutObject(ctx, bucketName, keyName, strings.NewReader(keyString), int64(len(keyString)), minio.PutObjectOptions{})
+	if err != nil {
+		panic(err)
+	}
 }

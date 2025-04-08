@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -54,6 +55,10 @@ func LoadConfig() (*Config, error) {
 		cfg.TestMode = true
 	}
 
+	if err := cfg.checkConfig(); err != nil {
+		return nil, fmt.Errorf("configuration validation failed: %v", err)
+	}
+
 	logrus.Infof("loaded config: %+v", cfg)
 
 	return cfg, nil
@@ -66,4 +71,73 @@ func GetStoreServiceAddress(host string, port int) string {
 	}
 
 	return fmt.Sprintf("%s:%d", host, port)
+}
+
+func (c *Config) checkConfig() error {
+	var errs []string
+
+	// Check DB config.
+	if c.DBHost == "" {
+		errs = append(errs, "DBHost is required")
+	}
+	if c.DBPort <= 0 {
+		errs = append(errs, "DBPort must be a positive integer")
+	}
+	if c.DBUser == "" {
+		errs = append(errs, "DBUser is required")
+	}
+	if c.DBPassword == "" {
+		errs = append(errs, "DBPassword is required")
+	}
+	if c.DBName == "" {
+		errs = append(errs, "DBName is required")
+	}
+
+	// Check gRPC config.
+	if c.GRPCHost == "" {
+		errs = append(errs, "GRPCHost is required")
+	}
+	if c.GRPCPort <= 0 {
+		errs = append(errs, "GRPCPort must be a positive integer")
+	}
+
+	// Check migration path.
+	if c.MigrationPath == "" {
+		errs = append(errs, "MigrationPath is required")
+	}
+
+	// Check key paths.
+	if c.RootKeyPath == "" {
+		errs = append(errs, "RootKeyPath is required")
+	}
+	if c.GenericKeyPath == "" {
+		errs = append(errs, "GenericKeyPath is required")
+	}
+
+	// Check Minio settings.
+	if c.MinioAccessKey == "" {
+		errs = append(errs, "MinioAccessKey is required")
+	}
+	if c.MinioSecretKey == "" {
+		errs = append(errs, "MinioSecretKey is required")
+	}
+	if c.MinioHost == "" {
+		errs = append(errs, "MinioHost is required")
+	}
+
+	// Optionally, if not in test mode, you could enforce that test-specific fields be empty.
+	// Conversely, if in test mode, you might require them:
+	if c.TestMode {
+		if c.TestDataFilePath == "" {
+			errs = append(errs, "TestDataFilePath is required in test mode")
+		}
+		if c.TestDataMinioPath == "" {
+			errs = append(errs, "TestDataMinioPath is required in test mode")
+		}
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("%s", strings.Join(errs, "; "))
+	}
+	return nil
 }

@@ -3,10 +3,10 @@ package auth
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
-	"encoding/binary"
 	"encoding/json"
 
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
@@ -219,7 +219,6 @@ func ValidateGenerateMacaroonRequest(req *model.GenerateMacaroonRequest, el *cer
 			*el = append(*el, cerror.NewCustomError(cerror.InvalidField, fmt.Sprintf("expires: %v", err)))
 		}
 	}
-	return
 }
 
 // TODO: fix this function alot of issues
@@ -353,18 +352,8 @@ func HasPermission(macaroon *macaroon.Macaroon, permission string) bool {
 			if err := json.Unmarshal([]byte(parts[1]), &permissions); err != nil {
 				return false
 			}
-			for _, p := range permissions {
-				if p == permission {
-					return true
-				}
-			}
+			return slices.Contains(permissions, permission)
 		}
 	}
 	return false
-}
-
-func uint64ToBytes(u uint) []byte {
-	b := make([]byte, 8) // uint64 occupies 8 bytes
-	binary.BigEndian.PutUint64(b, uint64(u))
-	return b
 }

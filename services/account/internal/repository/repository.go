@@ -265,7 +265,11 @@ func (a *AccountRepository) FilterKeys(ctx context.Context, filter *models.Key, 
 		logrus.Error(err)
 		return nil, cerror.ConvertError(err, "could not filter keys")
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			logrus.Error("error closing rows: ", err)
+		}
+	}()
 
 	var keys []*models.Key
 	for rows.Next() {
@@ -333,7 +337,11 @@ func (a *AccountRepository) FilterAccounts(ctx context.Context, filter *models.A
 		logrus.Error(err)
 		return nil, cerror.ConvertError(err, "could not filter accounts")
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			logrus.Error("error closing rows: ", err)
+		}
+	}()
 
 	var accounts []*models.Account
 	for rows.Next() {

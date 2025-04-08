@@ -56,7 +56,10 @@ func NewAccountClient(accountHost string, accountPort int) (*AccountClient, erro
 }
 
 func (c *AccountClient) Close() {
-	c.conn.Close()
+	err := c.conn.Close()
+	if err != nil {
+		logrus.Errorf("error closing account client connection: %v", err)
+	}
 }
 
 func (c *AccountClient) CreateAccount(displayName, username, email string) *proto.AccountResponse {
