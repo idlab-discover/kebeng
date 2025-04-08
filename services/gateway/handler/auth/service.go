@@ -16,6 +16,7 @@ import (
 	macaroon "gopkg.in/macaroon.v2"
 )
 
+// Expect macaroon config to completely filled and checked at startup
 func GenerateMacaroon(ctx context.Context, req *model.GenerateMacaroonRequest, snapIDs map[string]bool, macaroonConfig *config.MacaroonConfig) *model.MacaroonResponse {
 	el := cerror.NewErrorList()
 

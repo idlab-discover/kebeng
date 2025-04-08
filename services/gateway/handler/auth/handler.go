@@ -31,11 +31,8 @@ func (h *Handler) GenerateMacaroon(c *gin.Context) {
 
 	// validate input
 	ValidateGenerateMacaroonRequest(req, el)
-	if len(*el) > 0 {
-		c.JSON(http.StatusBadRequest,
-			gin.H{
-				"error_list": el,
-			})
+	if el.HasError() {
+		c.JSON(http.StatusBadRequest, gin.H{"error_list": el})
 		return
 	}
 
