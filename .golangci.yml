@@ -1,0 +1,11 @@
+version: 2
+
+linters:
+  enable:
+    - errcheck
+    - revive
+
+linters-settings:
+  revive:
+    rules:
+      - name: error-strings
