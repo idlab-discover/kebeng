@@ -35,7 +35,7 @@ type ISnapsRepository interface {
 	GetRevisionById(id uuid.UUID) (*models.SnapRevision, *cerror.CustomError)
 	GetRevisionByNameAndSequence(name string, sequence uint) (*models.SnapRevision, *cerror.CustomError)
 	GetRevisionBySHA(SHA3_384 string, encoded bool) (*models.SnapRevision, *cerror.CustomError)
-	GetTracksBySnapId(snapId uuid.UUID) ([]*models.SnapTrack, *cerror.CustomError)
+	GetTracksByEntryId(snapId uuid.UUID) ([]*models.SnapTrack, *cerror.CustomError)
 	GetTrackById(id uuid.UUID) (*models.SnapTrack, *cerror.CustomError)
 	GetChannelById(id uuid.UUID) (*models.SnapChannel, *cerror.CustomError)
 	GetLatestRevision(snapName string, track string, channel string) (*models.SnapRevision, *cerror.CustomError)
@@ -417,7 +417,7 @@ func (sp *SnapsRepository) GetRevisionBySHA(SHA3_384 string, encoded bool) (*mod
 	return &revision, nil
 }
 
-func (sp *SnapsRepository) GetTracksBySnapId(snapId uuid.UUID) ([]*models.SnapTrack, *cerror.CustomError) {
+func (sp *SnapsRepository) GetTracksByEntryId(snapId uuid.UUID) ([]*models.SnapTrack, *cerror.CustomError) {
 	var tracks []*models.SnapTrack
 
 	query := `
@@ -628,6 +628,24 @@ func (sp *SnapsRepository) getPreloadAssociations(entry *models.SnapEntry, prelo
 			return err
 		}
 		entry.LatestComments = resp
+		fallthrough
+
+	case all || slices.Contains(*preloadAssociations, models.TRACK):
+		resp, err := sp.GetTracksByEntryId(entry.ID)
+		if err != nil {
+			// Already logged in GetTracksByEntryId
+			return err
+		}
+		entry.Tracks = resp
+		fallthrough
+
+	case all || slices.Contains(*preloadAssociations, models.CHANNEL):
+		resp, err := sp.GetChannelsByTrackId(entry.ID)
+		if err != nil {
+			// Already logged in GetChannelsByTrackId
+			return err
+		}
+		entry.Channels = resp
 		fallthrough
 
 	case all || slices.Contains(*preloadAssociations, models.REVISION) || all:

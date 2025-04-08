@@ -752,7 +752,7 @@ func TestGetTracksBySnapId(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tracks, err := globalRepo.GetTracksBySnapId(tt.snapId)
+			tracks, err := globalRepo.GetTracksByEntryId(tt.snapId)
 			if tt.expectError {
 				assert.NotNil(t, err)
 				if err != nil {
