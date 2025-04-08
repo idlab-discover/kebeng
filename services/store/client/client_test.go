@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"net"
 
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
 	"google.golang.org/grpc"
@@ -22,10 +21,6 @@ func init() {
 			panic(err)
 		}
 	}()
-}
-
-func bufDialer(ctx context.Context, s string) (net.Conn, error) {
-	return lis.Dial()
 }
 
 type mockStoreServiceServer struct {

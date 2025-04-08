@@ -1,7 +1,6 @@
 package config
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -138,7 +137,7 @@ func (c *Config) checkConfig() error {
 	}
 
 	if len(errs) > 0 {
-		return errors.New(fmt.Sprintf("%s\n", strings.Join(errs, "; ")))
+		return fmt.Errorf("%s", strings.Join(errs, "; "))
 	}
 	return nil
 }
