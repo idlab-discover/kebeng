@@ -10,7 +10,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/idlab-discover/kebeng/pkg/crypto"
+	"github.com/idlab-discover/kebeng/common/crypto"
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
 	"github.com/idlab-discover/kebeng/services/store/internal/repository"
 	"github.com/minio/minio-go/v7"
