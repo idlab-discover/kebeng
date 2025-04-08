@@ -38,6 +38,7 @@ func main() {
 	logrus.Infof("Connected to database: %v", db)
 
 	minioClient := objectstore.GetMinioClient(cfg)
+	objectstore := objectstore.NewObjectStore(minioClient, cfg)
 
 	exists, err := minioClient.BucketExists(context.Background(), "root")
 	if err != nil {
@@ -57,15 +58,13 @@ func main() {
 	}
 
 	if !exists {
-		objectstore.MakeBucketAndAddKey(minioClient, "root", cfg.RootKeyPath, "private-key.pem")
-		objectstore.MakeBucketAndAddKey(minioClient, "generic", cfg.GenericKeyPath, "private-key.pem")
+		objectstore.MakeBucketAndAddKey("root", cfg.RootKeyPath, "private-key.pem")
+		objectstore.MakeBucketAndAddKey("generic", cfg.GenericKeyPath, "private-key.pem")
 		err := minioClient.MakeBucket(context.Background(), "snaps", minio.MakeBucketOptions{})
 		if err != nil {
 			logrus.Errorf("Failed to create bucket: %v", err)
 		}
 	}
-
-	objectstore := objectstore.NewObjectStore(minioClient, cfg)
 	// start grpc server
 	repo := repositories.NewSnapsRepository(db)
 	storeLogic := logic.NewStoreLogic(repo, cfg, objectstore)
