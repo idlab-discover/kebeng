@@ -36,7 +36,10 @@ func NewAssertionClient(assertionHost string, assertionPort int) (*AssertionClie
 }
 
 func (c *AssertionClient) Close() {
-	c.conn.Close()
+	err := c.conn.Close()
+	if err != nil {
+		logrus.Errorf("Error closing connection: %v", err)
+	}
 }
 
 func (c *AssertionClient) ProcessSnapBuildAssertion(assertion []byte) *proto.SnapBuildAssertionResponse {
