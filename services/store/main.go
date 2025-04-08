@@ -67,7 +67,7 @@ func main() {
 		minioClient.MakeBucket(context.Background(), "snaps", minio.MakeBucketOptions{})
 	}
 
-	objectstore := objectstore.NewObjectStore(minioClient)
+	objectstore := objectstore.NewObjectStore(minioClient, cfg)
 	// start grpc server
 	repo := repositories.NewSnapsRepository(db)
 	storeLogic := logic.NewStoreLogic(repo, cfg, objectstore)
