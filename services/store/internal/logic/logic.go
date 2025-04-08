@@ -532,6 +532,8 @@ func (s *StoreLogic) GetRevisionsByEntryIds(ctx context.Context, req *proto.GetR
 	return &proto.GetRevisionsByEntryIdResponses{Responses: responses}, nil
 }
 
+// TEST
+
 func (s *StoreLogic) GetLatestRevision(ctx context.Context, req *proto.GetLatestRevisionRequest) (*proto.GetRevisionResponse, error) {
 	el := make([]*proto.Error, 0)
 	if req.SnapName == "" {
@@ -756,9 +758,9 @@ func (s *StoreLogic) AddUpload(ctx context.Context, req *proto.AddUploadRequest)
 	}
 
 	return &proto.AddUploadResponse{
-		Id:               snapUpload.ID.String(),
-		SnapName:         snapUpload.SnapName,
-		Status:           snapUpload.Status,
+		Id:       snapUpload.ID.String(),
+		SnapName: snapUpload.SnapName,
+		Status:   snapUpload.Status,
 	}, nil
 }
 
