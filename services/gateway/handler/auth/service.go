@@ -352,7 +352,7 @@ func HasPermission(macaroon *macaroon.Macaroon, permission string) bool {
 			if err := json.Unmarshal([]byte(parts[1]), &permissions); err != nil {
 				return false
 			}
-			slices.Contains(permissions, permission)
+			return slices.Contains(permissions, permission)
 		}
 	}
 	return false
