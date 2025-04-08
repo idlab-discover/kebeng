@@ -35,7 +35,6 @@ type ISnapsRepository interface {
 	GetRevisionById(id uuid.UUID) (*models.SnapRevision, *cerror.CustomError)
 	GetRevisionByNameAndSequence(name string, sequence uint) (*models.SnapRevision, *cerror.CustomError)
 	GetRevisionBySHA(SHA3_384 string, encoded bool) (*models.SnapRevision, *cerror.CustomError)
-	GetSections() (*[]string, *cerror.CustomError)
 	GetTracksBySnapId(snapId uuid.UUID) ([]*models.SnapTrack, *cerror.CustomError)
 	GetTrackById(id uuid.UUID) (*models.SnapTrack, *cerror.CustomError)
 	GetChannelById(id uuid.UUID) (*models.SnapChannel, *cerror.CustomError)
@@ -416,16 +415,6 @@ func (sp *SnapsRepository) GetRevisionBySHA(SHA3_384 string, encoded bool) (*mod
 	}
 
 	return &revision, nil
-}
-
-// QUESTION: Think this is for browsing categories? Not sure
-func (sp *SnapsRepository) GetSections() (*[]string, *cerror.CustomError) {
-	// TODO: add these to the database for real
-	sections := []string{
-		"general",
-	}
-
-	return &sections, nil
 }
 
 func (sp *SnapsRepository) GetTracksBySnapId(snapId uuid.UUID) ([]*models.SnapTrack, *cerror.CustomError) {
