@@ -155,7 +155,7 @@ func (m *MockSnapsRepository) GetSections() (*[]string, *cerror.CustomError) {
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
-func (m *MockSnapsRepository) GetTracksBySnapId(snapId uuid.UUID) ([]*models.SnapTrack, *cerror.CustomError) {
+func (m *MockSnapsRepository) GetTracksByEntryId(snapId uuid.UUID) ([]*models.SnapTrack, *cerror.CustomError) {
 	args := m.Called(snapId)
 	if args.Get(0) != nil {
 		return args.Get(0).([]*models.SnapTrack), nil

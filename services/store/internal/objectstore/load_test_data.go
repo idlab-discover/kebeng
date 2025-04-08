@@ -50,7 +50,7 @@ func (obs *ObjectStore) LoadTestData(client *minio.Client, repo repository.ISnap
 			continue
 		}
 
-		track, errObj := repo.GetTracksBySnapId(snapEntry.ID)
+		track, errObj := repo.GetTracksByEntryId(snapEntry.ID)
 		if errObj != nil || len(track) == 0 {
 			logrus.Errorf("No track found for snap entry %s", snapEntry.Name)
 			continue
