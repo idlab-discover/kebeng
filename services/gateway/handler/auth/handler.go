@@ -5,8 +5,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/idlab-discover/kebeng/common/cerror"
-	"github.com/idlab-discover/kebeng/services/gateway/internal/util"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/model"
+	"github.com/idlab-discover/kebeng/services/gateway/internal/util"
 	storepb "github.com/idlab-discover/kebeng/services/store/proto"
 )
 
@@ -18,7 +18,6 @@ type Handler struct {
 func (h *Handler) VerifyMacaroon(c *gin.Context) {
 	// not implemented for now
 	c.JSON(http.StatusNotImplemented, gin.H{"error_list": cerror.NewError(cerror.NotImplemented, "not implemented too many unknowns of implementation")})
-	return
 	/*
 			var req *message.VerifyRequest
 			el := cerror.NewErrorList()
@@ -98,7 +97,6 @@ func (h *Handler) GenerateMacaroon(c *gin.Context) {
 	if len(entriesResponse.Errors) > 0 {
 		el.ExtendStoreError(entriesResponse.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
-		return
 	}
 	// mimic set to prevent duplicate ids in macaroon
 	snapIDs := make(map[string]bool, len(entriesResponse.Entries))
@@ -110,7 +108,6 @@ func (h *Handler) GenerateMacaroon(c *gin.Context) {
 	if len(macaroon.Errors) > 0 {
 		el.Extend(macaroon.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
-		return
 	}
 	c.JSON(http.StatusOK, gin.H{"macaroon": macaroon.Macaroon})
 }

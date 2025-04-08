@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -11,22 +10,11 @@ import (
 
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/config"
-	"github.com/stretchr/testify/assert"
-	macaroon "gopkg.in/macaroon.v2"
 	mc "github.com/idlab-discover/kebeng/services/gateway/internal/macaroon"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/model"
+	"github.com/stretchr/testify/assert"
+	macaroon "gopkg.in/macaroon.v2"
 )
-
-// validMacaroonForTest is a helper that deserializes a macaroon string using our MacaroonDeserialize.
-func validMacaroonForTest(t *testing.T, m *macaroon.Macaroon) string {
-	t.Helper()
-	bin, err := m.MarshalBinary()
-	if err != nil {
-		t.Fatalf("failed to marshal macaroon: %v", err)
-	}
-	// Our deserializer expects a base64.RawURLEncoding-encoded string.
-	return base64.RawURLEncoding.EncodeToString(bin)
-}
 
 // TestGenerateMacaroon_Success tests a successful generation.
 func TestGenerateMacaroon_Success(t *testing.T) {
@@ -200,7 +188,7 @@ func TestValidateGenerateMacaroonRequest(t *testing.T) {
 			el := cerror.NewErrorList()
 			// Call the validation function.
 			ValidateGenerateMacaroonRequest(tc.req, el)
-			if tc.expectErrors == nil || len(tc.expectErrors) == 0 {
+			if len(tc.expectErrors) == 0 {
 				assert.Equal(t, 0, len(*el), "Expected no errors, got: %v", *el)
 			} else {
 				// Combine error messages into one string for easier searching.
