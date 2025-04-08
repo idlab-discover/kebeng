@@ -237,3 +237,59 @@ func TestHasPermission(t *testing.T) {
 	assert.NoError(t, err)
 	assert.False(t, HasPermission(m4, "edit_account"), "Expected false when JSON in ACL caveat is invalid")
 }
+
+func TestGetRootMacaroonsFromString(t *testing.T) {
+	// Each test case defines an input string and the expected root and discharge tokens
+	// according to the current implementation.
+	tests := []struct {
+		name              string
+		input             string
+		expectedRoot      string
+		expectedDischarge string
+	}{
+		{
+			name:              "Both tokens present with comma",
+			input:             "Macaroon root=abc123, discharge=def456",
+			expectedRoot:      "abc123",
+			expectedDischarge: "def456",
+		},
+		{
+			name:              "Both tokens present without comma",
+			input:             "Macaroon root=abc123 discharge=def456",
+			expectedRoot:      "abc123",
+			expectedDischarge: "def456",
+		},
+		{
+			name:              "Only root token provided",
+			input:             "Macaroon root=abc123",
+			expectedRoot:      "abc123",
+			expectedDischarge: "",
+		},
+		{
+			name:              "Only discharge token provided",
+			input:             "Macaroon discharge=def456",
+			expectedRoot:      "",
+			expectedDischarge: "def456",
+		},
+		{
+			name:              "No Macaroon prefix provided",
+			input:             "root=abc123, discharge=def456",
+			expectedRoot:      "abc123",
+			expectedDischarge: "def456",
+		},
+		{
+			name:              "Extra spaces in tokens",
+			input:             "Macaroon   root=abc123,   discharge=def456",
+			expectedRoot:      "abc123",
+			expectedDischarge: "def456",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			root, discharge := GetRootMacaroonsFromString(tc.input)
+			assert.Equal(t, tc.expectedRoot, root, "unexpected root token (input: %q)", tc.input)
+			assert.Equal(t, tc.expectedDischarge, discharge, "unexpected discharge token (input: %q)", tc.input)
+		})
+	}
+}
