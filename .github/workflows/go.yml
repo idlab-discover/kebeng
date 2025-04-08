@@ -64,11 +64,12 @@ jobs:
           go test -cover ./...
 
   lint:
-    runs-on: [ubuntu-latest, macos-latest, windows-latest]
     needs: detect_changes
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         service: [account, assertion, gateway, store]
+        os: [ubuntu-latest, macos-latest, windows-latest]
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
