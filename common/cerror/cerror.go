@@ -171,6 +171,17 @@ func (el *ErrorList) getFirst() any {
 	return (*el)[0]
 }
 
+func (el *ErrorList) ConvertToStoreErrorList() []*storepb.Error {
+	var errors []*storepb.Error
+	for _, err := range *el {
+		errors = append(errors, &storepb.Error{
+			Code:    err.Code,
+			Message: err.Message,
+		})
+	}
+	return errors
+}
+
 func FormatBindError(err error) string {
 	// check for type error
 	if ute, ok := err.(*json.UnmarshalTypeError); ok {
