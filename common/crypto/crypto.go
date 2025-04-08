@@ -4,9 +4,9 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
-	"errors"
 	"os"
 
+	"github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/snapcore/snapd/asserts"
 	"github.com/snapcore/snapd/asserts/assertstest"
 )
@@ -17,7 +17,7 @@ type Key struct {
 	Sha3_384 string `json:"sha3-384"`
 }
 
-func GetPublicKeyPEM(key *rsa.PrivateKey) (string, error) {
+func GetPublicKeyPEM(key *rsa.PrivateKey) (string, *cerror.CustomError) {
 	return ExportRsaPublicKeyAsPemStr(&key.PublicKey)
 }
 
@@ -37,10 +37,10 @@ func ExportRsaPrivateKeyAsPemStr(privkey *rsa.PrivateKey) string {
 	return string(privkeyPem)
 }
 
-func ExportRsaPublicKeyAsPemStr(pubkey *rsa.PublicKey) (string, error) {
+func ExportRsaPublicKeyAsPemStr(pubkey *rsa.PublicKey) (string, *cerror.CustomError) {
 	pubkeyBytes, err := x509.MarshalPKIXPublicKey(pubkey)
 	if err != nil {
-		return "", err
+		return "", cerror.NewCustomError(cerror.InternalServerError, "failed to marshal public key")
 	}
 	pubkeyPem := pem.EncodeToMemory(
 		&pem.Block{
@@ -53,9 +53,9 @@ func ExportRsaPublicKeyAsPemStr(pubkey *rsa.PublicKey) (string, error) {
 }
 
 var (
-	ErrKeyMustBePEMEncoded = errors.New("Invalid Key: Key must be PEM encoded PKCS1 or PKCS8 private key")
-	ErrNotRSAPrivateKey    = errors.New("Key is not a valid RSA private key")
-	ErrNotRSAPublicKey     = errors.New("Key is not a valid RSA public key")
+	ErrKeyMustBePEMEncoded = cerror.NewCustomError(cerror.InternalServerError, "key must be PEM encoded")
+	ErrNotRSAPrivateKey    = cerror.NewCustomError(cerror.InternalServerError, "key is not a valid RSA private key")
+	ErrNotRSAPublicKey     = cerror.NewCustomError(cerror.InternalServerError, "key is not a valid RSA public key")
 )
 
 func GetPrivateKeyFromPEMFile(keyPath string) asserts.PrivateKey {
@@ -66,7 +66,7 @@ func GetPrivateKeyFromPEMFile(keyPath string) asserts.PrivateKey {
 
 // from: "github.com/dgrijalva/jwt-go"
 // Parse PEM encoded PKCS1 or PKCS8 private key
-func ParseRSAPrivateKeyFromPEM(key []byte) (*rsa.PrivateKey, error) {
+func ParseRSAPrivateKeyFromPEM(key []byte) (*rsa.PrivateKey, *cerror.CustomError) {
 	var err error
 
 	// Parse PEM block
@@ -78,7 +78,7 @@ func ParseRSAPrivateKeyFromPEM(key []byte) (*rsa.PrivateKey, error) {
 	var parsedKey interface{}
 	if parsedKey, err = x509.ParsePKCS1PrivateKey(block.Bytes); err != nil {
 		if parsedKey, err = x509.ParsePKCS8PrivateKey(block.Bytes); err != nil {
-			return nil, err
+			return nil, cerror.NewCustomError(cerror.InternalServerError, "failed to parse private key")
 		}
 	}
 
