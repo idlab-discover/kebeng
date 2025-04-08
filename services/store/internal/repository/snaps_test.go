@@ -137,6 +137,51 @@ func TestAddChannel(t *testing.T) {
 	}
 }
 
+func TestAddDefaultChannels(t *testing.T) {
+	tests := []struct {
+		name              string
+		snapEntryId       uuid.UUID
+		snapTrackId       uuid.UUID
+		expectError       bool
+		expectedErrorCode string
+	}{
+		{
+			name:        "Success adding default channels",
+			snapEntryId: mockUUID,
+			snapTrackId: mockUUID,
+			expectError: false,
+		},
+		{
+			name:              "Fail adding default channels for non-existing snap entry",
+			snapEntryId:       uuid.New(),
+			snapTrackId:       mockUUID,
+			expectError:       true,
+			expectedErrorCode: cerror.ResourceNotFound,
+		},
+		{
+			name:              "Fail adding default channels for non-existing track",
+			snapEntryId:       mockUUID,
+			snapTrackId:       uuid.New(),
+			expectError:       true,
+			expectedErrorCode: cerror.ResourceNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := globalRepo.AddDefaultChannels(tt.snapEntryId, tt.snapTrackId)
+			if tt.expectError {
+				assert.NotNil(t, err)
+				if err != nil {
+					assert.Equal(t, tt.expectedErrorCode, err.GetCode())
+				}
+			} else {
+				assert.Nil(t, err)
+			}
+		})
+	}
+}
+
 func TestAddTrack(t *testing.T) {
 	tests := []struct {
 		name              string
