@@ -20,6 +20,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+var _ proto.StoreServiceServer = (*StoreLogic)(nil)
+
 type StoreLogic struct {
 	config *config.Config
 	proto.UnimplementedStoreServiceServer
@@ -533,8 +535,6 @@ func (s *StoreLogic) GetRevisionsByEntryIds(ctx context.Context, req *proto.GetR
 	return &proto.GetRevisionsByEntryIdResponses{Responses: responses}, nil
 }
 
-// TEST
-
 func (s *StoreLogic) GetLatestRevision(ctx context.Context, req *proto.GetLatestRevisionRequest) (*proto.GetRevisionResponse, error) {
 	el := make([]*proto.Error, 0)
 	if req.SnapName == "" {
@@ -647,7 +647,12 @@ func (s *StoreLogic) SnapDownload(req *proto.SnapDownloadRequest, stream proto.S
 		}
 		return fmt.Errorf("failed to get revision by id: %v", cerr)
 	}
-	defer snapFileReader.Close()
+	defer func(snapfileReader io.Reader) {
+		err := snapFileReader.Close()
+		if err != nil {
+			logrus.Error("failed to close snap file reader: ", err)
+		}
+	}(snapFileReader)
 
 	// define chunksize for reading the file
 	const chunkSize = 64 * 1024
@@ -707,7 +712,13 @@ func saveFileToTemp(snapFile io.Reader) (string, *cerror.CustomError) {
 	if err != nil {
 		return "", cerror.NewCustomError(cerror.InternalServerError, "Failed to create file")
 	}
-	defer out.Close()
+	defer func(out *os.File) {
+		err := out.Close()
+		if err != nil {
+			logrus.Error("failed to close file: ", err)
+		}
+
+	}(out)
 
 	_, err = io.Copy(out, snapFile)
 	if err != nil {
