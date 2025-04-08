@@ -1,7 +1,6 @@
 package snap
 
 import (
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -26,7 +25,7 @@ type SnapMeta struct {
 // GetSnapMetaFromFile will return SnapMeta from a byte array representing a snap file
 // This is an inefficient but expedient process
 func GetSnapMetaFromFile(snapFilePath string, workingDirectory string) (*SnapMeta, error) {
-	bytes, err := ioutil.ReadFile(snapFilePath)
+	bytes, err := os.ReadFile(snapFilePath)
 	if err == nil {
 		return GetSnapMetaFromBytes(bytes, workingDirectory)
 	}
