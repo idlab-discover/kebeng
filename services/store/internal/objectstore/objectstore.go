@@ -7,12 +7,11 @@ import (
 	"log"
 	"path"
 
-	"github.com/idlab-discover/kebeng/services/store/internal/config/configkey"
+	"github.com/idlab-discover/kebeng/services/store/internal/config"
 	"github.com/idlab-discover/kebeng/services/store/internal/repository"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 )
 
 type IObjectStore interface {
@@ -22,12 +21,13 @@ type IObjectStore interface {
 }
 
 type ObjectStore struct {
+	cfg         *config.Config
 	MinioClient *minio.Client
 }
 
-func NewObjectStore(minio *minio.Client) IObjectStore {
+func NewObjectStore(minio *minio.Client, cfg *config.Config) IObjectStore {
 	if minio == nil {
-		return &ObjectStore{MinioClient: GetMinioClient()}
+		return &ObjectStore{cfg: cfg, MinioClient: GetMinioClient(cfg)}
 	}
 	return &ObjectStore{MinioClient: minio}
 }
@@ -96,10 +96,10 @@ func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string) (uint64
 	return uint64(uploadInfo.Size), nil
 }
 
-func GetMinioClient() *minio.Client {
-	accessKey := viper.GetString(configkey.MinioAccessKey)
-	secretKey := viper.GetString(configkey.MinioSecretKey)
-	minioHost := viper.GetString(configkey.MinioHost)
+func GetMinioClient(cfg *config.Config) *minio.Client {
+	accessKey := cfg.MinioAccessKey
+	secretKey := cfg.MinioSecretKey
+	minioHost := cfg.MinioHost
 
 	logrus.Infof("Minio host=%s, accessKey=%s, secretKey=%s", minioHost, accessKey, secretKey)
 
