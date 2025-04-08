@@ -1,6 +1,7 @@
 package logic
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -18,6 +19,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+var _ proto.StoreServiceServer = (*StoreLogic)(nil)
 
 type StoreLogic struct {
 	config *config.Config
@@ -644,7 +647,12 @@ func (s *StoreLogic) SnapDownload(req *proto.SnapDownloadRequest, stream proto.S
 		}
 		return fmt.Errorf("failed to get revision by id: %v", cerr)
 	}
-	defer snapFileReader.Close()
+	defer func(snapfileReader io.Reader) {
+		err := snapFileReader.Close()
+		if err != nil {
+			logrus.Error("failed to close snap file reader: ", err)
+		}
+	}(snapFileReader)
 
 	// define chunksize for reading the file
 	const chunkSize = 64 * 1024
@@ -704,7 +712,13 @@ func saveFileToTemp(snapFile io.Reader) (string, *cerror.CustomError) {
 	if err != nil {
 		return "", cerror.NewCustomError(cerror.InternalServerError, "Failed to create file")
 	}
-	defer out.Close()
+	defer func(out *os.File) {
+		err := out.Close()
+		if err != nil {
+			logrus.Error("failed to close file: ", err)
+		}
+
+	}(out)
 
 	_, err = io.Copy(out, snapFile)
 	if err != nil {
@@ -756,10 +770,31 @@ func (s *StoreLogic) AddUpload(ctx context.Context, req *proto.AddUploadRequest)
 	}
 
 	return &proto.AddUploadResponse{
-		Id:               snapUpload.ID.String(),
-		SnapName:         snapUpload.SnapName,
-		Status:           snapUpload.Status,
+		Id:       snapUpload.ID.String(),
+		SnapName: snapUpload.SnapName,
+		Status:   snapUpload.Status,
 	}, nil
+}
+
+func (s *StoreLogic) UnscannedUpload(ctx context.Context, req *proto.UnscannedUploadRequest) (*proto.UnscannedUploadResponse, error) {
+	el := make([]*proto.Error, 0)
+	snapFileName, err := saveFileToTemp(bytes.NewReader(req.SnapFile))
+	if err != nil {
+		logrus.Errorf("Failed to save file to temp storage: %v", err)
+		el = append(el, &proto.Error{Code: cerror.InternalServerError, Message: "Failed to save file to temp storage"})
+		return &proto.UnscannedUploadResponse{Errors: el}, nil
+	}
+
+	tmpPath := path.Join(os.TempDir(), snapFileName)
+
+	size, err2 := s.obs.SaveFileToBucket("unscanned", tmpPath)
+	if err2 != nil {
+		logrus.Errorf("Failed to save file to object store: %v", err)
+		el = append(el, &proto.Error{Code: cerror.InternalServerError, Message: "Failed to save file to object store"})
+		return &proto.UnscannedUploadResponse{Errors: el}, nil
+	}
+
+	return &proto.UnscannedUploadResponse{TempFileName: tmpPath, FileSize: size}, nil
 }
 
 // ################# HELPERS #################
