@@ -5,7 +5,6 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/idlab-discover/kebeng/services/store/internal/snap"
 	"github.com/sirupsen/logrus"
 
 	"github.com/google/uuid"
@@ -628,60 +627,6 @@ func (sp *SnapsRepository) GetChannelById(id uuid.UUID) (*models.SnapChannel, *c
 
 // ============ PRIVATE =============
 // ============ HELPER ==============
-
-func (sp *SnapsRepository) updateMeta(metaBytes *[]byte) *cerror.CustomError {
-	snapMeta, err2 := snap.GetSnapMetaFromBytes(*metaBytes, "/tmp")
-	if err2 != nil {
-		logrus.Error(err2)
-		return cerror.NewCustomError(err2.Error(), "failed to get snap metadata from bytes")
-	}
-	logrus.Tracef("snapMeta: %+v", snapMeta)
-	var snapEntry models.SnapEntry
-	query := `
-		SELECT *
-		FROM entry
-		WHERE name = $1
-	`
-	err := sp.db.Get(&snapEntry, query, snapMeta.Name)
-	if err != nil {
-		logrus.Error(err)
-		return cerror.ConvertError(err, fmt.Sprintf("resource not found: snap with name = '%s'", snapMeta.Name))
-	}
-
-	snapEntry.Type = &snapMeta.Type
-	if snapMeta.Type == "" {
-		defaultType := "app"
-		snapEntry.Type = &defaultType
-	}
-	if snapMeta.Type != "" {
-		snapEntry.Type = &snapMeta.Type
-	} else {
-		logrus.Warnf("Snap %s had an empty type from its metadata, using default 'app'", snapEntry.Name)
-	}
-	if snapMeta.Confinement != "" {
-		snapEntry.Confinement = &snapMeta.Confinement
-	} else {
-		snapEntry.Confinement = nil
-	}
-	if snapMeta.Base != "" {
-		snapEntry.Base = &snapMeta.Base
-	} else {
-		snapEntry.Base = nil
-	}
-
-	query = `
-		UPDATE entry
-		SET type = $1, confinement = $2, base = $3
-		WHERE id = $4
-	`
-	_, err = sp.db.Exec(query, snapEntry.Type, snapEntry.Confinement, snapEntry.Base, snapEntry.ID)
-	if err != nil {
-		logrus.Error(err)
-		return cerror.ConvertError(err)
-	}
-
-	return nil
-}
 
 func (sp *SnapsRepository) getPreloadAssociations(entry *models.SnapEntry, preloadAssociations *[]string) *cerror.CustomError {
 	all := slices.Contains(*preloadAssociations, models.ALL)

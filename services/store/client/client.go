@@ -48,7 +48,10 @@ func NewStoreClient(storeHost string, storePort int) (*StoreClient, error) {
 }
 
 func (c *StoreClient) Close() {
-	c.conn.Close()
+	err := c.conn.Close()
+	if err != nil {
+		logrus.Errorf("error closing store client connection: %v", err)
+	}
 }
 
 func (c *StoreClient) UploadSnap(name string, type_name string, confinement string, base string, file []byte) *proto.UploadSnapResponse {
