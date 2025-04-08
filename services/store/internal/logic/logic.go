@@ -1,6 +1,7 @@
 package logic
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -762,6 +763,27 @@ func (s *StoreLogic) AddUpload(ctx context.Context, req *proto.AddUploadRequest)
 		SnapName: snapUpload.SnapName,
 		Status:   snapUpload.Status,
 	}, nil
+}
+
+func (s *StoreLogic) UnscannedUpload(ctx context.Context, req *proto.UnscannedUploadRequest) (*proto.UnscannedUploadResponse, error) {
+	el := make([]*proto.Error, 0)
+	snapFileName, err := saveFileToTemp(bytes.NewReader(req.SnapFile))
+	if err != nil {
+		logrus.Errorf("Failed to save file to temp storage: %v", err)
+		el = append(el, &proto.Error{Code: cerror.InternalServerError, Message: "Failed to save file to temp storage"})
+		return &proto.UnscannedUploadResponse{Errors: el}, nil
+	}
+
+	tmpPath := path.Join(os.TempDir(), snapFileName)
+
+	size, err2 := s.obs.SaveFileToBucket("unscanned", tmpPath)
+	if err2 != nil {
+		logrus.Errorf("Failed to save file to object store: %v", err)
+		el = append(el, &proto.Error{Code: cerror.InternalServerError, Message: "Failed to save file to object store"})
+		return &proto.UnscannedUploadResponse{Errors: el}, nil
+	}
+
+	return &proto.UnscannedUploadResponse{TempFileName: tmpPath, FileSize: size}, nil
 }
 
 // ################# HELPERS #################
