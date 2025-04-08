@@ -160,3 +160,96 @@ func TestPatchAccountHandler(t *testing.T) {
 		})
 	}
 }
+
+func TestCreateAccountHandler(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	mockAccClient := new(accClient.MockAccountClient)
+	baseHandler := util.NewBaseHandler(mockAccClient, nil, nil, nil)
+
+	// Create a handler with our mock account client.
+	h := &Handler{
+		BaseHandler: baseHandler,
+	}
+
+	type testCase struct {
+		name                      string
+		requestBody               string
+		expectedHTTPStatus        int
+		expectedResponseSubstring string
+		// If non-nil, we expect the account client to be called and return this response.
+		accountClientResponse *proto.AccountResponse
+	}
+
+	tests := []testCase{
+		{
+			name:                      "invalid JSON",
+			requestBody:               `{"display_name": "John Doe", "username": jdoe, "email": "jdoe@example.com"}`,
+			expectedHTTPStatus:        http.StatusBadRequest,
+			expectedResponseSubstring: "Syntax error",
+		},
+		{
+			name:                      "account client error",
+			requestBody:               `{"display_name": "John Doe", "username": "jdoe", "email": "jdoe@example.com"}`,
+			expectedHTTPStatus:        http.StatusInternalServerError,
+			expectedResponseSubstring: "client error",
+			accountClientResponse: &proto.AccountResponse{
+				Id: "",
+				Errors: []*proto.Error{
+					{Code: cerror.InternalServerError, Message: "client error"},
+				},
+			},
+		},
+		{
+			name:                      "success",
+			requestBody:               `{"display_name": "John Doe", "username": "jdoe", "email": "jdoe@example.com"}`,
+			expectedHTTPStatus:        http.StatusOK,
+			expectedResponseSubstring: "123e4567-e89b-12d3-a456-426614174000",
+			accountClientResponse: &proto.AccountResponse{
+				Id:     "123e4567-e89b-12d3-a456-426614174000",
+				Errors: []*proto.Error{},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create a Gin test context.
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest("POST", "/createAccount", strings.NewReader(tc.requestBody))
+			c.Request.Header.Set("Content-Type", "application/json")
+
+			// If we expect a call to CreateAccount, set the expectation on the mock.
+			// We need to extract the request values from the JSON.
+			if tc.accountClientResponse != nil {
+				// Declare a temporary structure to unmarshal the request.
+				var req struct {
+					DisplayName string `json:"display_name"`
+					Username    string `json:"username"`
+					Email       string `json:"email"`
+				}
+				err := json.Unmarshal([]byte(tc.requestBody), &req)
+				// If there is an error in binding JSON here, it will be handled in the actual handler.
+				if err == nil {
+					mockAccClient.
+						On("CreateAccount", req.DisplayName, req.Username, req.Email).
+						Return(tc.accountClientResponse).
+						Once()
+				}
+			}
+
+			// Call the CreateAccount handler.
+			h.CreateAccount(c)
+
+			// Verify the HTTP status.
+			assert.Equal(t, tc.expectedHTTPStatus, w.Code, "unexpected HTTP status")
+			body := w.Body.String()
+			assert.Contains(t, body, tc.expectedResponseSubstring, "unexpected response body")
+
+			// If we expected the account client call, assert that expectations were met.
+			if tc.accountClientResponse != nil {
+				mockAccClient.AssertExpectations(t)
+			}
+		})
+	}
+}
