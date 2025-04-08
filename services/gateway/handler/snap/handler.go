@@ -3,6 +3,7 @@ package snap
 import (
 	"fmt"
 	"net/http"
+	"slices"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -470,34 +471,5 @@ func (h *Handler) getLatestRevisionByEntryName(entryName string, el *cerror.Erro
 func isChannel(s string) bool {
 	// List of allowed channels.
 	allowedChannels := []string{"stable", "candidate", "beta", "edge"}
-	for _, v := range allowedChannels {
-		if s == v {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(allowedChannels, s)
 }
-
-// func (h *Handler) GetStatus(c *gin.Context) {
-// 	el := cerror.NewErrorList()
-
-// 	// Get the revision ID from the URL
-// 	revisionId := c.Param("rev_id")
-// 	if revisionId == "" {
-// 		el.Add(cerror.BadRequest, "revision_id is required")
-// 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
-// 		return
-// 	}
-
-// 	// Get the status of the revision
-// 	status, err := h.StoreClient.GetRevisionStatus(revisionId)
-// 	if err != nil {
-// 		el.Add(cerror.InternalServerError, fmt.Sprintf("error getting status: %s", err.Error()))
-// 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
-// 		return
-// 	}
-
-// 	c.JSON(http.StatusOK, gin.H{
-// 		"status": status,
-// 	})
-// }
