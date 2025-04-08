@@ -1,3 +1,0 @@
-[submodule "login-static"]
-	path = static
-	url = https://github.com/freetocompute/login-static
