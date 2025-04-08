@@ -155,7 +155,7 @@ func (h *Handler) RegisterSnapName(c *gin.Context) {
 	}
 
 	// Get the account by email -> we need the account ID to register the snap name
-	account := h.BaseHandler.AccountClient.GetAccountByEmail(email.(string))
+	account := h.AccountClient.GetAccountByEmail(email.(string))
 	if len(account.Errors) > 0 {
 		el.ExtendAccountError(account.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
@@ -262,7 +262,7 @@ func (h *Handler) SnapPush(c *gin.Context) {
 	}
 
 	// Get the account by email -> we need the account ID to register the snap name
-	account := h.BaseHandler.AccountClient.GetAccountByEmail(email.(string))
+	account := h.AccountClient.GetAccountByEmail(email.(string))
 	if len(account.Errors) > 0 {
 		el.ExtendAccountError(account.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
