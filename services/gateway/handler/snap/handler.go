@@ -3,6 +3,7 @@ package snap
 import (
 	"fmt"
 	"net/http"
+	"slices"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -47,7 +48,6 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 			logrus.Infof("%v", action)
 			res, cerr := h.refreshSnapDownload(action, el)
 			if cerr != nil {
-				el.Add(cerr.Code, cerr.Message)
 				c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 				return
 			}
@@ -58,7 +58,6 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 			logrus.Infof("%v", action)
 			res, cerr := h.refreshSnapDownload(action, el)
 			if cerr != nil {
-				el.Add(cerr.Code, cerr.Message)
 				c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 				return
 			}
@@ -77,7 +76,10 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 
 func (h *Handler) refreshSnapDownload(action *model.Action, el *cerror.ErrorList) (*model.RefreshSnapResult, *cerror.CustomError) {
 	var res model.RefreshSnapResult
-	snapEntry, latestRevision := h.getLatestRevisionByEntryName(action.Name, el, action.Channel)
+	snapEntry, latestRevision := h.getLatestRevisionByEntryName(el, action.Name, action.Channel)
+	if el.HasError() {
+		return nil, cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("latest revision not found by name: %s", action.Name))
+	}
 
 	// if publisher not found we should error this is not safe if we don't know who published it
 	publisher := h.AccountClient.GetAccountByID(snapEntry.PublisherId)
@@ -410,7 +412,7 @@ func (h *Handler) downloadSnap(c *gin.Context, revisionId string, el *cerror.Err
 	}
 }
 
-func (h *Handler) getLatestRevisionByEntryName(entryName string, el *cerror.ErrorList, channelAndTrack ...string) (*storepb.GetEntryResponse, *storepb.GetRevisionResponse) {
+func (h *Handler) getLatestRevisionByEntryName(el *cerror.ErrorList, entryName string, channelAndTrack ...string) (*storepb.GetEntryResponse, *storepb.GetRevisionResponse) {
 	// should only get 1 entry since name is unique
 	snapEntries := h.StoreClient.GetEntries(&storepb.GetEntriesRequest{
 		Entries: []*storepb.GetEntryRequest{
@@ -425,7 +427,7 @@ func (h *Handler) getLatestRevisionByEntryName(entryName string, el *cerror.Erro
 		return nil, nil
 	}
 	if len(snapEntries.Entries) == 0 {
-		el.Add(cerror.ResourceNotFound, "Snap not found")
+		el.Add(cerror.ResourceNotFound, fmt.Sprintf("snap entry not found with name %s", entryName))
 		return nil, nil
 	}
 	snapEntry := snapEntries.Entries[0]
@@ -470,34 +472,5 @@ func (h *Handler) getLatestRevisionByEntryName(entryName string, el *cerror.Erro
 func isChannel(s string) bool {
 	// List of allowed channels.
 	allowedChannels := []string{"stable", "candidate", "beta", "edge"}
-	for _, v := range allowedChannels {
-		if s == v {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(allowedChannels, s)
 }
-
-// func (h *Handler) GetStatus(c *gin.Context) {
-// 	el := cerror.NewErrorList()
-
-// 	// Get the revision ID from the URL
-// 	revisionId := c.Param("rev_id")
-// 	if revisionId == "" {
-// 		el.Add(cerror.BadRequest, "revision_id is required")
-// 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
-// 		return
-// 	}
-
-// 	// Get the status of the revision
-// 	status, err := h.StoreClient.GetRevisionStatus(revisionId)
-// 	if err != nil {
-// 		el.Add(cerror.InternalServerError, fmt.Sprintf("error getting status: %s", err.Error()))
-// 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
-// 		return
-// 	}
-
-// 	c.JSON(http.StatusOK, gin.H{
-// 		"status": status,
-// 	})
-// }

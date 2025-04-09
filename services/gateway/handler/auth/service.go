@@ -16,6 +16,7 @@ import (
 	macaroon "gopkg.in/macaroon.v2"
 )
 
+// Expect macaroon config to completely filled and checked at startup
 func GenerateMacaroon(ctx context.Context, req *model.GenerateMacaroonRequest, snapIDs map[string]bool, macaroonConfig *config.MacaroonConfig) *model.MacaroonResponse {
 	el := cerror.NewErrorList()
 
@@ -221,7 +222,7 @@ func ValidateGenerateMacaroonRequest(req *model.GenerateMacaroonRequest, el *cer
 	}
 }
 
-// TODO: fix this function alot of issues
+// TODO: implement further
 // can only do this if we know format of discharge macaroon
 func VerifyAndGetEmail(cfg *config.Config, el *cerror.ErrorList, authData string) *string {
 	rootS, dischargeS := GetRootMacaroonsFromString(authData)
@@ -240,92 +241,30 @@ func VerifyAndGetEmail(cfg *config.Config, el *cerror.ErrorList, authData string
 		return nil
 	}
 
-	// Verify the root macaroon using the configured root key.
-	if err := root.Verify([]byte(cfg.MacaroonConfig.RootKey), func(caveat string) error {
-		// check first party caveats for valid_since and expires the rest is checked when extracted and used to know if valid
-		// Check if this is a valid_since caveat.
-		if strings.HasPrefix(caveat, "valid_since=") {
-			ts := strings.TrimPrefix(caveat, "valid_since=")
-			t, err := time.Parse(time.RFC3339Nano, ts)
-			if err != nil {
-				return fmt.Errorf("invalid valid_since format: %v", err)
-			}
-			// The macaroon becomes valid after t. If now is before t, it's not yet valid.
-			if time.Now().Before(t) {
-				return fmt.Errorf("macaroon not yet valid: valid since %s", t.Format(time.RFC3339))
-			}
-			return nil
-		}
-		// Check if this is an expires caveat.
-		if strings.HasPrefix(caveat, "expires=") {
-			ts := strings.TrimPrefix(caveat, "expires=")
-			t, err := time.Parse(time.RFC3339, ts)
-			if err != nil {
-				return fmt.Errorf("invalid expires format: %v", err)
-			}
-			// If the current time is after t, then the macaroon is expired.
-			if time.Now().After(t) {
-				return fmt.Errorf("macaroon expired on %s", t.Format(time.RFC3339))
-			}
-			return nil
-		}
-
-		return nil
-	}, []*macaroon.Macaroon{discharge}); err != nil {
-		el.Add(cerror.Unauthorized, fmt.Sprintf("failed to verify macaroon: %v", err))
-		return nil
-	}
-
-	// TODO: think this is bs
-	// Check the root caveats for an authorization indicator.
-	authorized := false
-	for _, cav := range root.Caveats() {
-		if string(cav.Id) != "is-authorized-or-whatever" {
-			authorized = true
-			break
-		}
-	}
-	if !authorized {
-		el.Add(cerror.Unauthorized, "unauthorized: missing authorization indicator")
-		return nil
-	}
-
-	// TODO: not sure if the discharge macaroon has an email field in here
-	// Should try to test with real snapd to see what they pass and if they pass a macaroon with email or something
-	// Extract email from the discharge macaroon caveats.
-	var email string
-	for _, cav := range discharge.Caveats() {
-		caveatStr := string(cav.Id)
-		if strings.Contains(caveatStr, "email") {
-			parts := strings.SplitN(caveatStr, "=", 2)
-			if len(parts) != 2 {
-				el.Add(cerror.BadRequest, "email caveat malformed")
-				return nil
-			}
-			email = parts[1]
-			break
-		}
-	}
-	if email == "" {
-		el.Add(cerror.Unauthorized, "unauthorized: missing email in discharge macaroon")
-		return nil
-	}
-	return &email
+	// TODO: verify both root macaroon and discharge macaroon
+	return nil
 }
 
 func GetRootMacaroonsFromString(macaroonAuth string) (string, string) {
-	tokensString := strings.TrimPrefix(macaroonAuth, "Macaroon")
-	tokens := strings.Split(tokensString, ",")
-	var root string
-	var discharge string
-	for _, t := range tokens {
-		if strings.Contains(t, " root=") {
-			root = strings.TrimPrefix(t, " root=")
-		} else {
-			discharge = strings.TrimPrefix(t, " discharge=")
-		}
+	tokensString := strings.TrimSpace(strings.TrimPrefix(macaroonAuth, "Macaroon"))
+
+	// snapcraft uses a comma and snapd a space
+	var tokens []string
+	if strings.Contains(tokensString, ",") {
+		tokens = strings.Split(tokensString, ",")
+	} else {
+		tokens = strings.Fields(tokensString)
 	}
 
+	var root, discharge string
+	for _, token := range tokens {
+		token = strings.TrimSpace(token)
+		if strings.HasPrefix(token, "root=") {
+			root = strings.TrimPrefix(token, "root=")
+		} else if strings.HasPrefix(token, "discharge=") {
+			discharge = strings.TrimPrefix(token, "discharge=")
+		}
+	}
 	return root, discharge
 }
 
