@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/idlab-discover/kebeng/common/cerror"
 	accClient "github.com/idlab-discover/kebeng/services/account/client"
 	accountpb "github.com/idlab-discover/kebeng/services/account/proto"
 	assertionClient "github.com/idlab-discover/kebeng/services/assertion/client"
@@ -161,6 +162,76 @@ func TestRefreshSnapHandler_DownloadAction(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 	// Expect to see the result "download" in the response JSON.
 	assert.Contains(t, w.Body.String(), "download")
+	mockStoreClient.AssertExpectations(t)
+	mockAccClient.AssertExpectations(t)
+}
+
+func TestRefreshSnapHandler_DownloadAction_NoLatestRevision(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	// Create mocks for store and account clients.
+	mockStoreClient := new(storeClient.MockStoreClient)
+	mockAccClient := new(accClient.MockAccountClient)
+
+	strict := "strict"
+	types := "classic"
+	base := "16"
+
+	// Prepare dummy responses for getLatestRevisionByEntryName chain.
+	// Dummy entry.
+	dummyEntry := &storepb.GetEntryResponse{
+		Id:          "entry1",
+		SnapName:    "snap1",
+		PublisherId: "pub1",
+		Confinement: &strict,
+		Type:        &types,
+		Base:        &base,
+	}
+	dummyRev := &storepb.GetRevisionResponse{
+		Errors: []*storepb.Error{
+			{Code: cerror.ResourceNotFound, Message: "latest revision not found"},
+		},
+	}
+	// Expectation: getLatestRevisionByEntryName calls StoreClient.GetEntries.
+	mockStoreClient.
+		On("GetEntries", mock.Anything).
+		Return(&storepb.GetEntriesResponse{
+			Entries: []*storepb.GetEntryResponse{dummyEntry},
+			Errors:  nil,
+		}).Once()
+
+	// return nil for GetLatestRevision to simulate no latest revision.
+	mockStoreClient.
+		On("GetLatestRevision", "snap1", "latest", "stable").
+		Return(dummyRev).Once()
+
+	// accountID doesn't have to be mocked doesn't get there
+
+	// Set up a dummy BaseHandler with our mocks and a dummy config.
+	baseHandler := util.NewBaseHandler(mockAccClient, mockStoreClient, nil, nil)
+	baseHandler.Config = &config.Config{
+		StoreUrl: "https://store.example.com",
+	}
+	handler := &Handler{BaseHandler: baseHandler}
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	// Valid JSON with action "download".
+	reqJSON := `{
+		"actions": [{
+			"action": "download",
+			"name": "snap1",
+			"channel": "stable",
+			"instance_key": "instance-123"
+		}]
+	}`
+	c.Request = httptest.NewRequest("POST", "/refreshSnap", bytes.NewBufferString(reqJSON))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	handler.RefreshSnap(c)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+	// Expect to see the result "download" in the response JSON.
+	assert.Contains(t, w.Body.String(), "latest revision not found")
 	mockStoreClient.AssertExpectations(t)
 	mockAccClient.AssertExpectations(t)
 }
