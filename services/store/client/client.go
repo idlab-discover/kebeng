@@ -211,11 +211,6 @@ func (c *StoreClient) AddUpload(snapName string, entryId uuid.UUID, status strin
 			},
 		}
 	}
-	if len(resp.Errors) > 0 {
-		resp = &proto.AddUploadResponse{
-			Errors: resp.Errors,
-		}
-	}
 	return resp
 }
 

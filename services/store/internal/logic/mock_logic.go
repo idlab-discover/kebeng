@@ -2,7 +2,6 @@ package logic
 
 import (
 	"context"
-	"errors"
 
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
 	"github.com/stretchr/testify/mock"
@@ -15,11 +14,10 @@ type MockStoreServiceClient struct {
 
 func (m *MockStoreServiceClient) RegisterSnapName(ctx context.Context, in *proto.RegisterSnapNameRequest, opts ...grpc.CallOption) (*proto.RegisterSnapNameResponse, error) {
 	args := m.Called(ctx, in)
-	resp := args.Get(0)
-	if resp == nil {
+	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return resp.(*proto.RegisterSnapNameResponse), args.Error(1)
+	return args.Get(0).(*proto.RegisterSnapNameResponse), nil
 }
 
 func (m *MockStoreServiceClient) GetEntries(ctx context.Context, in *proto.GetEntriesRequest, opts ...grpc.CallOption) (*proto.GetEntriesResponse, error) {
@@ -98,14 +96,6 @@ func (m *MockStoreServiceClient) AddUpload(ctx context.Context, in *proto.AddUpl
 	args := m.Called(ctx, in)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
-	}
-	if len(args.Get(0).(*proto.AddUploadResponse).Errors) > 0 {
-		resp := args.Get(0).(*proto.AddUploadResponse)
-		resp.Errors = []*proto.Error{{
-			Code:    errors.New("mock error").Error(),
-			Message: "mock error",
-		}}
-		return resp, nil
 	}
 	return args.Get(0).(*proto.AddUploadResponse), nil
 }
