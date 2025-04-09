@@ -2,17 +2,18 @@ package logic
 
 import (
 	"context"
+	"errors"
 
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
 	"github.com/stretchr/testify/mock"
 	"google.golang.org/grpc"
 )
 
-type MockAccountServiceClient struct {
+type MockStoreServiceClient struct {
 	mock.Mock
 }
 
-func (m *MockAccountServiceClient) RegisterSnapName(ctx context.Context, in *proto.RegisterSnapNameRequest, opts ...grpc.CallOption) (*proto.RegisterSnapNameResponse, error) {
+func (m *MockStoreServiceClient) RegisterSnapName(ctx context.Context, in *proto.RegisterSnapNameRequest, opts ...grpc.CallOption) (*proto.RegisterSnapNameResponse, error) {
 	args := m.Called(ctx, in)
 	resp := args.Get(0)
 	if resp == nil {
@@ -21,7 +22,7 @@ func (m *MockAccountServiceClient) RegisterSnapName(ctx context.Context, in *pro
 	return resp.(*proto.RegisterSnapNameResponse), args.Error(1)
 }
 
-func (m *MockAccountServiceClient) GetEntries(ctx context.Context, in *proto.GetEntriesRequest, opts ...grpc.CallOption) (*proto.GetEntriesResponse, error) {
+func (m *MockStoreServiceClient) GetEntries(ctx context.Context, in *proto.GetEntriesRequest, opts ...grpc.CallOption) (*proto.GetEntriesResponse, error) {
 	args := m.Called(ctx, in)
 	resp := args.Get(0)
 	if resp == nil {
@@ -30,7 +31,7 @@ func (m *MockAccountServiceClient) GetEntries(ctx context.Context, in *proto.Get
 	return resp.(*proto.GetEntriesResponse), args.Error(1)
 }
 
-func (m *MockAccountServiceClient) GetEntryById(ctx context.Context, in *proto.GetEntryRequest, opts ...grpc.CallOption) (*proto.GetEntryResponse, error) {
+func (m *MockStoreServiceClient) GetEntryById(ctx context.Context, in *proto.GetEntryRequest, opts ...grpc.CallOption) (*proto.GetEntryResponse, error) {
 	args := m.Called(ctx, in)
 	resp := args.Get(0)
 	if resp == nil {
@@ -39,7 +40,7 @@ func (m *MockAccountServiceClient) GetEntryById(ctx context.Context, in *proto.G
 	return resp.(*proto.GetEntryResponse), args.Error(1)
 }
 
-func (m *MockAccountServiceClient) GetEntryByName(ctx context.Context, in *proto.GetEntryRequest, opts ...grpc.CallOption) (*proto.GetEntryResponse, error) {
+func (m *MockStoreServiceClient) GetEntryByName(ctx context.Context, in *proto.GetEntryRequest, opts ...grpc.CallOption) (*proto.GetEntryResponse, error) {
 	args := m.Called(ctx, in)
 	resp := args.Get(0)
 	if resp == nil {
@@ -48,7 +49,7 @@ func (m *MockAccountServiceClient) GetEntryByName(ctx context.Context, in *proto
 	return resp.(*proto.GetEntryResponse), args.Error(1)
 }
 
-func (m *MockAccountServiceClient) GetRevisions(ctx context.Context, in *proto.GetRevisionsRequest, opts ...grpc.CallOption) (*proto.GetRevisionsResponse, error) {
+func (m *MockStoreServiceClient) GetRevisions(ctx context.Context, in *proto.GetRevisionsRequest, opts ...grpc.CallOption) (*proto.GetRevisionsResponse, error) {
 	args := m.Called(ctx, in)
 	resp := args.Get(0)
 	if resp == nil {
@@ -57,7 +58,7 @@ func (m *MockAccountServiceClient) GetRevisions(ctx context.Context, in *proto.G
 	return resp.(*proto.GetRevisionsResponse), args.Error(1)
 }
 
-func (m *MockAccountServiceClient) GetEntriesByAccountId(ctx context.Context, in *proto.GetEntriesByAccountIdRequest, opts ...grpc.CallOption) (*proto.GetEntriesResponse, error) {
+func (m *MockStoreServiceClient) GetEntriesByAccountId(ctx context.Context, in *proto.GetEntriesByAccountIdRequest, opts ...grpc.CallOption) (*proto.GetEntriesResponse, error) {
 	args := m.Called(ctx, in)
 	resp := args.Get(0)
 	if resp == nil {
@@ -66,7 +67,7 @@ func (m *MockAccountServiceClient) GetEntriesByAccountId(ctx context.Context, in
 	return resp.(*proto.GetEntriesResponse), args.Error(1)
 }
 
-func (m *MockAccountServiceClient) GetRevisionsByEntryIds(ctx context.Context, in *proto.GetRevisionsByEntryIdRequests, opts ...grpc.CallOption) (*proto.GetRevisionsByEntryIdResponses, error) {
+func (m *MockStoreServiceClient) GetRevisionsByEntryIds(ctx context.Context, in *proto.GetRevisionsByEntryIdRequests, opts ...grpc.CallOption) (*proto.GetRevisionsByEntryIdResponses, error) {
 	args := m.Called(ctx, in)
 	resp := args.Get(0)
 	if resp == nil {
@@ -75,7 +76,7 @@ func (m *MockAccountServiceClient) GetRevisionsByEntryIds(ctx context.Context, i
 	return resp.(*proto.GetRevisionsByEntryIdResponses), args.Error(1)
 }
 
-func (m *MockAccountServiceClient) GetRevisionByNameAndSequence(ctx context.Context, in *proto.GetRevisionRequest, opts ...grpc.CallOption) (*proto.GetRevisionResponse, error) {
+func (m *MockStoreServiceClient) GetRevisionByNameAndSequence(ctx context.Context, in *proto.GetRevisionRequest, opts ...grpc.CallOption) (*proto.GetRevisionResponse, error) {
 	args := m.Called(ctx, in)
 	resp := args.Get(0)
 	if resp == nil {
@@ -84,7 +85,7 @@ func (m *MockAccountServiceClient) GetRevisionByNameAndSequence(ctx context.Cont
 	return resp.(*proto.GetRevisionResponse), args.Error(1)
 }
 
-func (m *MockAccountServiceClient) UnscannedUpload(ctx context.Context, in *proto.UnscannedUploadRequest, opts ...grpc.CallOption) (*proto.UnscannedUploadResponse, error) {
+func (m *MockStoreServiceClient) UnscannedUpload(ctx context.Context, in *proto.UnscannedUploadRequest, opts ...grpc.CallOption) (*proto.UnscannedUploadResponse, error) {
 	args := m.Called(ctx, in)
 	resp := args.Get(0)
 	if resp == nil {
@@ -93,11 +94,36 @@ func (m *MockAccountServiceClient) UnscannedUpload(ctx context.Context, in *prot
 	return resp.(*proto.UnscannedUploadResponse), args.Error(1)
 }
 
-func (m *MockAccountServiceClient) AddUpload(ctx context.Context, in *proto.AddUploadRequest, opts ...grpc.CallOption) (*proto.AddUploadResponse, error) {
+func (m *MockStoreServiceClient) AddUpload(ctx context.Context, in *proto.AddUploadRequest, opts ...grpc.CallOption) (*proto.AddUploadResponse, error) {
+	args := m.Called(ctx, in)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	if len(args.Get(0).(*proto.AddUploadResponse).Errors) > 0 {
+		resp := args.Get(0).(*proto.AddUploadResponse)
+		resp.Errors = []*proto.Error{{
+			Code:    errors.New("mock error").Error(),
+			Message: "mock error",
+		}}
+		return resp, nil
+	}
+	return args.Get(0).(*proto.AddUploadResponse), nil
+}
+
+func (m *MockStoreServiceClient) GetLatestRevision(ctx context.Context, in *proto.GetLatestRevisionRequest, opts ...grpc.CallOption) (*proto.GetRevisionResponse, error) {
 	args := m.Called(ctx, in)
 	resp := args.Get(0)
 	if resp == nil {
 		return nil, args.Error(1)
 	}
-	return resp.(*proto.AddUploadResponse), args.Error(1)
+	return resp.(*proto.GetRevisionResponse), args.Error(1)
+}
+
+func (m *MockStoreServiceClient) SnapDownload(ctx context.Context, in *proto.SnapDownloadRequest, opts ...grpc.CallOption) (proto.StoreService_SnapDownloadClient, error) {
+	args := m.Called(ctx, in)
+	resp := args.Get(0)
+	if resp == nil {
+		return nil, args.Error(1)
+	}
+	return resp.(proto.StoreService_SnapDownloadClient), args.Error(1)
 }

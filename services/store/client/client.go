@@ -17,7 +17,6 @@ import (
 
 type StoreClientInterface interface {
 	Close()
-	UploadSnap(name string, type_name string, confinement string, base string, file []byte) *proto.UploadSnapResponse
 	RegisterSnapName(snapName string, isPrivate bool, storeName string, dryRun bool, accountId uuid.UUID) *proto.RegisterSnapNameResponse
 	GetEntries(entries *proto.GetEntriesRequest) *proto.GetEntriesResponse
 	GetRevisions(revisions *proto.GetRevisionsRequest) *proto.GetRevisionsResponse
@@ -36,6 +35,10 @@ type StoreClient struct {
 	client proto.StoreServiceClient
 }
 
+func NewStoreClientWithClient(client proto.StoreServiceClient) *StoreClient {
+	return &StoreClient{client: client}
+}
+
 func NewStoreClient(storeHost string, storePort int) (*StoreClient, error) {
 	logrus.Infof("Connecting to account service at %s:%d", storeHost, storePort)
 	conn, err := grpc.NewClient(config.GetStoreServiceAddress(storeHost, storePort), grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -52,27 +55,6 @@ func (c *StoreClient) Close() {
 	if err != nil {
 		logrus.Errorf("error closing store client connection: %v", err)
 	}
-}
-
-func (c *StoreClient) UploadSnap(name string, type_name string, confinement string, base string, file []byte) *proto.UploadSnapResponse {
-	req := &proto.UploadSnapRequest{
-		Name:        name,
-		Type:        type_name,
-		Confinement: confinement,
-		Base:        base,
-		File:        file,
-	}
-
-	resp, err := c.client.UploadSnap(context.Background(), req)
-	if err != nil {
-		resp = &proto.UploadSnapResponse{
-			Errors: []*proto.Error{{
-				Code:    cerror.InternalServerError,
-				Message: err.Error()},
-			},
-		}
-	}
-	return resp
 }
 
 func (c *StoreClient) RegisterSnapName(snapName string, isPrivate bool, storeName string, dryRun bool, accountId uuid.UUID) *proto.RegisterSnapNameResponse {
@@ -227,6 +209,11 @@ func (c *StoreClient) AddUpload(snapName string, entryId uuid.UUID, status strin
 				Code:    cerror.InternalServerError,
 				Message: err.Error()},
 			},
+		}
+	}
+	if len(resp.Errors) > 0 {
+		resp = &proto.AddUploadResponse{
+			Errors: resp.Errors,
 		}
 	}
 	return resp
