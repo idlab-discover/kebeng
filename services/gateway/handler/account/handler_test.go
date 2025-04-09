@@ -6,15 +6,20 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	accClient "github.com/idlab-discover/kebeng/services/account/client"
 	proto "github.com/idlab-discover/kebeng/services/account/proto"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/util"
+	storeClient "github.com/idlab-discover/kebeng/services/store/client"
+	storepb "github.com/idlab-discover/kebeng/services/store/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"gopkg.in/macaroon.v2"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 // createDummyMacaroon creates a dummy macaroon with an ACL caveat if hasPermission is true.
@@ -157,6 +162,420 @@ func TestPatchAccountHandler(t *testing.T) {
 			if tc.accountClientResponse != nil {
 				mockAccClient.AssertExpectations(t)
 			}
+		})
+	}
+}
+
+func TestCreateAccountHandler(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	mockAccClient := new(accClient.MockAccountClient)
+	baseHandler := util.NewBaseHandler(mockAccClient, nil, nil, nil)
+
+	// Create a handler with our mock account client.
+	h := &Handler{
+		BaseHandler: baseHandler,
+	}
+
+	type testCase struct {
+		name                      string
+		requestBody               string
+		expectedHTTPStatus        int
+		expectedResponseSubstring string
+		// If non-nil, we expect the account client to be called and return this response.
+		accountClientResponse *proto.AccountResponse
+	}
+
+	tests := []testCase{
+		{
+			name:                      "invalid JSON",
+			requestBody:               `{"display_name": "John Doe", "username": jdoe, "email": "jdoe@example.com"}`,
+			expectedHTTPStatus:        http.StatusBadRequest,
+			expectedResponseSubstring: "Syntax error",
+		},
+		{
+			name:                      "account client error",
+			requestBody:               `{"display_name": "John Doe", "username": "jdoe", "email": "jdoe@example.com"}`,
+			expectedHTTPStatus:        http.StatusInternalServerError,
+			expectedResponseSubstring: "client error",
+			accountClientResponse: &proto.AccountResponse{
+				Id: "",
+				Errors: []*proto.Error{
+					{Code: cerror.InternalServerError, Message: "client error"},
+				},
+			},
+		},
+		{
+			name:                      "success",
+			requestBody:               `{"display_name": "John Doe", "username": "jdoe", "email": "jdoe@example.com"}`,
+			expectedHTTPStatus:        http.StatusOK,
+			expectedResponseSubstring: "123e4567-e89b-12d3-a456-426614174000",
+			accountClientResponse: &proto.AccountResponse{
+				Id:     "123e4567-e89b-12d3-a456-426614174000",
+				Errors: []*proto.Error{},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create a Gin test context.
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest("POST", "/createAccount", strings.NewReader(tc.requestBody))
+			c.Request.Header.Set("Content-Type", "application/json")
+
+			// If we expect a call to CreateAccount, set the expectation on the mock.
+			// We need to extract the request values from the JSON.
+			if tc.accountClientResponse != nil {
+				// Declare a temporary structure to unmarshal the request.
+				var req struct {
+					DisplayName string `json:"display_name"`
+					Username    string `json:"username"`
+					Email       string `json:"email"`
+				}
+				err := json.Unmarshal([]byte(tc.requestBody), &req)
+				// If there is an error in binding JSON here, it will be handled in the actual handler.
+				if err == nil {
+					mockAccClient.
+						On("CreateAccount", req.DisplayName, req.Username, req.Email).
+						Return(tc.accountClientResponse).
+						Once()
+				}
+			}
+
+			// Call the CreateAccount handler.
+			h.CreateAccount(c)
+
+			// Verify the HTTP status.
+			assert.Equal(t, tc.expectedHTTPStatus, w.Code, "unexpected HTTP status")
+			body := w.Body.String()
+			assert.Contains(t, body, tc.expectedResponseSubstring, "unexpected response body")
+
+			// If we expected the account client call, assert that expectations were met.
+			if tc.accountClientResponse != nil {
+				mockAccClient.AssertExpectations(t)
+			}
+		})
+	}
+}
+
+// TestGetAccountHandler tests the GetAccount endpoint using table-driven tests.
+func TestGetAccountHandler(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	// Create a dummy timestamp for use in responses.
+	dummyTime := time.Now()
+	dummyTimestamp := timestamppb.New(dummyTime)
+
+	type testCase struct {
+		name                      string
+		setEmail                  bool
+		getAccountResponse        *proto.AccountResponse
+		getAccountKeysResponse    *proto.KeysResponse
+		getEntriesResponse        *storepb.GetEntriesResponse
+		getRevisionsResponse      *storepb.GetRevisionsByEntryIdResponses
+		getAccountsResponse       *proto.GetAccountsByIdsResponse
+		expectedHTTPStatus        int
+		expectedResponseSubstring string
+	}
+
+	// Prepare an error for convenience.
+	errResp := &proto.Error{Code: cerror.InternalServerError, Message: "client error"}
+	storeErr := &storepb.Error{Code: cerror.InternalServerError, Message: "store error"}
+
+	Id := "entry-1"
+	Base := "16"
+	SnapName := "snap1"
+	Status := "active"
+	Price := 9.99
+	Private := false
+	IconUrl := "http://example.com/icon.png"
+	PublisherId := "pub-1"
+	Validation := "verified"
+
+	tests := []testCase{
+		{
+			name:                      "missing email",
+			setEmail:                  false,
+			expectedHTTPStatus:        http.StatusBadRequest,
+			expectedResponseSubstring: "missing email",
+		},
+		{
+			name:     "account lookup error",
+			setEmail: true,
+			getAccountResponse: &proto.AccountResponse{
+				Id:          "",
+				DisplayName: "",
+				Email:       "",
+				Username:    "",
+				Errors:      []*proto.Error{errResp},
+			},
+			expectedHTTPStatus:        http.StatusInternalServerError,
+			expectedResponseSubstring: "client error",
+		},
+		{
+			name:     "account keys error",
+			setEmail: true,
+			getAccountResponse: &proto.AccountResponse{
+				Id:          "123e4567-e89b-12d3-a456-426614174000",
+				DisplayName: "John Doe",
+				Email:       "john@example.com",
+				Username:    "johndoe",
+				Errors:      []*proto.Error{},
+			},
+			getAccountKeysResponse: &proto.KeysResponse{
+				Keys:   nil,
+				Errors: []*proto.Error{errResp},
+			},
+			expectedHTTPStatus:        http.StatusInternalServerError,
+			expectedResponseSubstring: "client error",
+		},
+		{
+			name:     "store entries error",
+			setEmail: true,
+			getAccountResponse: &proto.AccountResponse{
+				Id:          "123e4567-e89b-12d3-a456-426614174000",
+				DisplayName: "John Doe",
+				Email:       "john@example.com",
+				Username:    "johndoe",
+				Errors:      []*proto.Error{},
+			},
+			getAccountKeysResponse: &proto.KeysResponse{
+				// Even an empty keys slice is acceptable, so simulate a valid keys response.
+				Keys:   []*proto.KeyResponse{},
+				Errors: []*proto.Error{},
+			},
+			getEntriesResponse: &storepb.GetEntriesResponse{
+				Entries: nil,
+				Errors:  []*storepb.Error{storeErr},
+			},
+			expectedHTTPStatus:        http.StatusInternalServerError,
+			expectedResponseSubstring: "store error",
+		},
+		{
+			name:     "revisions error",
+			setEmail: true,
+			getAccountResponse: &proto.AccountResponse{
+				Id:          "123e4567-e89b-12d3-a456-426614174000",
+				DisplayName: "John Doe",
+				Email:       "john@example.com",
+				Username:    "johndoe",
+				Errors:      []*proto.Error{},
+			},
+			getAccountKeysResponse: &proto.KeysResponse{
+				Keys:   []*proto.KeyResponse{},
+				Errors: []*proto.Error{},
+			},
+			getEntriesResponse: &storepb.GetEntriesResponse{
+				Entries: []*storepb.GetEntryResponse{
+					{
+						Id:          Id,
+						Base:        &Base,
+						SnapName:    SnapName,
+						Status:      &Status,
+						Price:       &Price,
+						Since:       dummyTimestamp,
+						Private:     &Private,
+						IconUrl:     &IconUrl,
+						PublisherId: PublisherId,
+					},
+				},
+				Errors: []*storepb.Error{},
+			},
+			getRevisionsResponse: &storepb.GetRevisionsByEntryIdResponses{
+				Responses: nil,
+				Errors:    []*storepb.Error{storeErr},
+			},
+			// Note: No getAccountsResponse is provided, so the expectation for GetAccountsByIds will not be set.
+			expectedHTTPStatus:        http.StatusInternalServerError,
+			expectedResponseSubstring: "store error",
+		},
+		{
+			name:     "publishers error",
+			setEmail: true,
+			getAccountResponse: &proto.AccountResponse{
+				Id:          "123e4567-e89b-12d3-a456-426614174000",
+				DisplayName: "John Doe",
+				Email:       "john@example.com",
+				Username:    "johndoe",
+				Errors:      []*proto.Error{},
+			},
+			getAccountKeysResponse: &proto.KeysResponse{
+				Keys:   []*proto.KeyResponse{},
+				Errors: []*proto.Error{},
+			},
+			getEntriesResponse: &storepb.GetEntriesResponse{
+				Entries: []*storepb.GetEntryResponse{
+					{
+						Id:          Id,
+						Base:        &Base,
+						SnapName:    SnapName,
+						Status:      &Status,
+						Price:       &Price,
+						Since:       dummyTimestamp,
+						Private:     &Private,
+						IconUrl:     &IconUrl,
+						PublisherId: PublisherId,
+					},
+				},
+				Errors: []*storepb.Error{},
+			},
+			getRevisionsResponse: &storepb.GetRevisionsByEntryIdResponses{
+				// Return a valid (but empty) revisions response.
+				Responses: []*storepb.GetRevisionsByEntryIdResponse{
+					{
+						EntryId:   "entry-1",
+						Revisions: []*storepb.GetRevisionResponse{}, // no revisions, but valid response
+					},
+				},
+				Errors: []*storepb.Error{},
+			},
+			getAccountsResponse: &proto.GetAccountsByIdsResponse{
+				Accounts: nil,
+				Errors:   []*proto.Error{errResp},
+			},
+			expectedHTTPStatus:        http.StatusInternalServerError,
+			expectedResponseSubstring: "client error",
+		},
+		{
+			name:     "success",
+			setEmail: true,
+			getAccountResponse: &proto.AccountResponse{
+				Id:          "123e4567-e89b-12d3-a456-426614174000",
+				DisplayName: "John Doe",
+				Email:       "john@example.com",
+				Username:    "johndoe",
+				Errors:      []*proto.Error{},
+			},
+			getAccountKeysResponse: &proto.KeysResponse{
+				Keys: []*proto.KeyResponse{
+					{
+						Name:    "key1",
+						Sha3384: "abc123",
+						Since:   dummyTimestamp,
+						Until:   dummyTimestamp,
+					},
+				},
+				Errors: []*proto.Error{},
+			},
+			getEntriesResponse: &storepb.GetEntriesResponse{
+				Entries: []*storepb.GetEntryResponse{
+					{
+						Id:          Id,
+						Base:        &Base,
+						SnapName:    SnapName,
+						Status:      &Status,
+						Price:       &Price,
+						Since:       dummyTimestamp,
+						Private:     &Private,
+						IconUrl:     &IconUrl,
+						PublisherId: PublisherId,
+					},
+				},
+				Errors: []*storepb.Error{},
+			},
+			getRevisionsResponse: &storepb.GetRevisionsByEntryIdResponses{
+				// Return a valid revisions response.
+				Responses: []*storepb.GetRevisionsByEntryIdResponse{
+					{
+						EntryId: "entry-1",
+						Revisions: []*storepb.GetRevisionResponse{
+							{
+								SequenceNumber: 1,
+								Version:        "v1",
+								Status:         "stable",
+								Architectures:  []string{"amd64"},
+							},
+						},
+					},
+				},
+				Errors: []*storepb.Error{},
+			},
+			getAccountsResponse: &proto.GetAccountsByIdsResponse{
+				Accounts: []*proto.AccountResponse{
+					{
+						Id:          "pub-1",
+						DisplayName: "Publisher",
+						Username:    "publisher",
+						Validation:  &Validation,
+					},
+				},
+				Errors: []*proto.Error{},
+			},
+			expectedHTTPStatus:        http.StatusOK,
+			expectedResponseSubstring: "John Doe",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create fresh mock clients for each test case.
+			mockAccClient := new(accClient.MockAccountClient)
+			// Assume MockStoreClient is defined similarly as your account client mock.
+			mockStoreClient := new(storeClient.MockStoreClient)
+
+			baseHandler := util.NewBaseHandler(mockAccClient, mockStoreClient, nil, nil)
+			h := &Handler{
+				BaseHandler: baseHandler,
+			}
+
+			// Create a new Gin test context.
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest("GET", "/getAccount", nil)
+			c.Request.Header.Set("Content-Type", "application/json")
+
+			// Set email in context if required.
+			if tc.setEmail {
+				c.Set("email", "test@example.com")
+			}
+
+			// Set expectations on the account client and store client mocks.
+			if tc.setEmail {
+				mockAccClient.On("GetAccountByEmail", "test@example.com").
+					Return(tc.getAccountResponse).Once()
+			}
+
+			if tc.setEmail && tc.getAccountResponse != nil && len(tc.getAccountResponse.Errors) == 0 {
+				mockAccClient.
+					On("GetAccountKeysByAccountID", tc.getAccountResponse.Id).
+					Return(tc.getAccountKeysResponse).Once()
+			}
+
+			if tc.setEmail && tc.getAccountResponse != nil && len(tc.getAccountResponse.Errors) == 0 &&
+				tc.getAccountKeysResponse != nil && len(tc.getAccountKeysResponse.Errors) == 0 {
+				mockStoreClient.
+					On("GetEntriesByAccountID", tc.getAccountResponse.Id).
+					Return(tc.getEntriesResponse).Once()
+			}
+
+			if tc.setEmail && tc.getAccountResponse != nil && len(tc.getAccountResponse.Errors) == 0 &&
+				tc.getAccountKeysResponse != nil && len(tc.getAccountKeysResponse.Errors) == 0 &&
+				tc.getEntriesResponse != nil && len(tc.getEntriesResponse.Errors) == 0 {
+
+				mockStoreClient.
+					On("GetRevisionsByEntryIds", mock.Anything).
+					Return(tc.getRevisionsResponse).Once()
+
+				// Only set expectation for GetAccountsByIds if a response is provided.
+				if tc.getAccountsResponse != nil {
+					mockAccClient.
+						On("GetAccountsByIds", mock.Anything).
+						Return(tc.getAccountsResponse).Once()
+				}
+			}
+
+			// Call the GetAccount handler.
+			h.GetAccount(c)
+
+			// Verify the HTTP status and that the response contains the expected substring.
+			assert.Equal(t, tc.expectedHTTPStatus, w.Code, "unexpected HTTP status")
+			body := w.Body.String()
+			assert.Contains(t, body, tc.expectedResponseSubstring, "unexpected response body")
+
+			// Assert that all expectations were met.
+			mockAccClient.AssertExpectations(t)
+			mockStoreClient.AssertExpectations(t)
 		})
 	}
 }

@@ -10,6 +10,8 @@ type MockAccountClient struct {
 	mock.Mock
 }
 
+var _ AccountClientInterface = (*MockAccountClient)(nil)
+
 func (m *MockAccountClient) Close() {
 	m.Called()
 }

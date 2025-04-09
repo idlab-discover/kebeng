@@ -170,11 +170,10 @@ func (h *Handler) GetAccount(c *gin.Context) {
 
 		// TODO: fix this
 		snap := model.Snap{
-			Status: util.GetString(e.Status),
-			Price:  util.GetFloat64(e.Price),
-			Since:  e.Since.AsTime(),
-			SnapID: e.Id,
-			// Store:           e.Store, // not yet implemented
+			Status:          util.GetString(e.Status),
+			Price:           util.GetFloat64(e.Price),
+			Since:           e.Since.AsTime(),
+			SnapID:          e.Id,
 			Private:         util.GetBool(e.Private), // this isn't the best yet but don't know what to do if its a nil value set to true or false?
 			IconURL:         e.IconUrl,
 			Publisher:       *publisher,
@@ -185,9 +184,6 @@ func (h *Handler) GetAccount(c *gin.Context) {
 		// Assign snap to the correct series and snap name
 		snaps[series][snapName] = snap
 	}
-
-	// not yet implemented don't support brandstores yet
-	// stores := h.AccountClient.GetStores(account.Id)
 
 	// leaving out the deprecated fields for now
 	resp := model.AccountResponse{
