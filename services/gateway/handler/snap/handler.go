@@ -48,7 +48,6 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 			logrus.Infof("%v", action)
 			res, cerr := h.refreshSnapDownload(action, el)
 			if cerr != nil {
-				el.Add(cerr.Code, cerr.Message)
 				c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 				return
 			}
@@ -59,7 +58,6 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 			logrus.Infof("%v", action)
 			res, cerr := h.refreshSnapDownload(action, el)
 			if cerr != nil {
-				el.Add(cerr.Code, cerr.Message)
 				c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 				return
 			}
@@ -78,7 +76,10 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 
 func (h *Handler) refreshSnapDownload(action *model.Action, el *cerror.ErrorList) (*model.RefreshSnapResult, *cerror.CustomError) {
 	var res model.RefreshSnapResult
-	snapEntry, latestRevision := h.getLatestRevisionByEntryName(action.Name, el, action.Channel)
+	snapEntry, latestRevision := h.getLatestRevisionByEntryName(el, action.Name, action.Channel)
+	if el.HasError() {
+		return nil, cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("latest revision not found by name: %s", action.Name))
+	}
 
 	// if publisher not found we should error this is not safe if we don't know who published it
 	publisher := h.AccountClient.GetAccountByID(snapEntry.PublisherId)
@@ -411,7 +412,7 @@ func (h *Handler) downloadSnap(c *gin.Context, revisionId string, el *cerror.Err
 	}
 }
 
-func (h *Handler) getLatestRevisionByEntryName(entryName string, el *cerror.ErrorList, channelAndTrack ...string) (*storepb.GetEntryResponse, *storepb.GetRevisionResponse) {
+func (h *Handler) getLatestRevisionByEntryName(el *cerror.ErrorList, entryName string, channelAndTrack ...string) (*storepb.GetEntryResponse, *storepb.GetRevisionResponse) {
 	// should only get 1 entry since name is unique
 	snapEntries := h.StoreClient.GetEntries(&storepb.GetEntriesRequest{
 		Entries: []*storepb.GetEntryRequest{
@@ -426,7 +427,7 @@ func (h *Handler) getLatestRevisionByEntryName(entryName string, el *cerror.Erro
 		return nil, nil
 	}
 	if len(snapEntries.Entries) == 0 {
-		el.Add(cerror.ResourceNotFound, "Snap not found")
+		el.Add(cerror.ResourceNotFound, fmt.Sprintf("snap entry not found with name %s", entryName))
 		return nil, nil
 	}
 	snapEntry := snapEntries.Entries[0]
