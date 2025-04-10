@@ -424,6 +424,134 @@ func TestStoreClient_GetEntriesByAccountID(t *testing.T) {
 	}
 }
 
+func TestStoreClient_GetRevisionsByEntryIds(t *testing.T) {
+	// Create our mock proto client and the StoreClient that wraps it.
+	mockProtoClient := new(logic.MockStoreServiceClient)
+	storeClient := client.NewStoreClientWithClient(mockProtoClient)
+
+	tests := []struct {
+		name               string
+		entryIds           *proto.GetRevisionsByEntryIdRequests
+		expectedResp       *proto.GetRevisionsByEntryIdResponses
+		expectedErrors     bool
+		expectedProtoError bool
+	}{
+		{
+			name: "Successful proto call",
+			entryIds: &proto.GetRevisionsByEntryIdRequests{
+				Requests: []*proto.GetRevisionsByEntryIdRequest{
+					{EntryId: "test_entry_id_1"},
+					{EntryId: "test_entry_id_2"},
+				},
+			},
+			expectedResp: &proto.GetRevisionsByEntryIdResponses{
+				Responses: []*proto.GetRevisionsByEntryIdResponse{
+					{
+						EntryId: "test_entry_id_1",
+						Revisions: []*proto.GetRevisionResponse{
+							{
+								Id:             "revision_id_1",
+								SnapName:       "test_snap_1",
+								SequenceNumber: 1,
+								Errors:         []*proto.Error{},
+							},
+						},
+						Errors: []*proto.Error{},
+					},
+					{
+						EntryId: "test_entry_id_2",
+						Revisions: []*proto.GetRevisionResponse{
+							{
+								Id:             "revision_id_2",
+								SnapName:       "test_snap_2",
+								SequenceNumber: 2,
+								Errors:         []*proto.Error{},
+							},
+						},
+						Errors: []*proto.Error{},
+					},
+				},
+				Errors: []*proto.Error{},
+			},
+			expectedErrors:     false,
+			expectedProtoError: false,
+		},
+		{
+			name: "proto call returns error",
+			entryIds: &proto.GetRevisionsByEntryIdRequests{
+				Requests: []*proto.GetRevisionsByEntryIdRequest{
+					{EntryId: "test_entry_id_1"},
+					{EntryId: "test_entry_id_2"},
+				},
+			},
+			expectedResp:       nil,
+			expectedErrors:     false,
+			expectedProtoError: true,
+		},
+		{
+			name: "response contains errors",
+			entryIds: &proto.GetRevisionsByEntryIdRequests{
+				Requests: []*proto.GetRevisionsByEntryIdRequest{
+					{EntryId: "test_entry_id_1"},
+					{EntryId: "test_entry_id_2"},
+				},
+			},
+			expectedResp: &proto.GetRevisionsByEntryIdResponses{
+				Responses: []*proto.GetRevisionsByEntryIdResponse{
+					{
+						EntryId: "test_entry_id_1",
+						Revisions: []*proto.GetRevisionResponse{
+							{
+								Id:             "revision_id_1",
+								SnapName:       "test_snap_1",
+								SequenceNumber: 1,
+								Errors: []*proto.Error{{
+									Code:    cerror.InternalServerError,
+									Message: "mock error",
+								}},
+							},
+						},
+						Errors: []*proto.Error{{
+							Code:    cerror.InternalServerError,
+							Message: "mock error",
+						}},
+					},
+				},
+				Errors: []*proto.Error{{
+					Code:    cerror.InternalServerError,
+					Message: "mock error",
+				}},
+			},
+			expectedErrors:     true,
+			expectedProtoError: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.expectedProtoError {
+				mockProtoClient.On("GetRevisionsByEntryIds", mock.Anything, mock.Anything).Return(nil, errors.New("")).Once()
+			} else {
+				mockProtoClient.On("GetRevisionsByEntryIds", mock.Anything, mock.Anything).Return(tc.expectedResp, nil).Once()
+			}
+
+			resp := storeClient.GetRevisionsByEntryIds(tc.entryIds)
+			if !tc.expectedErrors && !tc.expectedProtoError {
+				assert.Equal(t, tc.expectedResp, resp)
+				assert.Empty(t, resp.Errors)
+			} else if tc.expectedErrors {
+				assert.NotNil(t, resp)
+				assert.NotEmpty(t, resp.Errors)
+			} else if tc.expectedProtoError {
+				assert.NotNil(t, resp)
+				assert.NotEmpty(t, resp.Errors)
+				assert.Equal(t, cerror.InternalServerError, resp.Errors[0].Code)
+			}
+			mockProtoClient.AssertExpectations(t)
+		})
+	}
+}
+
 func TestStoreClient_AddUpload(t *testing.T) {
 	// Create our mock proto client and the StoreClient that wraps it.
 	mockProtoClient := new(logic.MockStoreServiceClient)
