@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 import "google/protobuf/timestamp.proto";
+import "common/cerror/proto/error.proto";
 
 package account;
 option go_package = "github.com/idlab-discover/kebeng/services/account/proto;account";
@@ -19,23 +20,18 @@ service AccountService {
     rpc PatchAccountByEmail(PatchAccountByEmailRequest) returns (PatchAccountByEmailResponse);
 }
 
-message Error {
-    string message = 1;
-    string code = 2;
-}
-
 message AccountResponse {
     string id = 1;
     string display_name = 2;
     string username = 3;
     string email = 4;
     optional string validation = 5;
-    repeated Error errors = 6;
+    repeated proto.Error errors = 6;
 }
 
 message KeysResponse {
     repeated KeyResponse keys = 1;
-    repeated Error errors = 2;
+    repeated proto.Error errors = 2;
 }
 
 message CreateAccountRequest {
@@ -57,7 +53,7 @@ message DeleteAccountRequest {
 
 message DeleteAccountResponse {
     bool success = 1;
-    repeated Error errors = 2;
+    repeated proto.Error errors = 2;
 }
 
 message GetAccountByEmailRequest {
@@ -80,7 +76,7 @@ message KeyResponse {
     // Use google.protobuf.Timestamp for fields that are pointers in Go.
     optional google.protobuf.Timestamp since = 5;
     optional google.protobuf.Timestamp until = 6;   
-    repeated Error errors = 7;
+    repeated proto.Error errors = 7;
 }
 
 message AddKeyRequest {
@@ -104,7 +100,7 @@ message GetAccountsByIdsRequest {
 
 message GetAccountsByIdsResponse {
     repeated AccountResponse accounts = 1;
-    repeated Error errors = 2;
+    repeated proto.Error errors = 2;
 }
 
 message PatchAccountByEmailRequest {
@@ -114,5 +110,5 @@ message PatchAccountByEmailRequest {
 
 message PatchAccountByEmailResponse {
     string short_namespace = 1; // this is just the username
-    repeated Error errors = 2;
+    repeated proto.Error errors = 2;
 }

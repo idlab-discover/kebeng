@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/idlab-discover/kebeng/common/cerror"
+	cerrorpb "github.com/idlab-discover/kebeng/common/cerror/proto"
 	accClient "github.com/idlab-discover/kebeng/services/account/client"
 	accountpb "github.com/idlab-discover/kebeng/services/account/proto"
 	assertionClient "github.com/idlab-discover/kebeng/services/assertion/client"
@@ -134,7 +135,7 @@ func TestRefreshSnapHandler_DownloadAction(t *testing.T) {
 		Return(&accountpb.AccountResponse{
 			Id:       "pub1",
 			Username: "publisher",
-			Errors:   []*accountpb.Error{},
+			Errors:   []*cerrorpb.Error{},
 		}).Once()
 
 	// Set up a dummy BaseHandler with our mocks and a dummy config.
@@ -188,7 +189,7 @@ func TestRefreshSnapHandler_DownloadAction_NoLatestRevision(t *testing.T) {
 		Base:        &base,
 	}
 	dummyRev := &storepb.GetRevisionResponse{
-		Errors: []*storepb.Error{
+		Errors: []*cerrorpb.Error{
 			{Code: cerror.ResourceNotFound, Message: "latest revision not found"},
 		},
 	}
