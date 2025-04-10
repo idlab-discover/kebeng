@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-playground/assert/v2"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
+	cerrorpb "github.com/idlab-discover/kebeng/common/cerror/proto"
 	logic "github.com/idlab-discover/kebeng/services/account/internal/logic"
 	proto "github.com/idlab-discover/kebeng/services/account/proto"
 	"github.com/stretchr/testify/mock"
@@ -32,12 +33,12 @@ func TestAccountClient_PatchAccountByEmail(t *testing.T) {
 			username: "new_username",
 			protoResp: &proto.PatchAccountByEmailResponse{
 				ShortNamespace: "new_username",
-				Errors:         []*proto.Error{},
+				Errors:         []*cerrorpb.Error{},
 			},
 			protoErr: nil,
 			expectedResp: &proto.PatchAccountByEmailResponse{
 				ShortNamespace: "new_username",
-				Errors:         []*proto.Error{},
+				Errors:         []*cerrorpb.Error{},
 			},
 		},
 		{
@@ -47,7 +48,7 @@ func TestAccountClient_PatchAccountByEmail(t *testing.T) {
 			protoResp: nil,
 			protoErr:  errors.New("proto error"),
 			expectedResp: &proto.PatchAccountByEmailResponse{
-				Errors: []*proto.Error{
+				Errors: []*cerrorpb.Error{
 					{
 						Code:    cerror.InternalServerError,
 						Message: "proto error",

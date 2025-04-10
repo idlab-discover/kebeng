@@ -47,7 +47,7 @@ func (h *Handler) GenerateMacaroon(c *gin.Context) {
 
 	entriesResponse := h.StoreClient.GetEntries(&storepb.GetEntriesRequest{Entries: entries})
 	if len(entriesResponse.Errors) > 0 {
-		el.ExtendStoreError(entriesResponse.Errors)
+		el.ExtendProtoError(entriesResponse.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 	}
 	// mimic set to prevent duplicate ids in macaroon
