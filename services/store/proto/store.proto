@@ -202,6 +202,7 @@ message AddUploadRequest {
     string entry_id = 2;
     string status = 3;
     string account_id = 4;
+    string unscanned_file_name = 5;
 }
 
 message AddUploadResponse {

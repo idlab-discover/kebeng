@@ -716,6 +716,9 @@ func (s *StoreLogic) AddUpload(ctx context.Context, req *proto.AddUploadRequest)
 	if req.AccountId == "" {
 		el.Add(cerror.MissingField, "account id is required")
 	}
+	if req.UnscannedFileName == "" {
+		el.Add(cerror.MissingField, "unscanned file name is required")
+	}
 	if len(*el) > 0 {
 		return &proto.AddUploadResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
@@ -735,7 +738,7 @@ func (s *StoreLogic) AddUpload(ctx context.Context, req *proto.AddUploadRequest)
 	}
 
 	// Add upload to the database
-	snapUpload, cerr := s.repo.AddUpload(req.SnapName, entryId, req.Status, accountId)
+	snapUpload, cerr := s.repo.AddUpload(req.SnapName, entryId, req.Status, accountId, req.UnscannedFileName)
 	if cerr != nil {
 		el.AddCustomError(cerr)
 		return &proto.AddUploadResponse{Errors: el.ConvertToProtoErrorList()}, nil
@@ -789,7 +792,7 @@ func (s *StoreLogic) UnscannedUpload(stream proto.StoreService_UnscannedUploadSe
 
 	tmpPath := path.Join(os.TempDir(), snapFileName)
 
-	size, err := s.obs.SaveFileToBucket("unscanned", tmpPath)
+	uploadInfo, err := s.obs.SaveFileToBucket("unscanned", tmpPath)
 	if err != nil {
 		logrus.Errorf("failed to save file to object store: %v", err)
 		el.Add(cerror.InternalServerError, fmt.Sprintf("failed to save file to object store: %v", err))
@@ -797,8 +800,8 @@ func (s *StoreLogic) UnscannedUpload(stream proto.StoreService_UnscannedUploadSe
 	}
 
 	err = stream.SendAndClose(&proto.UnscannedUploadCompleteResponse{
-		TempFileName: tmpPath,
-		Size:         size,
+		TempFileName: uploadInfo.Key,
+		Size:         uint64(uploadInfo.Size),
 		Errors:       el.ConvertToProtoErrorList(),
 	})
 	if err != nil {

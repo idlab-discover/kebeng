@@ -26,7 +26,7 @@ type StoreClientInterface interface {
 	GetLatestRevision(snapName, track, channel string) *proto.GetRevisionResponse
 	SnapDownload(revisionId string) *proto.SnapDownloadCompleteResponse
 	UnscannedUpload(ctx context.Context, snapFile io.Reader) *proto.UnscannedUploadCompleteResponse
-	AddUpload(snapName string, entryId uuid.UUID, status string, accountId uuid.UUID) *proto.AddUploadResponse
+	AddUpload(snapName string, entryId uuid.UUID, status string, accountId uuid.UUID, unscannedFileName string) *proto.AddUploadResponse
 }
 
 var _ StoreClientInterface = (*StoreClient)(nil)
@@ -230,12 +230,13 @@ func (c *StoreClient) UnscannedUpload(ctx context.Context, snapFile io.Reader) *
 	return resp
 }
 
-func (c *StoreClient) AddUpload(snapName string, entryId uuid.UUID, status string, accountId uuid.UUID) *proto.AddUploadResponse {
+func (c *StoreClient) AddUpload(snapName string, entryId uuid.UUID, status string, accountId uuid.UUID, unscannedFileName string) *proto.AddUploadResponse {
 	req := &proto.AddUploadRequest{
-		SnapName:  snapName,
-		EntryId:   entryId.String(),
-		Status:    status,
-		AccountId: accountId.String(),
+		SnapName:          snapName,
+		EntryId:           entryId.String(),
+		Status:            status,
+		AccountId:         accountId.String(),
+		UnscannedFileName: unscannedFileName,
 	}
 
 	resp, err := c.client.AddUpload(context.Background(), req)

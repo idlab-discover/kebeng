@@ -29,7 +29,7 @@ type IMinioClient interface {
 }
 
 type IObjectStore interface {
-	SaveFileToBucket(bucket string, filePath string) (uint64, error)
+	SaveFileToBucket(bucket string, filePath string) (*minio.UploadInfo, error)
 	GetSnapFileReader(filePath string) (io.ReadCloser, error)
 	LoadTestData(client *minio.Client, repo repository.ISnapsRepository, minioPath string) error
 	MakeBucketAndAddKey(bucketName string, keyPath string, keyName string)
@@ -93,7 +93,7 @@ func (obs *ObjectStore) Move(sourceBucket, destinationBucket, objectName string)
 	return errors.New("something went wrong")
 }
 
-func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string) (uint64, error) {
+func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string) (*minio.UploadInfo, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	exists, _ := obs.MinioClient.BucketExists(ctx, bucket)
@@ -108,12 +108,12 @@ func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string) (uint64
 
 	uploadInfo, err := obs.MinioClient.FPutObject(ctx, bucket, base, filePath, minio.PutObjectOptions{})
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	logrus.Infof("Saved to bucket: %+v", uploadInfo)	
+	logrus.Infof("Saved to bucket: %+v", uploadInfo)
 
-	return uint64(uploadInfo.Size), nil
+	return &uploadInfo, nil
 }
 
 func GetMinioClient(cfg *config.Config) *minio.Client {

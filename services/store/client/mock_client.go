@@ -116,7 +116,7 @@ func (m *MockStoreClient) UnscannedUpload(ctx context.Context, snapFile io.Reade
 }
 
 // AddUpload mocks the AddUpload function.
-func (m *MockStoreClient) AddUpload(snapName string, entryId uuid.UUID, status string, accountId uuid.UUID) *proto.AddUploadResponse {
+func (m *MockStoreClient) AddUpload(snapName string, entryId uuid.UUID, status string, accountId uuid.UUID, unscannedFileName string) *proto.AddUploadResponse {
 	args := m.Called(snapName, entryId, status, accountId)
 	if resp, ok := args.Get(0).(*proto.AddUploadResponse); ok {
 		return resp
