@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
+	cerrorpb "github.com/idlab-discover/kebeng/common/cerror/proto"
 	"github.com/idlab-discover/kebeng/services/account/internal/config"
 	"github.com/idlab-discover/kebeng/services/account/internal/models"
 	"github.com/idlab-discover/kebeng/services/account/internal/repository"
@@ -38,7 +39,7 @@ func ptrTimeToPtrTimestamp(t *time.Time) *timestamppb.Timestamp {
 }
 
 func (a *AccountService) CreateAccount(ctx context.Context, req *proto.CreateAccountRequest) (*proto.AccountResponse, error) {
-	el := make([]*proto.Error, 0)
+	el := make([]*cerrorpb.Error, 0)
 	account := &models.Account{
 		DisplayName: req.DisplayName,
 		Username:    req.Username,
@@ -48,7 +49,7 @@ func (a *AccountService) CreateAccount(ctx context.Context, req *proto.CreateAcc
 	createdAccount, err := a.repo.CreateAccount(ctx, account)
 
 	if err != nil {
-		el = append(el, &proto.Error{
+		el = append(el, &cerrorpb.Error{
 			Code:    err.GetCode(),
 			Message: err.GetMessage(),
 		})
@@ -59,10 +60,10 @@ func (a *AccountService) CreateAccount(ctx context.Context, req *proto.CreateAcc
 }
 
 func (a *AccountService) UpdateAccount(ctx context.Context, req *proto.UpdateAccountRequest) (*proto.AccountResponse, error) {
-	el := make([]*proto.Error, 0)
+	el := make([]*cerrorpb.Error, 0)
 	accountID, err := uuid.Parse(req.Id)
 	if err != nil {
-		el = append(el, &proto.Error{
+		el = append(el, &cerrorpb.Error{
 			Code:    cerror.BadRequest,
 			Message: "invalid UUID format",
 		})
@@ -78,7 +79,7 @@ func (a *AccountService) UpdateAccount(ctx context.Context, req *proto.UpdateAcc
 
 	updatedAccount, cerr := a.repo.UpdateAccount(ctx, account)
 	if cerr != nil {
-		el = append(el, &proto.Error{
+		el = append(el, &cerrorpb.Error{
 			Code:    cerr.GetCode(),
 			Message: cerr.GetMessage(),
 		})
@@ -89,10 +90,10 @@ func (a *AccountService) UpdateAccount(ctx context.Context, req *proto.UpdateAcc
 }
 
 func (a *AccountService) DeleteAccount(ctx context.Context, req *proto.DeleteAccountRequest) (*proto.DeleteAccountResponse, error) {
-	el := make([]*proto.Error, 0)
+	el := make([]*cerrorpb.Error, 0)
 	accountID, err := uuid.Parse(req.Id)
 	if err != nil {
-		el = append(el, &proto.Error{
+		el = append(el, &cerrorpb.Error{
 			Code:    cerror.BadRequest,
 			Message: "invalid UUID format",
 		})
@@ -100,7 +101,7 @@ func (a *AccountService) DeleteAccount(ctx context.Context, req *proto.DeleteAcc
 	}
 
 	if err := a.repo.DeleteAccount(ctx, accountID); err != nil {
-		el = append(el, &proto.Error{
+		el = append(el, &cerrorpb.Error{
 			Code:    err.GetCode(),
 			Message: err.GetMessage(),
 		})
@@ -111,10 +112,10 @@ func (a *AccountService) DeleteAccount(ctx context.Context, req *proto.DeleteAcc
 }
 
 func (a *AccountService) GetAccountByEmail(ctx context.Context, req *proto.GetAccountByEmailRequest) (*proto.AccountResponse, error) {
-	el := make([]*proto.Error, 0)
+	el := make([]*cerrorpb.Error, 0)
 	account, err := a.repo.GetAccountByEmail(ctx, req.Email, []string{models.ALL})
 	if err != nil {
-		el = append(el, &proto.Error{
+		el = append(el, &cerrorpb.Error{
 			Code:    err.GetCode(),
 			Message: err.GetMessage(),
 		})
@@ -125,10 +126,10 @@ func (a *AccountService) GetAccountByEmail(ctx context.Context, req *proto.GetAc
 }
 
 func (a *AccountService) GetAccountByID(ctx context.Context, req *proto.GetAccountByIDRequest) (*proto.AccountResponse, error) {
-	el := make([]*proto.Error, 0)
+	el := make([]*cerrorpb.Error, 0)
 	accountID, err := uuid.Parse(req.Id)
 	if err != nil {
-		el = append(el, &proto.Error{
+		el = append(el, &cerrorpb.Error{
 			Code:    cerror.BadRequest,
 			Message: "invalid UUID format",
 		})
@@ -137,7 +138,7 @@ func (a *AccountService) GetAccountByID(ctx context.Context, req *proto.GetAccou
 
 	account, cerr := a.repo.GetAccountByID(ctx, accountID, []string{models.ALL})
 	if cerr != nil {
-		el = append(el, &proto.Error{
+		el = append(el, &cerrorpb.Error{
 			Code:    cerr.GetCode(),
 			Message: cerr.GetMessage(),
 		})
@@ -148,13 +149,13 @@ func (a *AccountService) GetAccountByID(ctx context.Context, req *proto.GetAccou
 }
 
 func (a *AccountService) GetAccountsByIds(ctx context.Context, req *proto.GetAccountsByIdsRequest) (*proto.GetAccountsByIdsResponse, error) {
-	el := make([]*proto.Error, 0)
+	el := make([]*cerrorpb.Error, 0)
 	response := &proto.GetAccountsByIdsResponse{}
 	accountIDs := make([]uuid.UUID, 0, len(req.Ids))
 	for _, id := range req.Ids {
 		accountID, err := uuid.Parse(id)
 		if err != nil {
-			el = append(el, &proto.Error{
+			el = append(el, &cerrorpb.Error{
 				Code:    cerror.BadRequest,
 				Message: "invalid UUID format",
 			})
@@ -169,7 +170,7 @@ func (a *AccountService) GetAccountsByIds(ctx context.Context, req *proto.GetAcc
 	for _, id := range accountIDs {
 		account, err := a.repo.GetAccountByID(ctx, id, []string{models.ALL})
 		if err != nil {
-			el = append(el, &proto.Error{
+			el = append(el, &cerrorpb.Error{
 				Code:    err.GetCode(),
 				Message: err.GetMessage(),
 			})
@@ -187,10 +188,10 @@ func (a *AccountService) GetAccountsByIds(ctx context.Context, req *proto.GetAcc
 }
 
 func (a *AccountService) GetAccountByUsername(ctx context.Context, req *proto.GetAccountByUsernameRequest) (*proto.AccountResponse, error) {
-	el := make([]*proto.Error, 0)
+	el := make([]*cerrorpb.Error, 0)
 	account, err := a.repo.GetAccountByUsername(ctx, req.Username, []string{models.ALL})
 	if err != nil {
-		el = append(el, &proto.Error{
+		el = append(el, &cerrorpb.Error{
 			Code:    err.GetCode(),
 			Message: err.GetMessage(),
 		})
@@ -201,10 +202,10 @@ func (a *AccountService) GetAccountByUsername(ctx context.Context, req *proto.Ge
 }
 
 func (a *AccountService) AddKey(ctx context.Context, req *proto.AddKeyRequest) (*proto.KeyResponse, error) {
-	el := make([]*proto.Error, 0)
+	el := make([]*cerrorpb.Error, 0)
 	key, err := a.repo.AddKeyToAccountByEmail(ctx, req.KeyName, req.Sha3384, req.EncodedPublicKey, req.AccountEmail)
 	if err != nil {
-		el = append(el, &proto.Error{
+		el = append(el, &cerrorpb.Error{
 			Code:    err.GetCode(),
 			Message: err.GetMessage(),
 		})
@@ -219,10 +220,10 @@ func (a *AccountService) AddKey(ctx context.Context, req *proto.AddKeyRequest) (
 }
 
 func (a *AccountService) GetKey(ctx context.Context, req *proto.GetKeyBySHA3384Request) (*proto.KeyResponse, error) {
-	el := make([]*proto.Error, 0)
+	el := make([]*cerrorpb.Error, 0)
 	key, err := a.repo.GetKeyBySHA3384(ctx, req.Sha3384)
 	if err != nil {
-		el = append(el, &proto.Error{
+		el = append(el, &cerrorpb.Error{
 			Code:    err.GetCode(),
 			Message: err.GetMessage(),
 		})
@@ -237,11 +238,11 @@ func (a *AccountService) GetKey(ctx context.Context, req *proto.GetKeyBySHA3384R
 }
 
 func (a *AccountService) GetKeysByAccountId(ctx context.Context, req *proto.GetKeysByAccountIdRequest) (*proto.KeysResponse, error) {
-	el := make([]*proto.Error, 0)
+	el := make([]*cerrorpb.Error, 0)
 	// parse to uuid
 	accountID, err := uuid.Parse(req.AccountId)
 	if err != nil {
-		el = append(el, &proto.Error{
+		el = append(el, &cerrorpb.Error{
 			Code:    cerror.BadRequest,
 			Message: "invalid UUID format",
 		})
@@ -251,7 +252,7 @@ func (a *AccountService) GetKeysByAccountId(ctx context.Context, req *proto.GetK
 	// get keys
 	keys, cerr := a.repo.GetKeysByAccountID(ctx, accountID)
 	if cerr != nil {
-		el = append(el, &proto.Error{
+		el = append(el, &cerrorpb.Error{
 			Code:    cerr.GetCode(),
 			Message: cerr.GetMessage(),
 		})
@@ -277,10 +278,10 @@ func (a *AccountService) GetKeysByAccountId(ctx context.Context, req *proto.GetK
 }
 
 func (a *AccountService) PatchAccountByEmail(ctx context.Context, req *proto.PatchAccountByEmailRequest) (*proto.PatchAccountByEmailResponse, error) {
-	el := make([]*proto.Error, 0)
+	el := make([]*cerrorpb.Error, 0)
 	account, err := a.repo.GetAccountByEmail(ctx, req.Email, nil)
 	if err != nil {
-		el = append(el, &proto.Error{
+		el = append(el, &cerrorpb.Error{
 			Code:    err.GetCode(),
 			Message: err.GetMessage(),
 		})
@@ -294,7 +295,7 @@ func (a *AccountService) PatchAccountByEmail(ctx context.Context, req *proto.Pat
 
 	updatedAccount, cerr := a.repo.UpdateAccount(ctx, account)
 	if cerr != nil {
-		el = append(el, &proto.Error{
+		el = append(el, &cerrorpb.Error{
 			Code:    cerr.GetCode(),
 			Message: cerr.GetMessage(),
 		})
@@ -308,7 +309,7 @@ func (a *AccountService) PatchAccountByEmail(ctx context.Context, req *proto.Pat
 
 }
 
-func (a *AccountService) convertToProtoAccount(account *models.Account, el []*proto.Error) *proto.AccountResponse {
+func (a *AccountService) convertToProtoAccount(account *models.Account, el []*cerrorpb.Error) *proto.AccountResponse {
 	return &proto.AccountResponse{
 		Id:          account.ID.String(),
 		DisplayName: account.DisplayName,

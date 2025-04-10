@@ -27,7 +27,7 @@ func (h *Handler) CreateAccount(c *gin.Context) {
 	}
 	account := h.AccountClient.CreateAccount(req.DisplayName, req.Username, req.Email)
 	if len(account.Errors) > 0 {
-		el.ExtendAccountError(account.Errors)
+		el.ExtendProtoError(account.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
@@ -46,7 +46,7 @@ func (h *Handler) GetAccount(c *gin.Context) {
 
 	account := h.AccountClient.GetAccountByEmail(email.(string))
 	if len(account.Errors) > 0 {
-		el.ExtendAccountError(account.Errors)
+		el.ExtendProtoError(account.Errors)
 		c.JSON(http.StatusInternalServerError, gin.H{"error_list": el})
 		return
 	}
@@ -60,7 +60,7 @@ func (h *Handler) GetAccount(c *gin.Context) {
 
 	keys := h.AccountClient.GetAccountKeysByAccountID(account.Id)
 	if len(keys.Errors) > 0 {
-		el.ExtendAccountError(keys.Errors)
+		el.ExtendProtoError(keys.Errors)
 		c.JSON(http.StatusInternalServerError, gin.H{"error_list": el})
 		return
 	}
@@ -79,7 +79,7 @@ func (h *Handler) GetAccount(c *gin.Context) {
 
 	entries := h.StoreClient.GetEntriesByAccountID(account.Id)
 	if len(entries.Errors) > 0 {
-		el.ExtendStoreError(entries.Errors)
+		el.ExtendProtoError(entries.Errors)
 		c.JSON(http.StatusInternalServerError, gin.H{"error_list": el})
 		return
 	}
@@ -96,7 +96,7 @@ func (h *Handler) GetAccount(c *gin.Context) {
 			Requests: snapEntries,
 		})
 	if len(revisions.Errors) > 0 {
-		el.ExtendStoreError(revisions.Errors)
+		el.ExtendProtoError(revisions.Errors)
 		c.JSON(http.StatusInternalServerError, gin.H{"error_list": el})
 		return
 	}
@@ -109,7 +109,7 @@ func (h *Handler) GetAccount(c *gin.Context) {
 	}
 	publishers := h.AccountClient.GetAccountsByIds(accountIds)
 	if len(publishers.Errors) > 0 {
-		el.ExtendAccountError(publishers.Errors)
+		el.ExtendProtoError(publishers.Errors)
 		c.JSON(http.StatusInternalServerError, gin.H{"error_list": el})
 		return
 	}
@@ -232,7 +232,7 @@ func (h *Handler) PatchAccount(c *gin.Context) {
 	// patch account by email
 	account := h.AccountClient.PatchAccountByEmail(email.(string), req.ShortNameSpace)
 	if len(account.Errors) > 0 {
-		el.ExtendAccountError(account.Errors)
+		el.ExtendProtoError(account.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
+	cerrorpb "github.com/idlab-discover/kebeng/common/cerror/proto"
 	"github.com/idlab-discover/kebeng/services/account/internal/config"
 	proto "github.com/idlab-discover/kebeng/services/account/proto"
 	"github.com/sirupsen/logrus"
@@ -73,7 +74,7 @@ func (c *AccountClient) CreateAccount(displayName, username, email string) *prot
 	if err != nil {
 		// this means proto request failed not the actual logic
 		resp = &proto.AccountResponse{
-			Errors: []*proto.Error{{
+			Errors: []*cerrorpb.Error{{
 				Code: cerror.InternalServerError, Message: err.Error()},
 			},
 		}
@@ -93,7 +94,7 @@ func (c *AccountClient) UpdateAccount(id, displayName, username, email string) *
 	if err != nil {
 		// this means proto request failed not the actual logic
 		resp = &proto.AccountResponse{
-			Errors: []*proto.Error{{
+			Errors: []*cerrorpb.Error{{
 				Code: cerror.InternalServerError, Message: err.Error()},
 			},
 		}
@@ -108,7 +109,7 @@ func (c *AccountClient) DeleteAccount(id string) *proto.DeleteAccountResponse {
 	if err != nil {
 		// this means proto request failed not the actual logic
 		resp = &proto.DeleteAccountResponse{
-			Errors: []*proto.Error{{
+			Errors: []*cerrorpb.Error{{
 				Code: cerror.InternalServerError, Message: err.Error()},
 			},
 		}
@@ -123,7 +124,7 @@ func (c *AccountClient) GetAccountByEmail(email string) *proto.AccountResponse {
 	if err != nil {
 		// this means proto request failed not the actual logic
 		resp = &proto.AccountResponse{
-			Errors: []*proto.Error{{
+			Errors: []*cerrorpb.Error{{
 				Code: cerror.InternalServerError, Message: err.Error()},
 			},
 		}
@@ -138,7 +139,7 @@ func (c *AccountClient) GetAccountByID(id string) *proto.AccountResponse {
 	if err != nil {
 		// this means proto request failed not the actual logic
 		resp = &proto.AccountResponse{
-			Errors: []*proto.Error{{
+			Errors: []*cerrorpb.Error{{
 				Code: cerror.InternalServerError, Message: err.Error()},
 			},
 		}
@@ -152,7 +153,7 @@ func (c *AccountClient) GetAccountsByIds(ids []string) *proto.GetAccountsByIdsRe
 	if err != nil {
 		// this means proto request failed not the actual logic
 		resp = &proto.GetAccountsByIdsResponse{
-			Errors: []*proto.Error{{
+			Errors: []*cerrorpb.Error{{
 				Code: cerror.InternalServerError, Message: err.Error()},
 			},
 		}
@@ -167,7 +168,7 @@ func (c *AccountClient) GetAccountByUsername(username string) *proto.AccountResp
 	if err != nil {
 		// this means proto request failed not the actual logic
 		resp = &proto.AccountResponse{
-			Errors: []*proto.Error{{
+			Errors: []*cerrorpb.Error{{
 				Code: cerror.InternalServerError, Message: err.Error()},
 			},
 		}
@@ -187,7 +188,7 @@ func (c *AccountClient) AddKey(accountEmail, keyName, sha3384, encodedPublicKey 
 	if err != nil {
 		// this means proto request failed not the actual logic
 		resp = &proto.KeyResponse{
-			Errors: []*proto.Error{{
+			Errors: []*cerrorpb.Error{{
 				Code: cerror.InternalServerError, Message: err.Error()},
 			},
 		}
@@ -202,7 +203,7 @@ func (c *AccountClient) GetAccountKey(Sha3384 string) *proto.KeyResponse {
 	if err != nil {
 		// this means proto request failed not the actual logic
 		resp = &proto.KeyResponse{
-			Errors: []*proto.Error{{
+			Errors: []*cerrorpb.Error{{
 				Code: cerror.InternalServerError, Message: err.Error()},
 			},
 		}
@@ -217,7 +218,7 @@ func (c *AccountClient) GetAccountKeysByAccountID(accountID string) *proto.KeysR
 	if err != nil {
 		// this means proto request failed not the actual logic
 		resp = &proto.KeysResponse{
-			Errors: []*proto.Error{{
+			Errors: []*cerrorpb.Error{{
 				Code: cerror.InternalServerError, Message: err.Error()},
 			},
 		}
@@ -232,7 +233,7 @@ func (c *AccountClient) PatchAccountByEmail(email, username string) *proto.Patch
 	if err != nil {
 		// this means proto request failed not the actual logic
 		resp = &proto.PatchAccountByEmailResponse{
-			Errors: []*proto.Error{{
+			Errors: []*cerrorpb.Error{{
 				Code: cerror.InternalServerError, Message: err.Error()},
 			},
 		}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
+	cerrorpb "github.com/idlab-discover/kebeng/common/cerror/proto"
 	"github.com/idlab-discover/kebeng/services/assertion/internal/config"
 	proto "github.com/idlab-discover/kebeng/services/assertion/proto"
 	"github.com/sirupsen/logrus"
@@ -52,7 +53,7 @@ func (c *AssertionClient) ProcessSnapBuildAssertion(assertion []byte) *proto.Sna
 	// cerror regarding the request are in the response
 	if err != nil {
 		resp = &proto.SnapBuildAssertionResponse{
-			Errors: []*proto.Error{{
+			Errors: []*cerrorpb.Error{{
 				Code:    cerror.InternalServerError,
 				Message: err.Error()},
 			},
