@@ -14,6 +14,7 @@ import (
 type IAssertionRepository interface {
 	AddAssertion(snapEntryId uuid.UUID, assertionString string) (*model.Assertion, *cerror.CustomError)
 	AddAccountKeyAssertion(el *cerror.ErrorList, authority_id, public_key_SHA3_384, sign_key_SHA3_384, name string, revision uint32, account_id uuid.UUID, since time.Time, body_length uint64) (*model.AccountKeyAssertion, *cerror.CustomError)
+	GetAccountKeyAssertionByAccountId(el *cerror.ErrorList, account_id uuid.UUID) (*model.AccountKeyAssertion, *cerror.CustomError)
 }
 
 type AssertionRepository struct {
@@ -46,6 +47,20 @@ func (r *AssertionRepository) AddAccountKeyAssertion(el *cerror.ErrorList, autho
 		logrus.Errorf("failed to save account key assertion in database: %v", err)
 		el.AddCustomError(cerror.ConvertError(err, fmt.Sprintf("failed to save account key assertion in database: %v", err)))
 		return nil, cerror.ConvertError(err, fmt.Sprintf("failed to save account key assertion in database: %v", err))
+	}
+
+	return assertion, nil
+}
+
+func (r *AssertionRepository) GetAccountKeyAssertionByAccountId(el *cerror.ErrorList, account_id uuid.UUID) (*model.AccountKeyAssertion, *cerror.CustomError) {
+	query := `SELECT id, authority_id, public_key_SHA3_384, sign_key_SHA3_384, name, revision, account_id, since, body_length FROM account_key_assertion WHERE account_id = $1`
+	assertion := &model.AccountKeyAssertion{}
+
+	err := r.db.Get(assertion, query, account_id)
+	if err != nil {
+		logrus.Errorf("failed to get account key assertion by id: %v", err)
+		el.AddCustomError(cerror.ConvertError(err, fmt.Sprintf("failed to get account key assertion by id: %v", err)))
+		return nil, cerror.ConvertError(err, fmt.Sprintf("failed to get account key assertion by id: %v", err))
 	}
 
 	return assertion, nil

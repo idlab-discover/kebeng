@@ -215,3 +215,74 @@ func TestAddAccountKeyAssertion(t *testing.T) {
 		})
 	}
 }
+
+func TestGetAccountKeyAssertionByAccountId(t *testing.T) {
+	tests := []struct {
+		name        string
+		accountID   uuid.UUID
+		preInsert   bool // if true, insert a record into the DB for this accountID before retrieval
+		expectError bool
+		errorCode   string // expected error code (if any)
+	}{
+		{
+			name:        "Successful Get Account-Key Assertion",
+			accountID:   uuid.New(),
+			preInsert:   true,
+			expectError: false,
+		},
+		{
+			name:        "Fail Get Account-Key Assertion for Nonexistent Account",
+			accountID:   uuid.New(), // no pre-insert, so this account should not be found
+			preInsert:   false,
+			expectError: true,
+			errorCode:   cerror.ResourceNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// If preInsert is true, insert a record with this accountID.
+			if tt.preInsert {
+				testID := uuid.New() // ID for the record to be inserted.
+				insertQuery := `
+				INSERT INTO account_key_assertion (
+					id, authority_id, public_key_sha3_384, sign_key_sha3_384,
+					name, revision, account_id, since, body_length
+				) VALUES (
+					$1, $2, $3, $4, $5, $6, $7, $8, $9
+				)`
+				_, err := globalDB.Exec(insertQuery,
+					testID,
+					"canonical",
+					"BWDEoaqyr25nF5SNCvEv2v7QnM9QsfCc0PBMYD_i2NGSQ32EF2d4D0hqUel3m8ul",
+					"-CvQKAwRQ5h3Ffn10FILJoEZUXOv6km9FwA80-Rcj-f-6jadQ89VRswHNiEB9Lxk",
+					"store",
+					2,
+					tt.accountID,
+					time.Date(2016, 4, 1, 0, 0, 0, 0, time.UTC),
+					717,
+				)
+				assert.NoError(t, err, "Failed to insert test account key assertion")
+			}
+
+			// Now, try to retrieve the assertion by accountID.
+			el := cerror.NewErrorList()
+			record, cerr := globalRepo.GetAccountKeyAssertionByAccountId(el, tt.accountID)
+
+			if tt.expectError {
+				assert.NotNil(t, cerr, "Expected an error for non-existent account")
+				assert.True(t, el.HasError(), "Expected error list to contain errors")
+				if cerr != nil {
+					assert.Equal(t, tt.errorCode, cerr.GetCode(), "Error code should match expected")
+				}
+			} else {
+				assert.Nil(t, cerr, "Did not expect an error for existing account")
+				assert.False(t, el.HasError(), "Expected no errors in the error list")
+				assert.NotNil(t, record, "Expected a non-nil assertion record")
+				assert.Equal(t, tt.accountID, record.AccountID, "Account ID should match")
+				assert.Equal(t, "canonical", record.AuthorityID, "AuthorityID should match")
+				assert.Equal(t, uint32(2), record.Revision, "Revision should match")
+			}
+		})
+	}
+}
