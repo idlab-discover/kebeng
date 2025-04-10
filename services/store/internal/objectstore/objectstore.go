@@ -111,7 +111,7 @@ func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string) (uint64
 		return 0, err
 	}
 
-	logrus.Infof("Saved to bucket: %+v", uploadInfo)
+	logrus.Infof("Saved to bucket: %+v", uploadInfo)	
 
 	return uint64(uploadInfo.Size), nil
 }

@@ -14,7 +14,7 @@ service StoreService {
     rpc GetRevisionsByEntryIds(GetRevisionsByEntryIdRequests) returns (GetRevisionsByEntryIdResponses);
     rpc GetLatestRevision(GetLatestRevisionRequest) returns (GetRevisionResponse);
     rpc SnapDownload(SnapDownloadRequest) returns (stream SnapDownloadResponse);
-    rpc UnscannedUpload(UnscannedUploadRequest) returns (UnscannedUploadResponse);
+    rpc UnscannedUpload(stream UnscannedUploadRequest) returns (UnscannedUploadCompleteResponse);
     rpc AddUpload(AddUploadRequest) returns (AddUploadResponse);
 }
 
@@ -170,15 +170,32 @@ message SnapPushRequest {
     string channel = 5;
 }
 
-message UnscannedUploadRequest {
-    bytes snap_file = 1;
-}
+// ################## START UNSCANNED UPLOAD #######################
 
-message UnscannedUploadResponse {
-    string temp_file_name = 1;
-    uint64 file_size = 2;
+message UnscannedUploadRequest {
+    oneof payload {
+        InitialUnscannedUploadRequest initial = 1;
+        DataChunk data = 2;
+    }
     repeated proto.Error errors = 3;
 }
+
+message InitialUnscannedUploadRequest {
+    string entry_name = 1;
+}
+
+// Already defined in Download
+// message DataChunk {
+//     bytes chunk = 1;
+// }
+
+message UnscannedUploadCompleteResponse {
+    string temp_file_name = 1;
+    uint64 size = 2;
+    repeated proto.Error errors = 3;
+}
+
+// ################## END UNSCANNED UPLOAD #######################
 
 message AddUploadRequest {
     string snap_name = 1;

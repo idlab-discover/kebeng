@@ -25,7 +25,7 @@ type StoreClientInterface interface {
 	GetRevisionsByEntryIds(entryIds *proto.GetRevisionsByEntryIdRequests) *proto.GetRevisionsByEntryIdResponses
 	GetLatestRevision(snapName, track, channel string) *proto.GetRevisionResponse
 	SnapDownload(revisionId string) *proto.SnapDownloadCompleteResponse
-	UnscannedUpload(snapFile io.Reader) *proto.UnscannedUploadResponse
+	UnscannedUpload(ctx context.Context, snapFile io.Reader) *proto.UnscannedUploadCompleteResponse
 	AddUpload(snapName string, entryId uuid.UUID, status string, accountId uuid.UUID) *proto.AddUploadResponse
 }
 
@@ -169,10 +169,11 @@ func (c *StoreClient) GetLatestRevision(snapName, track, channel string) *proto.
 }
 
 // TODO: fix so that file gets streamed
-func (c *StoreClient) UnscannedUpload(snapFile io.Reader) *proto.UnscannedUploadResponse {
-	fileData, err := io.ReadAll(snapFile)
+func (c *StoreClient) UnscannedUpload(ctx context.Context, snapFile io.Reader) *proto.UnscannedUploadCompleteResponse {
+	// create a stream to send the file to the server
+	stream, err := c.client.UnscannedUpload(context.Background())
 	if err != nil {
-		return &proto.UnscannedUploadResponse{
+		return &proto.UnscannedUploadCompleteResponse{
 			Errors: []*cerrorpb.Error{{
 				Code:    cerror.InternalServerError,
 				Message: err.Error(),
@@ -180,17 +181,50 @@ func (c *StoreClient) UnscannedUpload(snapFile io.Reader) *proto.UnscannedUpload
 		}
 	}
 
-	req := &proto.UnscannedUploadRequest{
-		SnapFile: fileData,
+	var size uint64 = 0
+	// read the file in chunks of 1MB and send it to the server
+	buffer := make([]byte, 1024*1024) // 1 MB buffer
+	for {
+		n, err := snapFile.Read(buffer)
+		if err != nil && err != io.EOF {
+			return &proto.UnscannedUploadCompleteResponse{
+				Errors: []*cerrorpb.Error{{
+					Code:    cerror.InternalServerError,
+					Message: err.Error(),
+				}},
+			}
+		}
+		size += uint64(n)
+		if n == 0 {
+			break
+		}
+
+		req := &proto.UnscannedUploadRequest{
+			Payload: &proto.UnscannedUploadRequest_Data{
+				Data: &proto.DataChunk{
+					Chunk: buffer[:n],
+				},
+			},
+		}
+
+		if err := stream.Send(req); err != nil {
+			return &proto.UnscannedUploadCompleteResponse{
+				Errors: []*cerrorpb.Error{{
+					Code:    cerror.InternalServerError,
+					Message: err.Error(),
+				}},
+			}
+		}
 	}
 
-	resp, err := c.client.UnscannedUpload(context.Background(), req)
+	// Close the stream and receive the server's response
+	resp, err := stream.CloseAndRecv()
 	if err != nil {
-		resp = &proto.UnscannedUploadResponse{
+		return &proto.UnscannedUploadCompleteResponse{
 			Errors: []*cerrorpb.Error{{
 				Code:    cerror.InternalServerError,
-				Message: err.Error()},
-			},
+				Message: err.Error(),
+			}},
 		}
 	}
 	return resp
@@ -221,8 +255,6 @@ func (c *StoreClient) SnapDownload(revisionId string) *proto.SnapDownloadComplet
 		RevisionId: revisionId,
 	}
 
-	// TODO: refactor to return 3 values stream, cerror, error
-	// this way we can distinguish between a lower layer error and a grpc error in a cleaner way
 	stream, err := c.client.SnapDownload(context.Background(), req)
 	if err != nil {
 		// if err != nil we should read the stream (if we can) to get the actual error and then return it

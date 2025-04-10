@@ -2,6 +2,7 @@ package client_test
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"io"
 	"testing"
@@ -698,74 +699,113 @@ func TestStoreClient_UnscannedUpload(t *testing.T) {
 	storeClient := client.NewStoreClientWithClient(mockProtoClient)
 
 	tests := []struct {
-		name               string
-		snapFile           io.Reader
-		expectedResp       *proto.UnscannedUploadResponse
-		expectedErrors     bool
-		expectedProtoError bool
+		name                   string
+		fileName               string
+		mockStream             func() proto.StoreService_UnscannedUploadClient
+		expectedResp           *proto.UnscannedUploadCompleteResponse
+		expectedErrors         bool
+		expectedStreamError    bool
+		expectedErrorAndStream bool
 	}{
 		{
-			name:     "Successful proto call",
-			snapFile: bytes.NewReader([]byte("mock snap file content")),
-			expectedResp: &proto.UnscannedUploadResponse{
-				TempFileName: "mock_filename",
-				FileSize:     12345,
+			name:     "Successful streaming upload",
+			fileName: "test_file",
+			mockStream: func() proto.StoreService_UnscannedUploadClient {
+				mockStream := new(logic.MockUnscannedUploadClient)
+				mockStream.On("Send", mock.Anything).Return(nil).Once()
+				mockStream.On("CloseAndRecv").Return(&proto.UnscannedUploadCompleteResponse{
+					TempFileName: "test_file",
+					Size:         12345,
+					Errors:       []*cerrorpb.Error{},
+				}, nil).Once()
+				return mockStream
+			},
+			expectedResp: &proto.UnscannedUploadCompleteResponse{
+				TempFileName: "test_file",
+				Size:         12345,
 				Errors:       []*cerrorpb.Error{},
 			},
-			expectedErrors:     false,
-			expectedProtoError: false,
+			expectedErrors:         false,
+			expectedStreamError:    false,
+			expectedErrorAndStream: false,
 		},
 		{
-			name:               "Error reading snap file",
-			snapFile:           &errorReader{},
-			expectedResp:       nil,
-			expectedErrors:     true,
-			expectedProtoError: false,
-		},
-		{
-			name:               "proto call returns error",
-			snapFile:           bytes.NewReader([]byte("mock snap file content")),
-			expectedResp:       nil,
-			expectedErrors:     false,
-			expectedProtoError: true,
-		},
-		{
-			name:     "response contains errors",
-			snapFile: bytes.NewReader([]byte("mock snap file content")),
-			expectedResp: &proto.UnscannedUploadResponse{
+			name: "Error setting up stream",
+			expectedResp: &proto.UnscannedUploadCompleteResponse{
 				Errors: []*cerrorpb.Error{{
 					Code:    cerror.InternalServerError,
 					Message: "mock error",
 				}},
 			},
-			expectedErrors:     true,
-			expectedProtoError: false,
+			expectedErrors:         true,
+			expectedStreamError:    false,
+			expectedErrorAndStream: true,
+		},
+		{
+			name: "Error sending data",
+			mockStream: func() proto.StoreService_UnscannedUploadClient {
+				mockStream := new(logic.MockUnscannedUploadClient)
+				mockStream.On("Send", mock.Anything).Return(errors.New("")).Once()
+				mockStream.On("CloseAndRecv").Return(&proto.UnscannedUploadCompleteResponse{
+					TempFileName: "test_file",
+					Size:         12345,
+					Errors: []*cerrorpb.Error{
+						{
+							Code:    cerror.InternalServerError,
+							Message: "mock error",
+						},
+					},
+				}, nil).Once()
+				return mockStream
+			},
+			expectedResp: &proto.UnscannedUploadCompleteResponse{
+				Errors: []*cerrorpb.Error{{
+					Code:    cerror.InternalServerError,
+					Message: "mock error",
+				}},
+			},
+			expectedErrors:         true,
+			expectedStreamError:    false,
+			expectedErrorAndStream: false,
+		},
+		{
+			name: "Error closing stream",
+			mockStream: func() proto.StoreService_UnscannedUploadClient {
+				mockStream := new(logic.MockUnscannedUploadClient)
+				mockStream.On("Send", mock.Anything).Return(nil).Once()
+				mockStream.On("CloseAndRecv").Return(nil, errors.New("")).Once()
+				return mockStream
+			},
+			expectedResp: &proto.UnscannedUploadCompleteResponse{
+				Errors: []*cerrorpb.Error{{
+					Code:    cerror.InternalServerError,
+					Message: "mock error",
+				}},
+			},
+			expectedErrors:         true,
+			expectedStreamError:    false,
+			expectedErrorAndStream: false,
 		},
 	}
-
+	data := []byte("test data")
+	reader := bytes.NewReader(data)
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if _, ok := tc.snapFile.(*errorReader); ok {
-				resp := storeClient.UnscannedUpload(tc.snapFile)
-				assert.NotNil(t, resp)
-				assert.NotEmpty(t, resp.Errors)
-				assert.Equal(t, cerror.InternalServerError, resp.Errors[0].Code)
-				return
-			}
-			if tc.expectedProtoError {
+			if tc.expectedErrorAndStream {
 				mockProtoClient.On("UnscannedUpload", mock.Anything, mock.Anything).Return(nil, errors.New("")).Once()
 			} else {
-				mockProtoClient.On("UnscannedUpload", mock.Anything, mock.Anything).Return(tc.expectedResp, nil).Once()
+				mockProtoClient.On("UnscannedUpload", mock.Anything, mock.Anything).Return(tc.mockStream(), nil).Once()
 			}
 
-			resp := storeClient.UnscannedUpload(tc.snapFile)
-			if !tc.expectedErrors && !tc.expectedProtoError {
+			ctx := context.Background()
+			resp := storeClient.UnscannedUpload(ctx, reader)
+			if !tc.expectedErrors && !tc.expectedStreamError {
 				assert.Equal(t, tc.expectedResp, resp)
 				assert.Empty(t, resp.Errors)
 			} else if tc.expectedErrors {
 				assert.NotNil(t, resp)
 				assert.NotEmpty(t, resp.Errors)
-			} else if tc.expectedProtoError {
+			} else if tc.expectedStreamError {
 				assert.NotNil(t, resp)
 				assert.NotEmpty(t, resp.Errors)
 				assert.Equal(t, cerror.InternalServerError, resp.Errors[0].Code)
@@ -773,13 +813,6 @@ func TestStoreClient_UnscannedUpload(t *testing.T) {
 			mockProtoClient.AssertExpectations(t)
 		})
 	}
-}
-
-// errorReader is a helper type to simulate an error when reading from an io.Reader.
-type errorReader struct{}
-
-func (e *errorReader) Read(p []byte) (n int, err error) {
-	return 0, errors.New("mock read error")
 }
 
 func TestStoreClient_AddUpload(t *testing.T) {
