@@ -137,6 +137,51 @@ func TestAddChannel(t *testing.T) {
 	}
 }
 
+func TestAddDefaultChannels(t *testing.T) {
+	tests := []struct {
+		name              string
+		snapEntryId       uuid.UUID
+		snapTrackId       uuid.UUID
+		expectError       bool
+		expectedErrorCode string
+	}{
+		{
+			name:        "Success adding default channels",
+			snapEntryId: mockUUID,
+			snapTrackId: mockUUID,
+			expectError: false,
+		},
+		{
+			name:              "Fail adding default channels for non-existing snap entry",
+			snapEntryId:       uuid.New(),
+			snapTrackId:       mockUUID,
+			expectError:       true,
+			expectedErrorCode: cerror.ResourceNotFound,
+		},
+		{
+			name:              "Fail adding default channels for non-existing track",
+			snapEntryId:       mockUUID,
+			snapTrackId:       uuid.New(),
+			expectError:       true,
+			expectedErrorCode: cerror.ResourceNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := globalRepo.AddDefaultChannels(tt.snapEntryId, tt.snapTrackId)
+			if tt.expectError {
+				assert.NotNil(t, err)
+				if err != nil {
+					assert.Equal(t, tt.expectedErrorCode, err.GetCode())
+				}
+			} else {
+				assert.Nil(t, err)
+			}
+		})
+	}
+}
+
 func TestAddTrack(t *testing.T) {
 	tests := []struct {
 		name              string
@@ -376,28 +421,34 @@ func TestGetCommentsByEntryId(t *testing.T) {
 
 func TestGetEntriesByAccountId(t *testing.T) {
 	tests := []struct {
-		name              string
-		accountId         uuid.UUID
-		expectError       bool
-		expectedErrorCode string
+		name                string
+		accountId           uuid.UUID
+		preloadAssociations []string
+		el                  *cerror.ErrorList
+		expectError         bool
+		expectedErrorCode   string
 	}{
 		{
-			name:              "Success getting entries by account id",
-			accountId:         mockUUID,
-			expectError:       false,
-			expectedErrorCode: "",
+			name:                "Success getting entries by account id",
+			accountId:           mockUUID,
+			preloadAssociations: nil,
+			el:                  cerror.NewErrorList(),
+			expectError:         false,
+			expectedErrorCode:   "",
 		},
 		{
-			name:              "Fail getting entries by account id for non-existing account",
-			accountId:         uuid.New(),
-			expectError:       true,
-			expectedErrorCode: cerror.ResourceNotFound,
+			name:                "Fail getting entries by account id for non-existing account",
+			accountId:           uuid.New(),
+			preloadAssociations: nil,
+			el:                  cerror.NewErrorList(),
+			expectError:         true,
+			expectedErrorCode:   cerror.ResourceNotFound,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			entries, err := globalRepo.GetEntriesByAccountId(tt.accountId, nil)
+			entries, err := globalRepo.GetEntriesByAccountId(tt.accountId, tt.preloadAssociations, tt.el)
 			if tt.expectError {
 				assert.NotNil(t, err)
 				if err != nil {
@@ -413,28 +464,34 @@ func TestGetEntriesByAccountId(t *testing.T) {
 
 func TestGetEntryById(t *testing.T) {
 	tests := []struct {
-		name              string
-		entryId           uuid.UUID
-		expectError       bool
-		expectedErrorCode string
+		name                string
+		entryId             uuid.UUID
+		preloadAssociations []string
+		el                  *cerror.ErrorList
+		expectError         bool
+		expectedErrorCode   string
 	}{
 		{
-			name:              "Success getting entry by id",
-			entryId:           mockUUID,
-			expectError:       false,
-			expectedErrorCode: "",
+			name:                "Success getting entry by id",
+			entryId:             mockUUID,
+			preloadAssociations: nil,
+			el:                  cerror.NewErrorList(),
+			expectError:         false,
+			expectedErrorCode:   "",
 		},
 		{
-			name:              "Fail getting entry by id for non-existing entry",
-			entryId:           uuid.New(),
-			expectError:       true,
-			expectedErrorCode: cerror.ResourceNotFound,
+			name:                "Fail getting entry by id for non-existing entry",
+			entryId:             uuid.New(),
+			preloadAssociations: nil,
+			el:                  cerror.NewErrorList(),
+			expectError:         true,
+			expectedErrorCode:   cerror.ResourceNotFound,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			entry, err := globalRepo.GetEntryById(tt.entryId, nil)
+			entry, err := globalRepo.GetEntryById(tt.entryId, tt.preloadAssociations, tt.el)
 			if tt.expectError {
 				assert.NotNil(t, err)
 				if err != nil {
@@ -450,31 +507,34 @@ func TestGetEntryById(t *testing.T) {
 
 func TestGetEntryByName(t *testing.T) {
 	tests := []struct {
-		name              string
-		entryName         string
-		entryPrivate      bool
-		expectError       bool
-		expectedErrorCode string
+		name                string
+		entryName           string
+		preloadAssociations []string
+		el                  *cerror.ErrorList
+		expectError         bool
+		expectedErrorCode   string
 	}{
 		{
-			name:              "Success getting entry by name",
-			entryName:         "mock-snap",
-			entryPrivate:      false,
-			expectError:       false,
-			expectedErrorCode: "",
+			name:                "Success getting entry by name",
+			entryName:           "mock-snap",
+			preloadAssociations: nil,
+			el:                  cerror.NewErrorList(),
+			expectError:         false,
+			expectedErrorCode:   "",
 		},
 		{
-			name:              "Fail getting entry by name",
-			entryName:         "nonexistent",
-			entryPrivate:      false,
-			expectError:       true,
-			expectedErrorCode: cerror.ResourceNotFound,
+			name:                "Fail getting entry by name",
+			entryName:           "nonexistent",
+			preloadAssociations: nil,
+			el:                  cerror.NewErrorList(),
+			expectError:         true,
+			expectedErrorCode:   cerror.ResourceNotFound,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			entry, err := globalRepo.GetEntryByName(tt.entryName, nil)
+			entry, err := globalRepo.GetEntryByName(tt.entryName, tt.preloadAssociations, tt.el)
 			if tt.expectError {
 				assert.NotNil(t, err)
 				if err != nil {
@@ -707,7 +767,7 @@ func TestGetTracksBySnapId(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tracks, err := globalRepo.GetTracksBySnapId(tt.snapId)
+			tracks, err := globalRepo.GetTracksByEntryId(tt.snapId)
 			if tt.expectError {
 				assert.NotNil(t, err)
 				if err != nil {
@@ -724,22 +784,29 @@ func TestGetTracksBySnapId(t *testing.T) {
 func TestGetPreloadAssociations(t *testing.T) {
 	tests := []struct {
 		name              string
-		entryName         string
-		associations      []string
+		entry             *models.SnapEntry
+		associations      *[]string
+		el                *cerror.ErrorList
 		expectError       bool
 		expectedErrorCode string
 	}{
 		{
-			name:              "Success getting preload associations",
-			entryName:         "mock-snap",
-			associations:      []string{models.ALL},
+			name: "Success getting preload associations",
+			entry: &models.SnapEntry{
+				ID: mockUUID,
+			},
+			associations:      &[]string{models.ALL},
+			el:                cerror.NewErrorList(),
 			expectError:       false,
 			expectedErrorCode: "",
 		},
 		{
-			name:              "Fail getting preload associations for non-existing entry",
-			entryName:         "nonexistent",
-			associations:      []string{models.ALL},
+			name: "Fail getting preload associations for non-existing entry",
+			entry: &models.SnapEntry{
+				ID: uuid.New(),
+			},
+			associations:      &[]string{models.ALL},
+			el:                cerror.NewErrorList(),
 			expectError:       true,
 			expectedErrorCode: cerror.ResourceNotFound,
 		},
@@ -747,7 +814,7 @@ func TestGetPreloadAssociations(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := globalRepo.GetEntryByName(tt.entryName, tt.associations)
+			err := globalRepo.GetPreloadAssociations(tt.entry, tt.associations, tt.el)
 			if tt.expectError {
 				assert.NotNil(t, err)
 				if err != nil {

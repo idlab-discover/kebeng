@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/idlab-discover/kebeng/services/store/internal/models"
 	"github.com/idlab-discover/kebeng/services/store/internal/repository"
 	"github.com/minio/minio-go/v7"
@@ -15,6 +16,7 @@ import (
 
 // TODO: should get snap path out of database instead of getting it as var
 func (obs *ObjectStore) LoadTestData(client *minio.Client, repo repository.ISnapsRepository, minioPath string) error {
+	el := cerror.NewErrorList()
 	ok, err := client.BucketExists(context.Background(), "snaps")
 	if err != nil {
 		logrus.Errorf("Error checking if bucket exists: %v", err)
@@ -44,13 +46,13 @@ func (obs *ObjectStore) LoadTestData(client *minio.Client, repo repository.ISnap
 		}
 
 		snapName := strings.TrimSuffix(fileName, ".snap")
-		snapEntry, errObj := repo.GetEntryByName(snapName, nil)
+		snapEntry, errObj := repo.GetEntryByName(snapName, nil, el)
 		if errObj != nil {
 			logrus.Errorf("Could not find snap entry for %s: %v", snapName, errObj)
 			continue
 		}
 
-		track, errObj := repo.GetTracksBySnapId(snapEntry.ID)
+		track, errObj := repo.GetTracksByEntryId(snapEntry.ID)
 		if errObj != nil || len(track) == 0 {
 			logrus.Errorf("No track found for snap entry %s", snapEntry.Name)
 			continue
