@@ -5,6 +5,7 @@ import (
 	accClient "github.com/idlab-discover/kebeng/services/account/client"
 	assertionClient "github.com/idlab-discover/kebeng/services/assertion/client"
 	account "github.com/idlab-discover/kebeng/services/gateway/handler/account"
+	"github.com/idlab-discover/kebeng/services/gateway/handler/assertion"
 	auth "github.com/idlab-discover/kebeng/services/gateway/handler/auth"
 	snap "github.com/idlab-discover/kebeng/services/gateway/handler/snap"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/config"
@@ -17,9 +18,10 @@ import (
 
 // handler that handles all the endpoints
 type Handler struct {
-	snapHandler    snap.Handler
-	accountHandler account.Handler
-	authHandler    auth.Handler
+	snapHandler      snap.Handler
+	accountHandler   account.Handler
+	authHandler      auth.Handler
+	assertionHandler assertion.Handler
 }
 
 func NewHandler(accountClient accClient.AccountClientInterface, storeClient storeClient.StoreClientInterface, assertionClient assertionClient.AssertionClientInterface, config *config.Config) *Handler {
@@ -56,6 +58,9 @@ func (h *Handler) SetupEndpoints(r *gin.Engine) {
 	authGroup.POST("/snap-push/", h.snapHandler.SnapPush)
 	r.POST("/unscanned-upload/", h.snapHandler.UnscannedUpload)
 	//authGroup.GET("/snaps/:rev_id/status", h.snapHandler.GetStatus)
+
+	// ********** ASSERTION **********
+	r.GET("v2/assertions/snap-revision/:rev_sha3_384", h.assertionHandler.GetSnapRevisionAssertion)
 
 	// ********** AUTH **********
 
