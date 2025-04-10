@@ -319,7 +319,7 @@ func (h *Handler) SnapPush(c *gin.Context) {
 	}
 
 	// Get the file name of the unscanned upload from the request body
-	logrus.Infof("Temp file name: %s", req.UnscannedFileName)
+	logrus.Debugf("Temp file name: %s", req.UnscannedFileName)
 
 	// Create a new snap upload with status "pending"
 	upload := h.StoreClient.AddUpload(entry.SnapName, parsedEntryUUID, "pending", accountUUID, req.UnscannedFileName)
