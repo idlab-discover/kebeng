@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "common/cerror/proto/error.proto";
+
 package assertion;
 option go_package = "github.com/idlab-discover/kebeng/services/assertion/proto;assertion";
 
@@ -22,10 +24,5 @@ message SnapBuildAssertionResponse {
     string revision = 8;
     string type = 9;
     string developer_id = 10;
-    repeated Error errors = 11;
-}
-
-message Error {
-    string message = 1;
-    string code = 2;
+    repeated proto.Error errors = 11;
 }
