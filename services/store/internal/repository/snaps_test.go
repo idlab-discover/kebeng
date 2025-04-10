@@ -235,6 +235,7 @@ func TestAddRevision(t *testing.T) {
 		snapName          string
 		size              uint64
 		sequenceNumber    uint
+		architectures     []string
 		expectError       bool
 		expectedErrorCode string
 	}{
@@ -246,6 +247,7 @@ func TestAddRevision(t *testing.T) {
 			snapName:       "mock-snap",
 			size:           123456,
 			sequenceNumber: 1,
+			architectures:  []string{"x86_64", "arm64"},
 			expectError:    false,
 		},
 		{
@@ -256,6 +258,7 @@ func TestAddRevision(t *testing.T) {
 			snapName:          "mock-snap",
 			size:              123456,
 			sequenceNumber:    1,
+			architectures:     []string{"x86_64", "arm64"},
 			expectError:       true,
 			expectedErrorCode: cerror.ResourceNotFound,
 		},
@@ -267,6 +270,7 @@ func TestAddRevision(t *testing.T) {
 			snapName:          "mock-snap",
 			size:              123456,
 			sequenceNumber:    1,
+			architectures:     []string{"x86_64", "arm64"},
 			expectError:       true,
 			expectedErrorCode: cerror.ResourceNotFound,
 		},
@@ -278,13 +282,14 @@ func TestAddRevision(t *testing.T) {
 			snapName:          "mock-snap",
 			size:              123456,
 			sequenceNumber:    1,
+			architectures:     []string{"x86_64", "arm64"},
 			expectError:       true,
 			expectedErrorCode: cerror.ResourceNotFound,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			revision, err := globalRepo.AddRevision(tt.entryId, tt.trackId, tt.channelId, tt.snapName, tt.size, tt.sequenceNumber)
+			revision, err := globalRepo.AddRevision(tt.entryId, tt.trackId, tt.channelId, tt.snapName, tt.size, tt.sequenceNumber, tt.architectures)
 			if tt.expectError {
 				assert.NotNil(t, err)
 				if err != nil {
