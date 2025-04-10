@@ -14,7 +14,10 @@ import (
 type IAssertionRepository interface {
 	AddAssertion(snapEntryId uuid.UUID, assertionString string) (*model.Assertion, *cerror.CustomError)
 	AddAccountKeyAssertion(el *cerror.ErrorList, authority_id, public_key_SHA3_384, sign_key_SHA3_384, name string, revision uint32, account_id uuid.UUID, since time.Time, body_length uint64) (*model.AccountKeyAssertion, *cerror.CustomError)
+	AddSnapRevisionAssertion(el *cerror.ErrorList, authority_id, snap_sha3_384, sign_key_SHA3_384 string, developer_id, snap_entry_id uuid.UUID, snap_revision_sequence_number uint32, snap_size uint64, timestamp time.Time) (*model.SnapRevisionAssertion, *cerror.CustomError)
+
 	GetAccountKeyAssertionByAccountId(el *cerror.ErrorList, account_id uuid.UUID) (*model.AccountKeyAssertion, *cerror.CustomError)
+	GetSnapRevisionAssertionBySnapEntryId(el *cerror.ErrorList, snap_entry_id uuid.UUID) (*model.SnapRevisionAssertion, *cerror.CustomError)
 }
 
 type AssertionRepository struct {
@@ -53,6 +56,19 @@ func (r *AssertionRepository) AddAccountKeyAssertion(el *cerror.ErrorList, autho
 	return assertion, nil
 }
 
+func (r *AssertionRepository) AddSnapRevisionAssertion(el *cerror.ErrorList, authority_id, snap_sha3_384, sign_key_SHA3_384 string, developer_id, snap_entry_id uuid.UUID, snap_revision_sequence_number uint32, snap_size uint64, timestamp time.Time) (*model.SnapRevisionAssertion, *cerror.CustomError) {
+	query := `INSERT INTO snap_revision_assertion (authority_id, snap_sha3_384, sign_key_SHA3_384, developer_id, snap_entry_id, snap_revision_sequence_number, timestamp, snap_size) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`
+	assertion := &model.SnapRevisionAssertion{}
+	err := r.db.Get(assertion, query, authority_id, snap_sha3_384, sign_key_SHA3_384, developer_id, snap_entry_id, snap_revision_sequence_number, timestamp, snap_size)
+	if err != nil {
+		logrus.Errorf("failed to save snap revision assertion in database: %v", err)
+		el.AddCustomError(cerror.ConvertError(err, fmt.Sprintf("failed to save snap revision assertion in database: %v", err)))
+		return nil, cerror.ConvertError(err, fmt.Sprintf("failed to save snap revision assertion in database: %v", err))
+	}
+
+	return assertion, nil
+}
+
 func (r *AssertionRepository) GetAccountKeyAssertionByAccountId(el *cerror.ErrorList, account_id uuid.UUID) (*model.AccountKeyAssertion, *cerror.CustomError) {
 	query := `SELECT id, authority_id, public_key_SHA3_384, sign_key_SHA3_384, name, revision, account_id, since, body_length FROM account_key_assertion WHERE account_id = $1`
 	assertion := &model.AccountKeyAssertion{}
@@ -62,6 +78,19 @@ func (r *AssertionRepository) GetAccountKeyAssertionByAccountId(el *cerror.Error
 		logrus.Errorf("failed to get account key assertion by id: %v", err)
 		el.AddCustomError(cerror.ConvertError(err, fmt.Sprintf("failed to get account key assertion by id: %v", err)))
 		return nil, cerror.ConvertError(err, fmt.Sprintf("failed to get account key assertion by id: %v", err))
+	}
+
+	return assertion, nil
+}
+
+func (r *AssertionRepository) GetSnapRevisionAssertionBySnapEntryId(el *cerror.ErrorList, snap_entry_id uuid.UUID) (*model.SnapRevisionAssertion, *cerror.CustomError) {
+	query := `SELECT id, authority_id, snap_sha3_384, developer_id, snap_entry_id, snap_revision_sequence_number, timestamp FROM snap_revision_assertion WHERE snap_entry_id = $1`
+	assertion := &model.SnapRevisionAssertion{}
+	err := r.db.Get(assertion, query, snap_entry_id)
+	if err != nil {
+		logrus.Errorf("failed to get snap revision assertion by id: %v", err)
+		el.AddCustomError(cerror.ConvertError(err, fmt.Sprintf("failed to get snap revision assertion by id: %v", err)))
+		return nil, cerror.ConvertError(err, fmt.Sprintf("failed to get snap revision assertion by id: %v", err))
 	}
 
 	return assertion, nil
