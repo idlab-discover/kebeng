@@ -5,8 +5,9 @@ go 1.22.2
 require (
 	github.com/golang-migrate/migrate/v4 v4.18.2
 	github.com/google/uuid v1.6.0
-	github.com/idlab-discover/kebeng v0.0.0-20250409151243-b2fa923144a6
+	github.com/idlab-discover/kebeng v0.0.0-20250410135058-2575576c9e47
 	github.com/sirupsen/logrus v1.9.3
+	github.com/snapcore/snapd v0.0.0-20250228185938-4d4437a35a6b
 	github.com/spf13/viper v1.19.0
 	google.golang.org/grpc v1.71.0
 	google.golang.org/protobuf v1.36.5
@@ -16,11 +17,9 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/snapcore/go-gettext v0.0.0-20201130093759-38740d1bd3d2 // indirect
-	github.com/snapcore/snapd v0.0.0-20250228185938-4d4437a35a6b // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
 	golang.org/x/crypto v0.33.0 // indirect
-	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
@@ -31,8 +30,6 @@ require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/idlab-discover/kebeng/services/account v0.0.0-20250311154753-8199d8a8bc52 // indirect
-	github.com/idlab-discover/kebeng/services/store v0.0.0-20250318141246-77a544f56023 // indirect
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
