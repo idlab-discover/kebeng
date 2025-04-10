@@ -286,3 +286,151 @@ func TestGetAccountKeyAssertionByAccountId(t *testing.T) {
 		})
 	}
 }
+
+func TestAddSnapRevisionAssertion(t *testing.T) {
+	tests := []struct {
+		name                       string
+		authorityID                string
+		snapSHA3_384               string
+		developerID                uuid.UUID
+		snapEntryID                uuid.UUID
+		snapRevisionSequenceNumber uint32
+		timestamp                  time.Time
+		signKeySHA3_384            string
+		snapSize                   uint64
+		expectError                bool
+		errorCode                  string // expected error code (if any)
+	}{
+		{
+			name:                       "Successful SnapRevision Assertion Insertion",
+			authorityID:                "canonical",
+			snapSHA3_384:               "BWDEoaqyr25nF5SNCvEv2v7QnM9QsfCc0PBMYD_i2NGSQ32EF2d4D0hqUel3m8ul",
+			developerID:                uuid.New(),
+			snapEntryID:                uuid.New(),
+			snapRevisionSequenceNumber: 2,
+			timestamp:                  time.Date(2016, 4, 1, 0, 0, 0, 0, time.UTC),
+			signKeySHA3_384:            "-CvQKAwRQ5h3Ffn10FILJoEZUXOv6km9FwA80-Rcj-f-6jadQ89VRswHNiEB9Lxk",
+			snapSize:                   1234567,
+			expectError:                false,
+		},
+		{
+			name:                       "Fail Insertion on Duplicate",
+			authorityID:                "canonical",
+			snapSHA3_384:               "BWDEoaqyr25nF5SNCvEv2v7QnM9QsfCc0PBMYD_i2NGSQ32EF2d4D0hqUel3m8ul",
+			developerID:                uuid.New(),
+			snapEntryID:                uuid.New(),
+			snapRevisionSequenceNumber: 2,
+			timestamp:                  time.Date(2016, 4, 1, 0, 0, 0, 0, time.UTC),
+			signKeySHA3_384:            "", // set to empty string to trigger error
+			snapSize:                   1234567,
+			expectError:                true,
+			errorCode:                  cerror.InvalidField,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			el := cerror.NewErrorList()
+			record, cerr := globalRepo.AddSnapRevisionAssertion(el, tt.authorityID, tt.snapSHA3_384, tt.signKeySHA3_384, tt.developerID, tt.snapEntryID, tt.snapRevisionSequenceNumber, tt.snapSize, tt.timestamp)
+			if tt.expectError {
+				assert.NotNil(t, cerr, "Expected an error during insertion")
+				assert.Equal(t, el.HasError(), true, "Expected an error in the list")
+				if cerr != nil {
+					assert.Equal(t, tt.errorCode, cerr.GetCode())
+				}
+			} else {
+				assert.Nil(t, cerr, "Did not expect an error during insertion")
+				assert.Equal(t, el.HasError(), false, "Expected no errors in the list")
+				assert.NotNil(t, record, "Expected a non-nil assertion record")
+				assert.NotEqual(t, uuid.Nil, record.ID, "Expected a valid UUID for the record ID")
+			}
+		})
+	}
+}
+
+func TestGetSnapRevisionAssertionBySnapEntryId(t *testing.T) {
+	tests := []struct {
+		name                               string
+		snapEntryID                        uuid.UUID
+		preInsert                          bool
+		expectError                        bool
+		errorCode                          string
+		expectedAuthorityID                string
+		expectedSnapSHA3_384               string
+		signKeySHA3_384                    string
+		expectedDeveloperID                uuid.UUID
+		expectedSnapRevisionSequenceNumber uint32
+		expectedTimestamp                  time.Time
+	}{
+		{
+			name:                               "Successful Get Snap Revision Assertion",
+			snapEntryID:                        uuid.New(),
+			preInsert:                          true,
+			expectError:                        false,
+			expectedAuthorityID:                "canonical",
+			expectedSnapSHA3_384:               "test-snap-sha3-384",
+			expectedSnapRevisionSequenceNumber: 2,
+			signKeySHA3_384:                    "test-sign-key-sha3-384",
+			expectedTimestamp:                  time.Date(2016, 4, 1, 0, 0, 0, 0, time.UTC),
+		},
+		{
+			name:        "Fail Get Snap Revision Assertion for Nonexistent SnapEntry",
+			snapEntryID: uuid.New(),
+			preInsert:   false,
+			expectError: true,
+			errorCode:   cerror.ResourceNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.preInsert {
+
+				devID := uuid.New()
+				tt.expectedDeveloperID = devID
+
+				insertQuery := `
+					INSERT INTO snap_revision_assertion (
+						id, authority_id,sign_key_sha3_384, snap_sha3_384, developer_id, snap_entry_id,
+						snap_revision_sequence_number, timestamp, snap_size
+					) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+				`
+
+				recordID := uuid.New()
+				_, err := globalDB.Exec(insertQuery,
+					recordID,
+					tt.expectedAuthorityID,
+					tt.signKeySHA3_384,
+					tt.expectedSnapSHA3_384,
+					devID,
+					tt.snapEntryID,
+					tt.expectedSnapRevisionSequenceNumber,
+					tt.expectedTimestamp,
+					1234567,
+				)
+				assert.NoError(t, err, "Failed to insert test snap revision assertion")
+			}
+
+			el := cerror.NewErrorList()
+			record, cerr := globalRepo.GetSnapRevisionAssertionBySnapEntryId(el, tt.snapEntryID)
+
+			if tt.expectError {
+				assert.NotNil(t, cerr, "Expected error for missing snap revision assertion")
+				assert.True(t, el.HasError(), "Expected error list to contain errors")
+				if cerr != nil {
+					assert.Equal(t, tt.errorCode, cerr.GetCode(), "Error code should match expected")
+				}
+			} else {
+				assert.Nil(t, cerr, "Did not expect an error for existing snap revision assertion")
+				assert.False(t, el.HasError(), "Expected no errors in the error list")
+				assert.NotNil(t, record, "Expected a non-nil snap revision assertion record")
+
+				assert.Equal(t, tt.expectedAuthorityID, record.AuthorityID, "AuthorityID should match")
+				assert.Equal(t, tt.expectedSnapSHA3_384, record.SnapSHA3_384, "SnapSHA3_384 should match")
+				assert.Equal(t, tt.expectedDeveloperID, record.DeveloperID, "DeveloperID should match")
+				assert.Equal(t, tt.expectedSnapRevisionSequenceNumber, record.SnapRevisionSequenceNumber, "Revision sequence number should match")
+				assert.Equal(t, tt.expectedTimestamp, record.Timestamp.UTC(), "Timestamp should match")
+			}
+		})
+	}
+}

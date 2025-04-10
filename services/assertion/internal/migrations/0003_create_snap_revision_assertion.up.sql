@@ -10,11 +10,11 @@ CREATE TABLE IF NOT EXISTS public.snap_revision_assertion (
     authority_id TEXT NOT NULL CHECK (authority_id <> ''),                 
     snap_sha3_384 TEXT NOT NULL CHECK (snap_sha3_384 <> ''),
     developer_id UUID NOT NULL,
-    snap_id UUID NOT NULL,
-    snap_revision INTEGER NOT NULL,                  
+    snap_entry_id UUID NOT NULL,
+    snap_revision_sequence_number INTEGER NOT NULL,                  
     snap_size INTEGER NOT NULL,
     timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
     sign_key_sha3_384 TEXT NOT NULL CHECK (sign_key_sha3_384 <> ''),            
 
-    CONSTRAINT account_key_assertion_pkey PRIMARY KEY (id)
+    CONSTRAINT snap_revision_assertion_pkey PRIMARY KEY (id)
 );
