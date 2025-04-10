@@ -10,7 +10,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/idlab-discover/kebeng/pkg/crypto"
+	"github.com/idlab-discover/kebeng/common/crypto"
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
 	"github.com/idlab-discover/kebeng/services/store/internal/repository"
 	"github.com/minio/minio-go/v7"
@@ -18,20 +18,32 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type IMinioClient interface {
+	GetObject(ctx context.Context, bucketName, objectName string, opts minio.GetObjectOptions) (*minio.Object, error)
+	BucketExists(ctx context.Context, bucketName string) (bool, error)
+	MakeBucket(ctx context.Context, bucketName string, opts minio.MakeBucketOptions) error
+	FPutObject(ctx context.Context, bucketName, objectName, filePath string, opts minio.PutObjectOptions) (minio.UploadInfo, error)
+	PutObject(ctx context.Context, bucketName, objectName string, reader io.Reader, objectSize int64, opts minio.PutObjectOptions) (minio.UploadInfo, error)
+	CopyObject(ctx context.Context, dst minio.CopyDestOptions, src minio.CopySrcOptions) (minio.UploadInfo, error)
+	ListObjects(ctx context.Context, bucketName string, opts minio.ListObjectsOptions) <-chan minio.ObjectInfo
+}
+
 type IObjectStore interface {
 	SaveFileToBucket(bucket string, filePath string) (uint64, error)
 	GetSnapFileReader(filePath string) (io.ReadCloser, error)
 	LoadTestData(client *minio.Client, repo repository.ISnapsRepository, minioPath string) error
+	MakeBucketAndAddKey(bucketName string, keyPath string, keyName string)
+	Move(sourceBucket, destinationBucket, objectName string) error
 }
 
 type ObjectStore struct {
-	cfg         *config.Config
-	MinioClient *minio.Client
+	Cfg         *config.Config
+	MinioClient IMinioClient
 }
 
 func NewObjectStore(minio *minio.Client, cfg *config.Config) IObjectStore {
 	if minio == nil {
-		return &ObjectStore{cfg: cfg, MinioClient: GetMinioClient(cfg)}
+		return &ObjectStore{Cfg: cfg, MinioClient: GetMinioClient(cfg)}
 	}
 	return &ObjectStore{MinioClient: minio}
 }
@@ -47,6 +59,11 @@ func (obs *ObjectStore) GetSnapFileReader(filePath string) (io.ReadCloser, error
 		cancel()
 		logrus.Errorf("error getting object from bucket 'snaps', file path: %s, err: %v", filePath, err)
 		return nil, err
+	}
+	if objectPtr == nil {
+		cancel()
+		logrus.Errorf("error getting object from bucket 'snaps', file path: %s, err: %v", filePath, err)
+		return nil, errors.New("object not found")
 	}
 
 	return objectPtr, nil
@@ -119,21 +136,21 @@ func GetMinioClient(cfg *config.Config) *minio.Client {
 	return minioClient
 }
 
-func MakeBucketAndAddKey(minioClient *minio.Client, bucketName string, keyPath string, keyName string) {
+func (obs *ObjectStore) MakeBucketAndAddKey(bucketName string, keyPath string, keyName string) {
 	// Make root bucket
 	fmt.Printf("*************************************\nCreating bucket: %s\n, keyPath: %s\n *************************", bucketName, keyPath)
 	ctx, cancel := context.WithCancel(context.Background())
 
 	defer cancel()
 
-	objectCh := minioClient.ListObjects(ctx, bucketName, minio.ListObjectsOptions{
+	objectCh := obs.MinioClient.ListObjects(ctx, bucketName, minio.ListObjectsOptions{
 		Recursive: true,
 	})
 	for object := range objectCh {
 		logrus.Tracef("object: %s", object.Key)
 	}
 
-	err := minioClient.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{})
+	err := obs.MinioClient.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{})
 	if err != nil {
 		logrus.Error(err)
 	}
@@ -148,7 +165,7 @@ func MakeBucketAndAddKey(minioClient *minio.Client, bucketName string, keyPath s
 	}
 	keyString := crypto.ExportRsaPrivateKeyAsPemStr(rootPrivateKey)
 
-	_, err = minioClient.PutObject(ctx, bucketName, keyName, strings.NewReader(keyString), int64(len(keyString)), minio.PutObjectOptions{})
+	_, err = obs.MinioClient.PutObject(ctx, bucketName, keyName, strings.NewReader(keyString), int64(len(keyString)), minio.PutObjectOptions{})
 	if err != nil {
 		panic(err)
 	}

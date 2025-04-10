@@ -67,7 +67,7 @@ func LoadConfig() (*Config, error) {
 	}
 
 	if cfg.StoreUrl == "" {
-		return nil, fmt.Errorf("store url is required")
+		return nil, fmt.Errorf("store url is required: example: http://localhost:8080")
 	}
 
 	return cfg, nil
