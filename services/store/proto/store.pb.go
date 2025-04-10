@@ -1143,6 +1143,53 @@ func (x *GetLatestRevisionRequest) GetChannel() string {
 	return ""
 }
 
+type DataChunk struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Chunk []byte `protobuf:"bytes,1,opt,name=chunk,proto3" json:"chunk,omitempty"`
+}
+
+func (x *DataChunk) Reset() {
+	*x = DataChunk{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_store_proto_msgTypes[16]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DataChunk) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DataChunk) ProtoMessage() {}
+
+func (x *DataChunk) ProtoReflect() protoreflect.Message {
+	mi := &file_store_proto_msgTypes[16]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DataChunk.ProtoReflect.Descriptor instead.
+func (*DataChunk) Descriptor() ([]byte, []int) {
+	return file_store_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *DataChunk) GetChunk() []byte {
+	if x != nil {
+		return x.Chunk
+	}
+	return nil
+}
+
 //  ####################### START DOWNLOAD #######################
 type SnapDownloadRequest struct {
 	state         protoimpl.MessageState
@@ -1155,7 +1202,7 @@ type SnapDownloadRequest struct {
 func (x *SnapDownloadRequest) Reset() {
 	*x = SnapDownloadRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_proto_msgTypes[16]
+		mi := &file_store_proto_msgTypes[17]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1168,7 +1215,7 @@ func (x *SnapDownloadRequest) String() string {
 func (*SnapDownloadRequest) ProtoMessage() {}
 
 func (x *SnapDownloadRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_store_proto_msgTypes[16]
+	mi := &file_store_proto_msgTypes[17]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1181,7 +1228,7 @@ func (x *SnapDownloadRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SnapDownloadRequest.ProtoReflect.Descriptor instead.
 func (*SnapDownloadRequest) Descriptor() ([]byte, []int) {
-	return file_store_proto_rawDescGZIP(), []int{16}
+	return file_store_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *SnapDownloadRequest) GetRevisionId() string {
@@ -1202,7 +1249,7 @@ type InitialDownloadResponse struct {
 func (x *InitialDownloadResponse) Reset() {
 	*x = InitialDownloadResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_proto_msgTypes[17]
+		mi := &file_store_proto_msgTypes[18]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1215,7 +1262,7 @@ func (x *InitialDownloadResponse) String() string {
 func (*InitialDownloadResponse) ProtoMessage() {}
 
 func (x *InitialDownloadResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_store_proto_msgTypes[17]
+	mi := &file_store_proto_msgTypes[18]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1228,59 +1275,12 @@ func (x *InitialDownloadResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InitialDownloadResponse.ProtoReflect.Descriptor instead.
 func (*InitialDownloadResponse) Descriptor() ([]byte, []int) {
-	return file_store_proto_rawDescGZIP(), []int{17}
+	return file_store_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *InitialDownloadResponse) GetRevision() *GetRevisionResponse {
 	if x != nil {
 		return x.Revision
-	}
-	return nil
-}
-
-type DataChunk struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Chunk []byte `protobuf:"bytes,1,opt,name=chunk,proto3" json:"chunk,omitempty"`
-}
-
-func (x *DataChunk) Reset() {
-	*x = DataChunk{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_store_proto_msgTypes[18]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *DataChunk) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DataChunk) ProtoMessage() {}
-
-func (x *DataChunk) ProtoReflect() protoreflect.Message {
-	mi := &file_store_proto_msgTypes[18]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DataChunk.ProtoReflect.Descriptor instead.
-func (*DataChunk) Descriptor() ([]byte, []int) {
-	return file_store_proto_rawDescGZIP(), []int{18}
-}
-
-func (x *DataChunk) GetChunk() []byte {
-	if x != nil {
-		return x.Chunk
 	}
 	return nil
 }
@@ -2042,18 +2042,18 @@ var file_store_proto_rawDesc = []byte{
 	0x73, 0x6e, 0x61, 0x70, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x74, 0x72, 0x61, 0x63,
 	0x6b, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x74, 0x72, 0x61, 0x63, 0x6b, 0x12, 0x18,
 	0x0a, 0x07, 0x63, 0x68, 0x61, 0x6e, 0x6e, 0x65, 0x6c, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52,
-	0x07, 0x63, 0x68, 0x61, 0x6e, 0x6e, 0x65, 0x6c, 0x22, 0x36, 0x0a, 0x13, 0x53, 0x6e, 0x61, 0x70,
-	0x44, 0x6f, 0x77, 0x6e, 0x6c, 0x6f, 0x61, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12,
-	0x1f, 0x0a, 0x0b, 0x72, 0x65, 0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e, 0x5f, 0x69, 0x64, 0x18, 0x01,
-	0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x72, 0x65, 0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e, 0x49, 0x64,
-	0x22, 0x51, 0x0a, 0x17, 0x49, 0x6e, 0x69, 0x74, 0x69, 0x61, 0x6c, 0x44, 0x6f, 0x77, 0x6e, 0x6c,
-	0x6f, 0x61, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x36, 0x0a, 0x08, 0x72,
-	0x65, 0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e,
-	0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x47, 0x65, 0x74, 0x52, 0x65, 0x76, 0x69, 0x73, 0x69, 0x6f,
-	0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x52, 0x08, 0x72, 0x65, 0x76, 0x69, 0x73,
-	0x69, 0x6f, 0x6e, 0x22, 0x21, 0x0a, 0x09, 0x44, 0x61, 0x74, 0x61, 0x43, 0x68, 0x75, 0x6e, 0x6b,
-	0x12, 0x14, 0x0a, 0x05, 0x63, 0x68, 0x75, 0x6e, 0x6b, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52,
-	0x05, 0x63, 0x68, 0x75, 0x6e, 0x6b, 0x22, 0xab, 0x01, 0x0a, 0x14, 0x53, 0x6e, 0x61, 0x70, 0x44,
+	0x07, 0x63, 0x68, 0x61, 0x6e, 0x6e, 0x65, 0x6c, 0x22, 0x21, 0x0a, 0x09, 0x44, 0x61, 0x74, 0x61,
+	0x43, 0x68, 0x75, 0x6e, 0x6b, 0x12, 0x14, 0x0a, 0x05, 0x63, 0x68, 0x75, 0x6e, 0x6b, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x0c, 0x52, 0x05, 0x63, 0x68, 0x75, 0x6e, 0x6b, 0x22, 0x36, 0x0a, 0x13, 0x53,
+	0x6e, 0x61, 0x70, 0x44, 0x6f, 0x77, 0x6e, 0x6c, 0x6f, 0x61, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65,
+	0x73, 0x74, 0x12, 0x1f, 0x0a, 0x0b, 0x72, 0x65, 0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e, 0x5f, 0x69,
+	0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x72, 0x65, 0x76, 0x69, 0x73, 0x69, 0x6f,
+	0x6e, 0x49, 0x64, 0x22, 0x51, 0x0a, 0x17, 0x49, 0x6e, 0x69, 0x74, 0x69, 0x61, 0x6c, 0x44, 0x6f,
+	0x77, 0x6e, 0x6c, 0x6f, 0x61, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x36,
+	0x0a, 0x08, 0x72, 0x65, 0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b,
+	0x32, 0x1a, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x47, 0x65, 0x74, 0x52, 0x65, 0x76, 0x69,
+	0x73, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x52, 0x08, 0x72, 0x65,
+	0x76, 0x69, 0x73, 0x69, 0x6f, 0x6e, 0x22, 0xab, 0x01, 0x0a, 0x14, 0x53, 0x6e, 0x61, 0x70, 0x44,
 	0x6f, 0x77, 0x6e, 0x6c, 0x6f, 0x61, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12,
 	0x3a, 0x0a, 0x07, 0x69, 0x6e, 0x69, 0x74, 0x69, 0x61, 0x6c, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b,
 	0x32, 0x1e, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x49, 0x6e, 0x69, 0x74, 0x69, 0x61, 0x6c,
@@ -2210,9 +2210,9 @@ var file_store_proto_goTypes = []interface{}{
 	(*GetRevisionsByEntryIdResponse)(nil),   // 13: store.GetRevisionsByEntryIdResponse
 	(*GetRevisionsByEntryIdResponses)(nil),  // 14: store.GetRevisionsByEntryIdResponses
 	(*GetLatestRevisionRequest)(nil),        // 15: store.GetLatestRevisionRequest
-	(*SnapDownloadRequest)(nil),             // 16: store.SnapDownloadRequest
-	(*InitialDownloadResponse)(nil),         // 17: store.InitialDownloadResponse
-	(*DataChunk)(nil),                       // 18: store.DataChunk
+	(*DataChunk)(nil),                       // 16: store.DataChunk
+	(*SnapDownloadRequest)(nil),             // 17: store.SnapDownloadRequest
+	(*InitialDownloadResponse)(nil),         // 18: store.InitialDownloadResponse
 	(*SnapDownloadResponse)(nil),            // 19: store.SnapDownloadResponse
 	(*SnapDownloadCompleteResponse)(nil),    // 20: store.SnapDownloadCompleteResponse
 	(*SnapPushRequest)(nil),                 // 21: store.SnapPushRequest
@@ -2245,13 +2245,13 @@ var file_store_proto_depIdxs = []int32{
 	13, // 17: store.GetRevisionsByEntryIdResponses.responses:type_name -> store.GetRevisionsByEntryIdResponse
 	27, // 18: store.GetRevisionsByEntryIdResponses.errors:type_name -> proto.Error
 	7,  // 19: store.InitialDownloadResponse.revision:type_name -> store.GetRevisionResponse
-	17, // 20: store.SnapDownloadResponse.initial:type_name -> store.InitialDownloadResponse
-	18, // 21: store.SnapDownloadResponse.data:type_name -> store.DataChunk
+	18, // 20: store.SnapDownloadResponse.initial:type_name -> store.InitialDownloadResponse
+	16, // 21: store.SnapDownloadResponse.data:type_name -> store.DataChunk
 	27, // 22: store.SnapDownloadResponse.errors:type_name -> proto.Error
 	7,  // 23: store.SnapDownloadCompleteResponse.revision:type_name -> store.GetRevisionResponse
 	27, // 24: store.SnapDownloadCompleteResponse.errors:type_name -> proto.Error
 	23, // 25: store.UnscannedUploadRequest.initial:type_name -> store.InitialUnscannedUploadRequest
-	18, // 26: store.UnscannedUploadRequest.data:type_name -> store.DataChunk
+	16, // 26: store.UnscannedUploadRequest.data:type_name -> store.DataChunk
 	27, // 27: store.UnscannedUploadRequest.errors:type_name -> proto.Error
 	27, // 28: store.UnscannedUploadCompleteResponse.errors:type_name -> proto.Error
 	27, // 29: store.AddUploadResponse.errors:type_name -> proto.Error
@@ -2261,7 +2261,7 @@ var file_store_proto_depIdxs = []int32{
 	10, // 33: store.StoreService.GetEntriesByAccountId:input_type -> store.GetEntriesByAccountIdRequest
 	12, // 34: store.StoreService.GetRevisionsByEntryIds:input_type -> store.GetRevisionsByEntryIdRequests
 	15, // 35: store.StoreService.GetLatestRevision:input_type -> store.GetLatestRevisionRequest
-	16, // 36: store.StoreService.SnapDownload:input_type -> store.SnapDownloadRequest
+	17, // 36: store.StoreService.SnapDownload:input_type -> store.SnapDownloadRequest
 	22, // 37: store.StoreService.UnscannedUpload:input_type -> store.UnscannedUploadRequest
 	25, // 38: store.StoreService.AddUpload:input_type -> store.AddUploadRequest
 	1,  // 39: store.StoreService.RegisterSnapName:output_type -> store.RegisterSnapNameResponse
@@ -2479,7 +2479,7 @@ func file_store_proto_init() {
 			}
 		}
 		file_store_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SnapDownloadRequest); i {
+			switch v := v.(*DataChunk); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2491,7 +2491,7 @@ func file_store_proto_init() {
 			}
 		}
 		file_store_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*InitialDownloadResponse); i {
+			switch v := v.(*SnapDownloadRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2503,7 +2503,7 @@ func file_store_proto_init() {
 			}
 		}
 		file_store_proto_msgTypes[18].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DataChunk); i {
+			switch v := v.(*InitialDownloadResponse); i {
 			case 0:
 				return &v.state
 			case 1:

@@ -133,6 +133,14 @@ message GetLatestRevisionRequest {
     string channel = 3;
 }
 
+// ################### STREAMING #######################
+
+message DataChunk {
+    bytes chunk = 1;
+}
+
+// ################ END STREAMING #######################
+
 //  ####################### START DOWNLOAD #######################
 message SnapDownloadRequest {
     string revision_id = 1;
@@ -140,10 +148,6 @@ message SnapDownloadRequest {
 
 message InitialDownloadResponse {
     GetRevisionResponse revision = 1;
-}
-
-message DataChunk {
-    bytes chunk = 1;
 }
 
 message SnapDownloadResponse {
