@@ -797,7 +797,7 @@ func (s *StoreLogic) UnscannedUpload(stream proto.StoreService_UnscannedUploadSe
 	}
 
 	err = stream.SendAndClose(&proto.UnscannedUploadCompleteResponse{
-		TempFileName: snapFileName,
+		TempFileName: tmpPath,
 		Size:         size,
 		Errors:       el.ConvertToProtoErrorList(),
 	})
