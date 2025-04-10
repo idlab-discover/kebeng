@@ -221,10 +221,10 @@ func (c *StoreClient) SnapDownload(revisionId string) *proto.SnapDownloadComplet
 	}
 
 	// TODO: refactor to return 3 values stream, cerror, error
-	// this way we can distuingish between a lower layer error and a grpc error in a cleaner way
+	// this way we can distinguish between a lower layer error and a grpc error in a cleaner way
 	stream, err := c.client.SnapDownload(context.Background(), req)
 	if err != nil {
-		// if err != nil we should read the stream (if we can) to get the actual error and than return it
+		// if err != nil we should read the stream (if we can) to get the actual error and then return it
 		if stream != nil {
 			if resp, recvErr := stream.Recv(); recvErr == nil && resp != nil && len(resp.Errors) > 0 {
 				logrus.Errorf("error starting grpc download stream, received: %v", resp.Errors)
@@ -239,6 +239,7 @@ func (c *StoreClient) SnapDownload(revisionId string) *proto.SnapDownloadComplet
 			}},
 		}
 	}
+
 	// create buffer for snap data
 	var fileData bytes.Buffer
 	response := &proto.SnapDownloadCompleteResponse{}
@@ -254,12 +255,20 @@ func (c *StoreClient) SnapDownload(revisionId string) *proto.SnapDownloadComplet
 			return &proto.SnapDownloadCompleteResponse{
 				Errors: []*proto.Error{{
 					Code:    cerror.InternalServerError,
-					Message: err.Error()},
-				},
+					Message: err.Error(),
+				}},
 			}
 		}
 
-		// first message contains revision metadata and an initial chunk
+		// Check for errors embedded in the response message
+		if len(resp.Errors) > 0 {
+			logrus.Errorf("received grpc stream error response: %v", resp.Errors)
+			return &proto.SnapDownloadCompleteResponse{
+				Errors: resp.Errors,
+			}
+		}
+
+		// first message contains revision metadata
 		if initial := resp.GetInitial(); initial != nil {
 			logrus.Debugf("received revision metadata: %v", initial.Revision)
 			response.Revision = initial.Revision
@@ -267,6 +276,7 @@ func (c *StoreClient) SnapDownload(revisionId string) *proto.SnapDownloadComplet
 			fileData.Write(data.Chunk)
 		}
 	}
+
 	response.Data = fileData.Bytes()
 	return response
 }

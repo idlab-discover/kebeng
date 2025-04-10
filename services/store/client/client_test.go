@@ -13,6 +13,7 @@ import (
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 func ptrBool(b bool) *bool {
@@ -856,6 +857,173 @@ func TestStoreClient_AddUpload(t *testing.T) {
 				assert.NotEmpty(t, resp.Errors)
 				assert.Equal(t, cerror.InternalServerError, resp.Errors[0].Code)
 			}
+			mockProtoClient.AssertExpectations(t)
+		})
+	}
+}
+
+func TestStoreClient_SnapDownload(t *testing.T) {
+	mockProtoClient := new(logic.MockStoreServiceClient)
+	storeClient := client.NewStoreClientWithClient(mockProtoClient)
+
+	tests := []struct {
+		name                   string
+		revisionId             string
+		mockStream             func() proto.StoreService_SnapDownloadClient
+		expectedResp           *proto.SnapDownloadCompleteResponse
+		expectedErrors         bool
+		expectedProtoError     bool
+		expectedErrorAndStream bool
+	}{
+		{
+			name:       "Successful download with metadata and data chunks",
+			revisionId: "test_revision_id",
+			mockStream: func() proto.StoreService_SnapDownloadClient {
+				mockStream := new(logic.MockSnapDownloadClient)
+				mockStream.On("Recv").Return(&proto.SnapDownloadResponse{
+					Payload: &proto.SnapDownloadResponse_Initial{
+						Initial: &proto.InitialDownloadResponse{
+							Revision: &proto.GetRevisionResponse{
+								Id:             "test_revision_id",
+								SnapName:       "test_snap",
+								SequenceNumber: 1,
+							},
+						},
+					},
+				}, nil).Once()
+				mockStream.On("Recv").Return(&proto.SnapDownloadResponse{
+					Payload: &proto.SnapDownloadResponse_Data{
+						Data: &proto.DataChunk{
+							Chunk: []byte("mock data chunk"),
+						},
+					},
+				}, nil).Once()
+				mockStream.On("Recv").Return(nil, io.EOF).Once()
+				return mockStream
+			},
+			expectedResp: &proto.SnapDownloadCompleteResponse{
+				Revision: &proto.GetRevisionResponse{
+					Id:             "test_revision_id",
+					SnapName:       "test_snap",
+					SequenceNumber: 1,
+				},
+				Data: []byte("mock data chunk"),
+			},
+			expectedErrors:         false,
+			expectedProtoError:     false,
+			expectedErrorAndStream: false,
+		},
+		{
+			name:       "Error starting stream",
+			revisionId: "test_revision_id",
+			mockStream: nil, // will trigger gRPC error
+			expectedResp: &proto.SnapDownloadCompleteResponse{
+				Errors: []*proto.Error{{
+					Code:    cerror.InternalServerError,
+					Message: "mock grpc error",
+				}},
+			},
+			expectedErrors:     true,
+			expectedProtoError: true,
+		},
+		{
+			name:       "Error during stream reception",
+			revisionId: "test_revision_id",
+			mockStream: func() proto.StoreService_SnapDownloadClient {
+				mockStream := new(logic.MockSnapDownloadClient)
+				mockStream.On("Recv").Return(nil, errors.New("mock stream error")).Once()
+				return mockStream
+			},
+			expectedResp: &proto.SnapDownloadCompleteResponse{
+				Errors: []*proto.Error{{
+					Code:    cerror.InternalServerError,
+					Message: "mock stream error",
+				}},
+			},
+			expectedErrors:         true,
+			expectedProtoError:     false,
+			expectedErrorAndStream: false,
+		},
+		{
+			name:       "Stream response contains errors",
+			revisionId: "test_revision_id",
+			mockStream: func() proto.StoreService_SnapDownloadClient {
+				mockStream := new(logic.MockSnapDownloadClient)
+				mockStream.On("Recv").Return(&proto.SnapDownloadResponse{
+					Errors: []*proto.Error{{
+						Code:    cerror.InternalServerError,
+						Message: "mock error in response",
+					}},
+				}, nil).Once()
+				// Add this to avoid extra unexpected Recv() panic
+				mockStream.On("Recv").Return(nil, io.EOF).Once()
+				return mockStream
+			},
+			expectedResp: &proto.SnapDownloadCompleteResponse{
+				Errors: []*proto.Error{{
+					Code:    cerror.InternalServerError,
+					Message: "mock error in response",
+				}},
+			},
+			expectedErrors:         true,
+			expectedProtoError:     false,
+			expectedErrorAndStream: false,
+		},
+		{
+			name:       "Failing because of error in stream",
+			revisionId: "test_revision_id",
+			mockStream: func() proto.StoreService_SnapDownloadClient {
+				mockStream := new(logic.MockSnapDownloadClient)
+				mockStream.On("Recv").Return(&proto.SnapDownloadResponse{
+					Errors: []*proto.Error{{
+						Code:    cerror.InternalServerError,
+						Message: "mock grpc error",
+					}},
+				}, nil).Once()
+				return mockStream
+			},
+			expectedResp: &proto.SnapDownloadCompleteResponse{
+				Errors: []*proto.Error{{
+					Code:    cerror.InternalServerError,
+					Message: "mock grpc error",
+				},
+				},
+			},
+			expectedErrors:         true,
+			expectedProtoError:     false,
+			expectedErrorAndStream: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.expectedErrorAndStream {
+				mockProtoClient.On("SnapDownload", mock.Anything, &proto.SnapDownloadRequest{
+					RevisionId: tc.revisionId,
+				}).Return(tc.mockStream(), errors.New("mock stream error")).Once()
+			} else if tc.mockStream != nil {
+				mockProtoClient.On("SnapDownload", mock.Anything, &proto.SnapDownloadRequest{
+					RevisionId: tc.revisionId,
+				}).Return(tc.mockStream(), nil).Once()
+			} else {
+				mockProtoClient.On("SnapDownload", mock.Anything, &proto.SnapDownloadRequest{
+					RevisionId: tc.revisionId,
+				}).Return(nil, errors.New("mock grpc error")).Once()
+			}
+
+			resp := storeClient.SnapDownload(tc.revisionId)
+
+			if tc.expectedErrors {
+				require.NotNil(t, resp)
+				require.NotEmpty(t, resp.Errors)
+				require.Equal(t, cerror.InternalServerError, resp.Errors[0].Code)
+			} else {
+				require.NotNil(t, resp)
+				require.Empty(t, resp.Errors)
+				require.Equal(t, tc.expectedResp.Revision, resp.Revision)
+				require.Equal(t, tc.expectedResp.Data, resp.Data)
+			}
+
 			mockProtoClient.AssertExpectations(t)
 		})
 	}
