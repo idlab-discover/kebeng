@@ -129,17 +129,9 @@ func LoadTestData(filePath string, db *sqlx.DB, repo repository.ISnapsRepository
 			size = *rev.Size
 		}
 
-		registeredRevision, cerr := repo.AddRevision(newEntryID, newTrackId, newChannelId, *rev.SnapName, size, *rev.SequenceNumber)
+		registeredRevision, cerr := repo.AddRevision(newEntryID, newTrackId, newChannelId, *rev.SnapName, size, *rev.SequenceNumber, rev.Architectures)
 		if cerr != nil {
 			return fmt.Errorf("failed to add revision for snap (%s): %v", newEntryID, cerr)
-		}
-
-		// TODO: if bram updates the AddRevision to include the architecture remove this and use the function instead
-		logrus.Infof("Inserting architectures for revision (%s): %v", registeredRevision.ID, rev.Architectures)
-		query := `UPDATE revision SET architectures = $2 WHERE id = $1`
-		_, err := db.Exec(query, registeredRevision.ID, rev.Architectures)
-		if err != nil {
-			return fmt.Errorf("failed to update architectures for revision (%s): %v", registeredRevision.ID, err)
 		}
 
 		idMap[rev.ID] = registeredRevision.ID
