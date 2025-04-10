@@ -232,6 +232,7 @@ func TestAddRevision(t *testing.T) {
 		entryId           uuid.UUID
 		trackId           uuid.UUID
 		channelId         uuid.UUID
+		snapName          string
 		size              uint64
 		sequenceNumber    uint
 		expectError       bool
@@ -242,6 +243,7 @@ func TestAddRevision(t *testing.T) {
 			entryId:        mockUUID,
 			trackId:        mockUUID,
 			channelId:      mockUUID,
+			snapName:       "mock-snap",
 			size:           123456,
 			sequenceNumber: 1,
 			expectError:    false,
@@ -251,6 +253,7 @@ func TestAddRevision(t *testing.T) {
 			entryId:           uuid.New(),
 			trackId:           mockUUID,
 			channelId:         mockUUID,
+			snapName:          "mock-snap",
 			size:              123456,
 			sequenceNumber:    1,
 			expectError:       true,
@@ -261,6 +264,7 @@ func TestAddRevision(t *testing.T) {
 			entryId:           mockUUID,
 			trackId:           uuid.New(),
 			channelId:         mockUUID,
+			snapName:          "mock-snap",
 			size:              123456,
 			sequenceNumber:    1,
 			expectError:       true,
@@ -271,6 +275,7 @@ func TestAddRevision(t *testing.T) {
 			entryId:           mockUUID,
 			trackId:           mockUUID,
 			channelId:         uuid.New(),
+			snapName:          "mock-snap",
 			size:              123456,
 			sequenceNumber:    1,
 			expectError:       true,
@@ -279,7 +284,7 @@ func TestAddRevision(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			revision, err := globalRepo.AddRevision(tt.entryId, tt.trackId, tt.channelId, tt.size, tt.sequenceNumber)
+			revision, err := globalRepo.AddRevision(tt.entryId, tt.trackId, tt.channelId, tt.snapName, tt.size, tt.sequenceNumber)
 			if tt.expectError {
 				assert.NotNil(t, err)
 				if err != nil {
@@ -1096,15 +1101,17 @@ func TestGetLatestRevision(t *testing.T) {
 	rev1ID := uuid.New()
 	rev2ID := uuid.New()
 	rev3ID := uuid.New()
+	snapName := "test-snap"
 	_, err = globalDB.Exec(`
-		INSERT INTO revision (id, entry_id, snap_track_id, snap_channel_id, updated_at, sequence_number, version, status)
+		INSERT INTO revision (id, entry_id, snap_track_id, snap_channel_id, snap_name, updated_at, sequence_number, version, status)
 		VALUES 
-		($1, $2, $3, $4, $5, 1, '1.0.0', 'active'),
-		($6, $2, $3, $4, $7, 2, '1.0.1', 'active'),
-		($8, $2, $3, $4, $9, 3, '1.0.2', 'active');
+		($1, $2, $3, $4, $10, $5, 1, '1.0.0', 'active'),
+		($6, $2, $3, $4, $10, $7, 2, '1.0.1', 'active'),
+		($8, $2, $3, $4, $10, $9, 3, '1.0.2', 'active');
 	`, rev1ID, entryID, trackID, channelID, now.Add(-10*time.Minute),
 		rev2ID, now.Add(-5*time.Minute),
-		rev3ID, now.Add(-1*time.Minute))
+		rev3ID, now.Add(-1*time.Minute),
+		snapName)
 	assert.NoError(t, err)
 
 	// Insert 1 revision in a different track/channel but with the most recent update

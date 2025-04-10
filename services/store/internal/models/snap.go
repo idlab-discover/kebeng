@@ -79,6 +79,7 @@ type SnapRevision struct {
 	CreatedAt              time.Time      `json:"created_at" db:"created_at"`
 	UpdatedAt              time.Time      `json:"updated_at" db:"updated_at"`
 	DeletedAt              *time.Time     `json:"deleted_at,omitempty" db:"deleted_at"`
+	SnapName               *string         `json:"snap_name" db:"snap_name"`
 	BuildAssertionFileName *string        `json:"build_assertion_filename,omitempty" db:"build_assertion_filename"`
 	SHA3_384               *string        `json:"sha3_384,omitempty" db:"sha3_384"`
 	SHA3_384_Encoded       *string        `json:"sha3_384_encoded,omitempty" db:"sha3_384_encoded"`
