@@ -22,11 +22,10 @@ func (m *MockStoreServiceClient) RegisterSnapName(ctx context.Context, in *proto
 
 func (m *MockStoreServiceClient) GetEntries(ctx context.Context, in *proto.GetEntriesRequest, opts ...grpc.CallOption) (*proto.GetEntriesResponse, error) {
 	args := m.Called(ctx, in)
-	resp := args.Get(0)
-	if resp == nil {
+	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return resp.(*proto.GetEntriesResponse), args.Error(1)
+	return args.Get(0).(*proto.GetEntriesResponse), nil
 }
 
 func (m *MockStoreServiceClient) GetEntryById(ctx context.Context, in *proto.GetEntryRequest, opts ...grpc.CallOption) (*proto.GetEntryResponse, error) {
