@@ -81,11 +81,10 @@ func (m *MockStoreServiceClient) GetRevisionByNameAndSequence(ctx context.Contex
 
 func (m *MockStoreServiceClient) UnscannedUpload(ctx context.Context, in *proto.UnscannedUploadRequest, opts ...grpc.CallOption) (*proto.UnscannedUploadResponse, error) {
 	args := m.Called(ctx, in)
-	resp := args.Get(0)
-	if resp == nil {
+	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return resp.(*proto.UnscannedUploadResponse), args.Error(1)
+	return args.Get(0).(*proto.UnscannedUploadResponse), nil
 }
 
 func (m *MockStoreServiceClient) AddUpload(ctx context.Context, in *proto.AddUploadRequest, opts ...grpc.CallOption) (*proto.AddUploadResponse, error) {

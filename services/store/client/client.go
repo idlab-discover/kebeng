@@ -167,6 +167,7 @@ func (c *StoreClient) GetLatestRevision(snapName, track, channel string) *proto.
 	return resp
 }
 
+// TODO: fix so that file gets streamed
 func (c *StoreClient) UnscannedUpload(snapFile io.Reader) *proto.UnscannedUploadResponse {
 	fileData, err := io.ReadAll(snapFile)
 	if err != nil {
