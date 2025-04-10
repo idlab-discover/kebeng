@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package cerror;
+option go_package = "github.com/idlab-discover/kebeng/common/cerror/proto;cerror";
+
+message Error {
+    string message = 1;
+    string code = 2;
+}
