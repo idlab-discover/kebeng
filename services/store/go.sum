@@ -38,8 +38,8 @@ github.com/go-sql-driver/mysql v1.8.1 h1:LedoTUt/eveggdHS9qUFC1EFSa8bU2+1pZjSRpv
 github.com/go-sql-driver/mysql v1.8.1/go.mod h1:wEBSXgmK//2ZFJyE+qWnIsVGmvmEKlqwuVSjsCm7DZg=
 github.com/goccy/go-json v0.10.5 h1:Fq85nIqj+gXn/S5ahsiTlK3TmC85qgirsdTP/+DeaC4=
 github.com/goccy/go-json v0.10.5/go.mod h1:oq7eo15ShAhp70Anwd5lgX2pLfOS3QCiwU/PULtXL6M=
-github.com/godbus/dbus v4.1.0+incompatible h1:WqqLRTsQic3apZUK9qC5sGNfXthmPXzUZ7nQPrNITa4=
-github.com/godbus/dbus v4.1.0+incompatible/go.mod h1:/YcGZj5zSblfDWMMoOzV4fas9FZnQYTkDnsGvmh2Grw=
+github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 h1:ZpnhV/YsD2/4cESfV5+Hoeu/iUR3ruzNvZ+yQfO03a0=
+github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2/go.mod h1:bBOAhwG1umN6/6ZUMtDFBMQR8jRg9O75tm9K00oMsK4=
 github.com/gogo/protobuf v1.3.2 h1:Ov1cvc58UF3b5XjBnZv7+opcTcQFZebYjWzi34vdm4Q=
 github.com/gogo/protobuf v1.3.2/go.mod h1:P1XiOD3dCwIKUDQYPy72D8LYyHL2YPYrpS2s69NZV8Q=
 github.com/golang-migrate/migrate/v4 v4.18.2 h1:2VSCMz7x7mjyTXx3m2zPokOY82LTRgxK1yQYKo6wWQ8=
@@ -57,16 +57,8 @@ github.com/hashicorp/go-multierror v1.1.1 h1:H5DkEtf6CXdFp0N0Em5UCwQpXMWke8IA0+l
 github.com/hashicorp/go-multierror v1.1.1/go.mod h1:iw975J/qwKPdAO1clOe2L8331t/9/fmwbPZ6JB6eMoM=
 github.com/hashicorp/hcl v1.0.0 h1:0Anlzjpi4vEasTeNFn2mLJgTSwt0+6sfsiTG8qcWGx4=
 github.com/hashicorp/hcl v1.0.0/go.mod h1:E5yfLk+7swimpb2L/Alb/PJmXilQ/rhwaUYs4T20WEQ=
-github.com/idlab-discover/kebeng v0.0.0-20250408180733-119016b78145 h1:EHkax7xyUXvGLpcAg5Cf/JQrA8E7Q8kI8nDVr7JEmrY=
-github.com/idlab-discover/kebeng v0.0.0-20250408180733-119016b78145/go.mod h1:sA3WVcQPDn3CbW4Dse26VFKTWvozqSwzKpwU42xrVBU=
-github.com/idlab-discover/kebeng v0.0.0-20250410125135-73a5ae3ba64f h1:8nH1w3zOhUjuvToDmDfZKvua0tQlJZyG6PHkyY30Nc8=
-github.com/idlab-discover/kebeng v0.0.0-20250410125135-73a5ae3ba64f/go.mod h1:oL4wiGQMlCIATI2/LRjQcGpaD4XojLfC0YxeKHj1FLs=
 github.com/idlab-discover/kebeng v0.0.0-20250410132007-6a9946cf93cd h1:NWOZDXaYAhYau2pvp8zBONE0FT9F7u2Q5O30npmGqRI=
 github.com/idlab-discover/kebeng v0.0.0-20250410132007-6a9946cf93cd/go.mod h1:oL4wiGQMlCIATI2/LRjQcGpaD4XojLfC0YxeKHj1FLs=
-github.com/idlab-discover/kebeng/services/account v0.0.0-20250311154753-8199d8a8bc52 h1:jfMruD8ARh4969adK7B3MbmDbEkBVA42n/WOi2BUrv8=
-github.com/idlab-discover/kebeng/services/account v0.0.0-20250311154753-8199d8a8bc52/go.mod h1:S5vOOfjVpuRRZEVR5mUcNqP076sxG8qsVdtxIW+9iWA=
-github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250318141246-77a544f56023 h1:pL76A+DTYUZlKVab3El0+5vuaMVPhHEKIQpsR2CsIW8=
-github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250318141246-77a544f56023/go.mod h1:D8cIQJqmEKaXzVtxtYBPLLoAuzDdfBqbXh/l1czweOY=
 github.com/jmoiron/sqlx v1.4.0 h1:1PLqN7S1UYp5t4SrVVnt4nUVNemrDAtxlulVe+Qgm3o=
 github.com/jmoiron/sqlx v1.4.0/go.mod h1:ZrZ7UsYB/weZdl2Bxg6jCRO9c3YHl8r3ahlKmRT4JLY=
 github.com/klauspost/compress v1.17.11 h1:In6xLpyWOi1+C7tXUUWv2ot1QvBjxevKAaI6IXrJmUc=
