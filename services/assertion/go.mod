@@ -5,7 +5,7 @@ go 1.22.2
 require (
 	github.com/golang-migrate/migrate/v4 v4.18.2
 	github.com/google/uuid v1.6.0
-	github.com/idlab-discover/kebeng v0.0.0-20250325114346-78051e963813
+	github.com/idlab-discover/kebeng v0.0.0-20250410133923-a134256345a7
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/viper v1.19.0
 	google.golang.org/grpc v1.71.0
