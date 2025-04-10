@@ -332,6 +332,98 @@ func TestStoreClient_GetRevisions(t *testing.T) {
 	}
 }
 
+func TestStoreClient_GetEntriesByAccountID(t *testing.T) {
+	// Create our mock proto client and the StoreClient that wraps it.
+	mockProtoClient := new(logic.MockStoreServiceClient)
+	storeClient := client.NewStoreClientWithClient(mockProtoClient)
+
+	tests := []struct {
+		name               string
+		accountID          string
+		expectedResp       *proto.GetEntriesResponse
+		expectedErrors     bool
+		expectedProtoError bool
+	}{
+		{
+			name:      "Successful proto call",
+			accountID: "test_account_id",
+			expectedResp: &proto.GetEntriesResponse{
+				Entries: []*proto.GetEntryResponse{
+					{
+						Id:          "test_id",
+						SnapName:    "test_name",
+						Confinement: ptrString("strict"),
+						Base:        ptrString("core24"),
+						Private:     ptrBool(false),
+						// Other fields...
+						Errors: []*proto.Error{},
+					},
+				},
+				Errors: []*proto.Error{},
+			},
+			expectedErrors:     false,
+			expectedProtoError: false,
+		},
+		{
+			name:               "proto call returns error",
+			accountID:          "test_account_id",
+			expectedResp:       nil,
+			expectedErrors:     false,
+			expectedProtoError: true,
+		},
+		{
+			name:      "response contains errors",
+			accountID: "test_account_id",
+			expectedResp: &proto.GetEntriesResponse{
+				Entries: []*proto.GetEntryResponse{
+					{
+						Id:          "test_id",
+						SnapName:    "test_name",
+						Confinement: ptrString("strict"),
+						Base:        ptrString("core24"),
+						Private:     ptrBool(false),
+						// Other fields...
+						Errors: []*proto.Error{{
+							Code:    cerror.InternalServerError,
+							Message: "mock error",
+						}},
+					},
+				},
+				Errors: []*proto.Error{{
+					Code:    cerror.InternalServerError,
+					Message: "mock error",
+				}},
+			},
+			expectedErrors:     true,
+			expectedProtoError: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.expectedProtoError {
+				mockProtoClient.On("GetEntriesByAccountId", mock.Anything, mock.Anything).Return(nil, errors.New("")).Once()
+			} else {
+				mockProtoClient.On("GetEntriesByAccountId", mock.Anything, mock.Anything).Return(tc.expectedResp, nil).Once()
+			}
+
+			resp := storeClient.GetEntriesByAccountID(tc.accountID)
+			if !tc.expectedErrors && !tc.expectedProtoError {
+				assert.Equal(t, tc.expectedResp, resp)
+				assert.Empty(t, resp.Errors)
+			} else if tc.expectedErrors {
+				assert.NotNil(t, resp)
+				assert.NotEmpty(t, resp.Errors)
+			} else if tc.expectedProtoError {
+				assert.NotNil(t, resp)
+				assert.NotEmpty(t, resp.Errors)
+				assert.Equal(t, cerror.InternalServerError, resp.Errors[0].Code)
+			}
+			mockProtoClient.AssertExpectations(t)
+		})
+	}
+}
+
 func TestStoreClient_AddUpload(t *testing.T) {
 	// Create our mock proto client and the StoreClient that wraps it.
 	mockProtoClient := new(logic.MockStoreServiceClient)
