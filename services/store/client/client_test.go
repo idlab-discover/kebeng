@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
+	cerrorpb "github.com/idlab-discover/kebeng/common/cerror/proto"
 	"github.com/idlab-discover/kebeng/services/store/client"
 	"github.com/idlab-discover/kebeng/services/store/internal/logic"
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
@@ -72,7 +73,7 @@ func TestStoreClient_RegisterSnapName(t *testing.T) {
 			storeName: "test_store",
 			dryRun:    false,
 			expectedResp: &proto.RegisterSnapNameResponse{
-				Errors: []*proto.Error{{
+				Errors: []*cerrorpb.Error{{
 					Code:    cerror.InternalServerError,
 					Message: "mock error",
 				}},
@@ -139,10 +140,10 @@ func TestStoreClient_GetEntries(t *testing.T) {
 						Base:        ptrString("core24"),
 						Private:     ptrBool(false),
 						// Other fields...
-						Errors: []*proto.Error{},
+						Errors: []*cerrorpb.Error{},
 					},
 				},
-				Errors: []*proto.Error{},
+				Errors: []*cerrorpb.Error{},
 			},
 			expectedErrors:     false,
 			expectedProtoError: false,
@@ -182,13 +183,13 @@ func TestStoreClient_GetEntries(t *testing.T) {
 						Base:        ptrString("core24"),
 						Private:     ptrBool(false),
 						// Other fields...
-						Errors: []*proto.Error{{
+						Errors: []*cerrorpb.Error{{
 							Code:    cerror.InternalServerError,
 							Message: "mock error",
 						}},
 					},
 				},
-				Errors: []*proto.Error{{
+				Errors: []*cerrorpb.Error{{
 					Code:    cerror.InternalServerError,
 					Message: "mock error",
 				}},
@@ -253,10 +254,10 @@ func TestStoreClient_GetRevisions(t *testing.T) {
 						SnapName:       "test_name",
 						SequenceNumber: 1,
 						// Other fields...
-						Errors: []*proto.Error{},
+						Errors: []*cerrorpb.Error{},
 					},
 				},
-				Errors: []*proto.Error{},
+				Errors: []*cerrorpb.Error{},
 			},
 			expectedErrors:     false,
 			expectedProtoError: false,
@@ -294,13 +295,13 @@ func TestStoreClient_GetRevisions(t *testing.T) {
 						SnapName:       "test_name",
 						SequenceNumber: 1,
 						// Other fields...
-						Errors: []*proto.Error{{
+						Errors: []*cerrorpb.Error{{
 							Code:    cerror.InternalServerError,
 							Message: "mock error",
 						}},
 					},
 				},
-				Errors: []*proto.Error{{
+				Errors: []*cerrorpb.Error{{
 					Code:    cerror.InternalServerError,
 					Message: "mock error",
 				}},
@@ -359,10 +360,10 @@ func TestStoreClient_GetEntriesByAccountID(t *testing.T) {
 						Base:        ptrString("core24"),
 						Private:     ptrBool(false),
 						// Other fields...
-						Errors: []*proto.Error{},
+						Errors: []*cerrorpb.Error{},
 					},
 				},
-				Errors: []*proto.Error{},
+				Errors: []*cerrorpb.Error{},
 			},
 			expectedErrors:     false,
 			expectedProtoError: false,
@@ -386,13 +387,13 @@ func TestStoreClient_GetEntriesByAccountID(t *testing.T) {
 						Base:        ptrString("core24"),
 						Private:     ptrBool(false),
 						// Other fields...
-						Errors: []*proto.Error{{
+						Errors: []*cerrorpb.Error{{
 							Code:    cerror.InternalServerError,
 							Message: "mock error",
 						}},
 					},
 				},
-				Errors: []*proto.Error{{
+				Errors: []*cerrorpb.Error{{
 					Code:    cerror.InternalServerError,
 					Message: "mock error",
 				}},
@@ -456,10 +457,10 @@ func TestStoreClient_GetRevisionsByEntryIds(t *testing.T) {
 								Id:             "revision_id_1",
 								SnapName:       "test_snap_1",
 								SequenceNumber: 1,
-								Errors:         []*proto.Error{},
+								Errors:         []*cerrorpb.Error{},
 							},
 						},
-						Errors: []*proto.Error{},
+						Errors: []*cerrorpb.Error{},
 					},
 					{
 						EntryId: "test_entry_id_2",
@@ -468,13 +469,13 @@ func TestStoreClient_GetRevisionsByEntryIds(t *testing.T) {
 								Id:             "revision_id_2",
 								SnapName:       "test_snap_2",
 								SequenceNumber: 2,
-								Errors:         []*proto.Error{},
+								Errors:         []*cerrorpb.Error{},
 							},
 						},
-						Errors: []*proto.Error{},
+						Errors: []*cerrorpb.Error{},
 					},
 				},
-				Errors: []*proto.Error{},
+				Errors: []*cerrorpb.Error{},
 			},
 			expectedErrors:     false,
 			expectedProtoError: false,
@@ -508,19 +509,19 @@ func TestStoreClient_GetRevisionsByEntryIds(t *testing.T) {
 								Id:             "revision_id_1",
 								SnapName:       "test_snap_1",
 								SequenceNumber: 1,
-								Errors: []*proto.Error{{
+								Errors: []*cerrorpb.Error{{
 									Code:    cerror.InternalServerError,
 									Message: "mock error",
 								}},
 							},
 						},
-						Errors: []*proto.Error{{
+						Errors: []*cerrorpb.Error{{
 							Code:    cerror.InternalServerError,
 							Message: "mock error",
 						}},
 					},
 				},
-				Errors: []*proto.Error{{
+				Errors: []*cerrorpb.Error{{
 					Code:    cerror.InternalServerError,
 					Message: "mock error",
 				}},
@@ -584,7 +585,7 @@ func TestStoreClient_GetLatestRevision(t *testing.T) {
 				Id:             "revision_id",
 				SnapName:       "test_snap",
 				SequenceNumber: 1,
-				Errors:         []*proto.Error{},
+				Errors:         []*cerrorpb.Error{},
 			},
 			expectedErrors:     false,
 			expectedProtoError: false,
@@ -603,7 +604,7 @@ func TestStoreClient_GetLatestRevision(t *testing.T) {
 				Id:             "revision_id",
 				SnapName:       "test_snap",
 				SequenceNumber: 1,
-				Errors:         []*proto.Error{},
+				Errors:         []*cerrorpb.Error{},
 			},
 			expectedErrors:     false,
 			expectedProtoError: false,
@@ -614,7 +615,7 @@ func TestStoreClient_GetLatestRevision(t *testing.T) {
 			track:    "stable",
 			channel:  "edge",
 			expectedResp: &proto.GetRevisionResponse{
-				Errors: []*proto.Error{{
+				Errors: []*cerrorpb.Error{{
 					Code:    cerror.MissingField,
 					Message: "snapName is required",
 				}},
@@ -647,7 +648,7 @@ func TestStoreClient_GetLatestRevision(t *testing.T) {
 				Channel:  "edge",
 			},
 			expectedResp: &proto.GetRevisionResponse{
-				Errors: []*proto.Error{{
+				Errors: []*cerrorpb.Error{{
 					Code:    cerror.InternalServerError,
 					Message: "mock error",
 				}},
@@ -709,7 +710,7 @@ func TestStoreClient_UnscannedUpload(t *testing.T) {
 			expectedResp: &proto.UnscannedUploadResponse{
 				TempFileName: "mock_filename",
 				FileSize:     12345,
-				Errors:       []*proto.Error{},
+				Errors:       []*cerrorpb.Error{},
 			},
 			expectedErrors:     false,
 			expectedProtoError: false,
@@ -732,7 +733,7 @@ func TestStoreClient_UnscannedUpload(t *testing.T) {
 			name:     "response contains errors",
 			snapFile: bytes.NewReader([]byte("mock snap file content")),
 			expectedResp: &proto.UnscannedUploadResponse{
-				Errors: []*proto.Error{{
+				Errors: []*cerrorpb.Error{{
 					Code:    cerror.InternalServerError,
 					Message: "mock error",
 				}},
@@ -808,7 +809,7 @@ func TestStoreClient_AddUpload(t *testing.T) {
 				Id:       mockID.String(),
 				SnapName: "test_snap",
 				Status:   "pending",
-				Errors:   []*proto.Error{},
+				Errors:   []*cerrorpb.Error{},
 			},
 			expectedErrors:     false,
 			expectedProtoError: false,
@@ -827,7 +828,7 @@ func TestStoreClient_AddUpload(t *testing.T) {
 			snapName: "test_snap",
 			entryId:  uuid.New(),
 			expectedResp: &proto.AddUploadResponse{
-				Errors: []*proto.Error{{
+				Errors: []*cerrorpb.Error{{
 					Code:    cerror.InternalServerError,
 					Message: "mock error",
 				}},
@@ -918,7 +919,7 @@ func TestStoreClient_SnapDownload(t *testing.T) {
 			revisionId: "test_revision_id",
 			mockStream: nil, // will trigger gRPC error
 			expectedResp: &proto.SnapDownloadCompleteResponse{
-				Errors: []*proto.Error{{
+				Errors: []*cerrorpb.Error{{
 					Code:    cerror.InternalServerError,
 					Message: "mock grpc error",
 				}},
@@ -935,7 +936,7 @@ func TestStoreClient_SnapDownload(t *testing.T) {
 				return mockStream
 			},
 			expectedResp: &proto.SnapDownloadCompleteResponse{
-				Errors: []*proto.Error{{
+				Errors: []*cerrorpb.Error{{
 					Code:    cerror.InternalServerError,
 					Message: "mock stream error",
 				}},
@@ -950,7 +951,7 @@ func TestStoreClient_SnapDownload(t *testing.T) {
 			mockStream: func() proto.StoreService_SnapDownloadClient {
 				mockStream := new(logic.MockSnapDownloadClient)
 				mockStream.On("Recv").Return(&proto.SnapDownloadResponse{
-					Errors: []*proto.Error{{
+					Errors: []*cerrorpb.Error{{
 						Code:    cerror.InternalServerError,
 						Message: "mock error in response",
 					}},
@@ -960,7 +961,7 @@ func TestStoreClient_SnapDownload(t *testing.T) {
 				return mockStream
 			},
 			expectedResp: &proto.SnapDownloadCompleteResponse{
-				Errors: []*proto.Error{{
+				Errors: []*cerrorpb.Error{{
 					Code:    cerror.InternalServerError,
 					Message: "mock error in response",
 				}},
@@ -975,7 +976,7 @@ func TestStoreClient_SnapDownload(t *testing.T) {
 			mockStream: func() proto.StoreService_SnapDownloadClient {
 				mockStream := new(logic.MockSnapDownloadClient)
 				mockStream.On("Recv").Return(&proto.SnapDownloadResponse{
-					Errors: []*proto.Error{{
+					Errors: []*cerrorpb.Error{{
 						Code:    cerror.InternalServerError,
 						Message: "mock grpc error",
 					}},
@@ -983,7 +984,7 @@ func TestStoreClient_SnapDownload(t *testing.T) {
 				return mockStream
 			},
 			expectedResp: &proto.SnapDownloadCompleteResponse{
-				Errors: []*proto.Error{{
+				Errors: []*cerrorpb.Error{{
 					Code:    cerror.InternalServerError,
 					Message: "mock grpc error",
 				},

@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 import "google/protobuf/timestamp.proto";
+import "common/cerror/proto/error.proto";
 
 package store;
 option go_package = "github.com/idlab-discover/kebeng/services/store/proto;store";
@@ -28,7 +29,7 @@ message RegisterSnapNameRequest {
 message RegisterSnapNameResponse {
     string id = 1;
     string snap_name = 2;
-    repeated Error errors = 3;
+    repeated proto.Error errors = 3;
 }
 
 message GetEntryRequest {
@@ -50,7 +51,7 @@ message GetEntryResponse {
     google.protobuf.Timestamp since = 10;
     optional string icon_url = 11;
     repeated GetRevisionResponse revisions = 12;
-    repeated Error errors = 13;
+    repeated proto.Error errors = 13;
 }
 
 
@@ -61,7 +62,7 @@ message GetEntriesRequest {
 
 message GetEntriesResponse {
     repeated GetEntryResponse entries = 1;
-    repeated Error errors = 2;
+    repeated proto.Error errors = 2;
 }
 
 message GetRevisionRequest {
@@ -89,7 +90,7 @@ message GetRevisionResponse {
     string channel_id = 16;
     string branch_id = 17;
     
-    repeated Error errors = 18;
+    repeated proto.Error errors = 18;
 }
 
 message GetRevisionsRequest {
@@ -98,13 +99,9 @@ message GetRevisionsRequest {
 
 message GetRevisionsResponse {
     repeated GetRevisionResponse revisions = 1;
-    repeated Error errors = 2;
+    repeated proto.Error errors = 2;
 }
 
-message Error {
-    string message = 1;
-    string code = 2;
-}
 
 message GetEntriesByAccountIdRequest {
     string account_id = 1;
@@ -121,12 +118,12 @@ message GetRevisionsByEntryIdRequests {
 message GetRevisionsByEntryIdResponse {
     string entry_id = 1;
     repeated GetRevisionResponse revisions = 2;
-    repeated Error errors = 3;
+    repeated proto.Error errors = 3;
 }
 
 message GetRevisionsByEntryIdResponses {
     repeated GetRevisionsByEntryIdResponse responses = 1;
-    repeated Error errors = 2;
+    repeated proto.Error errors = 2;
 }
 
 
@@ -154,13 +151,13 @@ message SnapDownloadResponse {
       InitialDownloadResponse initial = 1;
       DataChunk data = 2;
     }
-    repeated Error errors = 3;
+    repeated proto.Error errors = 3;
 }
 
 message SnapDownloadCompleteResponse {
     GetRevisionResponse revision = 1;
     bytes data = 2;
-    repeated Error errors = 3;
+    repeated proto.Error errors = 3;
 }
 
 // ####################### END DOWNLOAD #######################
@@ -180,7 +177,7 @@ message UnscannedUploadRequest {
 message UnscannedUploadResponse {
     string temp_file_name = 1;
     uint64 file_size = 2;
-    repeated Error errors = 3;
+    repeated proto.Error errors = 3;
 }
 
 message AddUploadRequest {
@@ -194,7 +191,7 @@ message AddUploadResponse {
     string id = 1;
     string snap_name = 2;
     string status = 3;
-    repeated Error errors = 4;
+    repeated proto.Error errors = 4;
 }
 
 
