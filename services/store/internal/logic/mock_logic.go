@@ -98,11 +98,10 @@ func (m *MockStoreServiceClient) AddUpload(ctx context.Context, in *proto.AddUpl
 
 func (m *MockStoreServiceClient) GetLatestRevision(ctx context.Context, in *proto.GetLatestRevisionRequest, opts ...grpc.CallOption) (*proto.GetRevisionResponse, error) {
 	args := m.Called(ctx, in)
-	resp := args.Get(0)
-	if resp == nil {
+	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return resp.(*proto.GetRevisionResponse), args.Error(1)
+	return args.Get(0).(*proto.GetRevisionResponse), nil
 }
 
 func (m *MockStoreServiceClient) SnapDownload(ctx context.Context, in *proto.SnapDownloadRequest, opts ...grpc.CallOption) (proto.StoreService_SnapDownloadClient, error) {

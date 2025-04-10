@@ -552,6 +552,141 @@ func TestStoreClient_GetRevisionsByEntryIds(t *testing.T) {
 	}
 }
 
+func TestStoreClient_GetLatestRevision(t *testing.T) {
+	// Create our mock proto client and the StoreClient that wraps it.
+	mockProtoClient := new(logic.MockStoreServiceClient)
+	storeClient := client.NewStoreClientWithClient(mockProtoClient)
+
+	tests := []struct {
+		name               string
+		snapName           string
+		track              string
+		channel            string
+		expectedReq        *proto.GetLatestRevisionRequest
+		expectedResp       *proto.GetRevisionResponse
+		expectedErrors     bool
+		expectedProtoError bool
+	}{
+		{
+			name:     "Successful proto call with all fields",
+			snapName: "test_snap",
+			track:    "stable",
+			channel:  "edge",
+			expectedReq: &proto.GetLatestRevisionRequest{
+				SnapName: "test_snap",
+				Track:    "stable",
+				Channel:  "edge",
+			},
+			expectedResp: &proto.GetRevisionResponse{
+				Id:             "revision_id",
+				SnapName:       "test_snap",
+				SequenceNumber: 1,
+				Errors:         []*proto.Error{},
+			},
+			expectedErrors:     false,
+			expectedProtoError: false,
+		},
+		{
+			name:     "Successful proto call with default track and channel",
+			snapName: "test_snap",
+			track:    "",
+			channel:  "",
+			expectedReq: &proto.GetLatestRevisionRequest{
+				SnapName: "test_snap",
+				Track:    "latest",
+				Channel:  "stable",
+			},
+			expectedResp: &proto.GetRevisionResponse{
+				Id:             "revision_id",
+				SnapName:       "test_snap",
+				SequenceNumber: 1,
+				Errors:         []*proto.Error{},
+			},
+			expectedErrors:     false,
+			expectedProtoError: false,
+		},
+		{
+			name:     "Missing snapName",
+			snapName: "",
+			track:    "stable",
+			channel:  "edge",
+			expectedResp: &proto.GetRevisionResponse{
+				Errors: []*proto.Error{{
+					Code:    cerror.MissingField,
+					Message: "snapName is required",
+				}},
+			},
+			expectedErrors:     true,
+			expectedProtoError: false,
+		},
+		{
+			name:     "proto call returns error",
+			snapName: "test_snap",
+			track:    "stable",
+			channel:  "edge",
+			expectedReq: &proto.GetLatestRevisionRequest{
+				SnapName: "test_snap",
+				Track:    "stable",
+				Channel:  "edge",
+			},
+			expectedResp:       nil,
+			expectedErrors:     false,
+			expectedProtoError: true,
+		},
+		{
+			name:     "response contains errors",
+			snapName: "test_snap",
+			track:    "stable",
+			channel:  "edge",
+			expectedReq: &proto.GetLatestRevisionRequest{
+				SnapName: "test_snap",
+				Track:    "stable",
+				Channel:  "edge",
+			},
+			expectedResp: &proto.GetRevisionResponse{
+				Errors: []*proto.Error{{
+					Code:    cerror.InternalServerError,
+					Message: "mock error",
+				}},
+			},
+			expectedErrors:     true,
+			expectedProtoError: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.snapName == "" {
+				resp := storeClient.GetLatestRevision(tc.snapName, tc.track, tc.channel)
+				assert.NotNil(t, resp)
+				assert.NotEmpty(t, resp.Errors)
+				assert.Equal(t, cerror.MissingField, resp.Errors[0].Code)
+				return
+			}
+
+			if tc.expectedProtoError {
+				mockProtoClient.On("GetLatestRevision", mock.Anything, tc.expectedReq).Return(nil, errors.New("")).Once()
+			} else {
+				mockProtoClient.On("GetLatestRevision", mock.Anything, tc.expectedReq).Return(tc.expectedResp, nil).Once()
+			}
+
+			resp := storeClient.GetLatestRevision(tc.snapName, tc.track, tc.channel)
+			if !tc.expectedErrors && !tc.expectedProtoError {
+				assert.Equal(t, tc.expectedResp, resp)
+				assert.Empty(t, resp.Errors)
+			} else if tc.expectedErrors {
+				assert.NotNil(t, resp)
+				assert.NotEmpty(t, resp.Errors)
+			} else if tc.expectedProtoError {
+				assert.NotNil(t, resp)
+				assert.NotEmpty(t, resp.Errors)
+				assert.Equal(t, cerror.InternalServerError, resp.Errors[0].Code)
+			}
+			mockProtoClient.AssertExpectations(t)
+		})
+	}
+}
+
 func TestStoreClient_AddUpload(t *testing.T) {
 	// Create our mock proto client and the StoreClient that wraps it.
 	mockProtoClient := new(logic.MockStoreServiceClient)
