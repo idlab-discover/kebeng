@@ -62,7 +62,10 @@ func LoadConfig() (*Config, error) {
 	}
 
 	// Load the root key from the file.
-	rootKey := crypto.GetPrivateKeyFromPEMFile(cfg.RootKeyPath)
+	rootKey, cerr := crypto.GetPrivateKeyFromPEMFile(cfg.RootKeyPath)
+	if cerr != nil {
+		return nil, fmt.Errorf("failed to load root key from %s: %v", cfg.RootKeyPath, cerr)
+	}
 	if rootKey == nil {
 		return nil, fmt.Errorf("failed to load root key from %s", cfg.RootKeyPath)
 	}
