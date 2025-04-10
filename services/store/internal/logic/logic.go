@@ -748,13 +748,43 @@ func (s *StoreLogic) AddUpload(ctx context.Context, req *proto.AddUploadRequest)
 	}, nil
 }
 
-func (s *StoreLogic) UnscannedUpload(ctx context.Context, req *proto.UnscannedUploadRequest) (*proto.UnscannedUploadResponse, error) {
+// LOGIC: UnscannedUpload receives a stream of data chunks from the client and saves them to a temporary file.
+// After receiving all chunks, it saves the file to an object store bucket named "unscanned".
+func (s *StoreLogic) UnscannedUpload(stream proto.StoreService_UnscannedUploadServer) error {
 	el := cerror.NewErrorList()
-	snapFileName, cerr := saveFileToTemp(bytes.NewReader(req.SnapFile))
+	var snapFileBuffer bytes.Buffer
+
+	for {
+		req, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			logrus.Errorf("failed to receive chunk: %v", err)
+			el.Add(cerror.InternalServerError, fmt.Sprintf("failed to receive chunk: %v", err))
+			return fmt.Errorf("failed to receive chunk: %v", err)
+		}
+
+		dataChunk := req.GetData()
+		if dataChunk == nil {
+			logrus.Error("received empty data chunk")
+			el.Add(cerror.InvalidField, "received empty data chunk")
+			return fmt.Errorf("received empty data chunk")
+		}
+
+		_, err = snapFileBuffer.Write(dataChunk.Chunk)
+		if err != nil {
+			logrus.Errorf("failed to write chunk to buffer: %v", err)
+			el.Add(cerror.InternalServerError, fmt.Sprintf("failed to write chunk to buffer: %v", err))
+			return fmt.Errorf("failed to write chunk to buffer: %v", err)
+		}
+	}
+
+	snapFileName, cerr := saveFileToTemp(&snapFileBuffer)
 	if cerr != nil {
 		logrus.Errorf("failed to save file to temp storage: %v", cerr)
 		el.AddCustomError(cerr)
-		return &proto.UnscannedUploadResponse{Errors: el.ConvertToProtoErrorList()}, nil
+		return fmt.Errorf("failed to save file to temp storage: %v", cerr)
 	}
 
 	tmpPath := path.Join(os.TempDir(), snapFileName)
@@ -762,11 +792,22 @@ func (s *StoreLogic) UnscannedUpload(ctx context.Context, req *proto.UnscannedUp
 	size, err := s.obs.SaveFileToBucket("unscanned", tmpPath)
 	if err != nil {
 		logrus.Errorf("failed to save file to object store: %v", err)
-		el.Add(cerror.InternalServerError, "failed to save file to object store")
-		return &proto.UnscannedUploadResponse{Errors: el.ConvertToProtoErrorList()}, nil
+		el.Add(cerror.InternalServerError, fmt.Sprintf("failed to save file to object store: %v", err))
+		return fmt.Errorf("failed to save file to object store: %v", err)
 	}
 
-	return &proto.UnscannedUploadResponse{TempFileName: tmpPath, FileSize: size}, nil
+	err = stream.SendAndClose(&proto.UnscannedUploadCompleteResponse{
+		TempFileName: snapFileName,
+		Size:         size,
+		Errors:       el.ConvertToProtoErrorList(),
+	})
+	if err != nil {
+		logrus.Errorf("failed to send response: %v", err)
+		el.Add(cerror.InternalServerError, fmt.Sprintf("failed to send response: %v", err))
+		return fmt.Errorf("failed to send response: %v", err)
+	}
+
+	return nil
 }
 
 // ################# HELPERS #################
