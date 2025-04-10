@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -36,16 +37,15 @@ func (r *AssertionRepository) AddAssertion(snapEntryId uuid.UUID, assertionStrin
 	return assertion, nil
 }
 
-// TODO: implement
 func (r *AssertionRepository) AddAccountKeyAssertion(el *cerror.ErrorList, authority_id, public_key_SHA3_384, sign_key_SHA3_384, name string, revision uint32, account_id uuid.UUID, since time.Time, body_length uint64) (*model.AccountKeyAssertion, *cerror.CustomError) {
-	query := `INSERT INTO account_key_assertions (authority_id, public_key_SHA3_384, sign_key_SHA3_384, name, revision, account_id, since, body_length) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`
+	query := `INSERT INTO account_key_assertion (authority_id, public_key_SHA3_384, sign_key_SHA3_384, name, revision, account_id, since, body_length) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`
 	assertion := &model.AccountKeyAssertion{}
 
 	err := r.db.Get(assertion, query, authority_id, public_key_SHA3_384, sign_key_SHA3_384, name, revision, account_id, since, body_length)
 	if err != nil {
-		logrus.Errorf("Failed to save assertion in database: %v", err)
-		el.Add(cerror.DatabaseError, "failed to save assertion in database")
-		return nil, cerror.NewCustomError(cerror.DatabaseError, "failed to save assertion in database")
+		logrus.Errorf("failed to save assertion in database: %v", err)
+		el.AddCustomError(cerror.ConvertError(err, fmt.Sprintf("failed to save assertion in database: %v", err)))
+		return nil, cerror.ConvertError(err, fmt.Sprintf("failed to save assertion in database: %v", err))
 	}
 
 	return assertion, nil
