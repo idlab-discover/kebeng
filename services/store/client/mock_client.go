@@ -20,15 +20,6 @@ func (m *MockStoreClient) Close() {
 	m.Called()
 }
 
-// UploadSnap mocks the UploadSnap function.
-func (m *MockStoreClient) UploadSnap(name string, type_name string, confinement string, base string, file []byte) *proto.UploadSnapResponse {
-	args := m.Called(name, type_name, confinement, base, file)
-	if resp, ok := args.Get(0).(*proto.UploadSnapResponse); ok {
-		return resp
-	}
-	return nil
-}
-
 // RegisterSnapName mocks the RegisterSnapName function.
 func (m *MockStoreClient) RegisterSnapName(snapName string, isPrivate bool, storeName string, dryRun bool, accountId uuid.UUID) *proto.RegisterSnapNameResponse {
 	args := m.Called(snapName, isPrivate, storeName, dryRun, accountId)
