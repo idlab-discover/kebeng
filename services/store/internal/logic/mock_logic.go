@@ -17,10 +17,36 @@ type MockSnapDownloadClient struct {
 	grpc.ClientStream
 }
 
+type MockUnscannedUploadClient struct {
+	mock.Mock
+	grpc.ClientStream
+}
+
 func (m *MockSnapDownloadClient) Recv() (*proto.SnapDownloadResponse, error) {
 	args := m.Called()
 	if resp := args.Get(0); resp != nil {
 		return resp.(*proto.SnapDownloadResponse), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
+func (m *MockUnscannedUploadClient) Recv() (*proto.UnscannedUploadCompleteResponse, error) {
+	args := m.Called()
+	if resp := args.Get(0); resp != nil {
+		return resp.(*proto.UnscannedUploadCompleteResponse), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
+func (m *MockUnscannedUploadClient) Send(msg *proto.UnscannedUploadRequest) error {
+	args := m.Called(msg)
+	return args.Error(0)
+}
+
+func (m *MockUnscannedUploadClient) CloseAndRecv() (*proto.UnscannedUploadCompleteResponse, error) {
+	args := m.Called()
+	if resp := args.Get(0); resp != nil {
+		return resp.(*proto.UnscannedUploadCompleteResponse), args.Error(1)
 	}
 	return nil, args.Error(1)
 }
@@ -92,12 +118,12 @@ func (m *MockStoreServiceClient) GetRevisionByNameAndSequence(ctx context.Contex
 	return resp.(*proto.GetRevisionResponse), args.Error(1)
 }
 
-func (m *MockStoreServiceClient) UnscannedUpload(ctx context.Context, in *proto.UnscannedUploadRequest, opts ...grpc.CallOption) (*proto.UnscannedUploadResponse, error) {
-	args := m.Called(ctx, in)
+func (m *MockStoreServiceClient) UnscannedUpload(ctx context.Context, opts ...grpc.CallOption) (proto.StoreService_UnscannedUploadClient, error) {
+	args := m.Called(ctx)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*proto.UnscannedUploadResponse), nil
+	return args.Get(0).(proto.StoreService_UnscannedUploadClient), nil
 }
 
 func (m *MockStoreServiceClient) AddUpload(ctx context.Context, in *proto.AddUploadRequest, opts ...grpc.CallOption) (*proto.AddUploadResponse, error) {

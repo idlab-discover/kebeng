@@ -278,10 +278,11 @@ func TestAddUpload(t *testing.T) {
 		{
 			name: "Successful upload",
 			req: &proto.AddUploadRequest{
-				SnapName:  "test-snap-name",
-				EntryId:   mockUUID.String(),
-				AccountId: mockUUID.String(),
-				Status:    "pending",
+				SnapName:          "test-snap-name",
+				EntryId:           mockUUID.String(),
+				AccountId:         mockUUID.String(),
+				Status:            "pending",
+				UnscannedFileName: "test-file-name",
 			},
 			mockReturn: map[string]any{
 				"AddUpload": &models.SnapUpload{
@@ -296,10 +297,11 @@ func TestAddUpload(t *testing.T) {
 		{
 			name: "Missing SnapName",
 			req: &proto.AddUploadRequest{
-				SnapName:  "",
-				EntryId:   mockUUID.String(),
-				AccountId: mockUUID.String(),
-				Status:    "pending",
+				SnapName:          "",
+				EntryId:           mockUUID.String(),
+				AccountId:         mockUUID.String(),
+				Status:            "pending",
+				UnscannedFileName: "test-file-name",
 			},
 			mockReturn:    map[string]any{},
 			expectedError: true,
@@ -308,10 +310,11 @@ func TestAddUpload(t *testing.T) {
 		{
 			name: "Missing EntryId",
 			req: &proto.AddUploadRequest{
-				SnapName:  "test-snap-name",
-				EntryId:   "",
-				AccountId: mockUUID.String(),
-				Status:    "pending",
+				SnapName:          "test-snap-name",
+				EntryId:           "",
+				AccountId:         mockUUID.String(),
+				Status:            "pending",
+				UnscannedFileName: "test-file-name",
 			},
 			mockReturn:    map[string]any{},
 			expectedError: true,
@@ -320,10 +323,11 @@ func TestAddUpload(t *testing.T) {
 		{
 			name: "Invalid EntryId format",
 			req: &proto.AddUploadRequest{
-				SnapName:  "test-snap-name",
-				EntryId:   "invalid-uuid",
-				AccountId: mockUUID.String(),
-				Status:    "pending",
+				SnapName:          "test-snap-name",
+				EntryId:           "invalid-uuid",
+				AccountId:         mockUUID.String(),
+				Status:            "pending",
+				UnscannedFileName: "test-file-name",
 			},
 			mockReturn:    map[string]any{},
 			expectedError: true,
@@ -332,10 +336,11 @@ func TestAddUpload(t *testing.T) {
 		{
 			name: "Invalid AccountId format",
 			req: &proto.AddUploadRequest{
-				SnapName:  "test-snap-name",
-				EntryId:   mockUUID.String(),
-				AccountId: "invalid-uuid",
-				Status:    "pending",
+				SnapName:          "test-snap-name",
+				EntryId:           mockUUID.String(),
+				AccountId:         "invalid-uuid",
+				Status:            "pending",
+				UnscannedFileName: "test-file-name",
 			},
 			mockReturn:    map[string]any{},
 			expectedError: true,
@@ -344,10 +349,11 @@ func TestAddUpload(t *testing.T) {
 		{
 			name: "Database error during AddUpload",
 			req: &proto.AddUploadRequest{
-				SnapName:  "test-snap-name",
-				EntryId:   mockUUID.String(),
-				AccountId: mockUUID.String(),
-				Status:    "pending",
+				SnapName:          "test-snap-name",
+				EntryId:           mockUUID.String(),
+				AccountId:         mockUUID.String(),
+				Status:            "pending",
+				UnscannedFileName: "test-file-name",
 			},
 			mockReturn: map[string]any{
 				"AddUpload": &cerror.CustomError{
@@ -361,10 +367,11 @@ func TestAddUpload(t *testing.T) {
 		{
 			name: "Missing AccountId",
 			req: &proto.AddUploadRequest{
-				SnapName:  "test-snap-name",
-				EntryId:   mockUUID.String(),
-				AccountId: "",
-				Status:    "pending",
+				SnapName:          "test-snap-name",
+				EntryId:           mockUUID.String(),
+				AccountId:         "",
+				Status:            "pending",
+				UnscannedFileName: "test-file-name",
 			},
 			mockReturn:    map[string]any{},
 			expectedError: true,
@@ -373,10 +380,24 @@ func TestAddUpload(t *testing.T) {
 		{
 			name: "Missing Status",
 			req: &proto.AddUploadRequest{
-				SnapName:  "test-snap-name",
-				EntryId:   mockUUID.String(),
-				AccountId: mockUUID.String(),
-				Status:    "",
+				SnapName:          "test-snap-name",
+				EntryId:           mockUUID.String(),
+				AccountId:         mockUUID.String(),
+				Status:            "",
+				UnscannedFileName: "test-file-name",
+			},
+			mockReturn:    map[string]any{},
+			expectedError: true,
+			errorCode:     cerror.MissingField,
+		},
+		{
+			name: "Missing UnscannedFileName",
+			req: &proto.AddUploadRequest{
+				SnapName:          "test-snap-name",
+				EntryId:           mockUUID.String(),
+				AccountId:         mockUUID.String(),
+				Status:            "pending",
+				UnscannedFileName: "",
 			},
 			mockReturn:    map[string]any{},
 			expectedError: true,
@@ -391,14 +412,14 @@ func TestAddUpload(t *testing.T) {
 				case *cerror.CustomError:
 					switch function {
 					case "AddUpload":
-						mockRepo.On(function, tt.req.SnapName, mock.Anything, tt.req.Status, mock.Anything).Return(nil, mockReturn).Once()
+						mockRepo.On(function, tt.req.SnapName, mock.Anything, tt.req.Status, mock.Anything, mock.Anything).Return(nil, mockReturn).Once()
 					default:
 						t.Fatalf("invalid mock return function for CustomError")
 					}
 				case *models.SnapUpload:
 					switch function {
 					case "AddUpload":
-						mockRepo.On(function, tt.req.SnapName, mock.Anything, tt.req.Status, mock.Anything).Return(mockReturn, nil).Once()
+						mockRepo.On(function, tt.req.SnapName, mock.Anything, tt.req.Status, mock.Anything, mock.Anything).Return(mockReturn, nil).Once()
 					default:
 						t.Fatalf("invalid mock return function for SnapUpload")
 					}
