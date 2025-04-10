@@ -84,7 +84,7 @@ func (h *Handler) refreshSnapDownload(action *model.Action, el *cerror.ErrorList
 	// if publisher not found we should error this is not safe if we don't know who published it
 	publisher := h.AccountClient.GetAccountByID(snapEntry.PublisherId)
 	if len(publisher.Errors) > 0 {
-		el.ExtendAccountError(publisher.Errors)
+		el.ExtendProtoError(publisher.Errors)
 		res.Result = nil
 		return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("account error: %v", publisher.Errors))
 	}
@@ -159,7 +159,7 @@ func (h *Handler) RegisterSnapName(c *gin.Context) {
 	// Get the account by email -> we need the account ID to register the snap name
 	account := h.AccountClient.GetAccountByEmail(email.(string))
 	if len(account.Errors) > 0 {
-		el.ExtendAccountError(account.Errors)
+		el.ExtendProtoError(account.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
 		return
 	}
@@ -176,7 +176,7 @@ func (h *Handler) RegisterSnapName(c *gin.Context) {
 
 	resp := h.StoreClient.RegisterSnapName(req.SnapName, req.IsPrivate, req.Store, dryRun, accountUUID)
 	if len(resp.Errors) > 0 {
-		el.ExtendStoreError(resp.Errors)
+		el.ExtendProtoError(resp.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
 		return
 	}
@@ -223,7 +223,7 @@ func (h *Handler) ProcessSnapBuildAssertion(c *gin.Context) {
 	// Process the snap build assertion with the snapID and req
 	resp := h.AssertionClient.ProcessSnapBuildAssertion(req.Assertion)
 	if len(resp.Errors) > 0 {
-		el.ExtendAssertionError(resp.Errors)
+		el.ExtendProtoError(resp.Errors)
 		//c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el}) // This would be the prefered way to return the error, but the documentation handles this error differently
 		c.JSON(http.StatusBadRequest, gin.H{"succes": false, "cerror": el})
 		return
@@ -266,7 +266,7 @@ func (h *Handler) SnapPush(c *gin.Context) {
 	// Get the account by email -> we need the account ID to register the snap name
 	account := h.AccountClient.GetAccountByEmail(email.(string))
 	if len(account.Errors) > 0 {
-		el.ExtendAccountError(account.Errors)
+		el.ExtendProtoError(account.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
 		return
 	}
@@ -282,7 +282,7 @@ func (h *Handler) SnapPush(c *gin.Context) {
 	// Dry run to check if the snap name is registered
 	entry := h.StoreClient.RegisterSnapName(req.Name, false, "", true, accountUUID)
 	if len(entry.Errors) > 0 {
-		el.ExtendStoreError(entry.Errors)
+		el.ExtendProtoError(entry.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
 		return
 	}
@@ -319,7 +319,7 @@ func (h *Handler) SnapPush(c *gin.Context) {
 	// Create a new snap upload with status "pending"
 	upload := h.StoreClient.AddUpload(entry.SnapName, parsedEntryUUID, "pending", accountUUID)
 	if len(upload.Errors) > 0 {
-		el.ExtendStoreError(upload.Errors)
+		el.ExtendProtoError(upload.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
 		return
 	}
@@ -358,7 +358,7 @@ func (h *Handler) UnscannedUpload(c *gin.Context) {
 	// Upload file to the unscanned bucket, waiting for revision to be created
 	resp := h.StoreClient.UnscannedUpload(file)
 	if len(resp.Errors) > 0 {
-		el.ExtendStoreError(resp.Errors)
+		el.ExtendProtoError(resp.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
 		return
 	}
@@ -390,7 +390,7 @@ func (h *Handler) downloadSnap(c *gin.Context, revisionId string, el *cerror.Err
 
 	response := h.StoreClient.SnapDownload(revisionId)
 	if len(response.Errors) > 0 {
-		el.ExtendStoreError(response.Errors)
+		el.ExtendProtoError(response.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
@@ -423,7 +423,7 @@ func (h *Handler) getLatestRevisionByEntryName(el *cerror.ErrorList, entryName s
 		},
 	})
 	if len(snapEntries.Errors) > 0 {
-		el.ExtendStoreError(snapEntries.Errors)
+		el.ExtendProtoError(snapEntries.Errors)
 		return nil, nil
 	}
 	if len(snapEntries.Entries) == 0 {
@@ -462,7 +462,7 @@ func (h *Handler) getLatestRevisionByEntryName(el *cerror.ErrorList, entryName s
 	// use that and put to default if not passed
 	latestRevision := h.StoreClient.GetLatestRevision(entryName, track, channel)
 	if len(latestRevision.Errors) > 0 {
-		el.ExtendStoreError(latestRevision.Errors)
+		el.ExtendProtoError(latestRevision.Errors)
 		return snapEntry, nil
 	}
 

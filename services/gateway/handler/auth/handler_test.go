@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/idlab-discover/kebeng/common/cerror"
+	cerrorpb "github.com/idlab-discover/kebeng/common/cerror/proto"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/config"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/util"
 	storepb "github.com/idlab-discover/kebeng/services/store/proto"
@@ -48,7 +49,7 @@ func TestGenerateMacaroonHandler(t *testing.T) {
 		ThirdPartyLocation: "third-party-location",
 	}
 
-	storeErr := &storepb.Error{Code: cerror.InternalServerError, Message: "store error"}
+	storeErr := &cerrorpb.Error{Code: cerror.InternalServerError, Message: "store error"}
 
 	successEntriesResponse := &storepb.GetEntriesResponse{
 		Entries: []*storepb.GetEntryResponse{
@@ -61,7 +62,7 @@ func TestGenerateMacaroonHandler(t *testing.T) {
 
 	errorEntriesResponse := &storepb.GetEntriesResponse{
 		Entries: nil,
-		Errors:  []*storepb.Error{storeErr},
+		Errors:  []*cerrorpb.Error{storeErr},
 	}
 
 	type testCase struct {

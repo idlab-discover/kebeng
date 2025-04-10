@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
+	cerrorpb "github.com/idlab-discover/kebeng/common/cerror/proto"
 	accClient "github.com/idlab-discover/kebeng/services/account/client"
 	proto "github.com/idlab-discover/kebeng/services/account/proto"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/util"
@@ -107,7 +108,7 @@ func TestPatchAccountHandler(t *testing.T) {
 			expectedResponseSubstring: "internal-server-error",
 			accountClientResponse: &proto.PatchAccountByEmailResponse{
 				ShortNamespace: "",
-				Errors: []*proto.Error{
+				Errors: []*cerrorpb.Error{
 					{Code: cerror.InternalServerError, Message: "client error"},
 				},
 			},
@@ -122,7 +123,7 @@ func TestPatchAccountHandler(t *testing.T) {
 			expectedResponseSubstring: "success", // we expect {"success": true}
 			accountClientResponse: &proto.PatchAccountByEmailResponse{
 				ShortNamespace: "new_username",
-				Errors:         []*proto.Error{},
+				Errors:         []*cerrorpb.Error{},
 			},
 		},
 	}
@@ -199,7 +200,7 @@ func TestCreateAccountHandler(t *testing.T) {
 			expectedResponseSubstring: "client error",
 			accountClientResponse: &proto.AccountResponse{
 				Id: "",
-				Errors: []*proto.Error{
+				Errors: []*cerrorpb.Error{
 					{Code: cerror.InternalServerError, Message: "client error"},
 				},
 			},
@@ -211,7 +212,7 @@ func TestCreateAccountHandler(t *testing.T) {
 			expectedResponseSubstring: "123e4567-e89b-12d3-a456-426614174000",
 			accountClientResponse: &proto.AccountResponse{
 				Id:     "123e4567-e89b-12d3-a456-426614174000",
-				Errors: []*proto.Error{},
+				Errors: []*cerrorpb.Error{},
 			},
 		},
 	}
@@ -280,8 +281,8 @@ func TestGetAccountHandler(t *testing.T) {
 	}
 
 	// Prepare an error for convenience.
-	errResp := &proto.Error{Code: cerror.InternalServerError, Message: "client error"}
-	storeErr := &storepb.Error{Code: cerror.InternalServerError, Message: "store error"}
+	errResp := &cerrorpb.Error{Code: cerror.InternalServerError, Message: "client error"}
+	storeErr := &cerrorpb.Error{Code: cerror.InternalServerError, Message: "store error"}
 
 	Id := "entry-1"
 	Base := "16"
@@ -308,7 +309,7 @@ func TestGetAccountHandler(t *testing.T) {
 				DisplayName: "",
 				Email:       "",
 				Username:    "",
-				Errors:      []*proto.Error{errResp},
+				Errors:      []*cerrorpb.Error{errResp},
 			},
 			expectedHTTPStatus:        http.StatusInternalServerError,
 			expectedResponseSubstring: "client error",
@@ -321,11 +322,11 @@ func TestGetAccountHandler(t *testing.T) {
 				DisplayName: "John Doe",
 				Email:       "john@example.com",
 				Username:    "johndoe",
-				Errors:      []*proto.Error{},
+				Errors:      []*cerrorpb.Error{},
 			},
 			getAccountKeysResponse: &proto.KeysResponse{
 				Keys:   nil,
-				Errors: []*proto.Error{errResp},
+				Errors: []*cerrorpb.Error{errResp},
 			},
 			expectedHTTPStatus:        http.StatusInternalServerError,
 			expectedResponseSubstring: "client error",
@@ -338,16 +339,16 @@ func TestGetAccountHandler(t *testing.T) {
 				DisplayName: "John Doe",
 				Email:       "john@example.com",
 				Username:    "johndoe",
-				Errors:      []*proto.Error{},
+				Errors:      []*cerrorpb.Error{},
 			},
 			getAccountKeysResponse: &proto.KeysResponse{
 				// Even an empty keys slice is acceptable, so simulate a valid keys response.
 				Keys:   []*proto.KeyResponse{},
-				Errors: []*proto.Error{},
+				Errors: []*cerrorpb.Error{},
 			},
 			getEntriesResponse: &storepb.GetEntriesResponse{
 				Entries: nil,
-				Errors:  []*storepb.Error{storeErr},
+				Errors:  []*cerrorpb.Error{storeErr},
 			},
 			expectedHTTPStatus:        http.StatusInternalServerError,
 			expectedResponseSubstring: "store error",
@@ -360,11 +361,11 @@ func TestGetAccountHandler(t *testing.T) {
 				DisplayName: "John Doe",
 				Email:       "john@example.com",
 				Username:    "johndoe",
-				Errors:      []*proto.Error{},
+				Errors:      []*cerrorpb.Error{},
 			},
 			getAccountKeysResponse: &proto.KeysResponse{
 				Keys:   []*proto.KeyResponse{},
-				Errors: []*proto.Error{},
+				Errors: []*cerrorpb.Error{},
 			},
 			getEntriesResponse: &storepb.GetEntriesResponse{
 				Entries: []*storepb.GetEntryResponse{
@@ -380,11 +381,11 @@ func TestGetAccountHandler(t *testing.T) {
 						PublisherId: PublisherId,
 					},
 				},
-				Errors: []*storepb.Error{},
+				Errors: []*cerrorpb.Error{},
 			},
 			getRevisionsResponse: &storepb.GetRevisionsByEntryIdResponses{
 				Responses: nil,
-				Errors:    []*storepb.Error{storeErr},
+				Errors:    []*cerrorpb.Error{storeErr},
 			},
 			// Note: No getAccountsResponse is provided, so the expectation for GetAccountsByIds will not be set.
 			expectedHTTPStatus:        http.StatusInternalServerError,
@@ -398,11 +399,11 @@ func TestGetAccountHandler(t *testing.T) {
 				DisplayName: "John Doe",
 				Email:       "john@example.com",
 				Username:    "johndoe",
-				Errors:      []*proto.Error{},
+				Errors:      []*cerrorpb.Error{},
 			},
 			getAccountKeysResponse: &proto.KeysResponse{
 				Keys:   []*proto.KeyResponse{},
-				Errors: []*proto.Error{},
+				Errors: []*cerrorpb.Error{},
 			},
 			getEntriesResponse: &storepb.GetEntriesResponse{
 				Entries: []*storepb.GetEntryResponse{
@@ -418,7 +419,7 @@ func TestGetAccountHandler(t *testing.T) {
 						PublisherId: PublisherId,
 					},
 				},
-				Errors: []*storepb.Error{},
+				Errors: []*cerrorpb.Error{},
 			},
 			getRevisionsResponse: &storepb.GetRevisionsByEntryIdResponses{
 				// Return a valid (but empty) revisions response.
@@ -428,11 +429,11 @@ func TestGetAccountHandler(t *testing.T) {
 						Revisions: []*storepb.GetRevisionResponse{}, // no revisions, but valid response
 					},
 				},
-				Errors: []*storepb.Error{},
+				Errors: []*cerrorpb.Error{},
 			},
 			getAccountsResponse: &proto.GetAccountsByIdsResponse{
 				Accounts: nil,
-				Errors:   []*proto.Error{errResp},
+				Errors:   []*cerrorpb.Error{errResp},
 			},
 			expectedHTTPStatus:        http.StatusInternalServerError,
 			expectedResponseSubstring: "client error",
@@ -445,7 +446,7 @@ func TestGetAccountHandler(t *testing.T) {
 				DisplayName: "John Doe",
 				Email:       "john@example.com",
 				Username:    "johndoe",
-				Errors:      []*proto.Error{},
+				Errors:      []*cerrorpb.Error{},
 			},
 			getAccountKeysResponse: &proto.KeysResponse{
 				Keys: []*proto.KeyResponse{
@@ -456,7 +457,7 @@ func TestGetAccountHandler(t *testing.T) {
 						Until:   dummyTimestamp,
 					},
 				},
-				Errors: []*proto.Error{},
+				Errors: []*cerrorpb.Error{},
 			},
 			getEntriesResponse: &storepb.GetEntriesResponse{
 				Entries: []*storepb.GetEntryResponse{
@@ -472,7 +473,7 @@ func TestGetAccountHandler(t *testing.T) {
 						PublisherId: PublisherId,
 					},
 				},
-				Errors: []*storepb.Error{},
+				Errors: []*cerrorpb.Error{},
 			},
 			getRevisionsResponse: &storepb.GetRevisionsByEntryIdResponses{
 				// Return a valid revisions response.
@@ -489,7 +490,7 @@ func TestGetAccountHandler(t *testing.T) {
 						},
 					},
 				},
-				Errors: []*storepb.Error{},
+				Errors: []*cerrorpb.Error{},
 			},
 			getAccountsResponse: &proto.GetAccountsByIdsResponse{
 				Accounts: []*proto.AccountResponse{
@@ -500,7 +501,7 @@ func TestGetAccountHandler(t *testing.T) {
 						Validation:  &Validation,
 					},
 				},
-				Errors: []*proto.Error{},
+				Errors: []*cerrorpb.Error{},
 			},
 			expectedHTTPStatus:        http.StatusOK,
 			expectedResponseSubstring: "John Doe",
