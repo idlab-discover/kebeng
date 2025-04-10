@@ -6,9 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
-	accountpb "github.com/idlab-discover/kebeng/services/account/proto"
-	assertionpb "github.com/idlab-discover/kebeng/services/assertion/proto"
-	storepb "github.com/idlab-discover/kebeng/services/store/proto"
+	cerrorpb "github.com/idlab-discover/kebeng/common/cerror/proto"
 	"github.com/lib/pq"
 )
 
@@ -124,24 +122,6 @@ func (el *ErrorList) Extend(other ErrorList) {
 	*el = append(*el, other...)
 }
 
-func (el *ErrorList) ExtendStoreError(other []*storepb.Error) {
-	for _, err := range other {
-		el.Add(err.Code, err.Message)
-	}
-}
-
-func (el *ErrorList) ExtendAccountError(other []*accountpb.Error) {
-	for _, err := range other {
-		el.Add(err.Code, err.Message)
-	}
-}
-
-func (el *ErrorList) ExtendAssertionError(other []*assertionpb.Error) {
-	for _, err := range other {
-		el.Add(err.Code, err.Message)
-	}
-}
-
 func NewErrorList() *ErrorList {
 	return &ErrorList{}
 }
@@ -169,6 +149,25 @@ func (el *ErrorList) getFirst() any {
 		return nil
 	}
 	return (*el)[0]
+}
+
+// ################# PROTO ERRORS #################
+
+func (el *ErrorList) ExtendProtoError(other []*cerrorpb.Error) {
+	for _, err := range other {
+		el.Add(err.Code, err.Message)
+	}
+}
+
+func (el *ErrorList) ConvertToProtoErrorList() []*cerrorpb.Error {
+	var errors []*cerrorpb.Error
+	for _, err := range *el {
+		errors = append(errors, &cerrorpb.Error{
+			Code:    err.Code,
+			Message: err.Message,
+		})
+	}
+	return errors
 }
 
 func FormatBindError(err error) string {

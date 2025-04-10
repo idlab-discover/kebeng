@@ -8,7 +8,6 @@ package store
 
 import (
 	context "context"
-
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -20,7 +19,6 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	StoreService_UploadSnap_FullMethodName             = "/store.StoreService/UploadSnap"
 	StoreService_RegisterSnapName_FullMethodName       = "/store.StoreService/RegisterSnapName"
 	StoreService_GetRevisions_FullMethodName           = "/store.StoreService/GetRevisions"
 	StoreService_GetEntries_FullMethodName             = "/store.StoreService/GetEntries"
@@ -36,7 +34,6 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type StoreServiceClient interface {
-	UploadSnap(ctx context.Context, in *UploadSnapRequest, opts ...grpc.CallOption) (*UploadSnapResponse, error)
 	RegisterSnapName(ctx context.Context, in *RegisterSnapNameRequest, opts ...grpc.CallOption) (*RegisterSnapNameResponse, error)
 	GetRevisions(ctx context.Context, in *GetRevisionsRequest, opts ...grpc.CallOption) (*GetRevisionsResponse, error)
 	GetEntries(ctx context.Context, in *GetEntriesRequest, opts ...grpc.CallOption) (*GetEntriesResponse, error)
@@ -54,16 +51,6 @@ type storeServiceClient struct {
 
 func NewStoreServiceClient(cc grpc.ClientConnInterface) StoreServiceClient {
 	return &storeServiceClient{cc}
-}
-
-func (c *storeServiceClient) UploadSnap(ctx context.Context, in *UploadSnapRequest, opts ...grpc.CallOption) (*UploadSnapResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(UploadSnapResponse)
-	err := c.cc.Invoke(ctx, StoreService_UploadSnap_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *storeServiceClient) RegisterSnapName(ctx context.Context, in *RegisterSnapNameRequest, opts ...grpc.CallOption) (*RegisterSnapNameResponse, error) {
@@ -169,7 +156,6 @@ func (c *storeServiceClient) AddUpload(ctx context.Context, in *AddUploadRequest
 // All implementations must embed UnimplementedStoreServiceServer
 // for forward compatibility.
 type StoreServiceServer interface {
-	UploadSnap(context.Context, *UploadSnapRequest) (*UploadSnapResponse, error)
 	RegisterSnapName(context.Context, *RegisterSnapNameRequest) (*RegisterSnapNameResponse, error)
 	GetRevisions(context.Context, *GetRevisionsRequest) (*GetRevisionsResponse, error)
 	GetEntries(context.Context, *GetEntriesRequest) (*GetEntriesResponse, error)
@@ -189,9 +175,6 @@ type StoreServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedStoreServiceServer struct{}
 
-func (UnimplementedStoreServiceServer) UploadSnap(context.Context, *UploadSnapRequest) (*UploadSnapResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UploadSnap not implemented")
-}
 func (UnimplementedStoreServiceServer) RegisterSnapName(context.Context, *RegisterSnapNameRequest) (*RegisterSnapNameResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RegisterSnapName not implemented")
 }
@@ -238,24 +221,6 @@ func RegisterStoreServiceServer(s grpc.ServiceRegistrar, srv StoreServiceServer)
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&StoreService_ServiceDesc, srv)
-}
-
-func _StoreService_UploadSnap_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UploadSnapRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(StoreServiceServer).UploadSnap(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: StoreService_UploadSnap_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(StoreServiceServer).UploadSnap(ctx, req.(*UploadSnapRequest))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _StoreService_RegisterSnapName_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -420,10 +385,6 @@ var StoreService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "store.StoreService",
 	HandlerType: (*StoreServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "UploadSnap",
-			Handler:    _StoreService_UploadSnap_Handler,
-		},
 		{
 			MethodName: "RegisterSnapName",
 			Handler:    _StoreService_RegisterSnapName_Handler,
