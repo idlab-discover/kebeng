@@ -43,9 +43,9 @@ func (r *AssertionRepository) AddAccountKeyAssertion(el *cerror.ErrorList, autho
 
 	err := r.db.Get(assertion, query, authority_id, public_key_SHA3_384, sign_key_SHA3_384, name, revision, account_id, since, body_length)
 	if err != nil {
-		logrus.Errorf("failed to save assertion in database: %v", err)
-		el.AddCustomError(cerror.ConvertError(err, fmt.Sprintf("failed to save assertion in database: %v", err)))
-		return nil, cerror.ConvertError(err, fmt.Sprintf("failed to save assertion in database: %v", err))
+		logrus.Errorf("failed to save account key assertion in database: %v", err)
+		el.AddCustomError(cerror.ConvertError(err, fmt.Sprintf("failed to save account key assertion in database: %v", err)))
+		return nil, cerror.ConvertError(err, fmt.Sprintf("failed to save account key assertion in database: %v", err))
 	}
 
 	return assertion, nil
