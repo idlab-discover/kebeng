@@ -64,11 +64,10 @@ func (m *MockStoreServiceClient) GetEntriesByAccountId(ctx context.Context, in *
 
 func (m *MockStoreServiceClient) GetRevisionsByEntryIds(ctx context.Context, in *proto.GetRevisionsByEntryIdRequests, opts ...grpc.CallOption) (*proto.GetRevisionsByEntryIdResponses, error) {
 	args := m.Called(ctx, in)
-	resp := args.Get(0)
-	if resp == nil {
+	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return resp.(*proto.GetRevisionsByEntryIdResponses), args.Error(1)
+	return args.Get(0).(*proto.GetRevisionsByEntryIdResponses), nil
 }
 
 func (m *MockStoreServiceClient) GetRevisionByNameAndSequence(ctx context.Context, in *proto.GetRevisionRequest, opts ...grpc.CallOption) (*proto.GetRevisionResponse, error) {
