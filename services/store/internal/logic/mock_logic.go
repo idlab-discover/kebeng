@@ -12,6 +12,19 @@ type MockStoreServiceClient struct {
 	mock.Mock
 }
 
+type MockSnapDownloadClient struct {
+	mock.Mock
+	grpc.ClientStream
+}
+
+func (m *MockSnapDownloadClient) Recv() (*proto.SnapDownloadResponse, error) {
+	args := m.Called()
+	if resp := args.Get(0); resp != nil {
+		return resp.(*proto.SnapDownloadResponse), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
 func (m *MockStoreServiceClient) RegisterSnapName(ctx context.Context, in *proto.RegisterSnapNameRequest, opts ...grpc.CallOption) (*proto.RegisterSnapNameResponse, error) {
 	args := m.Called(ctx, in)
 	if args.Get(0) == nil {
@@ -105,9 +118,8 @@ func (m *MockStoreServiceClient) GetLatestRevision(ctx context.Context, in *prot
 
 func (m *MockStoreServiceClient) SnapDownload(ctx context.Context, in *proto.SnapDownloadRequest, opts ...grpc.CallOption) (proto.StoreService_SnapDownloadClient, error) {
 	args := m.Called(ctx, in)
-	resp := args.Get(0)
-	if resp == nil {
+	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return resp.(proto.StoreService_SnapDownloadClient), args.Error(1)
+	return args.Get(0).(proto.StoreService_SnapDownloadClient), args.Error(1)
 }
