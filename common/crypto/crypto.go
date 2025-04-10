@@ -4,6 +4,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"fmt"
 	"os"
 
 	"github.com/idlab-discover/kebeng/common/cerror"
@@ -58,13 +59,20 @@ var (
 	ErrNotRSAPublicKey     = cerror.NewCustomError(cerror.InternalServerError, "key is not a valid RSA public key")
 )
 
-func GetPrivateKeyFromPEMFile(keyPath string) asserts.PrivateKey {
-	bytes, _ := os.ReadFile(keyPath)
-	if len(bytes) == 0 {
-		panic("private key file is empty")
+func GetPrivateKeyFromPEMFile(keyPath string) (asserts.PrivateKey, *cerror.CustomError) {
+	bytes, err := os.ReadFile(keyPath)
+	if err != nil {
+		return nil, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to read key file: %s", err.Error()))
 	}
-	rootPrivateKey, _ := ParseRSAPrivateKeyFromPEM(bytes)
-	return asserts.RSAPrivateKey(rootPrivateKey)
+	if len(bytes) == 0 {
+		return nil, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("key file is empty at: %s", keyPath))
+	}
+	rootPrivateKey, cerr := ParseRSAPrivateKeyFromPEM(bytes)
+	if cerr != nil {
+		return nil, cerr
+	}
+
+	return asserts.RSAPrivateKey(rootPrivateKey), nil
 }
 
 // from: "github.com/dgrijalva/jwt-go"
