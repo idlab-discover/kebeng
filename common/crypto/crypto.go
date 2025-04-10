@@ -60,6 +60,9 @@ var (
 
 func GetPrivateKeyFromPEMFile(keyPath string) asserts.PrivateKey {
 	bytes, _ := os.ReadFile(keyPath)
+	if len(bytes) == 0 {
+		panic("private key file is empty")
+	}
 	rootPrivateKey, _ := ParseRSAPrivateKeyFromPEM(bytes)
 	return asserts.RSAPrivateKey(rootPrivateKey)
 }
