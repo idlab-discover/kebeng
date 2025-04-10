@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
+	cerrorpb "github.com/idlab-discover/kebeng/common/cerror/proto"
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
 	"github.com/sirupsen/logrus"
@@ -69,7 +70,7 @@ func (c *StoreClient) RegisterSnapName(snapName string, isPrivate bool, storeNam
 	resp, err := c.client.RegisterSnapName(context.Background(), req)
 	if err != nil {
 		resp = &proto.RegisterSnapNameResponse{
-			Errors: []*proto.Error{{
+			Errors: []*cerrorpb.Error{{
 				Code:    cerror.InternalServerError,
 				Message: err.Error()},
 			},
@@ -82,7 +83,7 @@ func (c *StoreClient) GetEntries(entries *proto.GetEntriesRequest) *proto.GetEnt
 	resp, err := c.client.GetEntries(context.Background(), entries)
 	if err != nil {
 		resp = &proto.GetEntriesResponse{
-			Errors: []*proto.Error{{
+			Errors: []*cerrorpb.Error{{
 				Code:    cerror.InternalServerError,
 				Message: err.Error()},
 			},
@@ -95,7 +96,7 @@ func (c *StoreClient) GetRevisions(revisions *proto.GetRevisionsRequest) *proto.
 	resp, err := c.client.GetRevisions(context.Background(), revisions)
 	if err != nil {
 		resp = &proto.GetRevisionsResponse{
-			Errors: []*proto.Error{{
+			Errors: []*cerrorpb.Error{{
 				Code:    cerror.InternalServerError,
 				Message: err.Error()},
 			},
@@ -109,7 +110,7 @@ func (c *StoreClient) GetEntriesByAccountID(accountID string) *proto.GetEntriesR
 	resp, err := c.client.GetEntriesByAccountId(context.Background(), req)
 	if err != nil {
 		resp = &proto.GetEntriesResponse{
-			Errors: []*proto.Error{{
+			Errors: []*cerrorpb.Error{{
 				Code:    cerror.InternalServerError,
 				Message: err.Error()},
 			},
@@ -122,7 +123,7 @@ func (c *StoreClient) GetRevisionsByEntryIds(entryIds *proto.GetRevisionsByEntry
 	resp, err := c.client.GetRevisionsByEntryIds(context.Background(), entryIds)
 	if err != nil {
 		resp = &proto.GetRevisionsByEntryIdResponses{
-			Errors: []*proto.Error{{
+			Errors: []*cerrorpb.Error{{
 				Code:    cerror.InternalServerError,
 				Message: err.Error()},
 			},
@@ -135,7 +136,7 @@ func (c *StoreClient) GetLatestRevision(snapName, track, channel string) *proto.
 	// if snapName is empty we cant do anything
 	if snapName == "" {
 		return &proto.GetRevisionResponse{
-			Errors: []*proto.Error{{
+			Errors: []*cerrorpb.Error{{
 				Code:    cerror.MissingField,
 				Message: "snapName is required"},
 			},
@@ -158,7 +159,7 @@ func (c *StoreClient) GetLatestRevision(snapName, track, channel string) *proto.
 	resp, err := c.client.GetLatestRevision(context.Background(), req)
 	if err != nil {
 		resp = &proto.GetRevisionResponse{
-			Errors: []*proto.Error{{
+			Errors: []*cerrorpb.Error{{
 				Code:    cerror.InternalServerError,
 				Message: err.Error()},
 			},
@@ -172,7 +173,7 @@ func (c *StoreClient) UnscannedUpload(snapFile io.Reader) *proto.UnscannedUpload
 	fileData, err := io.ReadAll(snapFile)
 	if err != nil {
 		return &proto.UnscannedUploadResponse{
-			Errors: []*proto.Error{{
+			Errors: []*cerrorpb.Error{{
 				Code:    cerror.InternalServerError,
 				Message: err.Error(),
 			}},
@@ -186,7 +187,7 @@ func (c *StoreClient) UnscannedUpload(snapFile io.Reader) *proto.UnscannedUpload
 	resp, err := c.client.UnscannedUpload(context.Background(), req)
 	if err != nil {
 		resp = &proto.UnscannedUploadResponse{
-			Errors: []*proto.Error{{
+			Errors: []*cerrorpb.Error{{
 				Code:    cerror.InternalServerError,
 				Message: err.Error()},
 			},
@@ -206,7 +207,7 @@ func (c *StoreClient) AddUpload(snapName string, entryId uuid.UUID, status strin
 	resp, err := c.client.AddUpload(context.Background(), req)
 	if err != nil {
 		resp = &proto.AddUploadResponse{
-			Errors: []*proto.Error{{
+			Errors: []*cerrorpb.Error{{
 				Code:    cerror.InternalServerError,
 				Message: err.Error()},
 			},
@@ -233,7 +234,7 @@ func (c *StoreClient) SnapDownload(revisionId string) *proto.SnapDownloadComplet
 		}
 		logrus.Errorf("error starting grpc download stream: %v", err)
 		return &proto.SnapDownloadCompleteResponse{
-			Errors: []*proto.Error{{
+			Errors: []*cerrorpb.Error{{
 				Code:    cerror.InternalServerError,
 				Message: err.Error(),
 			}},
@@ -253,7 +254,7 @@ func (c *StoreClient) SnapDownload(revisionId string) *proto.SnapDownloadComplet
 		if err != nil {
 			logrus.Errorf("error receiving grpc download stream: %v", err)
 			return &proto.SnapDownloadCompleteResponse{
-				Errors: []*proto.Error{{
+				Errors: []*cerrorpb.Error{{
 					Code:    cerror.InternalServerError,
 					Message: err.Error(),
 				}},

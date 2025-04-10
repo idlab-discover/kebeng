@@ -159,8 +159,8 @@ func (obs *ObjectStore) MakeBucketAndAddKey(bucketName string, keyPath string, k
 	if err != nil {
 		logrus.Error(err)
 	}
-	rootPrivateKey, err := crypto.ParseRSAPrivateKeyFromPEM(bytes)
-	if err != nil {
+	rootPrivateKey, cerr := crypto.ParseRSAPrivateKeyFromPEM(bytes)
+	if cerr != nil {
 		logrus.Error(err)
 	}
 	keyString := crypto.ExportRsaPrivateKeyAsPemStr(rootPrivateKey)
