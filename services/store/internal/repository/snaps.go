@@ -28,15 +28,15 @@ type ISnapsRepository interface {
 	GetAllSnapEntries() (*[]models.SnapEntry, *cerror.CustomError)
 	GetChannelsByTrackId(trackId uuid.UUID) ([]*models.SnapChannel, *cerror.CustomError)
 	GetCommentsByEntryId(entryId uuid.UUID) ([]*models.SnapComment, *cerror.CustomError)
-	GetEntriesByAccountId(accountId uuid.UUID, preloadAssociations []string) ([]*models.SnapEntry, *cerror.CustomError)
-	GetEntryById(id uuid.UUID, preloadAssociations []string) (*models.SnapEntry, *cerror.CustomError)
-	GetEntryByName(name string, preloadAssociations []string) (*models.SnapEntry, *cerror.CustomError)
+	GetEntriesByAccountId(accountId uuid.UUID, preloadAssociations []string, errorList *cerror.ErrorList) ([]*models.SnapEntry, *cerror.CustomError)
+	GetEntryById(id uuid.UUID, preloadAssociations []string, errorList *cerror.ErrorList) (*models.SnapEntry, *cerror.CustomError)
+	GetEntryByName(name string, preloadAssociations []string, errorList *cerror.ErrorList) (*models.SnapEntry, *cerror.CustomError)
+	GetPreloadAssociations(entry *models.SnapEntry, preloadAssociations *[]string, errorList *cerror.ErrorList) *cerror.CustomError
 	GetRevisionsByEntryId(entryId uuid.UUID) ([]*models.SnapRevision, *cerror.CustomError)
 	GetRevisionById(id uuid.UUID) (*models.SnapRevision, *cerror.CustomError)
 	GetRevisionByNameAndSequence(name string, sequence uint) (*models.SnapRevision, *cerror.CustomError)
 	GetRevisionBySHA(SHA3_384 string, encoded bool) (*models.SnapRevision, *cerror.CustomError)
-	GetSections() (*[]string, *cerror.CustomError)
-	GetTracksBySnapId(snapId uuid.UUID) ([]*models.SnapTrack, *cerror.CustomError)
+	GetTracksByEntryId(snapId uuid.UUID) ([]*models.SnapTrack, *cerror.CustomError)
 	GetTrackById(id uuid.UUID) (*models.SnapTrack, *cerror.CustomError)
 	GetChannelById(id uuid.UUID) (*models.SnapChannel, *cerror.CustomError)
 	GetLatestRevision(snapName string, track string, channel string) (*models.SnapRevision, *cerror.CustomError)
@@ -243,7 +243,7 @@ func (sp *SnapsRepository) GetCommentsByEntryId(entryId uuid.UUID) ([]*models.Sn
 	return comments, nil
 }
 
-func (sp *SnapsRepository) GetEntriesByAccountId(accountId uuid.UUID, preloadAssociations []string) ([]*models.SnapEntry, *cerror.CustomError) {
+func (sp *SnapsRepository) GetEntriesByAccountId(accountId uuid.UUID, preloadAssociations []string, el *cerror.ErrorList) ([]*models.SnapEntry, *cerror.CustomError) {
 	var entries []*models.SnapEntry
 	query := `
             SELECT * 
@@ -253,19 +253,20 @@ func (sp *SnapsRepository) GetEntriesByAccountId(accountId uuid.UUID, preloadAss
 	err := sp.db.Select(&entries, query, accountId)
 	if err != nil {
 		logrus.Error(err)
+		el.AddCustomError(cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("resource not found: snaps for account with id = '%s'", accountId.String())))
 		return nil, cerror.ConvertError(err, fmt.Sprintf("resource not found: snaps for account with id = '%s'", accountId.String()))
 	}
 
 	// manual check for empty result because db.Select doesn't return an error for empty results
 	if len(entries) == 0 {
+		el.AddCustomError(cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("resource not found: snaps for account with id = '%s'", accountId.String())))
 		return nil, cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("resource not found: snaps for account with id = '%s'", accountId.String()))
 	}
 
 	for _, entry := range entries {
 
-		cerr := sp.getPreloadAssociations(entry, &preloadAssociations)
+		cerr := sp.GetPreloadAssociations(entry, &preloadAssociations, el)
 		if cerr != nil {
-			logrus.Error("failed to preload associations")
 			return nil, cerr
 		}
 	}
@@ -273,7 +274,7 @@ func (sp *SnapsRepository) GetEntriesByAccountId(accountId uuid.UUID, preloadAss
 	return entries, nil
 }
 
-func (sp *SnapsRepository) GetEntryById(Id uuid.UUID, preloadAssociations []string) (*models.SnapEntry, *cerror.CustomError) {
+func (sp *SnapsRepository) GetEntryById(Id uuid.UUID, preloadAssociations []string, el *cerror.ErrorList) (*models.SnapEntry, *cerror.CustomError) {
 	var snapEntry models.SnapEntry
 	query := `
 		SELECT *
@@ -283,10 +284,11 @@ func (sp *SnapsRepository) GetEntryById(Id uuid.UUID, preloadAssociations []stri
 	err := sp.db.Get(&snapEntry, query, Id)
 	if err != nil {
 		logrus.Error(err)
+		el.AddCustomError(cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("resource not found: snap with id = '%s'", Id.String())))
 		return nil, cerror.ConvertError(err, fmt.Sprintf("resource not found: snap with id = '%s'", Id.String()))
 	}
 
-	cerr := sp.getPreloadAssociations(&snapEntry, &preloadAssociations)
+	cerr := sp.GetPreloadAssociations(&snapEntry, &preloadAssociations, el)
 	if cerr != nil {
 		logrus.Error("failed to preload associations")
 		return nil, cerr
@@ -295,7 +297,7 @@ func (sp *SnapsRepository) GetEntryById(Id uuid.UUID, preloadAssociations []stri
 	return &snapEntry, nil
 }
 
-func (sp *SnapsRepository) GetEntryByName(name string, preloadAssociations []string) (*models.SnapEntry, *cerror.CustomError) {
+func (sp *SnapsRepository) GetEntryByName(name string, preloadAssociations []string, el *cerror.ErrorList) (*models.SnapEntry, *cerror.CustomError) {
 	if preloadAssociations == nil {
 		preloadAssociations = []string{}
 	}
@@ -309,12 +311,12 @@ func (sp *SnapsRepository) GetEntryByName(name string, preloadAssociations []str
 	err := sp.db.Get(&snapEntry, query, name)
 	if err != nil {
 		logrus.Warnf("FUNCTION GetEntryByName while searching for snap with name '%s': %s", name, err)
+		el.AddCustomError(cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("entry not found: snap with name = '%s'", name)))
 		return nil, cerror.ConvertError(err, fmt.Sprintf("entry not found: snap with name = '%s'", name))
 	}
 
-	cerr := sp.getPreloadAssociations(&snapEntry, &preloadAssociations)
+	cerr := sp.GetPreloadAssociations(&snapEntry, &preloadAssociations, el)
 	if cerr != nil {
-		logrus.Error("failed to preload associations")
 		return nil, cerr
 	}
 
@@ -418,17 +420,7 @@ func (sp *SnapsRepository) GetRevisionBySHA(SHA3_384 string, encoded bool) (*mod
 	return &revision, nil
 }
 
-// QUESTION: Think this is for browsing categories? Not sure
-func (sp *SnapsRepository) GetSections() (*[]string, *cerror.CustomError) {
-	// TODO: add these to the database for real
-	sections := []string{
-		"general",
-	}
-
-	return &sections, nil
-}
-
-func (sp *SnapsRepository) GetTracksBySnapId(snapId uuid.UUID) ([]*models.SnapTrack, *cerror.CustomError) {
+func (sp *SnapsRepository) GetTracksByEntryId(snapId uuid.UUID) ([]*models.SnapTrack, *cerror.CustomError) {
 	var tracks []*models.SnapTrack
 
 	query := `
@@ -625,30 +617,57 @@ func (sp *SnapsRepository) GetChannelById(id uuid.UUID) (*models.SnapChannel, *c
 	return &channel, nil
 }
 
-// ============ PRIVATE =============
 // ============ HELPER ==============
 
-func (sp *SnapsRepository) getPreloadAssociations(entry *models.SnapEntry, preloadAssociations *[]string) *cerror.CustomError {
+func (sp *SnapsRepository) GetPreloadAssociations(entry *models.SnapEntry, preloadAssociations *[]string, el *cerror.ErrorList) *cerror.CustomError {
+	elLength := len(*el)
 	all := slices.Contains(*preloadAssociations, models.ALL)
 
 	switch {
 	case all || slices.Contains(*preloadAssociations, models.COMMENT):
-		resp, err := sp.GetCommentsByEntryId(entry.ID)
-		if err != nil {
+		resp, cerr := sp.GetCommentsByEntryId(entry.ID)
+		if cerr != nil {
 			// Already logged in GetCommentsByEntryId
-			return err
+			el.AddCustomError(cerr)
+		} else {
+			entry.LatestComments = resp
 		}
-		entry.LatestComments = resp
+		fallthrough
+
+	case all || slices.Contains(*preloadAssociations, models.TRACK):
+		resp, cerr := sp.GetTracksByEntryId(entry.ID)
+		if cerr != nil {
+			// Already logged in GetTracksByEntryId
+			el.AddCustomError(cerr)
+		} else {
+			entry.Tracks = resp
+		}
+		fallthrough
+
+	case all || slices.Contains(*preloadAssociations, models.CHANNEL):
+		resp, cerr := sp.GetChannelsByTrackId(entry.ID)
+		if cerr != nil {
+			// Already logged in GetChannelsByTrackId
+			el.AddCustomError(cerr)
+		} else {
+			entry.Channels = resp
+		}
 		fallthrough
 
 	case all || slices.Contains(*preloadAssociations, models.REVISION) || all:
-		resp, err := sp.GetRevisionsByEntryId(entry.ID)
-		if err != nil {
+		resp, cerr := sp.GetRevisionsByEntryId(entry.ID)
+		if cerr != nil {
 			// Already logged in GetRevisionsByEntryId
-			return err
+			el.AddCustomError(cerr)
+		} else {
+			entry.Revisions = resp
 		}
-		entry.Revisions = resp
-
 	}
+
+	if elLength != len(*el) {
+		logrus.Error("failed to preload associations")
+		return cerror.NewCustomError(cerror.ResourceNotFound, "failed to preload associations")
+	}
+
 	return nil
 }

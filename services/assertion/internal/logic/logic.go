@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
+	cerrorpb "github.com/idlab-discover/kebeng/common/cerror/proto"
 	"github.com/idlab-discover/kebeng/services/assertion/internal/repository"
 	proto "github.com/idlab-discover/kebeng/services/assertion/proto"
 	"github.com/sirupsen/logrus"
@@ -26,10 +27,10 @@ func NewAssertionLogic(repo repository.IAssertionRepository) *AssertionService {
 }
 
 func (s *AssertionService) ProcessSnapBuildAssertion(ctx context.Context, req *proto.SnapBuildAssertionRequest) (*proto.SnapBuildAssertionResponse, error) {
-	errList := make([]*proto.Error, 0)
+	errList := make([]*cerrorpb.Error, 0)
 
 	if req.Assertion == nil {
-		errList = append(errList, &proto.Error{
+		errList = append(errList, &cerrorpb.Error{
 			Code:    cerror.MissingField,
 			Message: "Assertion field is required",
 		})
@@ -42,7 +43,7 @@ func (s *AssertionService) ProcessSnapBuildAssertion(ctx context.Context, req *p
 
 	err := validateSnapBuildAssertion(assertion)
 	if err != nil {
-		errList = append(errList, &proto.Error{
+		errList = append(errList, &cerrorpb.Error{
 			Code:    cerror.Invalid,
 			Message: "not a valid snap-build assertion: " + err.Error(),
 		})
@@ -55,7 +56,7 @@ func (s *AssertionService) ProcessSnapBuildAssertion(ctx context.Context, req *p
 	parsedUUID, err := uuid.Parse(snapEntryId)
 	if err != nil {
 		logrus.Errorf("Failed to parse snap-id: %v", err)
-		errList = append(errList, &proto.Error{
+		errList = append(errList, &cerrorpb.Error{
 			Code:    cerror.Invalid,
 			Message: "Invalid snap-id",
 		})
@@ -67,7 +68,7 @@ func (s *AssertionService) ProcessSnapBuildAssertion(ctx context.Context, req *p
 	_, err2 := s.repo.AddAssertion(parsedUUID, string(req.Assertion))
 	if err2 != nil {
 		logrus.Errorf("Failed to create assertion: %v", err2)
-		errList = append(errList, &proto.Error{
+		errList = append(errList, &cerrorpb.Error{
 			Code:    cerror.AssertionCreationFailed,
 			Message: "Failed to create assertion",
 		})

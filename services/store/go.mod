@@ -3,7 +3,7 @@ module github.com/idlab-discover/kebeng/services/store
 go 1.22.2
 
 require (
-	github.com/idlab-discover/kebeng v0.0.0-20250318181307-e419463f7679
+	github.com/idlab-discover/kebeng v0.0.0-20250410132007-6a9946cf93cd
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/lib/pq v1.10.9
 	github.com/mattn/go-sqlite3 v1.14.22
@@ -22,8 +22,6 @@ require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/idlab-discover/kebeng/services/account v0.0.0-20250311154753-8199d8a8bc52 // indirect
-	github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250318141246-77a544f56023 // indirect
 	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.9 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
@@ -36,6 +34,7 @@ require (
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
 	github.com/snapcore/go-gettext v0.0.0-20201130093759-38740d1bd3d2 // indirect
+	github.com/snapcore/snapd v0.0.0-20250228185938-4d4437a35a6b // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cast v1.6.0 // indirect
@@ -60,7 +59,6 @@ require (
 	github.com/golang-migrate/migrate/v4 v4.18.2
 	github.com/google/uuid v1.6.0
 	github.com/minio/minio-go/v7 v7.0.87
-	github.com/snapcore/snapd v0.0.0-20250228185938-4d4437a35a6b // indirect
 	github.com/spf13/viper v1.19.0
 	golang.org/x/sys v0.30.0 // indirect
 	google.golang.org/grpc v1.71.0

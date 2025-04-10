@@ -7,7 +7,7 @@ require (
 	github.com/go-playground/assert/v2 v2.2.0
 	github.com/golang-migrate/migrate/v4 v4.18.2
 	github.com/google/uuid v1.6.0
-	github.com/idlab-discover/kebeng v0.0.0-20250318181307-e419463f7679
+	github.com/idlab-discover/kebeng v0.0.0-20250410133406-b4bb821c59d8
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/mattn/go-sqlite3 v1.14.22
 	github.com/sirupsen/logrus v1.9.3

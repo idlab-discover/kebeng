@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
+	cerrorpb "github.com/idlab-discover/kebeng/common/cerror/proto"
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
 	"github.com/sirupsen/logrus"
@@ -17,7 +18,6 @@ import (
 
 type StoreClientInterface interface {
 	Close()
-	UploadSnap(name string, type_name string, confinement string, base string, file []byte) *proto.UploadSnapResponse
 	RegisterSnapName(snapName string, isPrivate bool, storeName string, dryRun bool, accountId uuid.UUID) *proto.RegisterSnapNameResponse
 	GetEntries(entries *proto.GetEntriesRequest) *proto.GetEntriesResponse
 	GetRevisions(revisions *proto.GetRevisionsRequest) *proto.GetRevisionsResponse
@@ -34,6 +34,10 @@ var _ StoreClientInterface = (*StoreClient)(nil)
 type StoreClient struct {
 	conn   *grpc.ClientConn
 	client proto.StoreServiceClient
+}
+
+func NewStoreClientWithClient(client proto.StoreServiceClient) *StoreClient {
+	return &StoreClient{client: client}
 }
 
 func NewStoreClient(storeHost string, storePort int) (*StoreClient, error) {
@@ -54,27 +58,6 @@ func (c *StoreClient) Close() {
 	}
 }
 
-func (c *StoreClient) UploadSnap(name string, type_name string, confinement string, base string, file []byte) *proto.UploadSnapResponse {
-	req := &proto.UploadSnapRequest{
-		Name:        name,
-		Type:        type_name,
-		Confinement: confinement,
-		Base:        base,
-		File:        file,
-	}
-
-	resp, err := c.client.UploadSnap(context.Background(), req)
-	if err != nil {
-		resp = &proto.UploadSnapResponse{
-			Errors: []*proto.Error{{
-				Code:    cerror.InternalServerError,
-				Message: err.Error()},
-			},
-		}
-	}
-	return resp
-}
-
 func (c *StoreClient) RegisterSnapName(snapName string, isPrivate bool, storeName string, dryRun bool, accountId uuid.UUID) *proto.RegisterSnapNameResponse {
 	req := &proto.RegisterSnapNameRequest{
 		SnapName:  snapName,
@@ -87,7 +70,7 @@ func (c *StoreClient) RegisterSnapName(snapName string, isPrivate bool, storeNam
 	resp, err := c.client.RegisterSnapName(context.Background(), req)
 	if err != nil {
 		resp = &proto.RegisterSnapNameResponse{
-			Errors: []*proto.Error{{
+			Errors: []*cerrorpb.Error{{
 				Code:    cerror.InternalServerError,
 				Message: err.Error()},
 			},
@@ -100,7 +83,7 @@ func (c *StoreClient) GetEntries(entries *proto.GetEntriesRequest) *proto.GetEnt
 	resp, err := c.client.GetEntries(context.Background(), entries)
 	if err != nil {
 		resp = &proto.GetEntriesResponse{
-			Errors: []*proto.Error{{
+			Errors: []*cerrorpb.Error{{
 				Code:    cerror.InternalServerError,
 				Message: err.Error()},
 			},
@@ -113,7 +96,7 @@ func (c *StoreClient) GetRevisions(revisions *proto.GetRevisionsRequest) *proto.
 	resp, err := c.client.GetRevisions(context.Background(), revisions)
 	if err != nil {
 		resp = &proto.GetRevisionsResponse{
-			Errors: []*proto.Error{{
+			Errors: []*cerrorpb.Error{{
 				Code:    cerror.InternalServerError,
 				Message: err.Error()},
 			},
@@ -127,7 +110,7 @@ func (c *StoreClient) GetEntriesByAccountID(accountID string) *proto.GetEntriesR
 	resp, err := c.client.GetEntriesByAccountId(context.Background(), req)
 	if err != nil {
 		resp = &proto.GetEntriesResponse{
-			Errors: []*proto.Error{{
+			Errors: []*cerrorpb.Error{{
 				Code:    cerror.InternalServerError,
 				Message: err.Error()},
 			},
@@ -140,7 +123,7 @@ func (c *StoreClient) GetRevisionsByEntryIds(entryIds *proto.GetRevisionsByEntry
 	resp, err := c.client.GetRevisionsByEntryIds(context.Background(), entryIds)
 	if err != nil {
 		resp = &proto.GetRevisionsByEntryIdResponses{
-			Errors: []*proto.Error{{
+			Errors: []*cerrorpb.Error{{
 				Code:    cerror.InternalServerError,
 				Message: err.Error()},
 			},
@@ -153,7 +136,7 @@ func (c *StoreClient) GetLatestRevision(snapName, track, channel string) *proto.
 	// if snapName is empty we cant do anything
 	if snapName == "" {
 		return &proto.GetRevisionResponse{
-			Errors: []*proto.Error{{
+			Errors: []*cerrorpb.Error{{
 				Code:    cerror.MissingField,
 				Message: "snapName is required"},
 			},
@@ -176,7 +159,7 @@ func (c *StoreClient) GetLatestRevision(snapName, track, channel string) *proto.
 	resp, err := c.client.GetLatestRevision(context.Background(), req)
 	if err != nil {
 		resp = &proto.GetRevisionResponse{
-			Errors: []*proto.Error{{
+			Errors: []*cerrorpb.Error{{
 				Code:    cerror.InternalServerError,
 				Message: err.Error()},
 			},
@@ -185,11 +168,12 @@ func (c *StoreClient) GetLatestRevision(snapName, track, channel string) *proto.
 	return resp
 }
 
+// TODO: fix so that file gets streamed
 func (c *StoreClient) UnscannedUpload(snapFile io.Reader) *proto.UnscannedUploadResponse {
 	fileData, err := io.ReadAll(snapFile)
 	if err != nil {
 		return &proto.UnscannedUploadResponse{
-			Errors: []*proto.Error{{
+			Errors: []*cerrorpb.Error{{
 				Code:    cerror.InternalServerError,
 				Message: err.Error(),
 			}},
@@ -203,7 +187,7 @@ func (c *StoreClient) UnscannedUpload(snapFile io.Reader) *proto.UnscannedUpload
 	resp, err := c.client.UnscannedUpload(context.Background(), req)
 	if err != nil {
 		resp = &proto.UnscannedUploadResponse{
-			Errors: []*proto.Error{{
+			Errors: []*cerrorpb.Error{{
 				Code:    cerror.InternalServerError,
 				Message: err.Error()},
 			},
@@ -223,7 +207,7 @@ func (c *StoreClient) AddUpload(snapName string, entryId uuid.UUID, status strin
 	resp, err := c.client.AddUpload(context.Background(), req)
 	if err != nil {
 		resp = &proto.AddUploadResponse{
-			Errors: []*proto.Error{{
+			Errors: []*cerrorpb.Error{{
 				Code:    cerror.InternalServerError,
 				Message: err.Error()},
 			},
@@ -238,10 +222,10 @@ func (c *StoreClient) SnapDownload(revisionId string) *proto.SnapDownloadComplet
 	}
 
 	// TODO: refactor to return 3 values stream, cerror, error
-	// this way we can distuingish between a lower layer error and a grpc error in a cleaner way
+	// this way we can distinguish between a lower layer error and a grpc error in a cleaner way
 	stream, err := c.client.SnapDownload(context.Background(), req)
 	if err != nil {
-		// if err != nil we should read the stream (if we can) to get the actual error and than return it
+		// if err != nil we should read the stream (if we can) to get the actual error and then return it
 		if stream != nil {
 			if resp, recvErr := stream.Recv(); recvErr == nil && resp != nil && len(resp.Errors) > 0 {
 				logrus.Errorf("error starting grpc download stream, received: %v", resp.Errors)
@@ -250,12 +234,13 @@ func (c *StoreClient) SnapDownload(revisionId string) *proto.SnapDownloadComplet
 		}
 		logrus.Errorf("error starting grpc download stream: %v", err)
 		return &proto.SnapDownloadCompleteResponse{
-			Errors: []*proto.Error{{
+			Errors: []*cerrorpb.Error{{
 				Code:    cerror.InternalServerError,
 				Message: err.Error(),
 			}},
 		}
 	}
+
 	// create buffer for snap data
 	var fileData bytes.Buffer
 	response := &proto.SnapDownloadCompleteResponse{}
@@ -269,14 +254,22 @@ func (c *StoreClient) SnapDownload(revisionId string) *proto.SnapDownloadComplet
 		if err != nil {
 			logrus.Errorf("error receiving grpc download stream: %v", err)
 			return &proto.SnapDownloadCompleteResponse{
-				Errors: []*proto.Error{{
+				Errors: []*cerrorpb.Error{{
 					Code:    cerror.InternalServerError,
-					Message: err.Error()},
-				},
+					Message: err.Error(),
+				}},
 			}
 		}
 
-		// first message contains revision metadata and an initial chunk
+		// Check for errors embedded in the response message
+		if len(resp.Errors) > 0 {
+			logrus.Errorf("received grpc stream error response: %v", resp.Errors)
+			return &proto.SnapDownloadCompleteResponse{
+				Errors: resp.Errors,
+			}
+		}
+
+		// first message contains revision metadata
 		if initial := resp.GetInitial(); initial != nil {
 			logrus.Debugf("received revision metadata: %v", initial.Revision)
 			response.Revision = initial.Revision
@@ -284,6 +277,7 @@ func (c *StoreClient) SnapDownload(revisionId string) *proto.SnapDownloadComplet
 			fileData.Write(data.Chunk)
 		}
 	}
+
 	response.Data = fileData.Bytes()
 	return response
 }
