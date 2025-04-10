@@ -828,16 +828,18 @@ func TestStoreClient_AddUpload(t *testing.T) {
 		entryId            uuid.UUID
 		status             string
 		accountId          uuid.UUID
+		unscannedFileName  string
 		expectedResp       *proto.AddUploadResponse
 		expectedErrors     bool
 		expectedProtoError bool
 	}{
 		{
-			name:      "Successful proto call",
-			snapName:  "test_snap",
-			entryId:   mockID,
-			status:    "pending",
-			accountId: uuid.New(),
+			name:              "Successful proto call",
+			snapName:          "test_snap",
+			entryId:           mockID,
+			status:            "pending",
+			accountId:         uuid.New(),
+			unscannedFileName: "test_file",
 			expectedResp: &proto.AddUploadResponse{
 				Id:       mockID.String(),
 				SnapName: "test_snap",
@@ -853,13 +855,15 @@ func TestStoreClient_AddUpload(t *testing.T) {
 			entryId:            uuid.New(),
 			status:             "pending",
 			accountId:          uuid.New(),
+			unscannedFileName:  "test_file",
 			expectedResp:       nil,
 			expectedProtoError: true,
 		},
 		{
-			name:     "response contains errors",
-			snapName: "test_snap",
-			entryId:  uuid.New(),
+			name:              "response contains errors",
+			snapName:          "test_snap",
+			entryId:           uuid.New(),
+			unscannedFileName: "test_file",
 			expectedResp: &proto.AddUploadResponse{
 				Errors: []*cerrorpb.Error{{
 					Code:    cerror.InternalServerError,
@@ -879,7 +883,7 @@ func TestStoreClient_AddUpload(t *testing.T) {
 				mockProtoClient.On("AddUpload", mock.Anything, mock.Anything).Return(tc.expectedResp, nil).Once()
 			}
 
-			resp := storeClient.AddUpload(tc.snapName, tc.entryId, tc.status, tc.accountId)
+			resp := storeClient.AddUpload(tc.snapName, tc.entryId, tc.status, tc.accountId, tc.unscannedFileName)
 			if !tc.expectedErrors && !tc.expectedProtoError {
 				assert.Equal(t, tc.expectedResp, resp)
 				assert.Empty(t, resp.Errors)
