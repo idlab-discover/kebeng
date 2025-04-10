@@ -356,7 +356,7 @@ func (h *Handler) UnscannedUpload(c *gin.Context) {
 	}()
 
 	// Upload file to the unscanned bucket, waiting for revision to be created
-	resp := h.StoreClient.UnscannedUpload(file)
+	resp := h.StoreClient.UnscannedUpload(c, file)
 	if len(resp.Errors) > 0 {
 		el.ExtendProtoError(resp.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
