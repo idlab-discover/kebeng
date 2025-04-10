@@ -25,6 +25,7 @@ func NewAssertionRepository(db *sqlx.DB) IAssertionRepository {
 	return &AssertionRepository{db: db}
 }
 
+// TODO: eventually remove this and use correct assertion, leaving this here now for backwards compatibility
 func (r *AssertionRepository) AddAssertion(snapEntryId uuid.UUID, assertionString string) (*model.Assertion, *cerror.CustomError) {
 	query := `INSERT INTO assertions (snap_entry_id, assertion) VALUES ($1, $2) RETURNING id, assertion`
 	assertion := &model.Assertion{}
