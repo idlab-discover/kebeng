@@ -163,6 +163,8 @@ func TestAddAccountKeyAssertion(t *testing.T) {
 		revision    uint32
 		accountID   uuid.UUID
 		since       time.Time
+		until       time.Time
+		body        []byte
 		bodyLength  uint64
 		Signature   string
 		expectError bool
@@ -179,6 +181,8 @@ func TestAddAccountKeyAssertion(t *testing.T) {
 			revision:    2,
 			accountID:   uuid.New(),
 			since:       time.Date(2016, 4, 1, 0, 0, 0, 0, time.UTC),
+			until:       time.Date(2016, 4, 1, 0, 0, 0, 0, time.UTC),
+			body:        []byte("test-body-data"),
 			bodyLength:  717,
 			Signature:   "AcLBtest-signature-data",
 			expectError: false,
@@ -192,6 +196,8 @@ func TestAddAccountKeyAssertion(t *testing.T) {
 			revision:    2,
 			accountID:   uuid.New(),
 			since:       time.Date(2016, 4, 1, 0, 0, 0, 0, time.UTC),
+			until:       time.Date(2016, 4, 1, 0, 0, 0, 0, time.UTC),
+			body:        []byte("test-body-data"),
 			bodyLength:  717,
 			Signature:   "AcLBtest-signature-data",
 			expectError: true,
@@ -202,7 +208,7 @@ func TestAddAccountKeyAssertion(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			el := cerror.NewErrorList()
-			record, cerr := globalRepo.AddAccountKeyAssertion(el, tt.authorityID, tt.publicKey, tt.signKey, tt.displayName, tt.revision, tt.accountID, tt.since, tt.bodyLength, tt.Signature)
+			record, cerr := globalRepo.AddAccountKeyAssertion(el, tt.authorityID, tt.publicKey, tt.signKey, tt.displayName, tt.revision, tt.accountID, tt.since, tt.until, tt.body, tt.bodyLength, tt.Signature)
 			if tt.expectError {
 				assert.NotNil(t, cerr, "Expected an error during insertion")
 				assert.Equal(t, el.HasError(), true, "Expected an error in the list")
@@ -250,9 +256,9 @@ func TestGetAccountKeyAssertionByAccountId(t *testing.T) {
 				insertQuery := `
 				INSERT INTO account_key_assertion (
 					id, authority_id, public_key_sha3_384, sign_key_sha3_384,
-					name, revision, account_id, since, body_length, signature
+					name, revision, account_id, since, until, body, body_length, signature
 				) VALUES (
-					$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
+					$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
 				)`
 				_, err := globalDB.Exec(insertQuery,
 					testID,
@@ -263,6 +269,8 @@ func TestGetAccountKeyAssertionByAccountId(t *testing.T) {
 					2,
 					tt.accountID,
 					time.Date(2016, 4, 1, 0, 0, 0, 0, time.UTC),
+					time.Date(2016, 4, 1, 0, 0, 0, 0, time.UTC),
+					[]byte("test-body-data"),
 					717,
 					"AcLBtest-signature-data",
 				)
@@ -285,7 +293,7 @@ func TestGetAccountKeyAssertionByAccountId(t *testing.T) {
 				assert.NotNil(t, record, "Expected a non-nil assertion record")
 				assert.Equal(t, tt.accountID, record.AccountID, "Account ID should match")
 				assert.Equal(t, "canonical", record.AuthorityID, "AuthorityID should match")
-				assert.Equal(t, uint32(2), record.Revision, "Revision should match")
+				assert.Equal(t, uint32(2), record.SnapRevisionSequenceNumber, "Revision should match")
 			}
 		})
 	}

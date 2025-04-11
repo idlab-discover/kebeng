@@ -83,6 +83,53 @@ func (s *AssertionService) AddSnapRevisionAssertion(ctx context.Context, req *pr
 	}, nil
 }
 
+func (s *AssertionService) AddAccountKeyAssertion(ctx context.Context, req *proto.AddAccountKeyAssertionRequest) (*proto.AccountKeyAssertionResponse, error) {
+	el := cerror.NewErrorList()
+	parsedAccountId, err := uuid.Parse(req.GetAccountId())
+	if err != nil {
+		logrus.Errorf("failed to parse account id: %s", err)
+		el.Add(cerror.Invalid, fmt.Sprintf("invalid account id could not parse to uuid: %s", err))
+	}
+
+	signature, cerr := s.signAssertion(el, req, s.cfg.RootKey.PublicKey().ID())
+	if cerr != nil {
+		return nil, fmt.Errorf("failed to sign assertion: %v", cerr)
+	}
+	accountKeyAssertion, cerr := s.repo.AddAccountKeyAssertion(
+		el,
+		s.cfg.AuthorityID,
+		req.GetPublicKeySha3_384(),
+		s.cfg.RootKey.PublicKey().ID(), // this is the sign_key_SHA3_384
+		req.GetName(),
+		req.GetSnapRevisionSequenceNumber(),
+		parsedAccountId,
+		req.GetSince().AsTime(),
+		req.GetSince().AsTime().Add(time.Duration(365*24*time.Hour)), // a key is valid for 1 year
+		req.GetBody(),
+		uint64(len(req.Body)),
+		signature,
+	)
+	if cerr != nil {
+		// should have been logged and added to error list in repo function
+		return nil, fmt.Errorf("failed to add account key assertion: %v", cerr)
+	}
+
+	return &proto.AccountKeyAssertionResponse{
+		AuthorityId:                accountKeyAssertion.AuthorityID,
+		SignKeySha3_384:            accountKeyAssertion.SignKeySHA3_384,
+		AccountId:                  accountKeyAssertion.AccountID.String(),
+		Name:                       accountKeyAssertion.Name,
+		SnapRevisionSequenceNumber: accountKeyAssertion.SnapRevisionSequenceNumber,
+		Since:                      timestamppb.New(accountKeyAssertion.Since),
+		Until:                      timestamppb.New(accountKeyAssertion.Since.Add(time.Duration(365 * 24 * time.Hour))), // a key is valid for 1 year
+		Body:                       accountKeyAssertion.Body,
+		BodyLength:                 accountKeyAssertion.BodyLength,
+		Signature:                  signature,
+		Type:                       accountKeyAssertion.Type,
+		Errors:                     el.ConvertToProtoErrorList(),
+	}, nil
+}
+
 // ##################### HELPER FUNCTIONS #####################
 
 func (s *AssertionService) signAssertion(el *cerror.ErrorList, assertionHeaders any, signKeyID string) (string, *cerror.CustomError) {

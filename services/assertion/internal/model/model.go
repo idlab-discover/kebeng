@@ -15,20 +15,20 @@ type Assertion struct {
 }
 
 type AccountKeyAssertion struct {
-	ID                uuid.UUID  `json:"id" db:"id"`
-	CreatedAt         time.Time  `json:"created_at" db:"created_at"`
-	DeletedAt         *time.Time `json:"deleted_at,omitempty" db:"deleted_at"`
-	Type              string     `json:"type" db:"type"`
-	AuthorityID       string     `json:"authority_id" db:"authority_id"`
-	Revision          uint32     `json:"revision" db:"revision"`
-	PublicKeySHA3_384 string     `json:"public_key_sha3_384" db:"public_key_sha3_384"`
-	AccountID         uuid.UUID  `json:"account_id" db:"account_id"`
-	Name              string     `json:"name" db:"name"`
-	Since             time.Time  `json:"since" db:"since"`
-	BodyLength        uint64     `json:"body_length" db:"body_length"`
-	Body              string     `json:"body" db:"body"` // TODO: figure out what (idk what this is) "base64 encoded version prefixed public key packet" means
-	SignKeySHA3_384   string     `json:"sign_key_sha3_384" db:"sign_key_sha3_384"`
-	Signature         string     `json:"signature" db:"signature"`
+	ID                         uuid.UUID  `json:"id" db:"id"`
+	CreatedAt                  time.Time  `json:"created_at" db:"created_at"`
+	DeletedAt                  *time.Time `json:"deleted_at,omitempty" db:"deleted_at"`
+	Type                       string     `json:"type" db:"type"`
+	AuthorityID                string     `json:"authority_id" db:"authority_id"`
+	SnapRevisionSequenceNumber uint32     `json:"revision" db:"revision"`
+	PublicKeySHA3_384          string     `json:"public_key_sha3_384" db:"public_key_sha3_384"`
+	AccountID                  uuid.UUID  `json:"account_id" db:"account_id"`
+	Name                       string     `json:"name" db:"name"`
+	Since                      time.Time  `json:"since" db:"since"`
+	BodyLength                 uint64     `json:"body_length" db:"body_length"`
+	Body                       []byte     `json:"body" db:"body"` // TODO: figure out what (idk what this is) "base64 encoded version prefixed public key packet" means
+	SignKeySHA3_384            string     `json:"sign_key_sha3_384" db:"sign_key_sha3_384"`
+	Signature                  string     `json:"signature" db:"signature"`
 }
 
 type SnapRevisionAssertion struct {
