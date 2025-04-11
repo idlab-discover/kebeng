@@ -76,9 +76,10 @@ message AccountKeyAssertionResponse {
   string sign_key_sha3_384 = 9;
 
   bytes body = 10;
+  uint64 body_Length = 11;
 
-  string signature = 11;
+  string signature = 12;
 
-  repeated proto.Error errors = 12;
+  repeated proto.Error errors = 13;
 }
 
