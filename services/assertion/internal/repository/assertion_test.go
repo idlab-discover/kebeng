@@ -164,6 +164,7 @@ func TestAddAccountKeyAssertion(t *testing.T) {
 		accountID   uuid.UUID
 		since       time.Time
 		bodyLength  uint64
+		Signature   string
 		expectError bool
 		errorCode   string // expected error code (if any)
 	}{
@@ -179,6 +180,7 @@ func TestAddAccountKeyAssertion(t *testing.T) {
 			accountID:   uuid.New(),
 			since:       time.Date(2016, 4, 1, 0, 0, 0, 0, time.UTC),
 			bodyLength:  717,
+			Signature:   "AcLBtest-signature-data",
 			expectError: false,
 		},
 		{
@@ -191,6 +193,7 @@ func TestAddAccountKeyAssertion(t *testing.T) {
 			accountID:   uuid.New(),
 			since:       time.Date(2016, 4, 1, 0, 0, 0, 0, time.UTC),
 			bodyLength:  717,
+			Signature:   "AcLBtest-signature-data",
 			expectError: true,
 			errorCode:   cerror.InvalidField,
 		},
@@ -199,7 +202,7 @@ func TestAddAccountKeyAssertion(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			el := cerror.NewErrorList()
-			record, cerr := globalRepo.AddAccountKeyAssertion(el, tt.authorityID, tt.publicKey, tt.signKey, tt.displayName, tt.revision, tt.accountID, tt.since, tt.bodyLength)
+			record, cerr := globalRepo.AddAccountKeyAssertion(el, tt.authorityID, tt.publicKey, tt.signKey, tt.displayName, tt.revision, tt.accountID, tt.since, tt.bodyLength, tt.Signature)
 			if tt.expectError {
 				assert.NotNil(t, cerr, "Expected an error during insertion")
 				assert.Equal(t, el.HasError(), true, "Expected an error in the list")
@@ -247,9 +250,9 @@ func TestGetAccountKeyAssertionByAccountId(t *testing.T) {
 				insertQuery := `
 				INSERT INTO account_key_assertion (
 					id, authority_id, public_key_sha3_384, sign_key_sha3_384,
-					name, revision, account_id, since, body_length
+					name, revision, account_id, since, body_length, signature
 				) VALUES (
-					$1, $2, $3, $4, $5, $6, $7, $8, $9
+					$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 				)`
 				_, err := globalDB.Exec(insertQuery,
 					testID,
@@ -261,6 +264,7 @@ func TestGetAccountKeyAssertionByAccountId(t *testing.T) {
 					tt.accountID,
 					time.Date(2016, 4, 1, 0, 0, 0, 0, time.UTC),
 					717,
+					"AcLBtest-signature-data",
 				)
 				assert.NoError(t, err, "Failed to insert test account key assertion")
 			}
@@ -298,6 +302,7 @@ func TestAddSnapRevisionAssertion(t *testing.T) {
 		timestamp                  time.Time
 		signKeySHA3_384            string
 		snapSize                   uint64
+		Signature                  string
 		expectError                bool
 		errorCode                  string // expected error code (if any)
 	}{
@@ -311,6 +316,7 @@ func TestAddSnapRevisionAssertion(t *testing.T) {
 			timestamp:                  time.Date(2016, 4, 1, 0, 0, 0, 0, time.UTC),
 			signKeySHA3_384:            "-CvQKAwRQ5h3Ffn10FILJoEZUXOv6km9FwA80-Rcj-f-6jadQ89VRswHNiEB9Lxk",
 			snapSize:                   1234567,
+			Signature:                  "AcLBtest-signature-data",
 			expectError:                false,
 		},
 		{
@@ -323,6 +329,7 @@ func TestAddSnapRevisionAssertion(t *testing.T) {
 			timestamp:                  time.Date(2016, 4, 1, 0, 0, 0, 0, time.UTC),
 			signKeySHA3_384:            "", // set to empty string to trigger error
 			snapSize:                   1234567,
+			Signature:                  "AcLBtest-signature-data",
 			expectError:                true,
 			errorCode:                  cerror.InvalidField,
 		},
@@ -331,7 +338,7 @@ func TestAddSnapRevisionAssertion(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			el := cerror.NewErrorList()
-			record, cerr := globalRepo.AddSnapRevisionAssertion(el, tt.authorityID, tt.snapSHA3_384, tt.signKeySHA3_384, tt.developerID, tt.snapEntryID, tt.snapRevisionSequenceNumber, tt.snapSize, tt.timestamp)
+			record, cerr := globalRepo.AddSnapRevisionAssertion(el, tt.authorityID, tt.snapSHA3_384, tt.signKeySHA3_384, tt.developerID, tt.snapEntryID, tt.snapRevisionSequenceNumber, tt.snapSize, tt.timestamp, tt.Signature)
 			if tt.expectError {
 				assert.NotNil(t, cerr, "Expected an error during insertion")
 				assert.Equal(t, el.HasError(), true, "Expected an error in the list")
@@ -361,6 +368,7 @@ func TestGetSnapRevisionAssertionBySnapEntryId(t *testing.T) {
 		expectedDeveloperID                uuid.UUID
 		expectedSnapRevisionSequenceNumber uint32
 		expectedTimestamp                  time.Time
+		expectedSignature                  string
 	}{
 		{
 			name:                               "Successful Get Snap Revision Assertion",
@@ -372,6 +380,7 @@ func TestGetSnapRevisionAssertionBySnapEntryId(t *testing.T) {
 			expectedSnapRevisionSequenceNumber: 2,
 			signKeySHA3_384:                    "test-sign-key-sha3-384",
 			expectedTimestamp:                  time.Date(2016, 4, 1, 0, 0, 0, 0, time.UTC),
+			expectedSignature:                  "AcLBtest-signature-data",
 		},
 		{
 			name:        "Fail Get Snap Revision Assertion for Nonexistent SnapEntry",
@@ -392,8 +401,8 @@ func TestGetSnapRevisionAssertionBySnapEntryId(t *testing.T) {
 				insertQuery := `
 					INSERT INTO snap_revision_assertion (
 						id, authority_id,sign_key_sha3_384, snap_sha3_384, developer_id, snap_entry_id,
-						snap_revision_sequence_number, timestamp, snap_size
-					) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+						snap_revision_sequence_number, timestamp, snap_size, signature
+					) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 				`
 
 				recordID := uuid.New()
@@ -407,6 +416,7 @@ func TestGetSnapRevisionAssertionBySnapEntryId(t *testing.T) {
 					tt.expectedSnapRevisionSequenceNumber,
 					tt.expectedTimestamp,
 					1234567,
+					tt.expectedSignature,
 				)
 				assert.NoError(t, err, "Failed to insert test snap revision assertion")
 			}
