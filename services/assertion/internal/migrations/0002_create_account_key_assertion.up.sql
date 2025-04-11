@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS public.account_key_assertion (
     account_id UUID NOT NULL,                   
     name TEXT NOT NULL CHECK (name <> ''),                         
     since TIMESTAMP WITH TIME ZONE NOT NULL,    
+    until TIMESTAMP WITH TIME ZONE NOT NULL,
+    body bytea NOT NULL,
     body_length INTEGER NOT NULL,               
     sign_key_sha3_384 TEXT NOT NULL CHECK (sign_key_sha3_384 <> ''),            
 
