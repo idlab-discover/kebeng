@@ -115,3 +115,44 @@ func (c *AssertionClient) AddAccountKeyAssertion(revisionSequenceNumber uint32, 
 	}
 	return resp
 }
+
+func (c *AssertionClient) AddSnapRevisionAssertion(snapSha3_384 string, developerId string, snapEntryId string, snapRevisionSequenceNumber uint32, snapSize uint64, timestamp *time.Time) *proto.SnapRevisionAssertionResponse {
+	el := cerror.NewErrorList()
+
+	// check input
+	if snapSha3_384 == "" {
+		el.Add(cerror.InvalidField, "snap sha3_384 is required")
+	}
+	if developerId == "" {
+		el.Add(cerror.InvalidField, "developer id is required")
+	}
+	if snapEntryId == "" {
+		el.Add(cerror.InvalidField, "snap entry id is required")
+	}
+	if snapRevisionSequenceNumber == 0 {
+		el.Add(cerror.InvalidField, "snap revision sequence number is required")
+	}
+	if el.HasError() {
+		return &proto.SnapRevisionAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}
+	}
+
+	req := &proto.AddSnapRevisionAssertionRequest{
+		SnapSha3_384:               snapSha3_384,
+		DeveloperId:                developerId,
+		SnapEntryId:                snapEntryId,
+		SnapRevisionSequenceNumber: snapRevisionSequenceNumber,
+		SnapSize:                   snapSize,
+		Timestamp:                  timestamppb.New(*timestamp),
+	}
+
+	resp, err := c.client.AddSnapRevisionAssertion(context.Background(), req)
+	if err != nil {
+		el.Add(cerror.InternalServerError, err.Error())
+		resp = &proto.SnapRevisionAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}
+	}
+	return resp
+}
