@@ -16,5 +16,7 @@ CREATE TABLE IF NOT EXISTS public.account_key_assertion (
     body_length INTEGER NOT NULL,               
     sign_key_sha3_384 TEXT NOT NULL CHECK (sign_key_sha3_384 <> ''),            
 
+    signature TEXT NOT NULL CHECK (signature <> ''),
+
     CONSTRAINT account_key_assertion_pkey PRIMARY KEY (id)
 );

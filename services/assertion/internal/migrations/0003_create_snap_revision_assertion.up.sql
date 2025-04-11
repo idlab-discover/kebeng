@@ -16,5 +16,7 @@ CREATE TABLE IF NOT EXISTS public.snap_revision_assertion (
     timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
     sign_key_sha3_384 TEXT NOT NULL CHECK (sign_key_sha3_384 <> ''),            
 
+    signature TEXT NOT NULL CHECK (signature <> ''),
+
     CONSTRAINT snap_revision_assertion_pkey PRIMARY KEY (id)
 );
