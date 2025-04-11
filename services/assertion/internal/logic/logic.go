@@ -104,7 +104,7 @@ func (s *AssertionService) AddAccountKeyAssertion(ctx context.Context, req *prot
 		req.GetSnapRevisionSequenceNumber(),
 		parsedAccountId,
 		req.GetSince().AsTime(),
-		req.GetSince().AsTime().Add(time.Duration(365*24*time.Hour)), // a key is valid for 1 year
+		req.GetUntil().AsTime(),
 		req.GetBody(),
 		uint64(len(req.Body)),
 		signature,
