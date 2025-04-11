@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"time"
 
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	cerrorpb "github.com/idlab-discover/kebeng/common/cerror/proto"
@@ -11,6 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type AssertionClientInterface interface {
@@ -57,6 +59,58 @@ func (c *AssertionClient) ProcessSnapBuildAssertion(assertion []byte) *proto.Sna
 				Code:    cerror.InternalServerError,
 				Message: err.Error()},
 			},
+		}
+	}
+	return resp
+}
+
+func (c *AssertionClient) AddAccountKeyAssertion(revisionSequenceNumber uint32, publicKeySha3_384 string, accountId string, name string, since *time.Time, until *time.Time, body []byte) *proto.AccountKeyAssertionResponse {
+	el := cerror.NewErrorList()
+
+	// check input
+	if revisionSequenceNumber == 0 {
+		el.Add(cerror.InvalidField, "revision sequence number is required")
+	}
+	if publicKeySha3_384 == "" {
+		el.Add(cerror.InvalidField, "public key sha3_384 is required")
+	}
+	if accountId == "" {
+		el.Add(cerror.InvalidField, "account id is required")
+	}
+	if name == "" {
+		el.Add(cerror.InvalidField, "name is required")
+	}
+	if since == nil {
+		el.Add(cerror.InvalidField, "since is required")
+	}
+	if el.HasError() {
+		return &proto.AccountKeyAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}
+	}
+
+	if until == nil {
+		// set to one year further than since
+		t := since.AddDate(1, 0, 0)
+		until = &t
+	}
+
+	req := &proto.AddAccountKeyAssertionRequest{
+		SnapRevisionSequenceNumber: revisionSequenceNumber,
+		PublicKeySha3_384:          publicKeySha3_384,
+		AccountId:                  accountId,
+		Name:                       name,
+		Since:                      timestamppb.New(*since),
+		Until:                      timestamppb.New(*until),
+		Body:                       body,
+	}
+
+	resp, err := c.client.AddAccountKeyAssertion(context.Background(), req)
+	if err != nil {
+		// this means proto request failed not the actual logic
+		el.Add(cerror.InternalServerError, err.Error())
+		resp = &proto.AccountKeyAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
 		}
 	}
 	return resp
