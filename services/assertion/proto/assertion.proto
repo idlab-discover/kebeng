@@ -9,6 +9,7 @@ option go_package = "github.com/idlab-discover/kebeng/services/assertion/proto;a
 service AssertionService {
     rpc ProcessSnapBuildAssertion(SnapBuildAssertionRequest) returns (SnapBuildAssertionResponse);
     rpc AddSnapRevisionAssertion(AddSnapRevisionAssertionRequest) returns (SnapRevisionAssertionResponse);
+    rpc AddAccountKeyAssertion(AddAccountKeyAssertionRequest) returns (AccountKeyAssertionResponse);
 }
 
 message SnapBuildAssertionRequest {
@@ -51,5 +52,36 @@ message SnapRevisionAssertionResponse {
   string type = 10;
 
   repeated proto.Error errors = 11;
+}
+
+message AddAccountKeyAssertionRequest {
+  string type = 1;
+  string authority_id = 2;
+  uint32 snap_revision_sequence_number = 3;
+  string public_key_sha3_384 = 4;
+  string account_id = 5;
+  string name = 6;
+  google.protobuf.Timestamp since = 7;
+  google.protobuf.Timestamp until = 8;
+  string sign_key_sha3_384 = 9;
+  bytes body = 10;
+}
+
+message AccountKeyAssertionResponse {
+  string type = 1;
+  string authority_id = 2;
+  uint32 snap_revision_sequence_number = 3;
+  string public_key_sha3_384 = 4;
+  string account_id = 5;
+  string name = 6;
+  google.protobuf.Timestamp since = 7;
+  google.protobuf.Timestamp until = 8;
+  string sign_key_sha3_384 = 9;
+
+  bytes body = 10;
+
+  string signature = 11;
+
+  repeated proto.Error errors = 12;
 }
 
