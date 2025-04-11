@@ -1,12 +1,14 @@
 syntax = "proto3";
 
 import "common/cerror/proto/error.proto";
+import "google/protobuf/timestamp.proto";
 
 package assertion;
 option go_package = "github.com/idlab-discover/kebeng/services/assertion/proto;assertion";
 
 service AssertionService {
     rpc ProcessSnapBuildAssertion(SnapBuildAssertionRequest) returns (SnapBuildAssertionResponse);
+    rpc AddSnapRevisionAssertion(AddSnapRevisionAssertionRequest) returns (SnapRevisionAssertionResponse);
 }
 
 message SnapBuildAssertionRequest {
@@ -26,3 +28,28 @@ message SnapBuildAssertionResponse {
     string developer_id = 10;
     repeated proto.Error errors = 11;
 }
+
+message AddSnapRevisionAssertionRequest {
+  string snap_sha3_384 = 1;
+  string developer_id = 2;
+  string snap_entry_id = 3;
+  uint32 snap_revision_sequence_number = 4;
+  uint64 snap_size = 5;
+  google.protobuf.Timestamp timestamp = 6;
+}
+
+message SnapRevisionAssertionResponse {
+  string authority_id = 1;
+  string snap_sha3_384 = 2;
+  string developer_id = 3;
+  string snap_entry_id = 4;
+  uint32 snap_revision_sequence_number = 5;
+  uint64 snap_size = 6;
+  google.protobuf.Timestamp timestamp = 7;
+  string sign_key_sha3_384 = 8;
+  string signature = 9;
+  string type = 10;
+
+  repeated proto.Error errors = 11;
+}
+

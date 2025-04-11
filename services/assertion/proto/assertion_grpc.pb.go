@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	AssertionService_ProcessSnapBuildAssertion_FullMethodName = "/assertion.AssertionService/ProcessSnapBuildAssertion"
+	AssertionService_AddSnapRevisionAssertion_FullMethodName  = "/assertion.AssertionService/AddSnapRevisionAssertion"
 )
 
 // AssertionServiceClient is the client API for AssertionService service.
@@ -27,6 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AssertionServiceClient interface {
 	ProcessSnapBuildAssertion(ctx context.Context, in *SnapBuildAssertionRequest, opts ...grpc.CallOption) (*SnapBuildAssertionResponse, error)
+	AddSnapRevisionAssertion(ctx context.Context, in *AddSnapRevisionAssertionRequest, opts ...grpc.CallOption) (*SnapRevisionAssertionResponse, error)
 }
 
 type assertionServiceClient struct {
@@ -47,11 +49,22 @@ func (c *assertionServiceClient) ProcessSnapBuildAssertion(ctx context.Context, 
 	return out, nil
 }
 
+func (c *assertionServiceClient) AddSnapRevisionAssertion(ctx context.Context, in *AddSnapRevisionAssertionRequest, opts ...grpc.CallOption) (*SnapRevisionAssertionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SnapRevisionAssertionResponse)
+	err := c.cc.Invoke(ctx, AssertionService_AddSnapRevisionAssertion_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AssertionServiceServer is the server API for AssertionService service.
 // All implementations must embed UnimplementedAssertionServiceServer
 // for forward compatibility.
 type AssertionServiceServer interface {
 	ProcessSnapBuildAssertion(context.Context, *SnapBuildAssertionRequest) (*SnapBuildAssertionResponse, error)
+	AddSnapRevisionAssertion(context.Context, *AddSnapRevisionAssertionRequest) (*SnapRevisionAssertionResponse, error)
 	mustEmbedUnimplementedAssertionServiceServer()
 }
 
@@ -64,6 +77,9 @@ type UnimplementedAssertionServiceServer struct{}
 
 func (UnimplementedAssertionServiceServer) ProcessSnapBuildAssertion(context.Context, *SnapBuildAssertionRequest) (*SnapBuildAssertionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ProcessSnapBuildAssertion not implemented")
+}
+func (UnimplementedAssertionServiceServer) AddSnapRevisionAssertion(context.Context, *AddSnapRevisionAssertionRequest) (*SnapRevisionAssertionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddSnapRevisionAssertion not implemented")
 }
 func (UnimplementedAssertionServiceServer) mustEmbedUnimplementedAssertionServiceServer() {}
 func (UnimplementedAssertionServiceServer) testEmbeddedByValue()                          {}
@@ -104,6 +120,24 @@ func _AssertionService_ProcessSnapBuildAssertion_Handler(srv interface{}, ctx co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AssertionService_AddSnapRevisionAssertion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddSnapRevisionAssertionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AssertionServiceServer).AddSnapRevisionAssertion(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AssertionService_AddSnapRevisionAssertion_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AssertionServiceServer).AddSnapRevisionAssertion(ctx, req.(*AddSnapRevisionAssertionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AssertionService_ServiceDesc is the grpc.ServiceDesc for AssertionService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -114,6 +148,10 @@ var AssertionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ProcessSnapBuildAssertion",
 			Handler:    _AssertionService_ProcessSnapBuildAssertion_Handler,
+		},
+		{
+			MethodName: "AddSnapRevisionAssertion",
+			Handler:    _AssertionService_AddSnapRevisionAssertion_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
