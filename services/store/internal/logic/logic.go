@@ -21,6 +21,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+// TEST change
+
 var _ proto.StoreServiceServer = (*StoreLogic)(nil)
 
 type StoreLogic struct {
