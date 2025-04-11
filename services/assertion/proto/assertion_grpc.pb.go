@@ -21,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	AssertionService_ProcessSnapBuildAssertion_FullMethodName = "/assertion.AssertionService/ProcessSnapBuildAssertion"
 	AssertionService_AddSnapRevisionAssertion_FullMethodName  = "/assertion.AssertionService/AddSnapRevisionAssertion"
+	AssertionService_AddAccountKeyAssertion_FullMethodName    = "/assertion.AssertionService/AddAccountKeyAssertion"
 )
 
 // AssertionServiceClient is the client API for AssertionService service.
@@ -29,6 +30,7 @@ const (
 type AssertionServiceClient interface {
 	ProcessSnapBuildAssertion(ctx context.Context, in *SnapBuildAssertionRequest, opts ...grpc.CallOption) (*SnapBuildAssertionResponse, error)
 	AddSnapRevisionAssertion(ctx context.Context, in *AddSnapRevisionAssertionRequest, opts ...grpc.CallOption) (*SnapRevisionAssertionResponse, error)
+	AddAccountKeyAssertion(ctx context.Context, in *AddAccountKeyAssertionRequest, opts ...grpc.CallOption) (*AccountKeyAssertionResponse, error)
 }
 
 type assertionServiceClient struct {
@@ -59,12 +61,23 @@ func (c *assertionServiceClient) AddSnapRevisionAssertion(ctx context.Context, i
 	return out, nil
 }
 
+func (c *assertionServiceClient) AddAccountKeyAssertion(ctx context.Context, in *AddAccountKeyAssertionRequest, opts ...grpc.CallOption) (*AccountKeyAssertionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AccountKeyAssertionResponse)
+	err := c.cc.Invoke(ctx, AssertionService_AddAccountKeyAssertion_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AssertionServiceServer is the server API for AssertionService service.
 // All implementations must embed UnimplementedAssertionServiceServer
 // for forward compatibility.
 type AssertionServiceServer interface {
 	ProcessSnapBuildAssertion(context.Context, *SnapBuildAssertionRequest) (*SnapBuildAssertionResponse, error)
 	AddSnapRevisionAssertion(context.Context, *AddSnapRevisionAssertionRequest) (*SnapRevisionAssertionResponse, error)
+	AddAccountKeyAssertion(context.Context, *AddAccountKeyAssertionRequest) (*AccountKeyAssertionResponse, error)
 	mustEmbedUnimplementedAssertionServiceServer()
 }
 
@@ -80,6 +93,9 @@ func (UnimplementedAssertionServiceServer) ProcessSnapBuildAssertion(context.Con
 }
 func (UnimplementedAssertionServiceServer) AddSnapRevisionAssertion(context.Context, *AddSnapRevisionAssertionRequest) (*SnapRevisionAssertionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddSnapRevisionAssertion not implemented")
+}
+func (UnimplementedAssertionServiceServer) AddAccountKeyAssertion(context.Context, *AddAccountKeyAssertionRequest) (*AccountKeyAssertionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddAccountKeyAssertion not implemented")
 }
 func (UnimplementedAssertionServiceServer) mustEmbedUnimplementedAssertionServiceServer() {}
 func (UnimplementedAssertionServiceServer) testEmbeddedByValue()                          {}
@@ -138,6 +154,24 @@ func _AssertionService_AddSnapRevisionAssertion_Handler(srv interface{}, ctx con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AssertionService_AddAccountKeyAssertion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddAccountKeyAssertionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AssertionServiceServer).AddAccountKeyAssertion(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AssertionService_AddAccountKeyAssertion_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AssertionServiceServer).AddAccountKeyAssertion(ctx, req.(*AddAccountKeyAssertionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AssertionService_ServiceDesc is the grpc.ServiceDesc for AssertionService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -152,6 +186,10 @@ var AssertionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AddSnapRevisionAssertion",
 			Handler:    _AssertionService_AddSnapRevisionAssertion_Handler,
+		},
+		{
+			MethodName: "AddAccountKeyAssertion",
+			Handler:    _AssertionService_AddAccountKeyAssertion_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
