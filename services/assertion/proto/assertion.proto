@@ -76,7 +76,7 @@ message AccountKeyAssertionResponse {
   string sign_key_sha3_384 = 9;
 
   bytes body = 10;
-  uint64 body_Length = 11;
+  uint64 body_length = 11;
 
   string signature = 12;
 
