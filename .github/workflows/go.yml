@@ -17,14 +17,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Create Coverage Badges
-        uses: jaywcjlove/coverage-badges-cli@main
-        with:
-          style: flat
-          source: coverage/coverage-summary.json
-          output: coverage/badges.svg
-          jsonPath: totals.percent_covered
-
       - name: Get changed files in account service
         id: account_changed_files
         uses: tj-actions/changed-files@v45
