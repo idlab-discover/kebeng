@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	cerrorpb "github.com/idlab-discover/kebeng/common/cerror/proto"
 	"github.com/idlab-discover/kebeng/services/assertion/internal/config"
@@ -77,6 +78,9 @@ func (c *AssertionClient) AddAccountKeyAssertion(revisionSequenceNumber uint32, 
 	if accountId == "" {
 		el.Add(cerror.InvalidField, "account id is required")
 	}
+	if _, err := uuid.Parse(accountId); accountId != "" && err != nil {
+		el.Add(cerror.InvalidField, "account id is not a valid uuid")
+	}
 	if name == "" {
 		el.Add(cerror.InvalidField, "name is required")
 	}
@@ -126,8 +130,14 @@ func (c *AssertionClient) AddSnapRevisionAssertion(snapSha3_384 string, develope
 	if developerId == "" {
 		el.Add(cerror.InvalidField, "developer id is required")
 	}
+	if _, err := uuid.Parse(developerId); developerId != "" && err != nil {
+		el.Add(cerror.InvalidField, "developer id is not a valid uuid")
+	}
 	if snapEntryId == "" {
 		el.Add(cerror.InvalidField, "snap entry id is required")
+	}
+	if _, err := uuid.Parse(snapEntryId); snapEntryId != "" && err != nil {
+		el.Add(cerror.InvalidField, "snap entry id is not a valid uuid")
 	}
 	if snapRevisionSequenceNumber == 0 {
 		el.Add(cerror.InvalidField, "snap revision sequence number is required")
