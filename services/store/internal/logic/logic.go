@@ -858,7 +858,7 @@ func (s *StoreLogic) GetUploadStatus(ctx context.Context, req *proto.GetUploadSt
 	resp := &proto.GetUploadStatusResponse{
 		UploadId:  snapUpload.ID.String(),
 		Processed: processed,
-		Revision:  *snapUpload.Revision,
+		Revision:  snapUpload.Revision,
 	}
 
 	return resp, nil

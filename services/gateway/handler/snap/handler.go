@@ -89,7 +89,7 @@ func (h *Handler) refreshSnapDownload(action *model.Action, el *cerror.ErrorList
 		return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("account error: %v", publisher.Errors))
 	}
 
-	downloadUrl := fmt.Sprintf("%s/download/%s", h.Config.StoreUrl, latestRevision.Id)
+	downloadUrl := fmt.Sprintf("http://%s/download/%s", h.Config.StoreIP, latestRevision.Id)
 
 	res.InstanceKey = &action.InstanceKey
 	res.SnapId = &snapEntry.Id
@@ -333,8 +333,11 @@ func (h *Handler) SnapPush(c *gin.Context) {
 		"success":            true,
 		"snap_name":          entry.SnapName,
 		"upload_id":          upload.Id,
-		"status_details_url": fmt.Sprintf("https://%s/dev/api/snaps/%s", c.ClientIP(), upload.Id), // FIX: change ClientIP to value in config
+		"status_details_url": fmt.Sprintf("http://%s/dev/api/snaps/%s/status", h.Config.StoreIP, upload.Id), // FIX: change ClientIP to value in config
 	})
+
+	// After the status details URL is returned, we can proceed with creating a new revision
+	//revision := h.StoreClient.AddRevision(entry.SnapName, )
 }
 
 func (h *Handler) UnscannedUpload(c *gin.Context) {
@@ -377,9 +380,32 @@ func (h *Handler) UnscannedUpload(c *gin.Context) {
 	// Return the upload ID and file information
 	c.JSON(http.StatusOK, gin.H{
 		"successful": true,
-		"upload_id":  resp.GetTempFileName(), // TODO: fix this -> ID of the upload
+		"upload_id":  resp.GetTempFileName(),
 		"filename":   binaryFile.Filename,
 		"size":       resp.GetSize(),
+	})
+}
+
+func (h *Handler) GetUploadStatus(c *gin.Context) {
+	el := cerror.NewErrorList()
+	uploadId := c.Param("upload_id")
+	if uploadId == "" {
+		el.Add(cerror.BadRequest, "upload_id is required")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+	// Get the upload status from the store
+	uploadStatus := h.StoreClient.GetUploadStatus(uploadId)
+	if len(uploadStatus.Errors) > 0 {
+		el.ExtendProtoError(uploadStatus.Errors)
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":      "200",
+		"processed": uploadStatus.Processed,
+		"revision":  uploadStatus.Revision,
 	})
 }
 
