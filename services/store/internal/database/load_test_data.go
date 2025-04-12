@@ -132,7 +132,7 @@ func LoadTestData(filePath string, db *sqlx.DB, repo repository.ISnapsRepository
 			size = *rev.Size
 		}
 
-		registeredRevision, cerr := repo.AddRevision(newEntryID, newTrackId, newChannelId, *rev.SnapName, size, *rev.SequenceNumber, rev.Architectures)
+		registeredRevision, cerr := repo.AddRevision(newEntryID, newTrackId, newChannelId, *rev.SnapName, size, *rev.SequenceNumber, rev.Architectures, *rev.SHA3_384)
 		if cerr != nil {
 			return fmt.Errorf("failed to add revision for snap (%s): %v", newEntryID, cerr)
 		}
