@@ -670,9 +670,9 @@ func TestStoreClient_GetLatestRevision(t *testing.T) {
 			}
 
 			if tc.expectedProtoError {
-				mockProtoClient.On("GetLatestRevision", mock.Anything, tc.expectedReq).Return(nil, errors.New("")).Once()
+				mockProtoClient.On("GetLatestRevisionByTrackAndChannel", mock.Anything, tc.expectedReq).Return(nil, errors.New("")).Once()
 			} else {
-				mockProtoClient.On("GetLatestRevision", mock.Anything, tc.expectedReq).Return(tc.expectedResp, nil).Once()
+				mockProtoClient.On("GetLatestRevisionByTrackAndChannel", mock.Anything, tc.expectedReq).Return(tc.expectedResp, nil).Once()
 			}
 
 			resp := storeClient.GetLatestRevision(tc.snapName, tc.track, tc.channel)

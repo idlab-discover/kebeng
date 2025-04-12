@@ -1243,8 +1243,8 @@ func mockData(db *sqlx.DB) {
 	// Mock snap revision
 	revisionID := mockUUID
 	_, err = db.Exec(`
-		INSERT INTO public.revision (id, entry_id, build_assertion_filename, sha3_384, sha3_384_encoded, size, sequence_number, architectures, status, version, snap_track_id, snap_channel_id)
-		VALUES ($1, $2, 'mock-build-assertion', 'mock-sha3-384', 'mock-sha3-384-encoded', 999, 1, ARRAY['mock-arch'], 'active', '1.0.0', $3, $4);
+		INSERT INTO public.revision (id, entry_id, build_assertion_filename, sha3_384, sha3_384_encoded, size, sequence_number, architectures, snap_track_id, snap_channel_id)
+		VALUES ($1, $2, 'mock-build-assertion', 'mock-sha3-384', 'mock-sha3-384-encoded', 999, 1, ARRAY['mock-arch'], $3, $4);
 	`, revisionID, mockUUID, trackID, channelID)
 	if err != nil {
 		logrus.Fatalf("failed to insert mock data for snap revision: %v", err)
@@ -1304,11 +1304,11 @@ func TestGetLatestRevision(t *testing.T) {
 	rev3ID := uuid.New()
 	snapName := "test-snap"
 	_, err = globalDB.Exec(`
-		INSERT INTO revision (id, entry_id, snap_track_id, snap_channel_id, snap_name, updated_at, sequence_number, version, status)
+		INSERT INTO revision (id, entry_id, snap_track_id, snap_channel_id, snap_name, updated_at, sequence_number)
 		VALUES 
-		($1, $2, $3, $4, $10, $5, 1, '1.0.0', 'active'),
-		($6, $2, $3, $4, $10, $7, 2, '1.0.1', 'active'),
-		($8, $2, $3, $4, $10, $9, 3, '1.0.2', 'active');
+		($1, $2, $3, $4, $10, $5, 1),
+		($6, $2, $3, $4, $10, $7, 2),
+		($8, $2, $3, $4, $10, $9, 3);
 	`, rev1ID, entryID, trackID, channelID, now.Add(-10*time.Minute),
 		rev2ID, now.Add(-5*time.Minute),
 		rev3ID, now.Add(-1*time.Minute),
@@ -1318,8 +1318,8 @@ func TestGetLatestRevision(t *testing.T) {
 	// Insert 1 revision in a different track/channel but with the most recent update
 	altRevID := uuid.New()
 	_, err = globalDB.Exec(`
-		INSERT INTO revision (id, entry_id, snap_track_id, snap_channel_id, updated_at, sequence_number, version, status)
-		VALUES ($1, $2, $3, $4, $5, 99, '9.9.9', 'active');
+		INSERT INTO revision (id, entry_id, snap_track_id, snap_channel_id, updated_at, sequence_number)
+		VALUES ($1, $2, $3, $4, $5, 99);
 	`, altRevID, entryID, altTrackID, altChannelID, now.Add(1*time.Minute))
 	assert.NoError(t, err)
 
