@@ -28,7 +28,7 @@ type StoreClientInterface interface {
 	UnscannedUpload(ctx context.Context, snapFile io.Reader) *proto.UnscannedUploadCompleteResponse
 	AddUpload(snapName string, entryId uuid.UUID, status string, accountId uuid.UUID, unscannedFileName string) *proto.AddUploadResponse
 	GetUploadStatus(uploadId string) *proto.GetUploadStatusResponse
-	AddRevision(snapName string, sha3384 string, size uint64, architectures []string, tracksAndChannels []string, unscannedFileName string, minioFilePath string) *proto.AddRevisionResponse
+	AddRevision(snapName string, sha3384 string, size uint64, architectures []string, tracksAndChannels []string, unscannedFileName string) *proto.AddRevisionResponse
 	GetObjectCustomMetadata(bucket string, objectKey string) *proto.GetObjectCustomMetadataResponse
 }
 
@@ -335,7 +335,7 @@ func (c *StoreClient) GetUploadStatus(uploadId string) *proto.GetUploadStatusRes
 	return resp
 }
 
-func (c *StoreClient) AddRevision(snapName string, sha3384 string, size uint64, architectures []string, tracksAndChannels []string, unscannedFileName string, minioFilePath string) *proto.AddRevisionResponse {
+func (c *StoreClient) AddRevision(snapName string, sha3384 string, size uint64, architectures []string, tracksAndChannels []string, unscannedFileName string) *proto.AddRevisionResponse {
 	req := &proto.AddRevisionRequest{
 		SnapName:          snapName,
 		Sha3_384:          sha3384,
@@ -343,7 +343,6 @@ func (c *StoreClient) AddRevision(snapName string, sha3384 string, size uint64, 
 		Architectures:     architectures,
 		TracksAndChannels: tracksAndChannels,
 		UnscannedFileName: unscannedFileName,
-		MinioFilePath:     minioFilePath,
 	}
 
 	resp, err := c.client.AddRevision(context.Background(), req)

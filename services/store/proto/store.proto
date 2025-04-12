@@ -237,7 +237,6 @@ message AddRevisionRequest {
     repeated string architectures = 4;
     repeated string tracks_and_channels = 5;
     string unscanned_file_name = 7;
-    string minio_file_path = 8;
 }
 
 message AddRevisionResponse {
