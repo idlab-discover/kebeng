@@ -19,7 +19,7 @@ type ISnapsRepository interface {
 	// CREATE
 	AddChannel(snapEntryId uuid.UUID, snapTrackId uuid.UUID, channelName string, errorList *cerror.ErrorList) (*models.SnapChannel, *cerror.CustomError)
 	AddDefaultChannels(snapEntryId uuid.UUID, snapTrackId uuid.UUID, errorList *cerror.ErrorList) *cerror.CustomError
-	AddRevision(entryId uuid.UUID, trackId uuid.UUID, channelId uuid.UUID, snapName string, size uint64, sequenceNumber uint, architectures []string) (*models.SnapRevision, *cerror.CustomError)
+	AddRevision(entryId uuid.UUID, trackId uuid.UUID, channelId uuid.UUID, snapName string, size uint64, sequenceNumber uint, architectures []string, sha3_384 string) (*models.SnapRevision, *cerror.CustomError)
 	AddTrack(entryId uuid.UUID, trackName string) (*models.SnapTrack, *cerror.CustomError)
 	AddUpload(snapName string, entrId uuid.UUID, status string, accountId uuid.UUID, unscannedFileName string) (*models.SnapUpload, *cerror.CustomError)
 	RegisterSnap(snapName string, isPrivate bool, store string, accountId uuid.UUID) (*models.SnapEntry, *cerror.CustomError)
@@ -94,7 +94,7 @@ func (sp *SnapsRepository) AddDefaultChannels(snapEntryId uuid.UUID, snapTrackId
 	return nil
 }
 
-func (sp *SnapsRepository) AddRevision(entryId uuid.UUID, trackId uuid.UUID, channelId uuid.UUID, snapName string, size uint64, sequenceNumber uint, architectures []string) (*models.SnapRevision, *cerror.CustomError) {
+func (sp *SnapsRepository) AddRevision(entryId uuid.UUID, trackId uuid.UUID, channelId uuid.UUID, snapName string, size uint64, sequenceNumber uint, architectures []string, sha3_384 string) (*models.SnapRevision, *cerror.CustomError) {
 	// TODO: fix the need for an empty revision
 	// TODO: add build_assertion_filename if an assertion exists -> doesn't get checked in official snap store either
 	snapRevision := models.SnapRevision{
@@ -102,7 +102,7 @@ func (sp *SnapsRepository) AddRevision(entryId uuid.UUID, trackId uuid.UUID, cha
 		SnapTrackID:    trackId,
 		SnapChannelID:  channelId,
 		SnapName:       &snapName,
-		SHA3_384:       nil, // TODO: calculate sha3_384 in logic and at it to the parameters
+		SHA3_384:       &sha3_384, // TODO: calculate sha3_384 in logic and at it to the parameters
 		Size:           &size,
 		SequenceNumber: &sequenceNumber,
 		Architectures:  architectures,
