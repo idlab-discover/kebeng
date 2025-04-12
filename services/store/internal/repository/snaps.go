@@ -109,11 +109,11 @@ func (sp *SnapsRepository) AddRevision(entryId uuid.UUID, trackId uuid.UUID, cha
 		MinioFilePath:  &minioFilePath,
 	}
 	query := `
-		INSERT INTO revision (entry_id, snap_track_id, snap_channel_id, snap_name ,sha3_384, size, sequence_number, architectures)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		INSERT INTO revision (entry_id, snap_track_id, snap_channel_id, snap_name ,sha3_384, size, sequence_number, architectures, minio_file_path)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING id
 	`
-	err := sp.db.Get(&snapRevision.ID, query, snapRevision.SnapEntryID, snapRevision.SnapTrackID, snapRevision.SnapChannelID, snapRevision.SnapName, snapRevision.SHA3_384, snapRevision.Size, snapRevision.SequenceNumber, snapRevision.Architectures)
+	err := sp.db.Get(&snapRevision.ID, query, snapRevision.SnapEntryID, snapRevision.SnapTrackID, snapRevision.SnapChannelID, snapRevision.SnapName, snapRevision.SHA3_384, snapRevision.Size, snapRevision.SequenceNumber, snapRevision.Architectures, snapRevision.MinioFilePath)
 	if err != nil {
 		logrus.Error(err)
 		el.AddCustomError(cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("resource not found: revision for snap with id = '%s'", entryId.String())))
@@ -622,8 +622,8 @@ func (sp *SnapsRepository) UpdateRevision(revision *models.SnapRevision, revisio
 	var newRevision models.SnapRevision
 	query := `
 		UPDATE revision
-		SET  sha3_384 = $1, sha3_384_encoded = $2, size = $3, sequence_number = $4, architectures = $5, status = $6, version = $7
-		WHERE id = $8
+		SET  sha3_384 = $1, sha3_384_encoded = $2, size = $3, sequence_number = $4, architectures = $5
+		WHERE id = $6
 		RETURNING *
 	`
 	err := sp.db.Get(&newRevision, query, revision.SHA3_384, revision.SHA3_384_Encoded, revision.Size, revision.SequenceNumber, revision.Architectures, revision.ID)

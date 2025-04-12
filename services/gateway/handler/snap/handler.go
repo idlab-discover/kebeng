@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"slices"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -345,9 +344,10 @@ func (h *Handler) SnapPush(c *gin.Context) {
 		return
 	}
 
-	// Parse the tracks and channels from the request
+	// Create a new revision for the snap upload
+	revision := h.StoreClient.AddRevision(entry.SnapName, metadata.Metadata["Sha3-384"], uint64(req.BinaryFileSize), []string{"amd64"}, req.Channels, req.UnscannedFileName)
+	logrus.Infof("revision: %s", revision)
 
-	//revision := h.StoreClient.AddRevision(entry.SnapName, metadata.GetSha3_384(), uint64(req.BinaryFileSize),)
 }
 
 func (h *Handler) UnscannedUpload(c *gin.Context) {
@@ -514,36 +514,4 @@ func isChannel(s string) bool {
 	// List of allowed channels.
 	allowedChannels := []string{"stable", "candidate", "beta", "edge"}
 	return slices.Contains(allowedChannels, s)
-}
-
-func parseTracksAndChannels(tracksAndChannels []string) map[string][]string {
-	// Initialize a map to hold the parsed tracks and channels.
-	parsed := make(map[string][]string)
-
-	// If no tracks and channels are provided, default to "latest/stable".
-	if len(tracksAndChannels) == 0 {
-		parsed["latest"] = []string{"stable"}
-		return parsed
-	}
-
-	// Iterate over the provided tracks and channels.
-	for _, tc := range tracksAndChannels {
-		var track, channel string
-
-		// Split the input into track and channel.
-		parts := strings.Split(tc, "/")
-		if len(parts) == 2 {
-			track, channel = parts[0], parts[1]
-		} else if len(parts) == 1 {
-			track, channel = "latest", parts[0]
-		} else {
-			logrus.Warnf("Invalid format for track/channel: %s", tc)
-			continue
-		}
-
-		// Add the channel to the list for the track.
-		parsed[track] = append(parsed[track], channel)
-	}
-
-	return parsed
 }
