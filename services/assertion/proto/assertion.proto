@@ -10,6 +10,8 @@ service AssertionService {
     rpc ProcessSnapBuildAssertion(SnapBuildAssertionRequest) returns (SnapBuildAssertionResponse);
     rpc AddSnapRevisionAssertion(AddSnapRevisionAssertionRequest) returns (SnapRevisionAssertionResponse);
     rpc AddAccountKeyAssertion(AddAccountKeyAssertionRequest) returns (AccountKeyAssertionResponse);
+    rpc GetSnapRevisionAssertionBySHA3_384(GetSnapRevisionAssertionBySHA3_384Request) returns (SnapRevisionAssertionResponse);
+    rpc GetAddAccountKeyAssertionByName(GetAddAccountKeyAssertionByNameRequest) returns (AccountKeyAssertionResponse);
 }
 
 message SnapBuildAssertionRequest {
@@ -81,5 +83,13 @@ message AccountKeyAssertionResponse {
   string signature = 12;
 
   repeated proto.Error errors = 13;
+}
+
+message GetSnapRevisionAssertionBySHA3_384Request {
+  string snap_sha3_384 = 1;
+}
+
+message GetAddAccountKeyAssertionByNameRequest {
+  string name = 1;
 }
 
