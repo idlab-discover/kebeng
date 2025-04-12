@@ -92,3 +92,8 @@ func (m *MockObjectStore) StatObject(ctx context.Context, bucket, object string,
 	args := m.Called(ctx, bucket, object, opts)
 	return args.Get(0).(minio.ObjectInfo), args.Error(1)
 }
+
+func (m *MockObjectStore) GetObjectCustomMetadata(bucket string, objectName string) (map[string]string, error) {
+	args := m.Called(bucket, objectName)
+	return args.Get(0).(map[string]string), args.Error(1)
+}
