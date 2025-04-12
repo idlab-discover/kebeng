@@ -30,7 +30,7 @@ func TestSaveFileToBucket(t *testing.T) {
 	mockMinio.On("FPutObject", mock.Anything, "test-bucket", "testfile.txt", "some/path/testfile.txt", mock.Anything).
 		Return(minio.UploadInfo{Size: 456}, nil)
 
-	uploadInfo, err := testObjectStore.SaveFileToBucket("test-bucket", "some/path/testfile.txt")
+	uploadInfo, err := testObjectStore.SaveFileToBucket("test-bucket", "some/path/testfile.txt", "sha3_384_hash")
 	assert.NoError(t, err)
 	assert.NotNil(t, uploadInfo)
 	assert.Equal(t, int64(456), uploadInfo.Size)
