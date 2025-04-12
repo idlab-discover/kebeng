@@ -27,6 +27,7 @@ type IMinioClient interface {
 	CopyObject(ctx context.Context, dst minio.CopyDestOptions, src minio.CopySrcOptions) (minio.UploadInfo, error)
 	ListObjects(ctx context.Context, bucketName string, opts minio.ListObjectsOptions) <-chan minio.ObjectInfo
 	RemoveObject(ctx context.Context, bucketName, objectName string, opts minio.RemoveObjectOptions) error
+	StatObject(ctx context.Context, bucketName, objectName string, opts minio.GetObjectOptions) (minio.ObjectInfo, error)
 }
 
 type IObjectStore interface {
@@ -137,6 +138,24 @@ func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_38
 	logrus.Infof("Saved to bucket: %+v", uploadInfo)
 
 	return &uploadInfo, nil
+}
+
+func (obs *ObjectStore) GetObjectMetadata(bucket string, objectName string) (map[string]string, error) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	objectInfo, err := obs.MinioClient.StatObject(ctx, bucket, objectName, minio.GetObjectOptions{})
+	if err != nil {
+		logrus.Error(err)
+		return nil, err
+	}
+
+	metadata := make(map[string]string)
+	for key, value := range objectInfo.UserMetadata {
+		metadata[key] = value
+	}
+
+	return metadata, nil
 }
 
 func GetMinioClient(cfg *config.Config) *minio.Client {
