@@ -51,6 +51,7 @@ func TestMove_Success(t *testing.T) {
 	srcBucket := "source"
 	dstBucket := "destination"
 	object := "file.snap"
+	newObjectName := "newfile.snap"
 
 	// Expectations
 	mockMinio.On("BucketExists", mock.Anything, srcBucket).Return(true, nil)
@@ -59,9 +60,10 @@ func TestMove_Success(t *testing.T) {
 		mock.AnythingOfType("minio.CopyDestOptions"),
 		mock.AnythingOfType("minio.CopySrcOptions"),
 	).Return(minio.UploadInfo{}, nil)
+	mockMinio.On("RemoveObject", mock.Anything, srcBucket, object, mock.Anything).Return(nil)
 
 	// Act
-	err := store.Move(srcBucket, dstBucket, object)
+	err := store.Move(srcBucket, dstBucket, object, newObjectName)
 
 	// Assert
 	assert.NoError(t, err)
@@ -75,9 +77,9 @@ func TestMove_BucketDoesNotExist(t *testing.T) {
 	mockMinio.On("BucketExists", mock.Anything, "source").Return(false, nil)
 	mockMinio.On("BucketExists", mock.Anything, "destination").Return(true, nil)
 
-	err := store.Move("source", "destination", "file.snap")
+	err := store.Move("source", "destination", "file.snap", "newfile.snap")
 	assert.Error(t, err)
-	assert.EqualError(t, err, "something went wrong")
+	assert.EqualError(t, err, "source or destination bucket does not exist")
 
 	mockMinio.AssertExpectations(t)
 }

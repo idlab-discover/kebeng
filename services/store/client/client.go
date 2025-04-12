@@ -157,7 +157,7 @@ func (c *StoreClient) GetLatestRevision(snapName, track, channel string) *proto.
 		Channel:  channel,
 	}
 
-	resp, err := c.client.GetLatestRevision(context.Background(), req)
+	resp, err := c.client.GetLatestRevisionByTrackAndChannel(context.Background(), req)
 	if err != nil {
 		resp = &proto.GetRevisionResponse{
 			Errors: []*cerrorpb.Error{{
@@ -324,6 +324,31 @@ func (c *StoreClient) GetUploadStatus(uploadId string) *proto.GetUploadStatusRes
 	resp, err := c.client.GetUploadStatus(context.Background(), req)
 	if err != nil {
 		resp = &proto.GetUploadStatusResponse{
+			Errors: []*cerrorpb.Error{{
+				Code:    cerror.InternalServerError,
+				Message: err.Error()},
+			},
+		}
+	}
+	return resp
+}
+
+func (c *StoreClient) AddRevision(snapName string, sha3384 string, size uint64, architectures []string, status string, version string, track string, channel string, unscannedFileName string) *proto.AddRevisionResponse {
+	req := &proto.AddRevisionRequest{
+		SnapName:      snapName,
+		Sha3_384:      sha3384,
+		Size:          size,
+		Architectures: architectures,
+		Status:        status,
+		Version:       version,
+		Track:         track,
+		Channel:       channel,
+		UnscannedFileName: unscannedFileName,
+	}
+
+	resp, err := c.client.AddRevision(context.Background(), req)
+	if err != nil {
+		resp = &proto.AddRevisionResponse{
 			Errors: []*cerrorpb.Error{{
 				Code:    cerror.InternalServerError,
 				Message: err.Error()},

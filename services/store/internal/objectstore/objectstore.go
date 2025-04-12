@@ -26,6 +26,7 @@ type IMinioClient interface {
 	PutObject(ctx context.Context, bucketName, objectName string, reader io.Reader, objectSize int64, opts minio.PutObjectOptions) (minio.UploadInfo, error)
 	CopyObject(ctx context.Context, dst minio.CopyDestOptions, src minio.CopySrcOptions) (minio.UploadInfo, error)
 	ListObjects(ctx context.Context, bucketName string, opts minio.ListObjectsOptions) <-chan minio.ObjectInfo
+	RemoveObject(ctx context.Context, bucketName, objectName string, opts minio.RemoveObjectOptions) error
 }
 
 type IObjectStore interface {
@@ -33,7 +34,7 @@ type IObjectStore interface {
 	GetSnapFileReader(filePath string) (io.ReadCloser, error)
 	LoadTestData(client *minio.Client, repo repository.ISnapsRepository, minioPath string) error
 	MakeBucketAndAddKey(bucketName string, keyPath string, keyName string)
-	Move(sourceBucket, destinationBucket, objectName string) error
+	Move(sourceBucket, destinationBucket, objectName string, newObjectName string) error
 }
 
 type ObjectStore struct {
@@ -69,9 +70,10 @@ func (obs *ObjectStore) GetSnapFileReader(filePath string) (io.ReadCloser, error
 	return objectPtr, nil
 }
 
-func (obs *ObjectStore) Move(sourceBucket, destinationBucket, objectName string) error {
+func (obs *ObjectStore) Move(sourceBucket, destinationBucket, objectName, newObjectName string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
 	sourceBucketExists, err := obs.MinioClient.BucketExists(ctx, sourceBucket)
 	if err != nil {
 		return err
@@ -82,7 +84,23 @@ func (obs *ObjectStore) Move(sourceBucket, destinationBucket, objectName string)
 	}
 
 	if sourceBucketExists && destinationBucketExists {
-		_, err := obs.MinioClient.CopyObject(ctx, minio.CopyDestOptions{Bucket: destinationBucket, Object: objectName}, minio.CopySrcOptions{Bucket: sourceBucket, Object: objectName})
+		// Copy object to destination with the new name
+		_, err := obs.MinioClient.CopyObject(ctx,
+			minio.CopyDestOptions{
+				Bucket: destinationBucket,
+				Object: newObjectName,
+			},
+			minio.CopySrcOptions{
+				Bucket: sourceBucket,
+				Object: objectName,
+			},
+		)
+		if err != nil {
+			return err
+		}
+
+		// Delete the original object after successful copy
+		err = obs.MinioClient.RemoveObject(ctx, sourceBucket, objectName, minio.RemoveObjectOptions{})
 		if err != nil {
 			return err
 		}
@@ -90,7 +108,7 @@ func (obs *ObjectStore) Move(sourceBucket, destinationBucket, objectName string)
 		return nil
 	}
 
-	return errors.New("something went wrong")
+	return errors.New("source or destination bucket does not exist")
 }
 
 func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string) (*minio.UploadInfo, error) {
