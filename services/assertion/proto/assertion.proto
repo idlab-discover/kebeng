@@ -11,7 +11,7 @@ service AssertionService {
     rpc AddSnapRevisionAssertion(AddSnapRevisionAssertionRequest) returns (SnapRevisionAssertionResponse);
     rpc AddAccountKeyAssertion(AddAccountKeyAssertionRequest) returns (AccountKeyAssertionResponse);
     rpc GetSnapRevisionAssertionBySHA3_384(GetSnapRevisionAssertionBySHA3_384Request) returns (SnapRevisionAssertionResponse);
-    rpc GetAddAccountKeyAssertionByName(GetAddAccountKeyAssertionByNameRequest) returns (AccountKeyAssertionResponse);
+    rpc GetAccountKeyAssertionByName(GetAccountKeyAssertionByNameRequest) returns (AccountKeyAssertionResponse);
 }
 
 message SnapBuildAssertionRequest {
@@ -89,7 +89,7 @@ message GetSnapRevisionAssertionBySHA3_384Request {
   string snap_sha3_384 = 1;
 }
 
-message GetAddAccountKeyAssertionByNameRequest {
+message GetAccountKeyAssertionByNameRequest {
   string name = 1;
 }
 

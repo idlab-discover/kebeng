@@ -162,7 +162,7 @@ func (s *AssertionService) GetSnapRevisionAssertionBySHA3_384(ctx context.Contex
 	}, nil
 }
 
-func (s *AssertionService) GetAccountKeyAssertionByName(ctx context.Context, req *proto.GetAddAccountKeyAssertionByNameRequest) (*proto.AccountKeyAssertionResponse, error) {
+func (s *AssertionService) GetAccountKeyAssertionByName(ctx context.Context, req *proto.GetAccountKeyAssertionByNameRequest) (*proto.AccountKeyAssertionResponse, error) {
 	el := cerror.NewErrorList()
 	if req.GetName() == "" {
 		el.Add(cerror.Invalid, "name is required")
