@@ -534,7 +534,7 @@ func TestUnscannedUploadHandler_Success(t *testing.T) {
 	handler := &Handler{BaseHandler: util.NewBaseHandler(nil, mockStoreClient, nil, nil)}
 
 	// Prepare a dummy response from UnscannedUpload.
-	dummyResp := &storepb.UnscannedUploadResponse{
+	dummyResp := &storepb.UnscannedUploadCompleteResponse{
 		Errors:       nil,
 		TempFileName: "temp123",
 	}

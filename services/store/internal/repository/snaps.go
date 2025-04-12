@@ -19,9 +19,9 @@ type ISnapsRepository interface {
 	// CREATE
 	AddChannel(snapEntryId uuid.UUID, snapTrackId uuid.UUID, channelName string) (*models.SnapChannel, *cerror.CustomError)
 	AddDefaultChannels(snapEntryId uuid.UUID, snapTrackId uuid.UUID) *cerror.CustomError
-	AddRevision(entryId uuid.UUID, trackId uuid.UUID, channelId uuid.UUID, size uint64, sequenceNumber uint) (*models.SnapRevision, *cerror.CustomError)
+	AddRevision(entryId uuid.UUID, trackId uuid.UUID, channelId uuid.UUID, snapName string, size uint64, sequenceNumber uint, architectures []string) (*models.SnapRevision, *cerror.CustomError)
 	AddTrack(entryId uuid.UUID, trackName string) (*models.SnapTrack, *cerror.CustomError)
-	AddUpload(snapName string, entrId uuid.UUID, status string, accountId uuid.UUID) (*models.SnapUpload, *cerror.CustomError)
+	AddUpload(snapName string, entrId uuid.UUID, status string, accountId uuid.UUID, unscannedFileName string) (*models.SnapUpload, *cerror.CustomError)
 	RegisterSnap(snapName string, isPrivate bool, store string, accountId uuid.UUID) (*models.SnapEntry, *cerror.CustomError)
 
 	// READ
@@ -89,23 +89,25 @@ func (sp *SnapsRepository) AddDefaultChannels(snapEntryId uuid.UUID, snapTrackId
 	return nil
 }
 
-func (sp *SnapsRepository) AddRevision(entryId uuid.UUID, trackId uuid.UUID, channelId uuid.UUID, size uint64, sequenceNumber uint) (*models.SnapRevision, *cerror.CustomError) {
+func (sp *SnapsRepository) AddRevision(entryId uuid.UUID, trackId uuid.UUID, channelId uuid.UUID, snapName string, size uint64, sequenceNumber uint, architectures []string) (*models.SnapRevision, *cerror.CustomError) {
 	// TODO: fix the need for an empty revision
 	// TODO: add build_assertion_filename if an assertion exists -> doesn't get checked in official snap store either
 	snapRevision := models.SnapRevision{
 		SnapEntryID:    entryId,
 		SnapTrackID:    trackId,
 		SnapChannelID:  channelId,
+		SnapName:       &snapName,
 		SHA3_384:       nil, // TODO: calculate sha3_384 in logic and at it to the parameters
 		Size:           &size,
 		SequenceNumber: &sequenceNumber,
+		Architectures:  architectures,
 	}
 	query := `
-		INSERT INTO revision (entry_id, snap_track_id, snap_channel_id, sha3_384, size, sequence_number)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO revision (entry_id, snap_track_id, snap_channel_id, snap_name ,sha3_384, size, sequence_number, architectures)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id
 	`
-	err := sp.db.Get(&snapRevision.ID, query, snapRevision.SnapEntryID, snapRevision.SnapTrackID, snapRevision.SnapChannelID, snapRevision.SHA3_384, snapRevision.Size, snapRevision.SequenceNumber)
+	err := sp.db.Get(&snapRevision.ID, query, snapRevision.SnapEntryID, snapRevision.SnapTrackID, snapRevision.SnapChannelID, snapRevision.SnapName, snapRevision.SHA3_384, snapRevision.Size, snapRevision.SequenceNumber, snapRevision.Architectures)
 	if err != nil {
 		logrus.Error(err)
 		return nil, cerror.ConvertError(err)
@@ -135,19 +137,20 @@ func (sp *SnapsRepository) AddTrack(entryId uuid.UUID, trackName string) (*model
 
 }
 
-func (sp *SnapsRepository) AddUpload(snapName string, entryId uuid.UUID, status string, accountId uuid.UUID) (*models.SnapUpload, *cerror.CustomError) {
+func (sp *SnapsRepository) AddUpload(snapName string, entryId uuid.UUID, status string, accountId uuid.UUID, unscannedFileName string) (*models.SnapUpload, *cerror.CustomError) {
 	upload := models.SnapUpload{
-		SnapName:  snapName,
-		EntryID:   entryId,
-		Status:    status,
-		AccountID: accountId,
+		SnapName:          snapName,
+		EntryID:           entryId,
+		Status:            status,
+		AccountID:         accountId,
+		UnscannedFileName: unscannedFileName,
 	}
 	query := `
-		INSERT INTO upload (snap_name, entry_id, status, account_id)
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO upload (snap_name, entry_id, status, account_id, unscanned_file_name)
+		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id
 	`
-	err := sp.db.Get(&upload, query, upload.SnapName, upload.EntryID, upload.Status, upload.AccountID)
+	err := sp.db.Get(&upload, query, upload.SnapName, upload.EntryID, upload.Status, upload.AccountID, upload.UnscannedFileName)
 	if err != nil {
 		logrus.Error(err)
 		return nil, cerror.ConvertError(err)
