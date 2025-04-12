@@ -17,8 +17,8 @@ import (
 
 type ISnapsRepository interface {
 	// CREATE
-	AddChannel(snapEntryId uuid.UUID, snapTrackId uuid.UUID, channelName string) (*models.SnapChannel, *cerror.CustomError)
-	AddDefaultChannels(snapEntryId uuid.UUID, snapTrackId uuid.UUID) *cerror.CustomError
+	AddChannel(snapEntryId uuid.UUID, snapTrackId uuid.UUID, channelName string, errorList *cerror.ErrorList) (*models.SnapChannel, *cerror.CustomError)
+	AddDefaultChannels(snapEntryId uuid.UUID, snapTrackId uuid.UUID, errorList *cerror.ErrorList) *cerror.CustomError
 	AddRevision(entryId uuid.UUID, trackId uuid.UUID, channelId uuid.UUID, snapName string, size uint64, sequenceNumber uint, architectures []string) (*models.SnapRevision, *cerror.CustomError)
 	AddTrack(entryId uuid.UUID, trackName string) (*models.SnapTrack, *cerror.CustomError)
 	AddUpload(snapName string, entrId uuid.UUID, status string, accountId uuid.UUID, unscannedFileName string) (*models.SnapUpload, *cerror.CustomError)
@@ -60,7 +60,7 @@ func NewSnapsRepository(db *sqlx.DB) ISnapsRepository {
 
 // ============ CREATE =============
 
-func (sp *SnapsRepository) AddChannel(snapEntryId uuid.UUID, snapTrackId uuid.UUID, channelName string) (*models.SnapChannel, *cerror.CustomError) {
+func (sp *SnapsRepository) AddChannel(snapEntryId uuid.UUID, snapTrackId uuid.UUID, channelName string, el *cerror.ErrorList) (*models.SnapChannel, *cerror.CustomError) {
 	channel := models.SnapChannel{
 		Name:        channelName,
 		SnapEntryID: snapEntryId,
@@ -74,17 +74,18 @@ func (sp *SnapsRepository) AddChannel(snapEntryId uuid.UUID, snapTrackId uuid.UU
 	err := sp.db.Get(&channel.ID, query, channel.Name, channel.SnapEntryID, channel.SnapTrackID)
 	if err != nil {
 		logrus.Error(err)
+		el.AddCustomError(cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("resource not found: channel with name = '%s' for track with id = '%s'", channelName, snapTrackId.String())))
 		return nil, cerror.ConvertError(err)
 	}
 
 	return &channel, nil
 }
 
-func (sp *SnapsRepository) AddDefaultChannels(snapEntryId uuid.UUID, snapTrackId uuid.UUID) *cerror.CustomError {
+func (sp *SnapsRepository) AddDefaultChannels(snapEntryId uuid.UUID, snapTrackId uuid.UUID, el *cerror.ErrorList) *cerror.CustomError {
 	channels := []string{"stable", "candidate", "beta", "edge"}
 
 	for _, channel := range channels {
-		_, err := sp.AddChannel(snapEntryId, snapTrackId, channel)
+		_, err := sp.AddChannel(snapEntryId, snapTrackId, channel, el)
 		if err != nil {
 			return err
 		}

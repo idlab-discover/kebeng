@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/google/uuid"
+	"github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/idlab-discover/kebeng/services/store/internal/models"
 	"github.com/idlab-discover/kebeng/services/store/internal/repository"
 	"github.com/jmoiron/sqlx"
@@ -49,6 +50,8 @@ func LoadTestData(filePath string, db *sqlx.DB, repo repository.ISnapsRepository
 	logrus.Infof("Loaded test data Entries: %+v", testData.Entries)
 
 	idMap := make(map[uuid.UUID]uuid.UUID)
+
+	el := cerror.NewErrorList()
 
 	// --- Insert Entries ---
 	for _, entry := range testData.Entries {
@@ -99,7 +102,7 @@ func LoadTestData(filePath string, db *sqlx.DB, repo repository.ISnapsRepository
 			return fmt.Errorf("no registered snap track found for channel (%s)", channel.ID)
 		}
 
-		registeredChannel, cerr := repo.AddChannel(newEntryID, newTrackId, channel.Name)
+		registeredChannel, cerr := repo.AddChannel(newEntryID, newTrackId, channel.Name, el)
 		if cerr != nil {
 			return fmt.Errorf("failed to register channel (%s): %v", channel.Name, cerr)
 		}
