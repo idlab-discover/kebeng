@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -31,6 +32,9 @@ type Config struct {
 	MacaroonConfig *MacaroonConfig `mapstructure:"macaroon" yaml:"macaroon"`
 
 	StoreUrl string `mapstructure:"store_url" yaml:"store_url"`
+
+	TestMode           bool   `mapstructure:"test_mode" yaml:"test_mode"`
+	TestDataFolderPath string `mapstructure:"test_data_folfder_path" yaml:"test_data_folder_path"`
 }
 
 func LoadConfig() (*Config, error) {
@@ -52,23 +56,84 @@ func LoadConfig() (*Config, error) {
 		return nil, fmt.Errorf("failed to unmarshal config: %v", err)
 	}
 
-	if cfg.MacaroonConfig == nil {
-		return nil, fmt.Errorf("macaroon config is required")
+	testMode := os.Getenv("TEST_MODE")
+	if testMode == "1" {
+		logrus.Info("running in test mode")
+		cfg.TestMode = true
 	}
 
-	logrus.Infof("loaded config: %+v, macaroonConfig: %+v", cfg, cfg.MacaroonConfig)
-
-	if cfg.MacaroonConfig.DischargeKey == "" {
-		return nil, fmt.Errorf("discharge key is required")
-	}
-
-	if cfg.MacaroonConfig.RootKey == "" {
-		return nil, fmt.Errorf("root key is required")
-	}
-
-	if cfg.StoreUrl == "" {
-		return nil, fmt.Errorf("store url is required: example: http://localhost:8080")
+	if err := cfg.checkConfig(); err != nil {
+		return nil, fmt.Errorf("configuration validation failed: %v", err)
 	}
 
 	return cfg, nil
+}
+
+func (c *Config) checkConfig() error {
+	var errs []string
+
+	// Account Service config
+	if c.AccountServiceHost == "" {
+		errs = append(errs, "account_service_host is required")
+	}
+	if c.AccountServicePort <= 0 {
+		errs = append(errs, "account_service_port must be a positive integer")
+	}
+
+	// Store Service config
+	if c.StoreServiceHost == "" {
+		errs = append(errs, "store_service_host is required")
+	}
+	if c.StoreServicePort <= 0 {
+		errs = append(errs, "store_service_port must be a positive integer")
+	}
+
+	// Assertion Service config
+	if c.AssertionServiceHost == "" {
+		errs = append(errs, "assertion_service_host is required")
+	}
+	if c.AssertionServicePort <= 0 {
+		errs = append(errs, "assertion_service_port must be a positive integer")
+	}
+
+	// Macaroon configuration
+	if c.MacaroonConfig == nil {
+		errs = append(errs, "macaroon configuration is required")
+	} else {
+		if c.MacaroonConfig.RootKey == "" {
+			errs = append(errs, "macaroon.root_key is required")
+		}
+		if c.MacaroonConfig.RootId == "" {
+			errs = append(errs, "macaroon.root_id is required")
+		}
+		if c.MacaroonConfig.RootLocation == "" {
+			errs = append(errs, "macaroon.root_location is required")
+		}
+		if c.MacaroonConfig.DischargeKey == "" {
+			errs = append(errs, "macaroon.discharge_key is required")
+		}
+		if c.MacaroonConfig.ThirdPartyCaveatId == "" {
+			errs = append(errs, "macaroon.third_party_caveat_id is required")
+		}
+		if c.MacaroonConfig.ThirdPartyLocation == "" {
+			errs = append(errs, "macaroon.third_party_location is required")
+		}
+	}
+
+	// Store URL config
+	if c.StoreUrl == "" {
+		errs = append(errs, "store_url is required")
+	}
+
+	// Test mode settings
+	if c.TestMode {
+		if c.TestDataFolderPath == "" {
+			errs = append(errs, "test_data_file_path is required in test mode")
+		}
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("%s", strings.Join(errs, "; "))
+	}
+	return nil
 }
