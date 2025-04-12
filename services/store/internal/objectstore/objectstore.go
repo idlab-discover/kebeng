@@ -50,16 +50,14 @@ func NewObjectStore(minio *minio.Client, cfg *config.Config) IObjectStore {
 
 // don't forget to close the reader after use
 func (obs *ObjectStore) GetSnapFileReader(ctx context.Context, filePath string) (io.ReadCloser, error) {
-	logrus.Infof("Getting file reader for file path: %s", filePath)
+	logrus.Debugf("Getting file reader for file path: %s", filePath)
 
 	objectPtr, err := obs.MinioClient.GetObject(ctx, "snaps", filePath, minio.GetObjectOptions{})
 	if err != nil {
-		ctx.Err()
 		logrus.Errorf("error getting object from bucket 'snaps', file path: %s, err: %v", filePath, err)
 		return nil, err
 	}
 	if objectPtr == nil {
-		ctx.Err()
 		logrus.Errorf("error getting object from bucket 'snaps', file path: %s, err: %v", filePath, err)
 		return nil, errors.New("object not found")
 	}
