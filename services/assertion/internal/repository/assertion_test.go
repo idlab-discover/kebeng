@@ -364,7 +364,7 @@ func TestAddSnapRevisionAssertion(t *testing.T) {
 	}
 }
 
-func TestGetSnapRevisionAssertionBySnapEntryId(t *testing.T) {
+func TestGetSnapRevisionAssertionBySHA3_384(t *testing.T) {
 	tests := []struct {
 		name                               string
 		snapEntryID                        uuid.UUID
@@ -431,7 +431,7 @@ func TestGetSnapRevisionAssertionBySnapEntryId(t *testing.T) {
 			}
 
 			el := cerror.NewErrorList()
-			record, cerr := globalRepo.GetSnapRevisionAssertionBySnapEntryId(el, tt.snapEntryID)
+			record, cerr := globalRepo.GetSnapRevisionAssertionBySHA3_384(el, tt.expectedSnapSHA3_384)
 
 			if tt.expectError {
 				assert.NotNil(t, cerr, "Expected error for missing snap revision assertion")
