@@ -132,8 +132,8 @@ func (m *MockStoreClient) GetUploadStatus(uploadId string) *proto.GetUploadStatu
 	return nil
 }
 
-func (m *MockStoreClient) AddRevision(snapName string, sha3384 string, size uint64, architectures []string, status string, version string, track string, channel string, unscannedFileName string) *proto.AddRevisionResponse {
-	args := m.Called(snapName, sha3384, size, architectures, status, version, track, channel, unscannedFileName)
+func (m *MockStoreClient) AddRevision(snapName string, sha3384 string, size uint64, architectures []string, track string, channel string, unscannedFileName string) *proto.AddRevisionResponse {
+	args := m.Called(snapName, sha3384, size, architectures, track, channel, unscannedFileName)
 	if resp, ok := args.Get(0).(*proto.AddRevisionResponse); ok {
 		return resp
 	}

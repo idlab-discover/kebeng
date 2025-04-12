@@ -235,11 +235,9 @@ message AddRevisionRequest {
     string sha3_384 = 2;
     uint64 size = 3;
     repeated string architectures = 4;
-    string status = 5;
-    string version = 6;
-    string track = 7;
-    string channel = 8;
-    string unscanned_file_name = 9;
+    string track = 5;
+    string channel = 6;
+    string unscanned_file_name = 7;
 }
 
 message AddRevisionResponse {
@@ -255,6 +253,6 @@ message GetObjectCustomMetadataRequest {
 }
 
 message GetObjectCustomMetadataResponse {
-    string sha3_384 = 1;
+    map<string, string> metadata = 1;
     repeated proto.Error errors = 2;
 }
