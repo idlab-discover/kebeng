@@ -139,7 +139,7 @@ func (m *MockSnapsRepository) GetRevisionByNameAndSequence(name string, sequence
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
-func (m *MockSnapsRepository) GetRevisionBySHA(SHA3_384 string, encoded bool) (*models.SnapRevision, *cerror.CustomError) {
+func (m *MockSnapsRepository) GetRevisionBySHA(SHA3_384 string, encoded bool, el *cerror.ErrorList) (*models.SnapRevision, *cerror.CustomError) {
 	args := m.Called(SHA3_384, encoded)
 	if args.Get(0) != nil {
 		return args.Get(0).(*models.SnapRevision), nil
@@ -177,7 +177,7 @@ func (m *MockSnapsRepository) UpdateRevision(revision *models.SnapRevision, revi
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
-func (m *MockSnapsRepository) GetLatestRevision(snapName string, track string, channel string) (*models.SnapRevision, *cerror.CustomError) {
+func (m *MockSnapsRepository) GetLatestRevisionByTrackAndChannel(snapName string, track string, channel string) (*models.SnapRevision, *cerror.CustomError) {
 	args := m.Called(snapName, track, channel)
 	if args.Get(0) != nil {
 		return args.Get(0).(*models.SnapRevision), nil
@@ -213,6 +213,30 @@ func (m *MockSnapsRepository) GetUploadById(id uuid.UUID) (*models.SnapUpload, *
 	args := m.Called(id)
 	if args.Get(0) != nil {
 		return args.Get(0).(*models.SnapUpload), nil
+	}
+	return nil, args.Get(1).(*cerror.CustomError)
+}
+
+func (m *MockSnapsRepository) GetLatestRevisionByEntryId(entryId uuid.UUID, el *cerror.ErrorList) (*models.SnapRevision, *cerror.CustomError) {
+	args := m.Called(entryId)
+	if args.Get(0) != nil {
+		return args.Get(0).(*models.SnapRevision), nil
+	}
+	return nil, args.Get(1).(*cerror.CustomError)
+}
+
+func (m *MockSnapsRepository) GetTrackByEntryIdAndName(entryId uuid.UUID, trackName string, el *cerror.ErrorList) (*models.SnapTrack, *cerror.CustomError) {
+	args := m.Called(entryId, trackName)
+	if args.Get(0) != nil {
+		return args.Get(0).(*models.SnapTrack), nil
+	}
+	return nil, args.Get(1).(*cerror.CustomError)
+}
+
+func (m *MockSnapsRepository) GetChannelByTrackIdAndName(trackId uuid.UUID, channelName string, el *cerror.ErrorList) (*models.SnapChannel, *cerror.CustomError) {
+	args := m.Called(trackId, channelName)
+	if args.Get(0) != nil {
+		return args.Get(0).(*models.SnapChannel), nil
 	}
 	return nil, args.Get(1).(*cerror.CustomError)
 }
