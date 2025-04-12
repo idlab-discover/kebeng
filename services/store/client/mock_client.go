@@ -140,10 +140,10 @@ func (m *MockStoreClient) AddRevision(snapName string, sha3384 string, size uint
 	return nil
 }
 
-func (m *MockStoreClient) GetObjectCustomMetadata(bucket string, objectKey string) (*proto.GetObjectCustomMetadataResponse, error) {
+func (m *MockStoreClient) GetObjectCustomMetadata(bucket string, objectKey string) *proto.GetObjectCustomMetadataResponse {
 	args := m.Called(bucket, objectKey)
 	if resp, ok := args.Get(0).(*proto.GetObjectCustomMetadataResponse); ok {
-		return resp, nil
+		return resp
 	}
-	return nil, args.Error(1)
+	return nil
 }

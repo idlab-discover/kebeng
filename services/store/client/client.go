@@ -29,7 +29,7 @@ type StoreClientInterface interface {
 	AddUpload(snapName string, entryId uuid.UUID, status string, accountId uuid.UUID, unscannedFileName string) *proto.AddUploadResponse
 	GetUploadStatus(uploadId string) *proto.GetUploadStatusResponse
 	AddRevision(snapName string, sha3384 string, size uint64, architectures []string, status string, version string, track string, channel string, unscannedFileName string) *proto.AddRevisionResponse
-	GetObjectCustomMetadata(bucket string, objectKey string) (*proto.GetObjectCustomMetadataResponse, error)
+	GetObjectCustomMetadata(bucket string, objectKey string) *proto.GetObjectCustomMetadataResponse
 }
 
 var _ StoreClientInterface = (*StoreClient)(nil)
@@ -360,7 +360,7 @@ func (c *StoreClient) AddRevision(snapName string, sha3384 string, size uint64, 
 	return resp
 }
 
-func (c *StoreClient) GetObjectCustomMetadata(bucket string, objectKey string) (*proto.GetObjectCustomMetadataResponse, error) {
+func (c *StoreClient) GetObjectCustomMetadata(bucket string, objectKey string) *proto.GetObjectCustomMetadataResponse {
 	req := &proto.GetObjectCustomMetadataRequest{
 		Bucket:    bucket,
 		ObjectKey: objectKey,
@@ -368,7 +368,12 @@ func (c *StoreClient) GetObjectCustomMetadata(bucket string, objectKey string) (
 
 	resp, err := c.client.GetObjectCustomMetadata(context.Background(), req)
 	if err != nil {
-		return nil, err
+		return &proto.GetObjectCustomMetadataResponse{
+			Errors: []*cerrorpb.Error{{
+				Code:    cerror.InternalServerError,
+				Message: err.Error()},
+			},
+		}
 	}
-	return resp, nil
+	return resp
 }
