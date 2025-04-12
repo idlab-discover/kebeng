@@ -28,6 +28,7 @@ type StoreClientInterface interface {
 	UnscannedUpload(ctx context.Context, snapFile io.Reader) *proto.UnscannedUploadCompleteResponse
 	AddUpload(snapName string, entryId uuid.UUID, status string, accountId uuid.UUID, unscannedFileName string) *proto.AddUploadResponse
 	GetUploadStatus(uploadId string) *proto.GetUploadStatusResponse
+	AddRevision(snapName string, sha3384 string, size uint64, architectures []string, status string, version string, track string, channel string, unscannedFileName string) *proto.AddRevisionResponse
 }
 
 var _ StoreClientInterface = (*StoreClient)(nil)
@@ -335,14 +336,14 @@ func (c *StoreClient) GetUploadStatus(uploadId string) *proto.GetUploadStatusRes
 
 func (c *StoreClient) AddRevision(snapName string, sha3384 string, size uint64, architectures []string, status string, version string, track string, channel string, unscannedFileName string) *proto.AddRevisionResponse {
 	req := &proto.AddRevisionRequest{
-		SnapName:      snapName,
-		Sha3_384:      sha3384,
-		Size:          size,
-		Architectures: architectures,
-		Status:        status,
-		Version:       version,
-		Track:         track,
-		Channel:       channel,
+		SnapName:          snapName,
+		Sha3_384:          sha3384,
+		Size:              size,
+		Architectures:     architectures,
+		Status:            status,
+		Version:           version,
+		Track:             track,
+		Channel:           channel,
 		UnscannedFileName: unscannedFileName,
 	}
 
