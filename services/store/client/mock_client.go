@@ -1,16 +1,39 @@
 package client
 
 import (
+	"context"
 	"io"
 
 	"github.com/google/uuid"
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
 	"github.com/stretchr/testify/mock"
+	"google.golang.org/grpc"
 )
 
 // MockStoreClient is a mock implementation of the StoreClientInterface.
 type MockStoreClient struct {
 	mock.Mock
+}
+
+type MockUnscannedUploadClient struct {
+	mock.Mock
+	grpc.ClientStream
+}
+
+func (m *MockUnscannedUploadClient) Recv() (*proto.UnscannedUploadCompleteResponse, error) {
+	args := m.Called()
+	if resp := args.Get(0); resp != nil {
+		return resp.(*proto.UnscannedUploadCompleteResponse), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
+func (m *MockUnscannedUploadClient) CloseAndRecv() (*proto.UnscannedUploadCompleteResponse, error) {
+	args := m.Called()
+	if resp := args.Get(0); resp != nil {
+		return resp.(*proto.UnscannedUploadCompleteResponse), args.Error(1)
+	}
+	return nil, args.Error(1)
 }
 
 var _ StoreClientInterface = (*MockStoreClient)(nil)
@@ -84,16 +107,16 @@ func (m *MockStoreClient) SnapDownload(revisionId string) *proto.SnapDownloadCom
 }
 
 // UnscannedUpload mocks the UnscannedUpload function.
-func (m *MockStoreClient) UnscannedUpload(snapFile io.Reader) *proto.UnscannedUploadResponse {
+func (m *MockStoreClient) UnscannedUpload(ctx context.Context, snapFile io.Reader) *proto.UnscannedUploadCompleteResponse {
 	args := m.Called(snapFile)
-	if resp, ok := args.Get(0).(*proto.UnscannedUploadResponse); ok {
+	if resp, ok := args.Get(0).(*proto.UnscannedUploadCompleteResponse); ok {
 		return resp
 	}
 	return nil
 }
 
 // AddUpload mocks the AddUpload function.
-func (m *MockStoreClient) AddUpload(snapName string, entryId uuid.UUID, status string, accountId uuid.UUID) *proto.AddUploadResponse {
+func (m *MockStoreClient) AddUpload(snapName string, entryId uuid.UUID, status string, accountId uuid.UUID, unscannedFileName string) *proto.AddUploadResponse {
 	args := m.Called(snapName, entryId, status, accountId)
 	if resp, ok := args.Get(0).(*proto.AddUploadResponse); ok {
 		return resp

@@ -302,6 +302,7 @@ func (h *Handler) SnapPush(c *gin.Context) {
 				"snap_id":   entry.Id,
 				"status":    "dry-run",
 			})
+			return
 		} else {
 			el.Add(cerror.BadRequest, "snap name not found for name="+req.Name)
 			c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
@@ -309,6 +310,7 @@ func (h *Handler) SnapPush(c *gin.Context) {
 		}
 	}
 
+	// If the snap name is registered, we can proceed with the upload
 	parsedEntryUUID, err := uuid.Parse(entry.Id)
 	if err != nil {
 		el.Add(cerror.BadRequest, "invalid entry ID format")
@@ -316,8 +318,11 @@ func (h *Handler) SnapPush(c *gin.Context) {
 		return
 	}
 
+	// Get the file name of the unscanned upload from the request body
+	logrus.Debugf("Temp file name: %s", req.UnscannedFileName)
+
 	// Create a new snap upload with status "pending"
-	upload := h.StoreClient.AddUpload(entry.SnapName, parsedEntryUUID, "pending", accountUUID)
+	upload := h.StoreClient.AddUpload(entry.SnapName, parsedEntryUUID, "pending", accountUUID, req.UnscannedFileName)
 	if len(upload.Errors) > 0 {
 		el.ExtendProtoError(upload.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
@@ -356,7 +361,7 @@ func (h *Handler) UnscannedUpload(c *gin.Context) {
 	}()
 
 	// Upload file to the unscanned bucket, waiting for revision to be created
-	resp := h.StoreClient.UnscannedUpload(file)
+	resp := h.StoreClient.UnscannedUpload(c, file)
 	if len(resp.Errors) > 0 {
 		el.ExtendProtoError(resp.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
@@ -372,9 +377,9 @@ func (h *Handler) UnscannedUpload(c *gin.Context) {
 	// Return the upload ID and file information
 	c.JSON(http.StatusOK, gin.H{
 		"successful": true,
-		"upload_id":  uuid.New().String(), // TODO: fix this -> ID of the upload
+		"upload_id":  resp.GetTempFileName(), // TODO: fix this -> ID of the upload
 		"filename":   binaryFile.Filename,
-		"size":       binaryFile.Size,
+		"size":       resp.GetSize(),
 	})
 }
 
