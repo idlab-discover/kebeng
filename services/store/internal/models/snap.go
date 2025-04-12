@@ -86,8 +86,7 @@ type SnapRevision struct {
 	Size                   *uint64        `json:"size,omitempty" db:"size"`
 	SequenceNumber         *uint          `json:"sequence_number,omitempty" db:"sequence_number"`
 	Architectures          pq.StringArray `json:"architectures,omitempty" db:"architectures"`
-	Status                 *string        `json:"status,omitempty" db:"status"`
-	Version                *string        `json:"version,omitempty" db:"version"`
+	MinioFilePath          *string        `json:"minio_file_path,omitempty" db:"minio_file_path"`
 	SnapEntryID            uuid.UUID      `json:"snap_entry_id" db:"entry_id"`
 	SnapTrackID            uuid.UUID      `json:"snap_track_id" db:"snap_track_id"`
 	SnapChannelID          uuid.UUID      `json:"snap_channel_id" db:"snap_channel_id"`
