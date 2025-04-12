@@ -1023,6 +1023,43 @@ func TestAddUpload(t *testing.T) {
 	}
 }
 
+func TestGetUploadById(t *testing.T) {
+	tests := []struct {
+		name              string
+		uploadId          uuid.UUID
+		expectError       bool
+		expectedErrorCode string
+	}{
+		{
+			name:              "Success getting upload by id",
+			uploadId:          mockUUID,
+			expectError:       false,
+			expectedErrorCode: "",
+		},
+		{
+			name:              "Fail getting upload by id for non-existing upload",
+			uploadId:          uuid.New(),
+			expectError:       true,
+			expectedErrorCode: cerror.ResourceNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			upload, err := globalRepo.GetUploadById(tt.uploadId)
+			if tt.expectError {
+				assert.NotNil(t, err)
+				if err != nil {
+					assert.Equal(t, tt.expectedErrorCode, err.GetCode())
+				}
+			} else {
+				assert.Nil(t, err)
+				assert.NotNil(t, upload)
+			}
+		})
+	}
+}
+
 // Helper function to insert mock data
 func mockData(db *sqlx.DB) {
 	// Mock snap entry
@@ -1067,9 +1104,18 @@ func mockData(db *sqlx.DB) {
 	_, err = db.Exec(`
 		INSERT INTO public.comment (id, entry_id, author_id, reason, comment)
 		VALUES ($1, $2, $3, 'mock-reason', 'mock-comment');
-	`, uuid.New(), mockUUID, uuid.New())
+	`, mockUUID, mockUUID, uuid.New())
 	if err != nil {
 		logrus.Fatalf("failed to insert mock data for snap comment: %v", err)
+	}
+
+	// Mock snap upload
+	_, err = db.Exec(`
+		INSERT INTO public.upload (id, entry_id, snap_name, status, account_id, unscanned_file_name, revision)
+		VALUES ($1, $2, 'test-snap', 'pending', $3, 'mock-file', 1);
+	`, mockUUID, mockUUID, mockUUID)
+	if err != nil {
+		logrus.Fatalf("failed to insert mock data for snap upload: %v", err)
 	}
 }
 

@@ -27,6 +27,7 @@ type StoreClientInterface interface {
 	SnapDownload(revisionId string) *proto.SnapDownloadCompleteResponse
 	UnscannedUpload(ctx context.Context, snapFile io.Reader) *proto.UnscannedUploadCompleteResponse
 	AddUpload(snapName string, entryId uuid.UUID, status string, accountId uuid.UUID, unscannedFileName string) *proto.AddUploadResponse
+	GetUploadStatus(uploadId string) *proto.GetUploadStatusResponse
 }
 
 var _ StoreClientInterface = (*StoreClient)(nil)
@@ -313,4 +314,21 @@ func (c *StoreClient) SnapDownload(revisionId string) *proto.SnapDownloadComplet
 
 	response.Data = fileData.Bytes()
 	return response
+}
+
+func (c *StoreClient) GetUploadStatus(uploadId string) *proto.GetUploadStatusResponse {
+	req := &proto.GetUploadStatusRequest{
+		UploadId: uploadId,
+	}
+
+	resp, err := c.client.GetUploadStatus(context.Background(), req)
+	if err != nil {
+		resp = &proto.GetUploadStatusResponse{
+			Errors: []*cerrorpb.Error{{
+				Code:    cerror.InternalServerError,
+				Message: err.Error()},
+			},
+		}
+	}
+	return resp
 }

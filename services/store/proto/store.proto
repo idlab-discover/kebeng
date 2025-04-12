@@ -16,6 +16,7 @@ service StoreService {
     rpc SnapDownload(SnapDownloadRequest) returns (stream SnapDownloadResponse);
     rpc UnscannedUpload(stream UnscannedUploadRequest) returns (UnscannedUploadCompleteResponse);
     rpc AddUpload(AddUploadRequest) returns (AddUploadResponse);
+    rpc GetUploadStatus(GetUploadStatusRequest) returns (GetUploadStatusResponse);
 }
 
 message RegisterSnapNameRequest {
@@ -216,4 +217,14 @@ message AddUploadResponse {
     repeated proto.Error errors = 4;
 }
 
+message GetUploadStatusRequest {
+    string upload_id = 1;
+}
+
+message GetUploadStatusResponse {
+    string upload_id = 1;
+    bool processed = 2;
+    uint64 revision = 3;
+    repeated proto.Error errors = 4;
+}
 

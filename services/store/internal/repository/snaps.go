@@ -26,11 +26,13 @@ type ISnapsRepository interface {
 
 	// READ
 	GetAllSnapEntries() (*[]models.SnapEntry, *cerror.CustomError)
+	GetChannelById(id uuid.UUID) (*models.SnapChannel, *cerror.CustomError)
 	GetChannelsByTrackId(trackId uuid.UUID) ([]*models.SnapChannel, *cerror.CustomError)
 	GetCommentsByEntryId(entryId uuid.UUID) ([]*models.SnapComment, *cerror.CustomError)
 	GetEntriesByAccountId(accountId uuid.UUID, preloadAssociations []string, errorList *cerror.ErrorList) ([]*models.SnapEntry, *cerror.CustomError)
 	GetEntryById(id uuid.UUID, preloadAssociations []string, errorList *cerror.ErrorList) (*models.SnapEntry, *cerror.CustomError)
 	GetEntryByName(name string, preloadAssociations []string, errorList *cerror.ErrorList) (*models.SnapEntry, *cerror.CustomError)
+	GetLatestRevision(snapName string, track string, channel string) (*models.SnapRevision, *cerror.CustomError)
 	GetPreloadAssociations(entry *models.SnapEntry, preloadAssociations *[]string, errorList *cerror.ErrorList) *cerror.CustomError
 	GetRevisionsByEntryId(entryId uuid.UUID) ([]*models.SnapRevision, *cerror.CustomError)
 	GetRevisionById(id uuid.UUID) (*models.SnapRevision, *cerror.CustomError)
@@ -38,8 +40,7 @@ type ISnapsRepository interface {
 	GetRevisionBySHA(SHA3_384 string, encoded bool) (*models.SnapRevision, *cerror.CustomError)
 	GetTracksByEntryId(snapId uuid.UUID) ([]*models.SnapTrack, *cerror.CustomError)
 	GetTrackById(id uuid.UUID) (*models.SnapTrack, *cerror.CustomError)
-	GetChannelById(id uuid.UUID) (*models.SnapChannel, *cerror.CustomError)
-	GetLatestRevision(snapName string, track string, channel string) (*models.SnapRevision, *cerror.CustomError)
+	GetUploadById(id uuid.UUID) (*models.SnapUpload, *cerror.CustomError)
 
 	// UPDATE
 	ReleaseSnap(channels []string, snapEntryId uuid.UUID, revisionId uuid.UUID) *cerror.CustomError
@@ -618,6 +619,21 @@ func (sp *SnapsRepository) GetChannelById(id uuid.UUID) (*models.SnapChannel, *c
 		return nil, cerror.ConvertError(err, fmt.Sprintf("resource not found: channel with id = '%s'", id.String()))
 	}
 	return &channel, nil
+}
+
+func (sp *SnapsRepository) GetUploadById(id uuid.UUID) (*models.SnapUpload, *cerror.CustomError) {
+	var upload models.SnapUpload
+	query := `
+		SELECT *
+		FROM upload
+		WHERE id = $1
+	`
+	err := sp.db.Get(&upload, query, id)
+	if err != nil {
+		logrus.Error(err)
+		return nil, cerror.ConvertError(err, fmt.Sprintf("resource not found: upload with id = '%s'", id.String()))
+	}
+	return &upload, nil
 }
 
 // ============ HELPER ==============

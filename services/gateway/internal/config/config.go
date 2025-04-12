@@ -30,7 +30,7 @@ type Config struct {
 
 	MacaroonConfig *MacaroonConfig `mapstructure:"macaroon" yaml:"macaroon"`
 
-	StoreUrl string `mapstructure:"store_url" yaml:"store_url"`
+	StoreIP string `mapstructure:"store_ip" yaml:"store_ip"`
 }
 
 func LoadConfig() (*Config, error) {
@@ -66,8 +66,9 @@ func LoadConfig() (*Config, error) {
 		return nil, fmt.Errorf("root key is required")
 	}
 
-	if cfg.StoreUrl == "" {
-		return nil, fmt.Errorf("store url is required: example: http://localhost:8080")
+	if cfg.StoreIP == "" {
+		// set store url to ip address of the machine
+		return nil, fmt.Errorf("store ip is required: example: 192.168.0.105:8080")
 	}
 
 	return cfg, nil

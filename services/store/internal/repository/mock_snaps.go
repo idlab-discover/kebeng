@@ -208,3 +208,11 @@ func (m *MockSnapsRepository) GetPreloadAssociations(entry *models.SnapEntry, pr
 	}
 	return args.Get(1).(*cerror.CustomError)
 }
+
+func (m *MockSnapsRepository) GetUploadById(id uuid.UUID) (*models.SnapUpload, *cerror.CustomError) {
+	args := m.Called(id)
+	if args.Get(0) != nil {
+		return args.Get(0).(*models.SnapUpload), nil
+	}
+	return nil, args.Get(1).(*cerror.CustomError)
+}

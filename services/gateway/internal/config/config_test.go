@@ -195,5 +195,5 @@ store_url: "https://store.example.com"
 	assert.NotNil(t, cfg.MacaroonConfig)
 	assert.Equal(t, "some-root-key", cfg.MacaroonConfig.RootKey)
 	assert.Equal(t, "some-discharge-key", cfg.MacaroonConfig.DischargeKey)
-	assert.Equal(t, "https://store.example.com", cfg.StoreUrl)
+	assert.Equal(t, "https://store.example.com", cfg.StoreIP)
 }

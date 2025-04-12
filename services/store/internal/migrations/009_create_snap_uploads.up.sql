@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS public.upload
     snap_name text COLLATE pg_catalog."default",
     status text COLLATE pg_catalog."default",
     unscanned_file_name text COLLATE pg_catalog."default",
+    revision int,
     CONSTRAINT upload_pkey PRIMARY KEY (id),
     entry_id uuid constraint entry_id_fk references entry(id)
 );
