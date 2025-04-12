@@ -18,8 +18,13 @@ import (
 
 type AssertionClientInterface interface {
 	ProcessSnapBuildAssertion(assertion []byte) *proto.SnapBuildAssertionResponse
+
 	AddAccountKeyAssertion(revisionSequenceNumber uint32, publicKeySha3_384 string, accountId string, name string, since *time.Time, until *time.Time, body []byte) *proto.AccountKeyAssertionResponse
 	AddSnapRevisionAssertion(snapSha3_384 string, developerId string, snapEntryId string, snapRevisionSequenceNumber uint32, snapSize uint64, timestamp *time.Time) *proto.SnapRevisionAssertionResponse
+
+	GetAccountKeyAssertionByName(name string) *proto.AccountKeyAssertionResponse
+	GetSnapRevisionAssertionBySHA3_384(snapSha3_384 string) *proto.SnapRevisionAssertionResponse
+
 	Close()
 }
 
