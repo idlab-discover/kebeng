@@ -166,3 +166,7 @@ func (c *AssertionClient) AddSnapRevisionAssertion(snapSha3_384 string, develope
 	}
 	return resp
 }
+
+// TODO: implement GetAccountKeyAssertionByAccountId
+
+// TODO: implement GetSnapRevisionAssertionBySnapEntryId

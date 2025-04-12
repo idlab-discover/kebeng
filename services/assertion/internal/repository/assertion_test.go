@@ -280,7 +280,7 @@ func TestGetAccountKeyAssertionByAccountName(t *testing.T) {
 
 			// Now, try to retrieve the assertion by accountID.
 			el := cerror.NewErrorList()
-			record, cerr := globalRepo.GetAccountKeyAssertionByAccountName(el, tt.assertionName)
+			record, cerr := globalRepo.GetAccountKeyAssertionByName(el, tt.assertionName)
 
 			if tt.expectError {
 				assert.NotNil(t, cerr, "Expected an error for non-existent account")

@@ -32,6 +32,8 @@ func NewAssertionLogic(cfg *config.Config, repo repository.IAssertionRepository,
 	return &AssertionService{cfg: cfg, repo: repo, assertionDB: assertionDB}
 }
 
+// ################### ADDERS #####################
+
 func (s *AssertionService) AddSnapRevisionAssertion(ctx context.Context, req *proto.AddSnapRevisionAssertionRequest) (*proto.SnapRevisionAssertionResponse, error) {
 	el := cerror.NewErrorList()
 
@@ -130,6 +132,64 @@ func (s *AssertionService) AddAccountKeyAssertion(ctx context.Context, req *prot
 	}, nil
 }
 
+// ################### GETTERS #####################
+
+func (s *AssertionService) GetSnapRevisionAssertionBySHA3_384(ctx context.Context, req *proto.GetSnapRevisionAssertionBySHA3_384Request) (*proto.SnapRevisionAssertionResponse, error) {
+	el := cerror.NewErrorList()
+	if req.GetSnapSha3_384() == "" {
+		el.Add(cerror.Invalid, "snap sha3_384 is required")
+		return nil, fmt.Errorf("snap sha3_384 is required")
+	}
+
+	snapRevisionAssertion, cerr := s.repo.GetSnapRevisionAssertionBySHA3_384(el, req.GetSnapSha3_384())
+	if cerr != nil {
+		// should have been logged and added to error list in repo function
+		return nil, fmt.Errorf("failed to get snap revision assertion: %v", cerr)
+	}
+
+	return &proto.SnapRevisionAssertionResponse{
+		AuthorityId:                snapRevisionAssertion.AuthorityID,
+		SignKeySha3_384:            snapRevisionAssertion.SignKeySHA3_384,
+		SnapEntryId:                snapRevisionAssertion.SnapEntryID.String(),
+		SnapSha3_384:               snapRevisionAssertion.SnapSHA3_384,
+		SnapSize:                   snapRevisionAssertion.SnapSize,
+		Timestamp:                  timestamppb.New(snapRevisionAssertion.Timestamp),
+		SnapRevisionSequenceNumber: snapRevisionAssertion.SnapRevisionSequenceNumber,
+		DeveloperId:                snapRevisionAssertion.DeveloperID.String(),
+		Type:                       snapRevisionAssertion.Type,
+		Signature:                  snapRevisionAssertion.Signature,
+		Errors:                     el.ConvertToProtoErrorList(),
+	}, nil
+}
+
+func (s *AssertionService) GetAccountKeyAssertionByName(ctx context.Context, req *proto.GetAddAccountKeyAssertionByNameRequest) (*proto.AccountKeyAssertionResponse, error) {
+	el := cerror.NewErrorList()
+	if req.GetName() == "" {
+		el.Add(cerror.Invalid, "name is required")
+		return nil, fmt.Errorf("name is required")
+	}
+	accountKeyAssertion, cerr := s.repo.GetAccountKeyAssertionByName(el, req.GetName())
+	if cerr != nil {
+		// should have been logged and added to error list in repo function
+		return nil, fmt.Errorf("failed to get account key assertion: %v", cerr)
+	}
+
+	return &proto.AccountKeyAssertionResponse{
+		AuthorityId:                accountKeyAssertion.AuthorityID,
+		SignKeySha3_384:            accountKeyAssertion.SignKeySHA3_384,
+		AccountId:                  accountKeyAssertion.AccountID.String(),
+		Name:                       accountKeyAssertion.Name,
+		SnapRevisionSequenceNumber: accountKeyAssertion.SnapRevisionSequenceNumber,
+		Since:                      timestamppb.New(accountKeyAssertion.Since),
+		Until:                      timestamppb.New(accountKeyAssertion.Until),
+		Body:                       accountKeyAssertion.Body,
+		BodyLength:                 accountKeyAssertion.BodyLength,
+		Signature:                  accountKeyAssertion.Signature,
+		Type:                       accountKeyAssertion.Type,
+		Errors:                     el.ConvertToProtoErrorList(),
+	}, nil
+}
+
 // ##################### HELPER FUNCTIONS #####################
 
 func (s *AssertionService) signAssertion(el *cerror.ErrorList, assertionHeaders any, signKeyID string) (string, *cerror.CustomError) {
@@ -182,6 +242,12 @@ func (s *AssertionService) signAssertion(el *cerror.ErrorList, assertionHeaders 
 	assertionBytes := asserts.Encode(signedAssertion)
 	return string(assertionBytes), nil
 }
+
+// TODO: write get account key assertion by account id
+
+// TODO: write get snap revision assertion by snap entry id
+
+// ####################### SHOULD BE REMOVED #########################
 
 // TODO: remove all this and use better structure
 func (s *AssertionService) ProcessSnapBuildAssertion(ctx context.Context, req *proto.SnapBuildAssertionRequest) (*proto.SnapBuildAssertionResponse, error) {

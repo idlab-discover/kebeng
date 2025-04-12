@@ -25,6 +25,7 @@ type AccountKeyAssertion struct {
 	AccountID                  uuid.UUID  `json:"account_id" db:"account_id"`
 	Name                       string     `json:"name" db:"name"`
 	Since                      time.Time  `json:"since" db:"since"`
+	Until                      time.Time  `json:"until" db:"until"`
 	BodyLength                 uint64     `json:"body_length" db:"body_length"`
 	Body                       []byte     `json:"body" db:"body"` // TODO: figure out what (idk what this is) "base64 encoded version prefixed public key packet" means
 	SignKeySHA3_384            string     `json:"sign_key_sha3_384" db:"sign_key_sha3_384"`

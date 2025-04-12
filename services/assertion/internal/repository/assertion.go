@@ -16,7 +16,7 @@ type IAssertionRepository interface {
 	AddAccountKeyAssertion(el *cerror.ErrorList, authority_id, public_key_SHA3_384, sign_key_SHA3_384, name string, revision uint32, account_id uuid.UUID, since time.Time, until time.Time, body []byte, body_length uint64, signature string) (*model.AccountKeyAssertion, *cerror.CustomError)
 	AddSnapRevisionAssertion(el *cerror.ErrorList, authority_id, snap_sha3_384, sign_key_SHA3_384 string, developer_id, snap_entry_id uuid.UUID, snap_revision_sequence_number uint32, snap_size uint64, timestamp time.Time, signature string) (*model.SnapRevisionAssertion, *cerror.CustomError)
 
-	GetAccountKeyAssertionByAccountName(el *cerror.ErrorList, name string) (*model.AccountKeyAssertion, *cerror.CustomError)
+	GetAccountKeyAssertionByName(el *cerror.ErrorList, name string) (*model.AccountKeyAssertion, *cerror.CustomError)
 	GetSnapRevisionAssertionBySHA3_384(el *cerror.ErrorList, snap_sha3_384 string) (*model.SnapRevisionAssertion, *cerror.CustomError)
 }
 
@@ -69,8 +69,8 @@ func (r *AssertionRepository) AddSnapRevisionAssertion(el *cerror.ErrorList, aut
 	return assertion, nil
 }
 
-func (r *AssertionRepository) GetAccountKeyAssertionByAccountName(el *cerror.ErrorList, name string) (*model.AccountKeyAssertion, *cerror.CustomError) {
-	query := `SELECT id, authority_id, public_key_SHA3_384, sign_key_SHA3_384, name, revision, account_id, since, body_length, signature FROM account_key_assertion WHERE name = $1`
+func (r *AssertionRepository) GetAccountKeyAssertionByName(el *cerror.ErrorList, name string) (*model.AccountKeyAssertion, *cerror.CustomError) {
+	query := `SELECT id, authority_id, public_key_SHA3_384, sign_key_SHA3_384, name, revision, account_id, since, until, body_length, signature FROM account_key_assertion WHERE name = $1`
 	assertion := &model.AccountKeyAssertion{}
 
 	err := r.db.Get(assertion, query, name)
