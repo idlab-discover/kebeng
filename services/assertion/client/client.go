@@ -167,6 +167,56 @@ func (c *AssertionClient) AddSnapRevisionAssertion(snapSha3_384 string, develope
 	return resp
 }
 
-// TODO: implement GetAccountKeyAssertionByAccountId
+func (c *AssertionClient) GetAccountKeyAssertionByName(name string) *proto.AccountKeyAssertionResponse {
+	el := cerror.NewErrorList()
 
-// TODO: implement GetSnapRevisionAssertionBySnapEntryId
+	// check input
+	if name == "" {
+		el.Add(cerror.InvalidField, "name is required")
+	}
+	if el.HasError() {
+		return &proto.AccountKeyAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}
+	}
+
+	req := &proto.GetAccountKeyAssertionByNameRequest{
+		Name: name,
+	}
+
+	resp, err := c.client.GetAccountKeyAssertionByName(context.Background(), req)
+	if err != nil {
+		el.Add(cerror.InternalServerError, err.Error())
+		resp = &proto.AccountKeyAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}
+	}
+	return resp
+}
+
+func (c *AssertionClient) GetSnapRevisionAssertionBySHA3_384(snapSha3_384 string) *proto.SnapRevisionAssertionResponse {
+	el := cerror.NewErrorList()
+
+	// check input
+	if snapSha3_384 == "" {
+		el.Add(cerror.InvalidField, "snap sha3_384 is required")
+	}
+	if el.HasError() {
+		return &proto.SnapRevisionAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}
+	}
+
+	req := &proto.GetSnapRevisionAssertionBySHA3_384Request{
+		SnapSha3_384: snapSha3_384,
+	}
+
+	resp, err := c.client.GetSnapRevisionAssertionBySHA3_384(context.Background(), req)
+	if err != nil {
+		el.Add(cerror.InternalServerError, err.Error())
+		resp = &proto.SnapRevisionAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}
+	}
+	return resp
+}

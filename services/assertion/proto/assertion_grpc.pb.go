@@ -23,7 +23,7 @@ const (
 	AssertionService_AddSnapRevisionAssertion_FullMethodName           = "/assertion.AssertionService/AddSnapRevisionAssertion"
 	AssertionService_AddAccountKeyAssertion_FullMethodName             = "/assertion.AssertionService/AddAccountKeyAssertion"
 	AssertionService_GetSnapRevisionAssertionBySHA3_384_FullMethodName = "/assertion.AssertionService/GetSnapRevisionAssertionBySHA3_384"
-	AssertionService_GetAddAccountKeyAssertionByName_FullMethodName    = "/assertion.AssertionService/GetAddAccountKeyAssertionByName"
+	AssertionService_GetAccountKeyAssertionByName_FullMethodName       = "/assertion.AssertionService/GetAccountKeyAssertionByName"
 )
 
 // AssertionServiceClient is the client API for AssertionService service.
@@ -34,7 +34,7 @@ type AssertionServiceClient interface {
 	AddSnapRevisionAssertion(ctx context.Context, in *AddSnapRevisionAssertionRequest, opts ...grpc.CallOption) (*SnapRevisionAssertionResponse, error)
 	AddAccountKeyAssertion(ctx context.Context, in *AddAccountKeyAssertionRequest, opts ...grpc.CallOption) (*AccountKeyAssertionResponse, error)
 	GetSnapRevisionAssertionBySHA3_384(ctx context.Context, in *GetSnapRevisionAssertionBySHA3_384Request, opts ...grpc.CallOption) (*SnapRevisionAssertionResponse, error)
-	GetAddAccountKeyAssertionByName(ctx context.Context, in *GetAddAccountKeyAssertionByNameRequest, opts ...grpc.CallOption) (*AccountKeyAssertionResponse, error)
+	GetAccountKeyAssertionByName(ctx context.Context, in *GetAccountKeyAssertionByNameRequest, opts ...grpc.CallOption) (*AccountKeyAssertionResponse, error)
 }
 
 type assertionServiceClient struct {
@@ -85,10 +85,10 @@ func (c *assertionServiceClient) GetSnapRevisionAssertionBySHA3_384(ctx context.
 	return out, nil
 }
 
-func (c *assertionServiceClient) GetAddAccountKeyAssertionByName(ctx context.Context, in *GetAddAccountKeyAssertionByNameRequest, opts ...grpc.CallOption) (*AccountKeyAssertionResponse, error) {
+func (c *assertionServiceClient) GetAccountKeyAssertionByName(ctx context.Context, in *GetAccountKeyAssertionByNameRequest, opts ...grpc.CallOption) (*AccountKeyAssertionResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(AccountKeyAssertionResponse)
-	err := c.cc.Invoke(ctx, AssertionService_GetAddAccountKeyAssertionByName_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, AssertionService_GetAccountKeyAssertionByName_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +103,7 @@ type AssertionServiceServer interface {
 	AddSnapRevisionAssertion(context.Context, *AddSnapRevisionAssertionRequest) (*SnapRevisionAssertionResponse, error)
 	AddAccountKeyAssertion(context.Context, *AddAccountKeyAssertionRequest) (*AccountKeyAssertionResponse, error)
 	GetSnapRevisionAssertionBySHA3_384(context.Context, *GetSnapRevisionAssertionBySHA3_384Request) (*SnapRevisionAssertionResponse, error)
-	GetAddAccountKeyAssertionByName(context.Context, *GetAddAccountKeyAssertionByNameRequest) (*AccountKeyAssertionResponse, error)
+	GetAccountKeyAssertionByName(context.Context, *GetAccountKeyAssertionByNameRequest) (*AccountKeyAssertionResponse, error)
 	mustEmbedUnimplementedAssertionServiceServer()
 }
 
@@ -126,8 +126,8 @@ func (UnimplementedAssertionServiceServer) AddAccountKeyAssertion(context.Contex
 func (UnimplementedAssertionServiceServer) GetSnapRevisionAssertionBySHA3_384(context.Context, *GetSnapRevisionAssertionBySHA3_384Request) (*SnapRevisionAssertionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSnapRevisionAssertionBySHA3_384 not implemented")
 }
-func (UnimplementedAssertionServiceServer) GetAddAccountKeyAssertionByName(context.Context, *GetAddAccountKeyAssertionByNameRequest) (*AccountKeyAssertionResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetAddAccountKeyAssertionByName not implemented")
+func (UnimplementedAssertionServiceServer) GetAccountKeyAssertionByName(context.Context, *GetAccountKeyAssertionByNameRequest) (*AccountKeyAssertionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAccountKeyAssertionByName not implemented")
 }
 func (UnimplementedAssertionServiceServer) mustEmbedUnimplementedAssertionServiceServer() {}
 func (UnimplementedAssertionServiceServer) testEmbeddedByValue()                          {}
@@ -222,20 +222,20 @@ func _AssertionService_GetSnapRevisionAssertionBySHA3_384_Handler(srv interface{
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AssertionService_GetAddAccountKeyAssertionByName_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetAddAccountKeyAssertionByNameRequest)
+func _AssertionService_GetAccountKeyAssertionByName_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAccountKeyAssertionByNameRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AssertionServiceServer).GetAddAccountKeyAssertionByName(ctx, in)
+		return srv.(AssertionServiceServer).GetAccountKeyAssertionByName(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AssertionService_GetAddAccountKeyAssertionByName_FullMethodName,
+		FullMethod: AssertionService_GetAccountKeyAssertionByName_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AssertionServiceServer).GetAddAccountKeyAssertionByName(ctx, req.(*GetAddAccountKeyAssertionByNameRequest))
+		return srv.(AssertionServiceServer).GetAccountKeyAssertionByName(ctx, req.(*GetAccountKeyAssertionByNameRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -264,8 +264,8 @@ var AssertionService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AssertionService_GetSnapRevisionAssertionBySHA3_384_Handler,
 		},
 		{
-			MethodName: "GetAddAccountKeyAssertionByName",
-			Handler:    _AssertionService_GetAddAccountKeyAssertionByName_Handler,
+			MethodName: "GetAccountKeyAssertionByName",
+			Handler:    _AssertionService_GetAccountKeyAssertionByName_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
