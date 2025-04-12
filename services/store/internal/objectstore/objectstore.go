@@ -36,6 +36,7 @@ type IObjectStore interface {
 	LoadTestData(client *minio.Client, repo repository.ISnapsRepository, minioPath string) error
 	MakeBucketAndAddKey(bucketName string, keyPath string, keyName string)
 	Move(sourceBucket, destinationBucket, objectName string, newObjectName string) error
+	GetObjectCustomMetadata(bucket string, objectName string) (map[string]string, error)
 }
 
 type ObjectStore struct {
@@ -140,7 +141,7 @@ func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_38
 	return &uploadInfo, nil
 }
 
-func (obs *ObjectStore) GetObjectMetadata(bucket string, objectName string) (map[string]string, error) {
+func (obs *ObjectStore) GetObjectCustomMetadata(bucket string, objectName string) (map[string]string, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

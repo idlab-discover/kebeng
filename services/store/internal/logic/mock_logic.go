@@ -174,3 +174,11 @@ func (m *MockStoreServiceClient) AddRevision(ctx context.Context, in *proto.AddR
 	}
 	return args.Get(0).(*proto.AddRevisionResponse), nil
 }
+
+func (m *MockStoreServiceClient) GetObjectCustomMetadata(ctx context.Context, in *proto.GetObjectCustomMetadataRequest, opts ...grpc.CallOption) (*proto.GetObjectCustomMetadataResponse, error) {
+	args := m.Called(ctx, in)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*proto.GetObjectCustomMetadataResponse), nil
+}

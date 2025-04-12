@@ -946,6 +946,29 @@ func (s *StoreLogic) AddRevision(ctx context.Context, req *proto.AddRevisionRequ
 	}, nil
 }
 
+func (s *StoreLogic) GetObjectCustomMetadata(ctx context.Context, req *proto.GetObjectCustomMetadataRequest) (*proto.GetObjectCustomMetadataResponse, error) {
+	el := cerror.NewErrorList()
+	if req.Bucket == "" {
+		el.Add(cerror.MissingField, "bucket is required")
+		return &proto.GetObjectCustomMetadataResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+	if req.ObjectKey == "" {
+		el.Add(cerror.MissingField, "object key is required")
+		return &proto.GetObjectCustomMetadataResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+	metadata, err := s.obs.GetObjectCustomMetadata(req.Bucket, req.ObjectKey)
+	if err != nil {
+		el.AddCustomError(cerror.NewCustomError(cerror.InternalServerError, "failed to get object custom metadata"))
+		return &proto.GetObjectCustomMetadataResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	logrus.Debugf("metadata: %v", metadata)
+
+	return &proto.GetObjectCustomMetadataResponse{
+		Sha3_384: metadata["sha3_384"],
+	}, nil
+}
+
 // ################# HELPERS #################
 
 func (s *StoreLogic) retrieveObjectStoreFilePath(revision *models.SnapRevision, el *cerror.ErrorList) (string, *cerror.CustomError) {

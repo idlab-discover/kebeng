@@ -29,6 +29,7 @@ type StoreServiceClient interface {
 	AddUpload(ctx context.Context, in *AddUploadRequest, opts ...grpc.CallOption) (*AddUploadResponse, error)
 	GetUploadStatus(ctx context.Context, in *GetUploadStatusRequest, opts ...grpc.CallOption) (*GetUploadStatusResponse, error)
 	AddRevision(ctx context.Context, in *AddRevisionRequest, opts ...grpc.CallOption) (*AddRevisionResponse, error)
+	GetObjectCustomMetadata(ctx context.Context, in *GetObjectCustomMetadataRequest, opts ...grpc.CallOption) (*GetObjectCustomMetadataResponse, error)
 }
 
 type storeServiceClient struct {
@@ -186,6 +187,15 @@ func (c *storeServiceClient) AddRevision(ctx context.Context, in *AddRevisionReq
 	return out, nil
 }
 
+func (c *storeServiceClient) GetObjectCustomMetadata(ctx context.Context, in *GetObjectCustomMetadataRequest, opts ...grpc.CallOption) (*GetObjectCustomMetadataResponse, error) {
+	out := new(GetObjectCustomMetadataResponse)
+	err := c.cc.Invoke(ctx, "/store.StoreService/GetObjectCustomMetadata", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // StoreServiceServer is the server API for StoreService service.
 // All implementations must embed UnimplementedStoreServiceServer
 // for forward compatibility
@@ -201,6 +211,7 @@ type StoreServiceServer interface {
 	AddUpload(context.Context, *AddUploadRequest) (*AddUploadResponse, error)
 	GetUploadStatus(context.Context, *GetUploadStatusRequest) (*GetUploadStatusResponse, error)
 	AddRevision(context.Context, *AddRevisionRequest) (*AddRevisionResponse, error)
+	GetObjectCustomMetadata(context.Context, *GetObjectCustomMetadataRequest) (*GetObjectCustomMetadataResponse, error)
 	mustEmbedUnimplementedStoreServiceServer()
 }
 
@@ -240,6 +251,9 @@ func (UnimplementedStoreServiceServer) GetUploadStatus(context.Context, *GetUplo
 }
 func (UnimplementedStoreServiceServer) AddRevision(context.Context, *AddRevisionRequest) (*AddRevisionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddRevision not implemented")
+}
+func (UnimplementedStoreServiceServer) GetObjectCustomMetadata(context.Context, *GetObjectCustomMetadataRequest) (*GetObjectCustomMetadataResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetObjectCustomMetadata not implemented")
 }
 func (UnimplementedStoreServiceServer) mustEmbedUnimplementedStoreServiceServer() {}
 
@@ -463,6 +477,24 @@ func _StoreService_AddRevision_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _StoreService_GetObjectCustomMetadata_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetObjectCustomMetadataRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StoreServiceServer).GetObjectCustomMetadata(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/store.StoreService/GetObjectCustomMetadata",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StoreServiceServer).GetObjectCustomMetadata(ctx, req.(*GetObjectCustomMetadataRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // StoreService_ServiceDesc is the grpc.ServiceDesc for StoreService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -505,6 +537,10 @@ var StoreService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AddRevision",
 			Handler:    _StoreService_AddRevision_Handler,
+		},
+		{
+			MethodName: "GetObjectCustomMetadata",
+			Handler:    _StoreService_GetObjectCustomMetadata_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

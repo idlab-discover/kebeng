@@ -18,6 +18,7 @@ service StoreService {
     rpc AddUpload(AddUploadRequest) returns (AddUploadResponse);
     rpc GetUploadStatus(GetUploadStatusRequest) returns (GetUploadStatusResponse);
     rpc AddRevision(AddRevisionRequest) returns (AddRevisionResponse);
+    rpc GetObjectCustomMetadata(GetObjectCustomMetadataRequest) returns (GetObjectCustomMetadataResponse);
 }
 
 message RegisterSnapNameRequest {
@@ -246,4 +247,14 @@ message AddRevisionResponse {
     string snap_name = 2;
     string status = 3;
     repeated proto.Error errors = 4;
+}
+
+message GetObjectCustomMetadataRequest {
+    string bucket = 1;
+    string object_key = 2;
+}
+
+message GetObjectCustomMetadataResponse {
+    string sha3_384 = 1;
+    repeated proto.Error errors = 2;
 }
