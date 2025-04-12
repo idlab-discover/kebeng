@@ -225,7 +225,7 @@ message GetUploadStatusRequest {
 message GetUploadStatusResponse {
     string upload_id = 1;
     bool processed = 2;
-    uint64 revision = 3;
+    optional uint64 revision = 3;
     repeated proto.Error errors = 4;
 }
 
