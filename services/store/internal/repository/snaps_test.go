@@ -246,6 +246,7 @@ func TestAddRevision(t *testing.T) {
 		sequenceNumber    uint
 		architectures     []string
 		sha3384           string
+		el                *cerror.ErrorList
 		expectError       bool
 		expectedErrorCode string
 	}{
@@ -259,6 +260,7 @@ func TestAddRevision(t *testing.T) {
 			sequenceNumber: 1,
 			architectures:  []string{"x86_64", "arm64"},
 			sha3384:        "mock-sha3-384",
+			el:             cerror.NewErrorList(),
 			expectError:    false,
 		},
 		{
@@ -271,6 +273,7 @@ func TestAddRevision(t *testing.T) {
 			sequenceNumber:    1,
 			architectures:     []string{"x86_64", "arm64"},
 			sha3384:           "mock-sha3-384",
+			el:                cerror.NewErrorList(),
 			expectError:       true,
 			expectedErrorCode: cerror.ResourceNotFound,
 		},
@@ -284,6 +287,7 @@ func TestAddRevision(t *testing.T) {
 			sequenceNumber:    1,
 			architectures:     []string{"x86_64", "arm64"},
 			sha3384:           "mock-sha3-384",
+			el:                cerror.NewErrorList(),
 			expectError:       true,
 			expectedErrorCode: cerror.ResourceNotFound,
 		},
@@ -297,13 +301,14 @@ func TestAddRevision(t *testing.T) {
 			sequenceNumber:    1,
 			architectures:     []string{"x86_64", "arm64"},
 			sha3384:           "mock-sha3-384",
+			el:                cerror.NewErrorList(),
 			expectError:       true,
 			expectedErrorCode: cerror.ResourceNotFound,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			revision, err := globalRepo.AddRevision(tt.entryId, tt.trackId, tt.channelId, tt.snapName, tt.size, tt.sequenceNumber, tt.architectures, tt.sha3384)
+			revision, err := globalRepo.AddRevision(tt.entryId, tt.trackId, tt.channelId, tt.snapName, tt.size, tt.sequenceNumber, tt.architectures, tt.sha3384, tt.el)
 			if tt.expectError {
 				assert.NotNil(t, err)
 				if err != nil {
