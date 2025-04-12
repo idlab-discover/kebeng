@@ -238,6 +238,7 @@ message AddRevisionRequest {
     string version = 6;
     string track = 7;
     string channel = 8;
+    string unscanned_file_name = 9;
 }
 
 message AddRevisionResponse {

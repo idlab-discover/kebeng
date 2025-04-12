@@ -58,7 +58,7 @@ func (m *MockObjectStore) MakeBucketAndAddKey(bucketName string, keyPath string,
 	m.Called(bucketName, keyPath, keyName)
 }
 
-func (m *MockObjectStore) Move(sourceBucket, destinationBucket, objectName string) error {
+func (m *MockObjectStore) Move(sourceBucket, destinationBucket, objectName string, newObjectName string) error {
 	args := m.Called(sourceBucket, destinationBucket, objectName)
 	return args.Error(0)
 }
@@ -81,4 +81,9 @@ func (m *MockObjectStore) CopyObject(ctx context.Context, dst minio.CopyDestOpti
 func (m *MockObjectStore) ListObjects(ctx context.Context, bucket string, opts minio.ListObjectsOptions) <-chan minio.ObjectInfo {
 	args := m.Called(ctx, bucket, opts)
 	return args.Get(0).(<-chan minio.ObjectInfo)
+}
+
+func (m *MockObjectStore) RemoveObject(ctx context.Context, bucket, object string, opts minio.RemoveObjectOptions) error {
+	args := m.Called(ctx, bucket, object, opts)
+	return args.Error(0)
 }

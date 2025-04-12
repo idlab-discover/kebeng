@@ -87,7 +87,7 @@ func (s *StoreLogic) RegisterSnapName(ctx context.Context, req *proto.RegisterSn
 	}
 
 	// Add default channels for the "latest" track to the snap entry
-	cerr = s.repo.AddDefaultChannels(snapEntry.ID, snapTrack.ID)
+	cerr = s.repo.AddDefaultChannels(snapEntry.ID, snapTrack.ID, el)
 	if cerr != nil {
 		el.AddCustomError(cerr)
 		return &proto.RegisterSnapNameResponse{Errors: el.ConvertToProtoErrorList()}, nil
@@ -529,7 +529,7 @@ func (s *StoreLogic) GetLatestRevision(ctx context.Context, req *proto.GetLatest
 		return &proto.GetRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
 
-	revision, cerr := s.repo.GetLatestRevision(req.SnapName, req.Track, req.Channel)
+	revision, cerr := s.repo.GetLatestRevisionByTrackAndChannel(req.SnapName, req.Track, req.Channel)
 	if cerr != nil {
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
@@ -846,6 +846,88 @@ func (s *StoreLogic) GetUploadStatus(ctx context.Context, req *proto.GetUploadSt
 	}, nil
 }
 
+func (s *StoreLogic) AddRevision(ctx context.Context, req *proto.AddRevisionRequest) (*proto.AddRevisionResponse, error) {
+	el := cerror.NewErrorList()
+
+	if req.SnapName == "" {
+		el.Add(cerror.MissingField, "snap name is required")
+	}
+
+	// Get entry by snapName
+	entry, cerr := s.repo.GetEntryByName(req.SnapName, []string{models.TRACK, models.CHANNEL}, el)
+	if cerr != nil {
+		// Already logged in GetEntryByName (repository)
+		return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	// Check if a revision with the same SHA3_384 already exists -> this means that the uploaded file is the same as one already in the database
+	existingRevision, cerr := s.repo.GetRevisionBySHA(req.Sha3_384, false, el)
+	if cerr != nil {
+		// Already logged in GetRevisionBySHA (repository)
+		return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+	if existingRevision != nil {
+		el.Add(cerror.AlreadyRegistered, fmt.Sprintf("revision with the same SHA3_384 already exists for %s", req.SnapName))
+		return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	// Get the sequence number of the last revision (if there is any)
+	lastRevision, cerr := s.repo.GetLatestRevisionByEntryId(entry.ID, el)
+	if cerr != nil {
+		// Already logged in GetLatestRevisionByEntryId (repository)
+		return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+	sequenceNumber := uint(1) // Initialize to 1
+	// If there is a last revision, increment the sequence number
+	if lastRevision != nil && lastRevision.SequenceNumber != nil {
+		sequenceNumber = *lastRevision.SequenceNumber + 1
+	}
+
+	// Get the track to which the revision will be associated
+	track, cerr := s.repo.GetTrackByEntryIdAndName(entry.ID, req.Track, el)
+	if cerr != nil {
+		// Already logged in GetTracksByEntryIdAndName (repository)
+		return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	// Get the channel to which the revision will be associated
+	channel, cerr := s.repo.GetChannelByTrackIdAndName(entry.ID, req.Channel, el)
+	if cerr != nil {
+		// Already logged in GetChannelByTrackIdAndName (repository)
+		return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+	// If the channel is not found, create a new one
+	if channel == nil {
+		channel, cerr = s.repo.AddChannel(entry.ID, track.ID, req.Channel, el)
+		if cerr != nil {
+			// Already logged in AddChannel (repository)
+			return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
+		}
+	}
+
+	// Create the revision
+	revision, cerr := s.repo.AddRevision(entry.ID, track.ID, channel.ID, req.SnapName, req.Size, sequenceNumber, req.Architectures, req.Sha3_384, el)
+	if cerr != nil {
+		// Already logged in AddRevision (repository)
+		return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	// Move the snap file to the `snap` bucket
+	newFileName := s.createObjectStoreFilePath(entry.Name, track.Name, channel.Name, sequenceNumber)
+	err := s.obs.Move("unscanned", "snaps", req.UnscannedFileName, newFileName)
+	if err != nil {
+		logrus.Error(err)
+		el.Add(cerror.InternalServerError, "failed to move snap file from `unscanned` to `snaps` bucket")
+		return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	return &proto.AddRevisionResponse{
+		Id:       revision.ID.String(),
+		SnapName: *revision.SnapName,
+		Status:   "success",
+	}, nil
+}
+
 // ################# HELPERS #################
 
 func (s *StoreLogic) retrieveObjectStoreFilePath(revision *models.SnapRevision, el *cerror.ErrorList) (string, *cerror.CustomError) {
@@ -862,6 +944,10 @@ func (s *StoreLogic) retrieveObjectStoreFilePath(revision *models.SnapRevision, 
 		return "", cerr
 	}
 	return fmt.Sprintf("%s/%s/%s/%s_%d.snap", entry.Name, track.Name, channel.Name, entry.Name, uintPointerToUint(revision.SequenceNumber)), nil
+}
+
+func (s *StoreLogic) createObjectStoreFilePath(entryName, trackName, channelName string, sequenceNumber uint) string {
+	return fmt.Sprintf("%s/%s/%s/%s_%d.snap", entryName, trackName, channelName, entryName, sequenceNumber)
 }
 
 func pointerToString(s *string) string {
