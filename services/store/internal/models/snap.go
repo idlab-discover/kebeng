@@ -118,5 +118,5 @@ type SnapUpload struct {
 	SnapName          string     `json:"snap_name" db:"snap_name"`
 	Status            string     `json:"status" db:"status"`
 	StatusDetailsURL  string     `json:"status_details_url" db:"status_details_url"`
-	Revision          uint64     `json:"revision" db:"revision"`
+	Revision          *uint64    `json:"revision" db:"revision"`
 }

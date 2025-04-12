@@ -31,8 +31,8 @@ func (m *MockObjectStore) LoadTestData(client *minio.Client, repo repository.ISn
 }
 
 // SaveFileToBucket implements IObjectStore.
-func (m *MockObjectStore) SaveFileToBucket(bucket string, filePath string) (*minio.UploadInfo, error) {
-	args := m.Called(bucket, filePath)
+func (m *MockObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_384 string) (*minio.UploadInfo, error) {
+	args := m.Called(bucket, filePath, sha3_384)
 	if args.Get(0) != nil {
 		return args.Get(0).(*minio.UploadInfo), nil
 	}

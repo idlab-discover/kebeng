@@ -30,7 +30,7 @@ type IMinioClient interface {
 }
 
 type IObjectStore interface {
-	SaveFileToBucket(bucket string, filePath string) (*minio.UploadInfo, error)
+	SaveFileToBucket(bucket string, filePath string, sha3_384 string) (*minio.UploadInfo, error)
 	GetSnapFileReader(filePath string) (io.ReadCloser, error)
 	LoadTestData(client *minio.Client, repo repository.ISnapsRepository, minioPath string) error
 	MakeBucketAndAddKey(bucketName string, keyPath string, keyName string)
@@ -111,9 +111,10 @@ func (obs *ObjectStore) Move(sourceBucket, destinationBucket, objectName, newObj
 	return errors.New("source or destination bucket does not exist")
 }
 
-func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string) (*minio.UploadInfo, error) {
+func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_384 string) (*minio.UploadInfo, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
 	exists, _ := obs.MinioClient.BucketExists(ctx, bucket)
 	if !exists {
 		err := obs.MinioClient.MakeBucket(ctx, bucket, minio.MakeBucketOptions{})
@@ -124,7 +125,11 @@ func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string) (*minio
 
 	base := path.Base(filePath)
 
-	uploadInfo, err := obs.MinioClient.FPutObject(ctx, bucket, base, filePath, minio.PutObjectOptions{})
+	uploadInfo, err := obs.MinioClient.FPutObject(ctx, bucket, base, filePath, minio.PutObjectOptions{
+		UserMetadata: map[string]string{
+			"sha3-384": sha3_384,
+		},
+	})
 	if err != nil {
 		return nil, err
 	}

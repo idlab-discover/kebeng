@@ -3,6 +3,7 @@ package logic
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"os"
@@ -18,6 +19,7 @@ import (
 	"github.com/idlab-discover/kebeng/services/store/internal/repository"
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/crypto/sha3"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -756,6 +758,7 @@ func (s *StoreLogic) AddUpload(ctx context.Context, req *proto.AddUploadRequest)
 func (s *StoreLogic) UnscannedUpload(stream proto.StoreService_UnscannedUploadServer) error {
 	el := cerror.NewErrorList()
 	var snapFileBuffer bytes.Buffer
+	sha := sha3.New384()
 
 	for {
 		req, err := stream.Recv()
@@ -775,11 +778,20 @@ func (s *StoreLogic) UnscannedUpload(stream proto.StoreService_UnscannedUploadSe
 			return fmt.Errorf("received empty data chunk")
 		}
 
+		// Write chunk to buffer
 		_, err = snapFileBuffer.Write(dataChunk.Chunk)
 		if err != nil {
 			logrus.Errorf("failed to write chunk to buffer: %v", err)
 			el.Add(cerror.InternalServerError, fmt.Sprintf("failed to write chunk to buffer: %v", err))
 			return fmt.Errorf("failed to write chunk to buffer: %v", err)
+		}
+
+		// Update hash with the chunk
+		_, err = sha.Write(dataChunk.Chunk)
+		if err != nil {
+			logrus.Errorf("failed to update hash: %v", err)
+			el.Add(cerror.InternalServerError, fmt.Sprintf("failed to update hash: %v", err))
+			return fmt.Errorf("failed to update hash: %v", err)
 		}
 	}
 
@@ -790,9 +802,13 @@ func (s *StoreLogic) UnscannedUpload(stream proto.StoreService_UnscannedUploadSe
 		return fmt.Errorf("failed to save file to temp storage: %v", cerr)
 	}
 
+	// Calculate sha3_384 hash of the file
+	sha3_384Hash := sha.Sum(nil)
+	sha3_384HashEncoded := base64.StdEncoding.EncodeToString(sha3_384Hash) // Encode the hash to base64 for storage
+
 	tmpPath := path.Join(os.TempDir(), snapFileName)
 
-	uploadInfo, err := s.obs.SaveFileToBucket("unscanned", tmpPath)
+	uploadInfo, err := s.obs.SaveFileToBucket("unscanned", tmpPath, sha3_384HashEncoded)
 	if err != nil {
 		logrus.Errorf("failed to save file to object store: %v", err)
 		el.Add(cerror.InternalServerError, fmt.Sprintf("failed to save file to object store: %v", err))
@@ -839,11 +855,13 @@ func (s *StoreLogic) GetUploadStatus(ctx context.Context, req *proto.GetUploadSt
 		processed = true
 	}
 
-	return &proto.GetUploadStatusResponse{
+	resp := &proto.GetUploadStatusResponse{
 		UploadId:  snapUpload.ID.String(),
 		Processed: processed,
-		Revision:  snapUpload.Revision,
-	}, nil
+		Revision:  *snapUpload.Revision,
+	}
+
+	return resp, nil
 }
 
 func (s *StoreLogic) AddRevision(ctx context.Context, req *proto.AddRevisionRequest) (*proto.AddRevisionResponse, error) {
