@@ -985,7 +985,7 @@ func (s *StoreLogic) retrieveObjectStoreFilePath(revision *models.SnapRevision, 
 }
 
 func (s *StoreLogic) createObjectStoreFilePath(entryName string, sequenceNumber uint) string {
-	return fmt.Sprintf("%s%s_%d.snap", entryName, entryName, sequenceNumber)
+	return fmt.Sprintf("%s/%s_%d.snap", entryName, entryName, sequenceNumber)
 }
 
 func pointerToString(s *string) string {
