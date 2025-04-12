@@ -225,26 +225,27 @@ func TestAddAccountKeyAssertion(t *testing.T) {
 	}
 }
 
-func TestGetAccountKeyAssertionByAccountId(t *testing.T) {
+func TestGetAccountKeyAssertionByAccountName(t *testing.T) {
 	tests := []struct {
-		name        string
-		accountID   uuid.UUID
-		preInsert   bool // if true, insert a record into the DB for this accountID before retrieval
-		expectError bool
-		errorCode   string // expected error code (if any)
+		name          string
+		assertionName string
+		preInsert     bool // if true, insert a record into the DB for this accountID before retrieval
+		expectError   bool
+		errorCode     string // expected error code (if any)
 	}{
 		{
-			name:        "Successful Get Account-Key Assertion",
-			accountID:   uuid.New(),
+			name:          "Successful Get Account-Key Assertion",
+			assertionName: "KeyAccountAssertion",
+
 			preInsert:   true,
 			expectError: false,
 		},
 		{
-			name:        "Fail Get Account-Key Assertion for Nonexistent Account",
-			accountID:   uuid.New(), // no pre-insert, so this account should not be found
-			preInsert:   false,
-			expectError: true,
-			errorCode:   cerror.ResourceNotFound,
+			name:          "Fail Get Account-Key Assertion for Nonexistent Account",
+			assertionName: "NonExistentAccountAssertion",
+			preInsert:     false,
+			expectError:   true,
+			errorCode:     cerror.ResourceNotFound,
 		},
 	}
 
@@ -265,9 +266,9 @@ func TestGetAccountKeyAssertionByAccountId(t *testing.T) {
 					"canonical",
 					"BWDEoaqyr25nF5SNCvEv2v7QnM9QsfCc0PBMYD_i2NGSQ32EF2d4D0hqUel3m8ul",
 					"-CvQKAwRQ5h3Ffn10FILJoEZUXOv6km9FwA80-Rcj-f-6jadQ89VRswHNiEB9Lxk",
-					"store",
+					tt.assertionName,
 					2,
-					tt.accountID,
+					uuid.New(),
 					time.Date(2016, 4, 1, 0, 0, 0, 0, time.UTC),
 					time.Date(2016, 4, 1, 0, 0, 0, 0, time.UTC),
 					[]byte("test-body-data"),
@@ -279,7 +280,7 @@ func TestGetAccountKeyAssertionByAccountId(t *testing.T) {
 
 			// Now, try to retrieve the assertion by accountID.
 			el := cerror.NewErrorList()
-			record, cerr := globalRepo.GetAccountKeyAssertionByAccountId(el, tt.accountID)
+			record, cerr := globalRepo.GetAccountKeyAssertionByAccountName(el, tt.assertionName)
 
 			if tt.expectError {
 				assert.NotNil(t, cerr, "Expected an error for non-existent account")
@@ -291,7 +292,7 @@ func TestGetAccountKeyAssertionByAccountId(t *testing.T) {
 				assert.Nil(t, cerr, "Did not expect an error for existing account")
 				assert.False(t, el.HasError(), "Expected no errors in the error list")
 				assert.NotNil(t, record, "Expected a non-nil assertion record")
-				assert.Equal(t, tt.accountID, record.AccountID, "Account ID should match")
+				assert.Equal(t, tt.assertionName, record.Name, "Account ID should match")
 				assert.Equal(t, "canonical", record.AuthorityID, "AuthorityID should match")
 				assert.Equal(t, uint32(2), record.SnapRevisionSequenceNumber, "Revision should match")
 			}
