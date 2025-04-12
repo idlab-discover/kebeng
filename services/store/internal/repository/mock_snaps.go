@@ -15,7 +15,7 @@ type MockSnapsRepository struct {
 var _ ISnapsRepository = (*MockSnapsRepository)(nil)
 
 // CREATE
-func (m *MockSnapsRepository) AddChannel(snapEntryId uuid.UUID, snapTrackId uuid.UUID, channelName string) (*models.SnapChannel, *cerror.CustomError) {
+func (m *MockSnapsRepository) AddChannel(snapEntryId uuid.UUID, snapTrackId uuid.UUID, channelName string, el *cerror.ErrorList) (*models.SnapChannel, *cerror.CustomError) {
 	args := m.Called(snapEntryId, snapTrackId, channelName)
 	if args.Get(0) != nil {
 		return args.Get(0).(*models.SnapChannel), nil
@@ -23,7 +23,7 @@ func (m *MockSnapsRepository) AddChannel(snapEntryId uuid.UUID, snapTrackId uuid
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
-func (m *MockSnapsRepository) AddDefaultChannels(snapEntryId uuid.UUID, snapTrackId uuid.UUID) *cerror.CustomError {
+func (m *MockSnapsRepository) AddDefaultChannels(snapEntryId uuid.UUID, snapTrackId uuid.UUID, el *cerror.ErrorList) *cerror.CustomError {
 	args := m.Called(snapEntryId, snapTrackId)
 	if args.Get(0) != nil {
 		return args.Get(0).(*cerror.CustomError)
