@@ -23,11 +23,12 @@ type StoreServiceClient interface {
 	GetEntries(ctx context.Context, in *GetEntriesRequest, opts ...grpc.CallOption) (*GetEntriesResponse, error)
 	GetEntriesByAccountId(ctx context.Context, in *GetEntriesByAccountIdRequest, opts ...grpc.CallOption) (*GetEntriesResponse, error)
 	GetRevisionsByEntryIds(ctx context.Context, in *GetRevisionsByEntryIdRequests, opts ...grpc.CallOption) (*GetRevisionsByEntryIdResponses, error)
-	GetLatestRevision(ctx context.Context, in *GetLatestRevisionRequest, opts ...grpc.CallOption) (*GetRevisionResponse, error)
+	GetLatestRevisionByTrackAndChannel(ctx context.Context, in *GetLatestRevisionRequest, opts ...grpc.CallOption) (*GetRevisionResponse, error)
 	SnapDownload(ctx context.Context, in *SnapDownloadRequest, opts ...grpc.CallOption) (StoreService_SnapDownloadClient, error)
 	UnscannedUpload(ctx context.Context, opts ...grpc.CallOption) (StoreService_UnscannedUploadClient, error)
 	AddUpload(ctx context.Context, in *AddUploadRequest, opts ...grpc.CallOption) (*AddUploadResponse, error)
 	GetUploadStatus(ctx context.Context, in *GetUploadStatusRequest, opts ...grpc.CallOption) (*GetUploadStatusResponse, error)
+	AddRevision(ctx context.Context, in *AddRevisionRequest, opts ...grpc.CallOption) (*AddRevisionResponse, error)
 }
 
 type storeServiceClient struct {
@@ -83,9 +84,9 @@ func (c *storeServiceClient) GetRevisionsByEntryIds(ctx context.Context, in *Get
 	return out, nil
 }
 
-func (c *storeServiceClient) GetLatestRevision(ctx context.Context, in *GetLatestRevisionRequest, opts ...grpc.CallOption) (*GetRevisionResponse, error) {
+func (c *storeServiceClient) GetLatestRevisionByTrackAndChannel(ctx context.Context, in *GetLatestRevisionRequest, opts ...grpc.CallOption) (*GetRevisionResponse, error) {
 	out := new(GetRevisionResponse)
-	err := c.cc.Invoke(ctx, "/store.StoreService/GetLatestRevision", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/store.StoreService/GetLatestRevisionByTrackAndChannel", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -176,6 +177,15 @@ func (c *storeServiceClient) GetUploadStatus(ctx context.Context, in *GetUploadS
 	return out, nil
 }
 
+func (c *storeServiceClient) AddRevision(ctx context.Context, in *AddRevisionRequest, opts ...grpc.CallOption) (*AddRevisionResponse, error) {
+	out := new(AddRevisionResponse)
+	err := c.cc.Invoke(ctx, "/store.StoreService/AddRevision", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // StoreServiceServer is the server API for StoreService service.
 // All implementations must embed UnimplementedStoreServiceServer
 // for forward compatibility
@@ -185,11 +195,12 @@ type StoreServiceServer interface {
 	GetEntries(context.Context, *GetEntriesRequest) (*GetEntriesResponse, error)
 	GetEntriesByAccountId(context.Context, *GetEntriesByAccountIdRequest) (*GetEntriesResponse, error)
 	GetRevisionsByEntryIds(context.Context, *GetRevisionsByEntryIdRequests) (*GetRevisionsByEntryIdResponses, error)
-	GetLatestRevision(context.Context, *GetLatestRevisionRequest) (*GetRevisionResponse, error)
+	GetLatestRevisionByTrackAndChannel(context.Context, *GetLatestRevisionRequest) (*GetRevisionResponse, error)
 	SnapDownload(*SnapDownloadRequest, StoreService_SnapDownloadServer) error
 	UnscannedUpload(StoreService_UnscannedUploadServer) error
 	AddUpload(context.Context, *AddUploadRequest) (*AddUploadResponse, error)
 	GetUploadStatus(context.Context, *GetUploadStatusRequest) (*GetUploadStatusResponse, error)
+	AddRevision(context.Context, *AddRevisionRequest) (*AddRevisionResponse, error)
 	mustEmbedUnimplementedStoreServiceServer()
 }
 
@@ -212,8 +223,8 @@ func (UnimplementedStoreServiceServer) GetEntriesByAccountId(context.Context, *G
 func (UnimplementedStoreServiceServer) GetRevisionsByEntryIds(context.Context, *GetRevisionsByEntryIdRequests) (*GetRevisionsByEntryIdResponses, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetRevisionsByEntryIds not implemented")
 }
-func (UnimplementedStoreServiceServer) GetLatestRevision(context.Context, *GetLatestRevisionRequest) (*GetRevisionResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetLatestRevision not implemented")
+func (UnimplementedStoreServiceServer) GetLatestRevisionByTrackAndChannel(context.Context, *GetLatestRevisionRequest) (*GetRevisionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetLatestRevisionByTrackAndChannel not implemented")
 }
 func (UnimplementedStoreServiceServer) SnapDownload(*SnapDownloadRequest, StoreService_SnapDownloadServer) error {
 	return status.Errorf(codes.Unimplemented, "method SnapDownload not implemented")
@@ -226,6 +237,9 @@ func (UnimplementedStoreServiceServer) AddUpload(context.Context, *AddUploadRequ
 }
 func (UnimplementedStoreServiceServer) GetUploadStatus(context.Context, *GetUploadStatusRequest) (*GetUploadStatusResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetUploadStatus not implemented")
+}
+func (UnimplementedStoreServiceServer) AddRevision(context.Context, *AddRevisionRequest) (*AddRevisionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddRevision not implemented")
 }
 func (UnimplementedStoreServiceServer) mustEmbedUnimplementedStoreServiceServer() {}
 
@@ -330,20 +344,20 @@ func _StoreService_GetRevisionsByEntryIds_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
-func _StoreService_GetLatestRevision_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _StoreService_GetLatestRevisionByTrackAndChannel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetLatestRevisionRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(StoreServiceServer).GetLatestRevision(ctx, in)
+		return srv.(StoreServiceServer).GetLatestRevisionByTrackAndChannel(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/store.StoreService/GetLatestRevision",
+		FullMethod: "/store.StoreService/GetLatestRevisionByTrackAndChannel",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(StoreServiceServer).GetLatestRevision(ctx, req.(*GetLatestRevisionRequest))
+		return srv.(StoreServiceServer).GetLatestRevisionByTrackAndChannel(ctx, req.(*GetLatestRevisionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -431,6 +445,24 @@ func _StoreService_GetUploadStatus_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _StoreService_AddRevision_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddRevisionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StoreServiceServer).AddRevision(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/store.StoreService/AddRevision",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StoreServiceServer).AddRevision(ctx, req.(*AddRevisionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // StoreService_ServiceDesc is the grpc.ServiceDesc for StoreService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -459,8 +491,8 @@ var StoreService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _StoreService_GetRevisionsByEntryIds_Handler,
 		},
 		{
-			MethodName: "GetLatestRevision",
-			Handler:    _StoreService_GetLatestRevision_Handler,
+			MethodName: "GetLatestRevisionByTrackAndChannel",
+			Handler:    _StoreService_GetLatestRevisionByTrackAndChannel_Handler,
 		},
 		{
 			MethodName: "AddUpload",
@@ -469,6 +501,10 @@ var StoreService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetUploadStatus",
 			Handler:    _StoreService_GetUploadStatus_Handler,
+		},
+		{
+			MethodName: "AddRevision",
+			Handler:    _StoreService_AddRevision_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
