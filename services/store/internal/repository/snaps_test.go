@@ -246,6 +246,7 @@ func TestAddRevision(t *testing.T) {
 		sequenceNumber    uint
 		architectures     []string
 		sha3384           string
+		minioFilePath     string
 		el                *cerror.ErrorList
 		expectError       bool
 		expectedErrorCode string
@@ -260,6 +261,7 @@ func TestAddRevision(t *testing.T) {
 			sequenceNumber: 1,
 			architectures:  []string{"x86_64", "arm64"},
 			sha3384:        "mock-sha3-384",
+			minioFilePath:  "some/path/mock-snap.snap",
 			el:             cerror.NewErrorList(),
 			expectError:    false,
 		},
@@ -273,6 +275,7 @@ func TestAddRevision(t *testing.T) {
 			sequenceNumber:    1,
 			architectures:     []string{"x86_64", "arm64"},
 			sha3384:           "mock-sha3-384",
+			minioFilePath:     "some/path/mock-snap.snap",
 			el:                cerror.NewErrorList(),
 			expectError:       true,
 			expectedErrorCode: cerror.ResourceNotFound,
@@ -287,6 +290,7 @@ func TestAddRevision(t *testing.T) {
 			sequenceNumber:    1,
 			architectures:     []string{"x86_64", "arm64"},
 			sha3384:           "mock-sha3-384",
+			minioFilePath:     "some/path/mock-snap.snap",
 			el:                cerror.NewErrorList(),
 			expectError:       true,
 			expectedErrorCode: cerror.ResourceNotFound,
@@ -301,6 +305,7 @@ func TestAddRevision(t *testing.T) {
 			sequenceNumber:    1,
 			architectures:     []string{"x86_64", "arm64"},
 			sha3384:           "mock-sha3-384",
+			minioFilePath:     "some/path/mock-snap.snap",
 			el:                cerror.NewErrorList(),
 			expectError:       true,
 			expectedErrorCode: cerror.ResourceNotFound,
@@ -308,7 +313,7 @@ func TestAddRevision(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			revision, err := globalRepo.AddRevision(tt.entryId, tt.trackId, tt.channelId, tt.snapName, tt.size, tt.sequenceNumber, tt.architectures, tt.sha3384, tt.el)
+			revision, err := globalRepo.AddRevision(tt.entryId, tt.trackId, tt.channelId, tt.snapName, tt.size, tt.sequenceNumber, tt.architectures, tt.sha3384, tt.minioFilePath, tt.el)
 			if tt.expectError {
 				assert.NotNil(t, err)
 				if err != nil {
@@ -951,8 +956,6 @@ func TestUpdateRevision(t *testing.T) {
 	size := uint64(999)
 	sequenceNumber := uint(1)
 	architectures := pq.StringArray{"mock-arch"}
-	status := "active"
-	version := "1.0.0"
 	tests := []struct {
 		name              string
 		revision          models.SnapRevision
@@ -970,8 +973,6 @@ func TestUpdateRevision(t *testing.T) {
 				Size:                   &size,
 				SequenceNumber:         &sequenceNumber,
 				Architectures:          architectures,
-				Status:                 &status,
-				Version:                &version,
 			},
 			expectError: false,
 		},
@@ -986,8 +987,6 @@ func TestUpdateRevision(t *testing.T) {
 				Size:                   &size,
 				SequenceNumber:         &sequenceNumber,
 				Architectures:          architectures,
-				Status:                 &status,
-				Version:                &version,
 			},
 			expectError:       true,
 			expectedErrorCode: cerror.ResourceNotFound,
@@ -1329,7 +1328,6 @@ func TestGetLatestRevision(t *testing.T) {
 	assert.Nil(t, errObj)
 	assert.NotNil(t, revision)
 
-	assert.Equal(t, "1.0.2", *revision.Version)
 	assert.Equal(t, int64(3), int64(*revision.SequenceNumber))
 	assert.Equal(t, rev3ID, revision.ID)
 }

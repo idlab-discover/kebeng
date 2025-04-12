@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -312,8 +313,6 @@ func (s *StoreLogic) GetRevisions(ctx context.Context, req *proto.GetRevisionsRe
 				Size:                   uint64(*rev.Size),
 				SequenceNumber:         uint64(*rev.SequenceNumber),
 				Architectures:          rev.Architectures,
-				Status:                 pointerToString(rev.Status),
-				Version:                pointerToString(rev.Version),
 				EntryId:                rev.SnapEntryID.String(),
 				TrackId:                rev.SnapTrackID.String(),
 				ChannelId:              rev.SnapChannelID.String(),
@@ -346,8 +345,6 @@ func (s *StoreLogic) GetRevisions(ctx context.Context, req *proto.GetRevisionsRe
 				Size:                   uint64(*rev.Size),
 				SequenceNumber:         uint64(*rev.SequenceNumber),
 				Architectures:          rev.Architectures,
-				Status:                 pointerToString(rev.Status),
-				Version:                pointerToString(rev.Version),
 				EntryId:                rev.SnapEntryID.String(),
 				TrackId:                rev.SnapTrackID.String(),
 				ChannelId:              rev.SnapChannelID.String(),
@@ -408,8 +405,6 @@ func (s *StoreLogic) GetRevisionByNameAndSequence(ctx context.Context, req *prot
 		Size:                   uint64(*rev.Size),
 		SequenceNumber:         uint64(*rev.SequenceNumber),
 		Architectures:          rev.Architectures,
-		Status:                 pointerToString(rev.Status),
-		Version:                pointerToString(rev.Version),
 		EntryId:                rev.SnapEntryID.String(),
 		TrackId:                rev.SnapTrackID.String(),
 		ChannelId:              rev.SnapChannelID.String(),
@@ -507,8 +502,6 @@ func (s *StoreLogic) GetRevisionsByEntryIds(ctx context.Context, req *proto.GetR
 				Size:                   uint64(*rev.Size),
 				SequenceNumber:         uint64(*rev.SequenceNumber),
 				Architectures:          rev.Architectures,
-				Status:                 pointerToString(rev.Status),
-				Version:                pointerToString(rev.Version),
 				EntryId:                rev.SnapEntryID.String(),
 				TrackId:                rev.SnapTrackID.String(),
 				ChannelId:              rev.SnapChannelID.String(),
@@ -549,8 +542,6 @@ func (s *StoreLogic) GetLatestRevision(ctx context.Context, req *proto.GetLatest
 		Size:                   uint64(*revision.Size),
 		SequenceNumber:         uint64(*revision.SequenceNumber),
 		Architectures:          revision.Architectures,
-		Status:                 pointerToString(revision.Status),
-		Version:                pointerToString(revision.Version),
 		EntryId:                revision.SnapEntryID.String(),
 		TrackId:                revision.SnapTrackID.String(),
 		ChannelId:              revision.SnapChannelID.String(),
@@ -872,7 +863,7 @@ func (s *StoreLogic) AddRevision(ctx context.Context, req *proto.AddRevisionRequ
 	}
 
 	// Get entry by snapName
-	entry, cerr := s.repo.GetEntryByName(req.SnapName, []string{models.TRACK, models.CHANNEL}, el)
+	entry, cerr := s.repo.GetEntryByName(req.SnapName, nil, el)
 	if cerr != nil {
 		// Already logged in GetEntryByName (repository)
 		return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
@@ -880,7 +871,7 @@ func (s *StoreLogic) AddRevision(ctx context.Context, req *proto.AddRevisionRequ
 
 	// Check if a revision with the same SHA3_384 already exists -> this means that the uploaded file is the same as one already in the database
 	existingRevision, cerr := s.repo.GetRevisionBySHA(req.Sha3_384, false, el)
-	if cerr != nil {
+	if cerr != nil && cerr.GetCode() != cerror.ResourceNotFound {
 		// Already logged in GetRevisionBySHA (repository)
 		return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
@@ -891,7 +882,7 @@ func (s *StoreLogic) AddRevision(ctx context.Context, req *proto.AddRevisionRequ
 
 	// Get the sequence number of the last revision (if there is any)
 	lastRevision, cerr := s.repo.GetLatestRevisionByEntryId(entry.ID, el)
-	if cerr != nil {
+	if cerr != nil && cerr.GetCode() != cerror.ResourceNotFound {
 		// Already logged in GetLatestRevisionByEntryId (repository)
 		return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
@@ -901,38 +892,48 @@ func (s *StoreLogic) AddRevision(ctx context.Context, req *proto.AddRevisionRequ
 		sequenceNumber = *lastRevision.SequenceNumber + 1
 	}
 
-	// Get the track to which the revision will be associated
-	track, cerr := s.repo.GetTrackByEntryIdAndName(entry.ID, req.Track, el)
-	if cerr != nil {
-		// Already logged in GetTracksByEntryIdAndName (repository)
-		return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
-	}
+	// Get the file path in the object store
+	minioFilePath := s.createObjectStoreFilePath(entry.Name, sequenceNumber)
 
-	// Get the channel to which the revision will be associated
-	channel, cerr := s.repo.GetChannelByTrackIdAndName(entry.ID, req.Channel, el)
-	if cerr != nil {
-		// Already logged in GetChannelByTrackIdAndName (repository)
-		return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
-	}
-	// If the channel is not found, create a new one
-	if channel == nil {
-		channel, cerr = s.repo.AddChannel(entry.ID, track.ID, req.Channel, el)
-		if cerr != nil {
-			// Already logged in AddChannel (repository)
-			return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	// Parse the tracks and channels
+	tracksAndChannels := parseTracksAndChannels(req.TracksAndChannels)
+
+	// Create the revisions for the tracks and channels
+	for track, channels := range tracksAndChannels {
+		for _, channel := range channels {
+			// Get the track to which the revision will be associated
+			trackResp, cerr := s.repo.GetTrackByEntryIdAndName(entry.ID, track, el)
+			if cerr != nil {
+				// Already logged in GetTracksByEntryIdAndName (repository)
+				return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
+			}
+
+			// Get the channel to which the revision will be associated
+			channelResp, cerr := s.repo.GetChannelByTrackIdAndName(trackResp.ID, channel, el)
+			if cerr != nil && cerr.GetCode() != cerror.ResourceNotFound {
+				// Already logged in GetChannelByTrackIdAndName (repository)
+				return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
+			}
+			// If the channel is not found, create a new one
+			if channelResp == nil {
+				channelResp, cerr = s.repo.AddChannel(entry.ID, trackResp.ID, channel, el)
+				if cerr != nil {
+					// Already logged in AddChannel (repository)
+					return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
+				}
+			}
+
+			// Create the revision
+			_, cerr = s.repo.AddRevision(entry.ID, trackResp.ID, channelResp.ID, req.SnapName, req.Size, sequenceNumber, req.Architectures, req.Sha3_384, minioFilePath, el)
+			if cerr != nil {
+				// Already logged in AddRevision (repository)
+				return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
+			}
 		}
 	}
 
-	// Create the revision
-	revision, cerr := s.repo.AddRevision(entry.ID, track.ID, channel.ID, req.SnapName, req.Size, sequenceNumber, req.Architectures, req.Sha3_384, el)
-	if cerr != nil {
-		// Already logged in AddRevision (repository)
-		return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
-	}
-
 	// Move the snap file to the `snap` bucket
-	newFileName := s.createObjectStoreFilePath(entry.Name, track.Name, channel.Name, sequenceNumber)
-	err := s.obs.Move("unscanned", "snaps", req.UnscannedFileName, newFileName)
+	err := s.obs.Move("unscanned", "snaps", req.UnscannedFileName, minioFilePath)
 	if err != nil {
 		logrus.Error(err)
 		el.Add(cerror.InternalServerError, "failed to move snap file from `unscanned` to `snaps` bucket")
@@ -940,9 +941,7 @@ func (s *StoreLogic) AddRevision(ctx context.Context, req *proto.AddRevisionRequ
 	}
 
 	return &proto.AddRevisionResponse{
-		Id:       revision.ID.String(),
-		SnapName: *revision.SnapName,
-		Status:   "success",
+		Status: "success",
 	}, nil
 }
 
@@ -985,8 +984,8 @@ func (s *StoreLogic) retrieveObjectStoreFilePath(revision *models.SnapRevision, 
 	return fmt.Sprintf("%s/%s/%s/%s_%d.snap", entry.Name, track.Name, channel.Name, entry.Name, uintPointerToUint(revision.SequenceNumber)), nil
 }
 
-func (s *StoreLogic) createObjectStoreFilePath(entryName, trackName, channelName string, sequenceNumber uint) string {
-	return fmt.Sprintf("%s/%s/%s/%s_%d.snap", entryName, trackName, channelName, entryName, sequenceNumber)
+func (s *StoreLogic) createObjectStoreFilePath(entryName string, sequenceNumber uint) string {
+	return fmt.Sprintf("%s%s_%d.snap", entryName, entryName, sequenceNumber)
 }
 
 func pointerToString(s *string) string {
@@ -1022,7 +1021,37 @@ func convertRevisionToProto(revision *models.SnapRevision) *proto.GetRevisionRes
 		Size:                   uint64(*revision.Size),
 		SequenceNumber:         uint64(*revision.SequenceNumber),
 		Architectures:          revision.Architectures,
-		Status:                 pointerToString(revision.Status),
-		Version:                pointerToString(revision.Version),
 	}
+}
+
+func parseTracksAndChannels(tracksAndChannels []string) map[string][]string {
+	// Initialize a map to hold the parsed tracks and channels.
+	parsed := make(map[string][]string)
+
+	// If no tracks and channels are provided, default to "latest/stable".
+	if len(tracksAndChannels) == 0 {
+		parsed["latest"] = []string{"stable"}
+		return parsed
+	}
+
+	// Iterate over the provided tracks and channels.
+	for _, tc := range tracksAndChannels {
+		var track, channel string
+
+		// Split the input into track and channel.
+		parts := strings.Split(tc, "/")
+		if len(parts) == 2 {
+			track, channel = parts[0], parts[1]
+		} else if len(parts) == 1 {
+			track, channel = "latest", parts[0]
+		} else {
+			logrus.Warnf("Invalid format for track/channel: %s", tc)
+			continue
+		}
+
+		// Add the channel to the list for the track.
+		parsed[track] = append(parsed[track], channel)
+	}
+
+	return parsed
 }
