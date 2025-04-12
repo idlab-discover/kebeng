@@ -962,10 +962,8 @@ func (s *StoreLogic) GetObjectCustomMetadata(ctx context.Context, req *proto.Get
 		return &proto.GetObjectCustomMetadataResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
 
-	logrus.Debugf("metadata: %v", metadata)
-
 	return &proto.GetObjectCustomMetadataResponse{
-		Sha3_384: metadata["sha3_384"],
+		Metadata: metadata,
 	}, nil
 }
 
