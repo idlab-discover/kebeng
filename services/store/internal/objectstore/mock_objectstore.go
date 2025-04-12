@@ -87,3 +87,8 @@ func (m *MockObjectStore) RemoveObject(ctx context.Context, bucket, object strin
 	args := m.Called(ctx, bucket, object, opts)
 	return args.Error(0)
 }
+
+func (m *MockObjectStore) StatObject(ctx context.Context, bucket, object string, opts minio.GetObjectOptions) (minio.ObjectInfo, error) {
+	args := m.Called(ctx, bucket, object, opts)
+	return args.Get(0).(minio.ObjectInfo), args.Error(1)
+}

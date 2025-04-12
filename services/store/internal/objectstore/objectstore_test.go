@@ -203,3 +203,52 @@ func TestMakeBucketAndAddKey(t *testing.T) {
 	// Assert
 	mockMinio.AssertExpectations(t)
 }
+
+func TestGetObjectMetadata(t *testing.T) {
+	mockMinio := new(objectstore.MockObjectStore)
+	cfg := &config.Config{}
+	store := &objectstore.ObjectStore{MinioClient: mockMinio, Cfg: cfg}
+
+	bucket := "test-bucket"
+	object := "test-object"
+
+	expectedMetadata := map[string]string{
+		"Content-Type": "application/json",
+		"Custom-Key":   "Custom-Value",
+	}
+
+	mockObjectInfo := minio.ObjectInfo{
+		UserMetadata: expectedMetadata,
+	}
+
+	mockMinio.On("StatObject", mock.Anything, bucket, object, mock.Anything).
+		Return(mockObjectInfo, nil)
+
+	metadata, err := store.GetObjectMetadata(bucket, object)
+	assert.NoError(t, err)
+	assert.NotNil(t, metadata)
+	assert.Equal(t, expectedMetadata, metadata)
+
+	mockMinio.AssertExpectations(t)
+}
+
+func TestGetObjectMetadata_Error(t *testing.T) {
+	mockMinio := new(objectstore.MockObjectStore)
+	cfg := &config.Config{}
+	store := &objectstore.ObjectStore{MinioClient: mockMinio, Cfg: cfg}
+
+	bucket := "test-bucket"
+	object := "non-existent-object"
+
+	expectedError := errors.New("object not found")
+
+	mockMinio.On("StatObject", mock.Anything, bucket, object, mock.Anything).
+		Return(minio.ObjectInfo{}, expectedError)
+
+	metadata, err := store.GetObjectMetadata(bucket, object)
+	assert.Error(t, err)
+	assert.Nil(t, metadata)
+	assert.EqualError(t, err, "object not found")
+
+	mockMinio.AssertExpectations(t)
+}
