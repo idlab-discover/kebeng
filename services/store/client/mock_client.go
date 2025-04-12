@@ -123,3 +123,11 @@ func (m *MockStoreClient) AddUpload(snapName string, entryId uuid.UUID, status s
 	}
 	return nil
 }
+
+func (m *MockStoreClient) GetUploadStatus(uploadId string) *proto.GetUploadStatusResponse {
+	args := m.Called(uploadId)
+	if resp, ok := args.Get(0).(*proto.GetUploadStatusResponse); ok {
+		return resp
+	}
+	return nil
+}

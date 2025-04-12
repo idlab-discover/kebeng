@@ -27,6 +27,7 @@ type StoreServiceClient interface {
 	SnapDownload(ctx context.Context, in *SnapDownloadRequest, opts ...grpc.CallOption) (StoreService_SnapDownloadClient, error)
 	UnscannedUpload(ctx context.Context, opts ...grpc.CallOption) (StoreService_UnscannedUploadClient, error)
 	AddUpload(ctx context.Context, in *AddUploadRequest, opts ...grpc.CallOption) (*AddUploadResponse, error)
+	GetUploadStatus(ctx context.Context, in *GetUploadStatusRequest, opts ...grpc.CallOption) (*GetUploadStatusResponse, error)
 }
 
 type storeServiceClient struct {
@@ -166,6 +167,15 @@ func (c *storeServiceClient) AddUpload(ctx context.Context, in *AddUploadRequest
 	return out, nil
 }
 
+func (c *storeServiceClient) GetUploadStatus(ctx context.Context, in *GetUploadStatusRequest, opts ...grpc.CallOption) (*GetUploadStatusResponse, error) {
+	out := new(GetUploadStatusResponse)
+	err := c.cc.Invoke(ctx, "/store.StoreService/GetUploadStatus", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // StoreServiceServer is the server API for StoreService service.
 // All implementations must embed UnimplementedStoreServiceServer
 // for forward compatibility
@@ -179,6 +189,7 @@ type StoreServiceServer interface {
 	SnapDownload(*SnapDownloadRequest, StoreService_SnapDownloadServer) error
 	UnscannedUpload(StoreService_UnscannedUploadServer) error
 	AddUpload(context.Context, *AddUploadRequest) (*AddUploadResponse, error)
+	GetUploadStatus(context.Context, *GetUploadStatusRequest) (*GetUploadStatusResponse, error)
 	mustEmbedUnimplementedStoreServiceServer()
 }
 
@@ -212,6 +223,9 @@ func (UnimplementedStoreServiceServer) UnscannedUpload(StoreService_UnscannedUpl
 }
 func (UnimplementedStoreServiceServer) AddUpload(context.Context, *AddUploadRequest) (*AddUploadResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddUpload not implemented")
+}
+func (UnimplementedStoreServiceServer) GetUploadStatus(context.Context, *GetUploadStatusRequest) (*GetUploadStatusResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUploadStatus not implemented")
 }
 func (UnimplementedStoreServiceServer) mustEmbedUnimplementedStoreServiceServer() {}
 
@@ -399,6 +413,24 @@ func _StoreService_AddUpload_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _StoreService_GetUploadStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUploadStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StoreServiceServer).GetUploadStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/store.StoreService/GetUploadStatus",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StoreServiceServer).GetUploadStatus(ctx, req.(*GetUploadStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // StoreService_ServiceDesc is the grpc.ServiceDesc for StoreService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -433,6 +465,10 @@ var StoreService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AddUpload",
 			Handler:    _StoreService_AddUpload_Handler,
+		},
+		{
+			MethodName: "GetUploadStatus",
+			Handler:    _StoreService_GetUploadStatus_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

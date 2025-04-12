@@ -149,3 +149,11 @@ func (m *MockStoreServiceClient) SnapDownload(ctx context.Context, in *proto.Sna
 	}
 	return args.Get(0).(proto.StoreService_SnapDownloadClient), args.Error(1)
 }
+
+func (m *MockStoreServiceClient) GetUploadStatus(ctx context.Context, in *proto.GetUploadStatusRequest, opts ...grpc.CallOption) (*proto.GetUploadStatusResponse, error) {
+	args := m.Called(ctx, in)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*proto.GetUploadStatusResponse), nil
+}

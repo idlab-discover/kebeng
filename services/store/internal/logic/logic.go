@@ -21,8 +21,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// TEST change
-
 var _ proto.StoreServiceServer = (*StoreLogic)(nil)
 
 type StoreLogic struct {
@@ -813,6 +811,39 @@ func (s *StoreLogic) UnscannedUpload(stream proto.StoreService_UnscannedUploadSe
 	}
 
 	return nil
+}
+
+func (s *StoreLogic) GetUploadStatus(ctx context.Context, req *proto.GetUploadStatusRequest) (*proto.GetUploadStatusResponse, error) {
+	el := cerror.NewErrorList()
+	if req.GetUploadId() == "" {
+		el.Add(cerror.MissingField, "id is required")
+		return &proto.GetUploadStatusResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	id, err := uuid.Parse(req.GetUploadId())
+	if err != nil {
+		logrus.Error(err)
+		el.Add(cerror.InvalidField, "invalid UUID format")
+		return &proto.GetUploadStatusResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	snapUpload, cerr := s.repo.GetUploadById(id)
+	if cerr != nil {
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.GetUploadStatusResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	processed := false
+	if snapUpload.Status == "success" {
+		processed = true
+	}
+
+	return &proto.GetUploadStatusResponse{
+		UploadId:  snapUpload.ID.String(),
+		Processed: processed,
+		Revision:  snapUpload.Revision,
+	}, nil
 }
 
 // ################# HELPERS #################
