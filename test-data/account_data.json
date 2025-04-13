@@ -1,0 +1,39 @@
+{
+  "accounts": [
+    {
+      "id": "acc1",
+      "display_name": "John Doe",
+      "username": "jdoe",
+      "email": "jdoe@example.com"
+    },
+    {
+      "id": "acc2",
+      "display_name": "Jane Roe",
+      "username": "jroe",
+      "email": "jroe@example.com"
+    }
+  ],
+  "keys": [
+    {
+      "id": "key1",
+      "name": "Primary Key",
+      "sha3384": "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefab",
+      "encoded_public_key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A...",
+      "account_id": "acc1"
+    },
+    {
+      "id": "key2",
+      "name": "Secondary Key",
+      "sha3384": "123456781234567812345678123456781234567812345678",
+      "encoded_public_key": "MIICIjANBgkqhkiG9w0BAQEFAAOCAg8A...",
+      "account_id": "acc2"
+    }
+  ],
+  "ssh_keys": [
+    {
+      "id": "ssh_key1",
+      "public_key_string": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQD...",
+      "account_id": "acc1",
+    }
+  ],
+}
