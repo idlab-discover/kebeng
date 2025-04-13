@@ -26,14 +26,14 @@ func TestCreateAccountLogic(t *testing.T) {
 
 	testCases := []struct {
 		name        string
-		req         *proto.CreateAccountRequest
-		mockReturn  interface{} // Either a *models.Account or a cerror.CustomError
+		req         *proto.AddAccountRequest
+		mockReturn  any // Either a *models.Account or a cerror.CustomError
 		expectError bool
 		errorCode   string
 	}{
 		{
 			name: "Successful account creation",
-			req: &proto.CreateAccountRequest{
+			req: &proto.AddAccountRequest{
 				DisplayName: "Alice",
 				Username:    "alice123",
 				Email:       "alice@example.com",
@@ -50,7 +50,7 @@ func TestCreateAccountLogic(t *testing.T) {
 		},
 		{
 			name: "Duplicate username",
-			req: &proto.CreateAccountRequest{
+			req: &proto.AddAccountRequest{
 				DisplayName: "Alice",
 				Username:    "alice123", // Already exists
 				Email:       "alice2@example.com",
@@ -61,7 +61,7 @@ func TestCreateAccountLogic(t *testing.T) {
 		},
 		{
 			name: "Invalid email",
-			req: &proto.CreateAccountRequest{
+			req: &proto.AddAccountRequest{
 				DisplayName: "Alice",
 				Username:    "alicevalid",
 				Email:       "", // Invalid email
@@ -76,15 +76,15 @@ func TestCreateAccountLogic(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Setup mock before calling the function
 			if account, ok := tc.mockReturn.(*models.Account); ok {
-				mockRepo.On("CreateAccount", mock.Anything, mock.Anything).Return(account, nil).Once()
+				mockRepo.On("AddAccount", mock.Anything, mock.Anything).Return(account, nil).Once()
 			} else if err, ok := tc.mockReturn.(*cerror.CustomError); ok {
-				mockRepo.On("CreateAccount", mock.Anything, mock.Anything).Return(nil, err).Once()
+				mockRepo.On("AddAccount", mock.Anything, mock.Anything).Return(nil, err).Once()
 			} else {
 				t.Fatalf("Unexpected type in mockReturn: %T", tc.mockReturn)
 			}
 
 			// Call the service function
-			resp, _ := service.CreateAccount(context.Background(), tc.req)
+			resp, _ := service.AddAccount(context.Background(), tc.req)
 
 			// Assertions
 			if tc.expectError {
@@ -100,7 +100,7 @@ func TestCreateAccountLogic(t *testing.T) {
 			}
 
 			// Ensure the expected method was called
-			mockRepo.AssertCalled(t, "CreateAccount", mock.Anything, mock.Anything)
+			mockRepo.AssertCalled(t, "AddAccount", mock.Anything, mock.Anything)
 		})
 	}
 }
@@ -115,7 +115,7 @@ func TestUpdateAccountLogic(t *testing.T) {
 	testCases := []struct {
 		name        string
 		req         *proto.UpdateAccountRequest
-		mockReturn  interface{} // Either *models.Account or *cerror.CustomError
+		mockReturn  any // Either *models.Account or *cerror.CustomError
 		expectError bool
 		errorCode   string
 	}{
@@ -217,7 +217,7 @@ func TestDeleteAccountLogic(t *testing.T) {
 	testCases := []struct {
 		name        string
 		req         *proto.DeleteAccountRequest
-		mockReturn  interface{} // nil means success, or a *cerror.CustomError for failure.
+		mockReturn  any // nil means success, or a *cerror.CustomError for failure.
 		expectError bool
 		errorCode   string
 	}{
@@ -295,7 +295,7 @@ func TestGetAccountByEmailLogic(t *testing.T) {
 	testCases := []struct {
 		name        string
 		req         *proto.GetAccountByEmailRequest
-		mockReturn  interface{} // Either *models.Account or *cerror.CustomError.
+		mockReturn  any // Either *models.Account or *cerror.CustomError.
 		expectError bool
 		errorCode   string
 	}{
@@ -372,7 +372,7 @@ func TestGetAccountByIDLogic(t *testing.T) {
 	testCases := []struct {
 		name        string
 		req         *proto.GetAccountByIDRequest
-		mockReturn  interface{} // Either *models.Account or *cerror.CustomError
+		mockReturn  any // Either *models.Account or *cerror.CustomError
 		expectError bool
 		errorCode   string
 	}{
@@ -490,7 +490,7 @@ func TestGetAccountsByIdsLogic(t *testing.T) {
 	testCases := []struct {
 		name             string
 		req              *proto.GetAccountsByIdsRequest
-		repoResponses    map[string]interface{} // maps ID string to either *models.Account or *cerror.CustomError
+		repoResponses    map[string]any // maps ID string to either *models.Account or *cerror.CustomError
 		expectError      bool
 		errorCode        string
 		expectedAccounts int // expected number of accounts in the response (if no early error)
@@ -500,7 +500,7 @@ func TestGetAccountsByIdsLogic(t *testing.T) {
 			req: &proto.GetAccountsByIdsRequest{
 				Ids: []string{validID1, validID2},
 			},
-			repoResponses: map[string]interface{}{
+			repoResponses: map[string]any{
 				validID1: validAccount1,
 				validID2: validAccount2,
 			},
@@ -523,7 +523,7 @@ func TestGetAccountsByIdsLogic(t *testing.T) {
 			req: &proto.GetAccountsByIdsRequest{
 				Ids: []string{validID1, validID2},
 			},
-			repoResponses: map[string]interface{}{
+			repoResponses: map[string]any{
 				validID1: validAccount1,
 				validID2: cerror.NewCustomError(cerror.ResourceNotFound, "account not found"),
 			},
@@ -602,7 +602,7 @@ func TestGetAccountByUsernameLogic(t *testing.T) {
 	testCases := []struct {
 		name        string
 		req         *proto.GetAccountByUsernameRequest
-		mockReturn  interface{} // Either a *models.Account or a *cerror.CustomError
+		mockReturn  any // Either a *models.Account or a *cerror.CustomError
 		expectError bool
 		errorCode   string
 	}{
@@ -676,7 +676,7 @@ func TestAddKeyLogic(t *testing.T) {
 	testCases := []struct {
 		name        string
 		req         *proto.AddKeyRequest
-		mockReturn  interface{} // Either a *models.Key or a *cerror.CustomError
+		mockReturn  any // Either a *models.Key or a *cerror.CustomError
 		expectError bool
 		errorCode   string
 	}{
@@ -753,7 +753,7 @@ func TestGetKeyLogic(t *testing.T) {
 	testCases := []struct {
 		name        string
 		req         *proto.GetKeyBySHA3384Request
-		mockReturn  interface{} // Either a *models.Key or a *cerror.CustomError
+		mockReturn  any // Either a *models.Key or a *cerror.CustomError
 		expectError bool
 		errorCode   string
 	}{
@@ -846,7 +846,7 @@ func TestGetKeysByAccountIdLogic(t *testing.T) {
 	testCases := []struct {
 		name             string
 		req              *proto.GetKeysByAccountIdRequest
-		repoReturn       interface{} // Either []*models.Key or *cerror.CustomError
+		repoReturn       any // Either []*models.Key or *cerror.CustomError
 		expectError      bool
 		errorCode        string
 		expectedKeyCount int
@@ -939,7 +939,7 @@ func TestPatchAccountByEmail(t *testing.T) {
 		name                   string
 		req                    *proto.PatchAccountByEmailRequest
 		originalAccount        *models.Account
-		updateAccountReturn    interface{} // Either *models.Account or *cerror.CustomError
+		updateAccountReturn    any // Either *models.Account or *cerror.CustomError
 		expectError            bool
 		errorCode              string
 		expectedShortNamespace string
