@@ -30,6 +30,7 @@ type StoreClientInterface interface {
 	GetUploadStatus(uploadId string) *proto.GetUploadStatusResponse
 	AddRevision(snapName string, sha3384 string, size uint64, architectures []string, tracksAndChannels []string, unscannedFileName string) *proto.AddRevisionResponse
 	GetObjectCustomMetadata(bucket string, objectKey string) *proto.GetObjectCustomMetadataResponse
+	UpdateUploadStatus(uploadId string, status string, el *cerror.ErrorList) *proto.UpdateUploadStatusResponse
 }
 
 var _ StoreClientInterface = (*StoreClient)(nil)
