@@ -93,6 +93,9 @@ func (c *AssertionClient) AddAccountKeyAssertion(publicKeySha3_384 string, accou
 	if strings.Contains(name, " ") || strings.Contains(name, "_") {
 		el.Add(cerror.InvalidField, fmt.Sprintf("name cannot contain spaces or _ in name: '%s'", name))
 	}
+	if strings.ToLower(name) != name {
+		el.Add(cerror.InvalidField, fmt.Sprintf("name must be lowercase: '%s'", name))
+	}
 	if since == nil {
 		el.Add(cerror.InvalidField, "since is required")
 	}
