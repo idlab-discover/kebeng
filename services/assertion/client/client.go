@@ -91,7 +91,7 @@ func (c *AssertionClient) AddAccountKeyAssertion(publicKeySha3_384 string, accou
 	}
 	// doesn't allow spaces
 	if !strings.Contains(name, " ") {
-		el.Add(cerror.InvalidField, "name cannot contain spaces")
+		el.Add(cerror.InvalidField, fmt.Sprintf("name cannot contain spaces in name: %s", name))
 	}
 	if since == nil {
 		el.Add(cerror.InvalidField, "since is required")
