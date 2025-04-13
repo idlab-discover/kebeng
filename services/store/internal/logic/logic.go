@@ -879,7 +879,7 @@ func (s *StoreLogic) UpdateUploadStatus(ctx context.Context, req *proto.UpdateUp
 		}
 	}
 
-	cerr := s.repo.UpdateUploadStatus(id, req.Status, el)
+	cerr := s.repo.UpdateUploadStatus(id, req.Status, req.Revision, el)
 	if cerr != nil {
 		// Already logged in UpdateUploadStatus (repository)
 		return &proto.UpdateUploadStatusResponse{Errors: el.ConvertToProtoErrorList()}, nil

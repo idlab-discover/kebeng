@@ -149,8 +149,8 @@ func (m *MockStoreClient) GetObjectCustomMetadata(bucket string, objectKey strin
 	return nil
 }
 
-func (m *MockStoreClient) UpdateUploadStatus(uploadId string, status string, el *cerror.ErrorList) *proto.UpdateUploadStatusResponse {
-	args := m.Called(uploadId, status, el)
+func (m *MockStoreClient) UpdateUploadStatus(uploadId string, status string, revision uint64, el *cerror.ErrorList) *proto.UpdateUploadStatusResponse {
+	args := m.Called(uploadId, status, revision, el)
 	if resp, ok := args.Get(0).(*proto.UpdateUploadStatusResponse); ok {
 		return resp
 	}

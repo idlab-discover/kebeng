@@ -48,7 +48,7 @@ type ISnapsRepository interface {
 	// UPDATE
 	ReleaseSnap(channels []string, snapEntryId uuid.UUID, revisionId uuid.UUID) *cerror.CustomError
 	UpdateRevision(revision *models.SnapRevision, revisionBytes *[]byte) (*models.SnapRevision, *cerror.CustomError)
-	UpdateUploadStatus(uploadId uuid.UUID, status string, el *cerror.ErrorList) *cerror.CustomError
+	UpdateUploadStatus(uploadId uuid.UUID, status string, revision uint64, el *cerror.ErrorList) *cerror.CustomError
 }
 
 type SnapsRepository struct {
@@ -636,18 +636,18 @@ func (sp *SnapsRepository) UpdateRevision(revision *models.SnapRevision, revisio
 	return &newRevision, nil
 }
 
-func (sp *SnapsRepository) UpdateUploadStatus(uploadId uuid.UUID, status string, el *cerror.ErrorList) *cerror.CustomError {
+func (sp *SnapsRepository) UpdateUploadStatus(uploadId uuid.UUID, status string, revision uint64, el *cerror.ErrorList) *cerror.CustomError {
 	upload := models.SnapUpload{
 		ID:     uploadId,
 		Errors: el,
 	}
 	query := `
 		UPDATE upload
-		SET status = $1, errors = $2
-		WHERE id = $3
+		SET status = $1, revision = $2, errors = $3
+		WHERE id = $4
 		RETURNING *
 	`
-	err := sp.db.Get(&upload, query, status, upload.Errors, uploadId)
+	err := sp.db.Get(&upload, query, status, revision, upload.Errors, uploadId)
 	if err != nil {
 		logrus.Error(err)
 		el.AddCustomError(cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("resource not found: upload with id = '%s'", uploadId.String())))

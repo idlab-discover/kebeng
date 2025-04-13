@@ -30,7 +30,7 @@ type StoreClientInterface interface {
 	GetUploadStatus(uploadId string) *proto.GetUploadStatusResponse
 	AddRevision(snapName string, sha3384 string, size uint64, architectures []string, tracksAndChannels []string, unscannedFileName string) *proto.AddRevisionResponse
 	GetObjectCustomMetadata(bucket string, objectKey string) *proto.GetObjectCustomMetadataResponse
-	UpdateUploadStatus(uploadId string, status string, el *cerror.ErrorList) *proto.UpdateUploadStatusResponse
+	UpdateUploadStatus(uploadId string, status string, revision uint64, el *cerror.ErrorList) *proto.UpdateUploadStatusResponse
 }
 
 var _ StoreClientInterface = (*StoreClient)(nil)
@@ -336,10 +336,11 @@ func (c *StoreClient) GetUploadStatus(uploadId string) *proto.GetUploadStatusRes
 	return resp
 }
 
-func (c *StoreClient) UpdateUploadStatus(uploadId string, status string, el *cerror.ErrorList) *proto.UpdateUploadStatusResponse {
+func (c *StoreClient) UpdateUploadStatus(uploadId string, status string, revision uint64, el *cerror.ErrorList) *proto.UpdateUploadStatusResponse {
 	req := &proto.UpdateUploadStatusRequest{
 		UploadId: uploadId,
 		Status:   status,
+		Revision: revision,
 		Errors:   el.ConvertToProtoErrorList(),
 	}
 
