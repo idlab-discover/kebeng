@@ -112,8 +112,14 @@ func (s *AssertionService) AddAccountKeyAssertion(ctx context.Context, req *prot
 			Errors: el.ConvertToProtoErrorList(),
 		}, nil
 	}
-	sequenceNumber, cerr := s.repo.GetLatestAccountKeyAssertion(el, parsedAccountId)
-	if cerr != nil {
+	var sequenceNumber uint32
+	latestAccountKeyAssertion, cerr := s.repo.GetLatestAccountKeyAssertion(el, parsedAccountId)
+	if cerr == nil {
+		sequenceNumber = latestAccountKeyAssertion.RevisionSequenceNumber
+	} else if cerr != nil && cerr.GetCode() == cerror.ResourceNotFound {
+		// this is ok, we just need to create the first assertion
+		sequenceNumber = 1
+	} else if cerr != nil {
 		logrus.Errorf("failed to get latest sequence number: %v", cerr)
 		el.Add(cerror.Invalid, fmt.Sprintf("failed to get latest sequence number: %s", cerr))
 		return &proto.AccountKeyAssertionResponse{
