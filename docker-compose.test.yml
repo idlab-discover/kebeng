@@ -13,7 +13,7 @@ services:
       - account_db
     volumes:
       - ./services/gateway/config.yaml:/app/config.yaml  # config file
-      - ./test-data/store:/app/test-data 
+      - ./test-data:/app/test-data 
     environment:
       - CONFIG_FILE_PATH=/app/config.yaml
       - TEST_MODE=1
