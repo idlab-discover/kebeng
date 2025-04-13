@@ -65,9 +65,10 @@ func (c *AccountClient) Close() {
 
 func (c *AccountClient) AddAccount(displayName, username, email, hashedPassword string) *proto.AccountResponse {
 	req := &proto.AddAccountRequest{
-		DisplayName: displayName,
-		Username:    username,
-		Email:       email,
+		DisplayName:    displayName,
+		Username:       username,
+		Email:          email,
+		HashedPassword: hashedPassword,
 	}
 
 	resp, err := c.client.AddAccount(context.Background(), req)
