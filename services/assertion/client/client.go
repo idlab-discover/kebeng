@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -90,6 +91,8 @@ func (c *AssertionClient) AddAccountKeyAssertion(publicKeySha3_384 string, accou
 	}
 	// doesn't allow spaces
 	if !strings.Contains(name, " ") {
+		el.Add(cerror.InvalidField, "name cannot contain spaces")
+	}
 	if since == nil {
 		el.Add(cerror.InvalidField, "since is required")
 	}
@@ -125,7 +128,7 @@ func (c *AssertionClient) AddAccountKeyAssertion(publicKeySha3_384 string, accou
 	return resp
 }
 
-func (c *AssertionClient) AddSnapRevisionAssertion(snapSha3_384 string, developerId string, snapEntryId string, snapRevisionSequenceNumber uint32, snapSize uint64, timestamp *time.Time) *proto.SnapRevisionAssertionResponse {
+func (c *AssertionClient) AddSnapRevisionAssertion(snapSha3_384, developerId, snapEntryId string, snapRevisionSequenceNumber uint32, snapSize uint64, timestamp *time.Time) *proto.SnapRevisionAssertionResponse {
 	el := cerror.NewErrorList()
 
 	// check input
