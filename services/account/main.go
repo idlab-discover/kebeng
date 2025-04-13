@@ -33,10 +33,7 @@ func main() {
 
 	// if in test mode, load test data
 	if cfg.TestMode {
-		err := database.LoadTestData(cfg.TestDataFilePath, db, repo)
-		if err != nil {
-			logrus.Fatalf("Failed to load test data: %v", err)
-		}
+		logrus.Infof("Test mode enabled")
 	}
 
 	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", cfg.GRPCHost, cfg.GRPCPort))
