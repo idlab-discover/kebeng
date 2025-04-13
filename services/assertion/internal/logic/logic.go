@@ -118,7 +118,8 @@ func (s *AssertionService) AddAccountKeyAssertion(ctx context.Context, req *prot
 		sequenceNumber = latestAccountKeyAssertion.RevisionSequenceNumber
 	} else if cerr != nil && cerr.GetCode() == cerror.ResourceNotFound {
 		// this is ok, we just need to create the first assertion
-		sequenceNumber = 1
+		// we are adding 1 later so we set it to 0
+		sequenceNumber = 0
 	} else if cerr != nil {
 		logrus.Errorf("failed to get latest sequence number: %v", cerr)
 		el.Add(cerror.Invalid, fmt.Sprintf("failed to get latest sequence number: %s", cerr))
@@ -155,7 +156,7 @@ func (s *AssertionService) AddAccountKeyAssertion(ctx context.Context, req *prot
 		req.GetPublicKeySha3_384(),
 		s.cfg.RootKey.PublicKey().ID(), // this is the sign_key_SHA3_384
 		req.GetName(),
-		sequenceNumber.RevisionSequenceNumber+1,
+		sequenceNumber,
 		parsedAccountId,
 		req.GetSince().AsTime(),
 		req.GetUntil().AsTime(),
