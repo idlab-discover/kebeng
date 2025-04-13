@@ -37,6 +37,7 @@ type IObjectStore interface {
 	MakeBucketAndAddKey(bucketName string, keyPath string, keyName string)
 	Move(sourceBucket, destinationBucket, objectName string, newObjectName string) error
 	GetObjectCustomMetadata(bucket string, objectName string) (map[string]string, error)
+	DeleteFileFromBucket(bucket string, filePath string) error
 }
 
 type ObjectStore struct {
@@ -212,4 +213,25 @@ func (obs *ObjectStore) MakeBucketAndAddKey(bucketName string, keyPath string, k
 	if err != nil {
 		panic(err)
 	}
+}
+
+func (obs *ObjectStore) DeleteFileFromBucket(bucket string, filePath string) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	exists, err := obs.MinioClient.BucketExists(ctx, bucket)
+	if err != nil {
+		logrus.Error(err)
+		return err
+	}
+
+	if exists {
+		err = obs.MinioClient.RemoveObject(ctx, bucket, filePath, minio.RemoveObjectOptions{})
+		if err != nil {
+			logrus.Error(err)
+			return err
+		}
+	}
+
+	return nil
 }

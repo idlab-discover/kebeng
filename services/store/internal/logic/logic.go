@@ -913,6 +913,8 @@ func (s *StoreLogic) AddRevision(ctx context.Context, req *proto.AddRevisionRequ
 	}
 	if existingRevision != nil {
 		el.Add(cerror.AlreadyRegistered, fmt.Sprintf("revision with the same SHA3_384 already exists for %s", req.SnapName))
+		// If revision already exists, we don't need to move the file to the `snaps` bucket and we can delete the file from the `unscanned` bucket
+		s.obs.DeleteFileFromBucket("unscanned", req.UnscannedFileName)
 		return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
 
