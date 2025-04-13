@@ -63,7 +63,7 @@ func LoadConfig() (*Config, error) {
 	}
 
 	if err := cfg.checkConfig(); err != nil {
-		return nil, fmt.Errorf("configuration validation failed: %v", err)
+		return nil, fmt.Errorf("config validation failed: %v", err)
 	}
 
 	return cfg, nil
@@ -96,9 +96,9 @@ func (c *Config) checkConfig() error {
 		errs = append(errs, "assertion_service_port must be a positive integer")
 	}
 
-	// Macaroon configuration
+	// Macaroon config
 	if c.MacaroonConfig == nil {
-		errs = append(errs, "macaroon configuration is required")
+		errs = append(errs, "macaroon config is required")
 	} else {
 		if c.MacaroonConfig.RootKey == "" {
 			errs = append(errs, "macaroon.root_key is required")
