@@ -5,7 +5,6 @@ import (
 	"context"
 	"io"
 
-	"github.com/idlab-discover/kebeng/services/store/internal/repository"
 	"github.com/minio/minio-go/v7"
 	"github.com/stretchr/testify/mock"
 )
@@ -23,11 +22,6 @@ func (m *MockObjectStore) GetSnapFileReader(ctx context.Context, filePath string
 		return args.Get(0).(io.ReadCloser), nil
 	}
 	return nil, args.Get(1).(error)
-}
-
-// LoadTestData implements IObjectStore.
-func (m *MockObjectStore) LoadTestData(client *minio.Client, repo repository.ISnapsRepository, minioPath string) error {
-	panic("unimplemented")
 }
 
 // SaveFileToBucket implements IObjectStore.
