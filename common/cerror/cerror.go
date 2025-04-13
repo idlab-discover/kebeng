@@ -211,6 +211,15 @@ func (el *ErrorList) Scan(value interface{}) error {
 	return json.Unmarshal(bytes, el)
 }
 
+func (el *ErrorList) RemoveError(cerr *CustomError) {
+	for i, err := range *el {
+		if err.Code == cerr.Code && err.Message == cerr.Message {
+			*el = append((*el)[:i], (*el)[i+1:]...)
+			break
+		}
+	}
+}
+
 func (el *ErrorList) GetHTTPStatus() int {
 	switch el.getCode() {
 	case AlreadyClaimed:
