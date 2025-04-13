@@ -51,14 +51,8 @@ github.com/hashicorp/go-multierror v1.1.1 h1:H5DkEtf6CXdFp0N0Em5UCwQpXMWke8IA0+l
 github.com/hashicorp/go-multierror v1.1.1/go.mod h1:iw975J/qwKPdAO1clOe2L8331t/9/fmwbPZ6JB6eMoM=
 github.com/hashicorp/hcl v1.0.0 h1:0Anlzjpi4vEasTeNFn2mLJgTSwt0+6sfsiTG8qcWGx4=
 github.com/hashicorp/hcl v1.0.0/go.mod h1:E5yfLk+7swimpb2L/Alb/PJmXilQ/rhwaUYs4T20WEQ=
-github.com/idlab-discover/kebeng v0.0.0-20250318181307-e419463f7679 h1:ytLoH3WqJMKI+iArbHMGKuiyZIf2CT/XcrsA0wdBSzw=
-github.com/idlab-discover/kebeng v0.0.0-20250318181307-e419463f7679/go.mod h1:RxNtr4c3l8TdF6ixmdz/4rxPhocVlSpn0M55f0cV3Fs=
 github.com/idlab-discover/kebeng v0.0.0-20250410133406-b4bb821c59d8 h1:SoSznVd5vp9khxBrUhDWFlNtvMNE9Qjv+K7SVIyt9To=
 github.com/idlab-discover/kebeng v0.0.0-20250410133406-b4bb821c59d8/go.mod h1:oL4wiGQMlCIATI2/LRjQcGpaD4XojLfC0YxeKHj1FLs=
-github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250318141246-77a544f56023 h1:pL76A+DTYUZlKVab3El0+5vuaMVPhHEKIQpsR2CsIW8=
-github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250318141246-77a544f56023/go.mod h1:D8cIQJqmEKaXzVtxtYBPLLoAuzDdfBqbXh/l1czweOY=
-github.com/idlab-discover/kebeng/services/store v0.0.0-20250318141246-77a544f56023 h1:0IgSljfB+zeGPJGfVFBXyry8BSd8ZB3KQoKrNdJBPxQ=
-github.com/idlab-discover/kebeng/services/store v0.0.0-20250318141246-77a544f56023/go.mod h1:xVDyFue0/4t84xg9yyB43XpL9Gpa7XHQ+iI//9lpi0I=
 github.com/jmoiron/sqlx v1.4.0 h1:1PLqN7S1UYp5t4SrVVnt4nUVNemrDAtxlulVe+Qgm3o=
 github.com/jmoiron/sqlx v1.4.0/go.mod h1:ZrZ7UsYB/weZdl2Bxg6jCRO9c3YHl8r3ahlKmRT4JLY=
 github.com/kr/pretty v0.2.1/go.mod h1:ipq/a2n7PKx3OHsz4KJII5eveXtPO4qwEXGdVfWzfnI=
