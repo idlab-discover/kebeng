@@ -223,7 +223,6 @@ func TestGetObjectCustomMetadata(t *testing.T) {
 
 	expectedMetadata := &models.Metadata{
 		Sha3_384: &sha3_384,
-
 	}
 
 	mockMinio.On("StatObject", mock.Anything, bucket, object, mock.Anything).
@@ -273,8 +272,8 @@ func TestDeleteFileFromBucket(t *testing.T) {
 	mockMinio.On("BucketExists", mock.Anything, bucket).Return(true, nil)
 	mockMinio.On("RemoveObject", mock.Anything, bucket, object, mock.Anything).Return(nil)
 
-	err := store.DeleteFileFromBucket(bucket, object)
-	assert.NoError(t, err)
+	cerr := store.DeleteFileFromBucket(bucket, object)
+	assert.Nil(t, cerr)
 
 	mockMinio.AssertExpectations(t)
 }
@@ -295,9 +294,9 @@ func TestDeleteFileFromBucket_Error(t *testing.T) {
 	mockMinio.On("BucketExists", mock.Anything, bucket).Return(true, nil)
 	mockMinio.On("RemoveObject", mock.Anything, bucket, object, mock.Anything).Return(expectedError)
 
-	err := store.DeleteFileFromBucket(bucket, object)
-	assert.Error(t, err)
-	assert.EqualError(t, err, "object not found")
+	cerr := store.DeleteFileFromBucket(bucket, object)
+	assert.NotNil(t, cerr)
+	assert.Equal(t, cerr.GetMessage(), "object not found")
 
 	mockMinio.AssertExpectations(t)
 }
@@ -318,9 +317,9 @@ func TestDeleteFileFromBucket_BucketDoesNotExist(t *testing.T) {
 
 	mockMinio.On("BucketExists", mock.Anything, bucket).Return(false, expectedError)
 
-	err := store.DeleteFileFromBucket(bucket, object)
-	assert.Error(t, err)
-	assert.EqualError(t, err, "bucket does not exist")
+	cerr := store.DeleteFileFromBucket(bucket, object)
+	assert.NotNil(t, cerr)
+	assert.Equal(t, cerr.GetMessage(), "bucket does not exist")
 
 	mockMinio.AssertExpectations(t)
 }
