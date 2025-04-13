@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
+	"github.com/idlab-discover/kebeng/services/store/internal/models"
 	"github.com/idlab-discover/kebeng/services/store/internal/objectstore"
 	"github.com/minio/minio-go/v7"
 	"github.com/stretchr/testify/assert"
@@ -212,13 +213,17 @@ func TestGetObjectCustomMetadata(t *testing.T) {
 	bucket := "test-bucket"
 	object := "test-object"
 
-	expectedMetadata := map[string]string{
-		"Content-Type": "application/json",
-		"Custom-Key":   "Custom-Value",
+	mockObjectInfo := minio.ObjectInfo{
+		UserMetadata: map[string]string{
+			"sha3_384": "",
+		},
 	}
 
-	mockObjectInfo := minio.ObjectInfo{
-		UserMetadata: expectedMetadata,
+	sha3_384 := mockObjectInfo.UserMetadata["sha3_384"]
+
+	expectedMetadata := &models.Metadata{
+		Sha3_384: &sha3_384,
+
 	}
 
 	mockMinio.On("StatObject", mock.Anything, bucket, object, mock.Anything).

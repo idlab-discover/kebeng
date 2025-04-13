@@ -336,6 +336,9 @@ func (c *StoreClient) GetUploadStatus(uploadId string) *proto.GetUploadStatusRes
 	return resp
 }
 
+// UpdateUploadStatus updates the status of an upload
+// It takes the upload ID, status, revision number, and a list of errors
+// Errors are stored in the database and are retrieved later by Snapcraft to check if any errors occurred during the upload
 func (c *StoreClient) UpdateUploadStatus(uploadId string, status string, revision uint64, el *cerror.ErrorList) *proto.UpdateUploadStatusResponse {
 	req := &proto.UpdateUploadStatusRequest{
 		UploadId: uploadId,
