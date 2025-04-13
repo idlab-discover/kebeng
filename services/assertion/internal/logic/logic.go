@@ -49,10 +49,26 @@ func (s *AssertionService) AddSnapRevisionAssertion(ctx context.Context, req *pr
 		el.Add(cerror.Invalid, fmt.Sprintf("invalid snap entry id could not parse to uuid: %s", err))
 	}
 
-	signature, cerr := s.signAssertion(el, req, s.cfg.RootKey.PublicKey().ID())
-	if cerr != nil {
-		return nil, fmt.Errorf("failed to sign assertion: %v", cerr)
+	headers := map[string]any{
+		"authority-id":  s.cfg.AuthorityID,
+		"snap-sha3-384": req.GetSnapSha3_384(),
+		"developer-id":  req.GetDeveloperId(),
+		"snap-id":       req.GetSnapEntryId(),
+		"snap-revision": req.GetSnapRevisionSequenceNumber(),
+		"snap-size":     req.GetSnapSize(),
+		"timestamp":     req.GetTimestamp(),
+		// The 'sign-key-sha3-384' header is generated during signing.
 	}
+	signedAssertion, err := s.assertionDB.Sign(asserts.SnapRevisionType, headers, nil, s.cfg.RootKey.PublicKey().ID())
+	if err != nil {
+		logrus.Errorf("failed to sign assertion: %v", err)
+		el.Add(cerror.Invalid, fmt.Sprintf("failed to sign assertion: %s", err))
+		return &proto.SnapRevisionAssertionResponse{
+			Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	signature := string(asserts.Encode(signedAssertion))
+
 	snapRevisionAssertion, cerr := s.repo.AddSnapRevisionAssertion(
 		el,
 		s.cfg.AuthorityID,
@@ -91,19 +107,48 @@ func (s *AssertionService) AddAccountKeyAssertion(ctx context.Context, req *prot
 	if err != nil {
 		logrus.Errorf("failed to parse account id: %s", err)
 		el.Add(cerror.Invalid, fmt.Sprintf("invalid account id could not parse to uuid: %s", err))
+		return &proto.AccountKeyAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}, nil
+	}
+	sequenceNumber, cerr := s.repo.GetLatestAccountKeyAssertion(el, parsedAccountId)
+	if cerr != nil {
+		logrus.Errorf("failed to get latest sequence number: %v", cerr)
+		el.Add(cerror.Invalid, fmt.Sprintf("failed to get latest sequence number: %s", cerr))
+		return &proto.AccountKeyAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}, nil
 	}
 
-	signature, cerr := s.signAssertion(el, req, s.cfg.RootKey.PublicKey().ID())
-	if cerr != nil {
-		return nil, fmt.Errorf("failed to sign assertion: %v", cerr)
+	headers := map[string]any{
+		"authority-id":        s.cfg.AuthorityID,
+		"revision":            sequenceNumber,
+		"public-key-sha3-384": req.GetPublicKeySha3_384(),
+		"account-id":          req.GetAccountId(),
+		"name":                req.GetName(),
+		"since":               req.GetSince(),
+		"until":               req.GetSince().AsTime().Add(time.Duration(365 * 24 * time.Hour)), // a key is valid for 1 year
+		// The 'sign-key-sha3-384' header is generated during signing.
 	}
+	body := []byte(req.Body)
+	signedAssertion, err := s.assertionDB.Sign(asserts.AccountKeyType, headers, body, s.cfg.RootKey.PublicKey().ID())
+	if err != nil {
+		logrus.Errorf("failed to sign account key assertion: %v", err)
+		el.Add(cerror.Invalid, fmt.Sprintf("failed to sign account key assertion: %s", err))
+		return &proto.AccountKeyAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}, nil
+	}
+
+	signature := string(asserts.Encode(signedAssertion))
+
 	accountKeyAssertion, cerr := s.repo.AddAccountKeyAssertion(
 		el,
 		s.cfg.AuthorityID,
 		req.GetPublicKeySha3_384(),
 		s.cfg.RootKey.PublicKey().ID(), // this is the sign_key_SHA3_384
 		req.GetName(),
-		req.GetSnapRevisionSequenceNumber(),
+		sequenceNumber.RevisionSequenceNumber+1,
 		parsedAccountId,
 		req.GetSince().AsTime(),
 		req.GetUntil().AsTime(),
@@ -117,18 +162,18 @@ func (s *AssertionService) AddAccountKeyAssertion(ctx context.Context, req *prot
 	}
 
 	return &proto.AccountKeyAssertionResponse{
-		AuthorityId:                accountKeyAssertion.AuthorityID,
-		SignKeySha3_384:            accountKeyAssertion.SignKeySHA3_384,
-		AccountId:                  accountKeyAssertion.AccountID.String(),
-		Name:                       accountKeyAssertion.Name,
-		SnapRevisionSequenceNumber: accountKeyAssertion.SnapRevisionSequenceNumber,
-		Since:                      timestamppb.New(accountKeyAssertion.Since),
-		Until:                      timestamppb.New(accountKeyAssertion.Since.Add(time.Duration(365 * 24 * time.Hour))), // a key is valid for 1 year
-		Body:                       accountKeyAssertion.Body,
-		BodyLength:                 accountKeyAssertion.BodyLength,
-		Signature:                  signature,
-		Type:                       accountKeyAssertion.Type,
-		Errors:                     el.ConvertToProtoErrorList(),
+		AuthorityId:            accountKeyAssertion.AuthorityID,
+		SignKeySha3_384:        accountKeyAssertion.SignKeySHA3_384,
+		AccountId:              accountKeyAssertion.AccountID.String(),
+		Name:                   accountKeyAssertion.Name,
+		RevisionSequenceNumber: accountKeyAssertion.RevisionSequenceNumber,
+		Since:                  timestamppb.New(accountKeyAssertion.Since),
+		Until:                  timestamppb.New(accountKeyAssertion.Since.Add(time.Duration(365 * 24 * time.Hour))), // a key is valid for 1 year
+		Body:                   accountKeyAssertion.Body,
+		BodyLength:             accountKeyAssertion.BodyLength,
+		Signature:              signature,
+		Type:                   accountKeyAssertion.Type,
+		Errors:                 el.ConvertToProtoErrorList(),
 	}, nil
 }
 
@@ -175,77 +220,20 @@ func (s *AssertionService) GetAccountKeyAssertionByName(ctx context.Context, req
 	}
 
 	return &proto.AccountKeyAssertionResponse{
-		AuthorityId:                accountKeyAssertion.AuthorityID,
-		SignKeySha3_384:            accountKeyAssertion.SignKeySHA3_384,
-		AccountId:                  accountKeyAssertion.AccountID.String(),
-		Name:                       accountKeyAssertion.Name,
-		SnapRevisionSequenceNumber: accountKeyAssertion.SnapRevisionSequenceNumber,
-		Since:                      timestamppb.New(accountKeyAssertion.Since),
-		Until:                      timestamppb.New(accountKeyAssertion.Until),
-		Body:                       accountKeyAssertion.Body,
-		BodyLength:                 accountKeyAssertion.BodyLength,
-		Signature:                  accountKeyAssertion.Signature,
-		Type:                       accountKeyAssertion.Type,
-		Errors:                     el.ConvertToProtoErrorList(),
+		AuthorityId:            accountKeyAssertion.AuthorityID,
+		SignKeySha3_384:        accountKeyAssertion.SignKeySHA3_384,
+		AccountId:              accountKeyAssertion.AccountID.String(),
+		Name:                   accountKeyAssertion.Name,
+		RevisionSequenceNumber: accountKeyAssertion.RevisionSequenceNumber,
+		Since:                  timestamppb.New(accountKeyAssertion.Since),
+		Until:                  timestamppb.New(accountKeyAssertion.Until),
+		Body:                   accountKeyAssertion.Body,
+		BodyLength:             accountKeyAssertion.BodyLength,
+		Signature:              accountKeyAssertion.Signature,
+		Type:                   accountKeyAssertion.Type,
+		Errors:                 el.ConvertToProtoErrorList(),
 	}, nil
 }
-
-// ##################### HELPER FUNCTIONS #####################
-
-func (s *AssertionService) signAssertion(el *cerror.ErrorList, assertionHeaders any, signKeyID string) (string, *cerror.CustomError) {
-	var headers map[string]any
-	var err error
-	var signedAssertion asserts.Assertion
-
-	switch a := assertionHeaders.(type) {
-	case *proto.AddSnapRevisionAssertionRequest:
-		headers = map[string]any{
-			"authority-id":  s.cfg.AuthorityID,
-			"snap-sha3-384": a.GetSnapSha3_384(),
-			"developer-id":  a.GetDeveloperId(),
-			"snap-id":       a.GetSnapEntryId(),
-			"snap-revision": a.GetSnapRevisionSequenceNumber(),
-			"snap-size":     a.GetSnapSize(),
-			"timestamp":     a.GetTimestamp(),
-			// The 'sign-key-sha3-384' header is generated during signing.
-		}
-		signedAssertion, err = s.assertionDB.Sign(asserts.SnapRevisionType, headers, nil, signKeyID)
-		if err != nil {
-			logrus.Errorf("failed to sign assertion: %v", err)
-			el.Add(cerror.Invalid, fmt.Sprintf("failed to sign assertion: %s", err))
-			return "", cerror.NewCustomError(cerror.Invalid, fmt.Sprintf("failed to sign assertion: %s", err))
-		}
-	case *proto.AddAccountKeyAssertionRequest:
-		headers = map[string]any{
-			"authority-id":        s.cfg.AuthorityID,
-			"revision":            a.GetSnapRevisionSequenceNumber(),
-			"public-key-sha3-384": a.GetPublicKeySha3_384(),
-			"account-id":          a.GetAccountId(),
-			"name":                a.GetName(),
-			"since":               a.GetSince(),
-			"until":               a.GetSince().AsTime().Add(time.Duration(365 * 24 * time.Hour)), // a key is valid for 1 year
-			// The 'sign-key-sha3-384' header is generated during signing.
-		}
-		body := []byte(a.Body)
-		signedAssertion, err = s.assertionDB.Sign(asserts.AccountKeyType, headers, body, signKeyID)
-		if err != nil {
-			logrus.Errorf("failed to sign account key assertion: %v", err)
-			el.Add(cerror.Invalid, fmt.Sprintf("failed to sign account key assertion: %s", err))
-			return "", cerror.NewCustomError(cerror.Invalid, fmt.Sprintf("failed to sign account key assertion: %s", err))
-		}
-	default:
-		err := fmt.Errorf("unsupported assertion type: %T", assertionHeaders)
-		el.Add(cerror.ResourceNotFound, err.Error())
-		return "", cerror.NewCustomError(cerror.ResourceNotFound, err.Error())
-	}
-
-	assertionBytes := asserts.Encode(signedAssertion)
-	return string(assertionBytes), nil
-}
-
-// TODO: write get account key assertion by account id
-
-// TODO: write get snap revision assertion by snap entry id
 
 // ####################### SHOULD BE REMOVED #########################
 

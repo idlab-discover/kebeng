@@ -17,6 +17,7 @@ type IAssertionRepository interface {
 	AddSnapRevisionAssertion(el *cerror.ErrorList, authority_id, snap_sha3_384, sign_key_SHA3_384 string, developer_id, snap_entry_id uuid.UUID, snap_revision_sequence_number uint32, snap_size uint64, timestamp time.Time, signature string) (*model.SnapRevisionAssertion, *cerror.CustomError)
 
 	GetAccountKeyAssertionByName(el *cerror.ErrorList, name string) (*model.AccountKeyAssertion, *cerror.CustomError)
+	GetLatestAccountKeyAssertion(el *cerror.ErrorList, account_id uuid.UUID) (*model.AccountKeyAssertion, *cerror.CustomError)
 	GetSnapRevisionAssertionBySHA3_384(el *cerror.ErrorList, snap_sha3_384 string) (*model.SnapRevisionAssertion, *cerror.CustomError)
 }
 
@@ -78,6 +79,24 @@ func (r *AssertionRepository) GetAccountKeyAssertionByName(el *cerror.ErrorList,
 		logrus.Errorf("failed to get account key assertion by name:%s, err: %v", name, err)
 		el.AddCustomError(cerror.ConvertError(err, fmt.Sprintf("failed to get account key assertion by name:%s, err: %v", name, err)))
 		return nil, cerror.ConvertError(err, fmt.Sprintf("failed to get account key assertion by name: %s, err:  %v", name, err))
+	}
+
+	return assertion, nil
+}
+
+func (r *AssertionRepository) GetLatestAccountKeyAssertion(el *cerror.ErrorList, account_id uuid.UUID) (*model.AccountKeyAssertion, *cerror.CustomError) {
+	query := `
+		SELECT id, authority_id, public_key_SHA3_384, sign_key_SHA3_384, name, revision, account_id, since, until, body_length, signature 
+		FROM account_key_assertion 
+		WHERE account_id = $1 ORDER BY revision DESC LIMIT 1
+	`
+	assertion := &model.AccountKeyAssertion{}
+
+	err := r.db.Get(assertion, query, account_id)
+	if err != nil {
+		logrus.Errorf("failed to get latest account key assertion by account id: %s, err: %v", account_id.String(), err)
+		el.AddCustomError(cerror.ConvertError(err, fmt.Sprintf("failed to get latest account key assertion by account id: %s, err: %v", account_id.String(), err)))
+		return nil, cerror.ConvertError(err, fmt.Sprintf("failed to get latest account key assertion by account id: %s, err: %v", account_id.String(), err))
 	}
 
 	return assertion, nil

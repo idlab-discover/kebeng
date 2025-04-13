@@ -19,7 +19,7 @@ import (
 type AssertionClientInterface interface {
 	ProcessSnapBuildAssertion(assertion []byte) *proto.SnapBuildAssertionResponse
 
-	AddAccountKeyAssertion(revisionSequenceNumber uint32, publicKeySha3_384 string, accountId string, name string, since *time.Time, until *time.Time, body []byte) *proto.AccountKeyAssertionResponse
+	AddAccountKeyAssertion(publicKeySha3_384 string, accountId string, name string, since *time.Time, until *time.Time, body []byte) *proto.AccountKeyAssertionResponse
 	AddSnapRevisionAssertion(snapSha3_384 string, developerId string, snapEntryId string, snapRevisionSequenceNumber uint32, snapSize uint64, timestamp *time.Time) *proto.SnapRevisionAssertionResponse
 
 	GetAccountKeyAssertionByName(name string) *proto.AccountKeyAssertionResponse
@@ -72,13 +72,10 @@ func (c *AssertionClient) ProcessSnapBuildAssertion(assertion []byte) *proto.Sna
 	return resp
 }
 
-func (c *AssertionClient) AddAccountKeyAssertion(revisionSequenceNumber uint32, publicKeySha3_384 string, accountId string, name string, since *time.Time, until *time.Time, body []byte) *proto.AccountKeyAssertionResponse {
+func (c *AssertionClient) AddAccountKeyAssertion(publicKeySha3_384 string, accountId string, name string, since *time.Time, until *time.Time, body []byte) *proto.AccountKeyAssertionResponse {
 	el := cerror.NewErrorList()
 
 	// check input
-	if revisionSequenceNumber == 0 {
-		el.Add(cerror.InvalidField, "revision sequence number is required")
-	}
 	if publicKeySha3_384 == "" {
 		el.Add(cerror.InvalidField, "public key sha3_384 is required")
 	}
@@ -107,13 +104,12 @@ func (c *AssertionClient) AddAccountKeyAssertion(revisionSequenceNumber uint32, 
 	}
 
 	req := &proto.AddAccountKeyAssertionRequest{
-		SnapRevisionSequenceNumber: revisionSequenceNumber,
-		PublicKeySha3_384:          publicKeySha3_384,
-		AccountId:                  accountId,
-		Name:                       name,
-		Since:                      timestamppb.New(*since),
-		Until:                      timestamppb.New(*until),
-		Body:                       body,
+		PublicKeySha3_384: publicKeySha3_384,
+		AccountId:         accountId,
+		Name:              name,
+		Since:             timestamppb.New(*since),
+		Until:             timestamppb.New(*until),
+		Body:              body,
 	}
 
 	resp, err := c.client.AddAccountKeyAssertion(context.Background(), req)
