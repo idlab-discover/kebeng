@@ -243,7 +243,8 @@ message AddRevisionResponse {
     string id = 1;
     string snap_name = 2;
     string status = 3;
-    repeated proto.Error errors = 4;
+    uint64 revision = 4;
+    repeated proto.Error errors = 5;
 }
 
 message GetObjectCustomMetadataRequest {
