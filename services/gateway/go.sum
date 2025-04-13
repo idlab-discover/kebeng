@@ -53,6 +53,10 @@ github.com/idlab-discover/kebeng v0.0.0-20250410133923-a134256345a7 h1:6DeMDth0N
 github.com/idlab-discover/kebeng v0.0.0-20250410133923-a134256345a7/go.mod h1:oL4wiGQMlCIATI2/LRjQcGpaD4XojLfC0YxeKHj1FLs=
 github.com/idlab-discover/kebeng v0.0.0-20250413113527-82d2a960fa52 h1:3TxR3FNy+wXJW2EjWerdbY6ex82rdrMz7euKDEb8OlM=
 github.com/idlab-discover/kebeng v0.0.0-20250413113527-82d2a960fa52/go.mod h1:eLVgHaIlm/pL91dOVhkLI/Q6osWN8LL9E6hGfa9cNAU=
+github.com/idlab-discover/kebeng v0.0.0-20250413170955-d6855c9feca7 h1:uqYmNeChNz3MI74JkOCpdrpTN9DsKs2mNvdIeCtYK+U=
+github.com/idlab-discover/kebeng v0.0.0-20250413170955-d6855c9feca7/go.mod h1:eLVgHaIlm/pL91dOVhkLI/Q6osWN8LL9E6hGfa9cNAU=
+github.com/idlab-discover/kebeng v0.0.0-20250413173508-f870352503d7 h1:GwC9oJjWfZg9ONnZLr0U/tu/Nqgc7wZFFZdUkU19sHI=
+github.com/idlab-discover/kebeng v0.0.0-20250413173508-f870352503d7/go.mod h1:eLVgHaIlm/pL91dOVhkLI/Q6osWN8LL9E6hGfa9cNAU=
 github.com/idlab-discover/kebeng/services/account v0.0.0-20250410134233-c4f86861c29e h1:Y1fCRw5vB+wB0P3A50fHMM4FnXGNMoEbzg0Y4EDg/6o=
 github.com/idlab-discover/kebeng/services/account v0.0.0-20250410134233-c4f86861c29e/go.mod h1:YSQDM2AVA8dgmTTQzaGTpl9Ru77VtADMGpmAdus7KP0=
 github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250410134233-c4f86861c29e h1:uXfbu7BWQDS/DizfQd7/o4KlTBkBXBVzIaSLd0zi6/c=

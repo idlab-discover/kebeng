@@ -196,6 +196,7 @@ func TestAddTrack(t *testing.T) {
 		name              string
 		snapEntryId       uuid.UUID
 		trackName         string
+		el                *cerror.ErrorList
 		expectError       bool
 		expectedErrorCode string
 	}{
@@ -203,25 +204,28 @@ func TestAddTrack(t *testing.T) {
 			name:        "Success adding track",
 			snapEntryId: mockUUID,
 			trackName:   "mock-track",
+			el:          cerror.NewErrorList(),
 			expectError: false,
 		},
 		{
 			name:        "Succes adding track for already existing track",
 			snapEntryId: mockUUID,
 			trackName:   "latest",
+			el:          cerror.NewErrorList(),
 			expectError: false,
 		},
 		{
 			name:              "Fail adding track for non-existing snap entry",
 			snapEntryId:       uuid.New(),
 			trackName:         "mock-track",
+			el:                cerror.NewErrorList(),
 			expectError:       true,
 			expectedErrorCode: cerror.ResourceNotFound,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resp, err := globalRepo.AddTrack(tt.snapEntryId, tt.trackName)
+			resp, err := globalRepo.AddTrack(tt.snapEntryId, tt.trackName, tt.el)
 			if tt.expectError {
 				assert.NotNil(t, err)
 				if err != nil {

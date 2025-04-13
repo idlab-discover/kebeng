@@ -351,6 +351,9 @@ func (h *Handler) SnapPush(c *gin.Context) {
 		el.ExtendProtoError(revision.Errors)
 	}
 
+	// Ignore 'resource not found' errors for the revision -> this is expected if the revision already exists, or tracks and channels didn't exist
+	el.RemoveErrorWithCode(cerror.ResourceNotFound)
+
 	// Update the upload status to "processed"
 	updatedUpload := h.StoreClient.UpdateUploadStatus(upload.Id, "processed", revision.Revision, el)
 	if len(updatedUpload.Errors) > 0 {

@@ -39,8 +39,8 @@ func (m *MockSnapsRepository) AddRevision(entryId uuid.UUID, trackId uuid.UUID, 
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
-func (m *MockSnapsRepository) AddTrack(entryId uuid.UUID, trackName string) (*models.SnapTrack, *cerror.CustomError) {
-	args := m.Called(entryId, trackName)
+func (m *MockSnapsRepository) AddTrack(entryId uuid.UUID, trackName string, el *cerror.ErrorList) (*models.SnapTrack, *cerror.CustomError) {
+	args := m.Called(entryId, trackName, el)
 	if args.Get(0) != nil {
 		return args.Get(0).(*models.SnapTrack), nil
 	}
