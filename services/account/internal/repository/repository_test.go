@@ -170,7 +170,7 @@ func TestCreateAccount(t *testing.T) {
 			tt.account.CreatedAt = &createdAt
 			tt.account.UpdatedAt = &updatedAt
 
-			createdAccount, err := globalRepo.CreateAccount(context.Background(), tt.account)
+			createdAccount, err := globalRepo.AddAccount(context.Background(), tt.account)
 
 			if tt.expectError {
 				assert.NotNil(t, err, "Expected an error")

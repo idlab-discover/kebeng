@@ -20,7 +20,7 @@ import (
 
 type AccountClientInterface interface {
 	Close()
-	CreateAccount(displayName, username, email string) *proto.AccountResponse
+	AddAccount(displayName, username, email, hashedPassword string) *proto.AccountResponse
 	UpdateAccount(id, displayName, username, email string) *proto.AccountResponse
 	DeleteAccount(id string) *proto.DeleteAccountResponse
 	GetAccountByEmail(email string) *proto.AccountResponse
@@ -63,14 +63,14 @@ func (c *AccountClient) Close() {
 	}
 }
 
-func (c *AccountClient) CreateAccount(displayName, username, email string) *proto.AccountResponse {
-	req := &proto.CreateAccountRequest{
+func (c *AccountClient) AddAccount(displayName, username, email, hashedPassword string) *proto.AccountResponse {
+	req := &proto.AddAccountRequest{
 		DisplayName: displayName,
 		Username:    username,
 		Email:       email,
 	}
 
-	resp, err := c.client.CreateAccount(context.Background(), req)
+	resp, err := c.client.AddAccount(context.Background(), req)
 	if err != nil {
 		// this means proto request failed not the actual logic
 		resp = &proto.AccountResponse{
