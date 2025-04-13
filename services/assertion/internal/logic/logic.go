@@ -54,7 +54,7 @@ func (s *AssertionService) AddSnapRevisionAssertion(ctx context.Context, req *pr
 		"snap-sha3-384": req.GetSnapSha3_384(),
 		"developer-id":  req.GetDeveloperId(),
 		"snap-id":       req.GetSnapEntryId(),
-		"snap-revision": req.GetSnapRevisionSequenceNumber(),
+		"snap-revision": fmt.Sprintf("%d", req.GetSnapRevisionSequenceNumber()),
 		"snap-size":     req.GetSnapSize(),
 		"timestamp":     req.GetTimestamp().AsTime().Format(time.RFC3339),
 		// The 'sign-key-sha3-384' header is generated during signing.
@@ -127,10 +127,10 @@ func (s *AssertionService) AddAccountKeyAssertion(ctx context.Context, req *prot
 			Errors: el.ConvertToProtoErrorList(),
 		}, nil
 	}
-
+	sequenceNumber++
 	headers := map[string]any{
 		"authority-id":        s.cfg.AuthorityID,
-		"revision":            sequenceNumber,
+		"revision":            fmt.Sprintf("%d", sequenceNumber),
 		"public-key-sha3-384": req.GetPublicKeySha3_384(),
 		"account-id":          req.GetAccountId(),
 		"name":                req.GetName(),
