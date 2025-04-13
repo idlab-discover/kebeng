@@ -12,7 +12,6 @@ import (
 
 	"github.com/idlab-discover/kebeng/common/crypto"
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
-	"github.com/idlab-discover/kebeng/services/store/internal/repository"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/sirupsen/logrus"
@@ -31,7 +30,6 @@ type IMinioClient interface {
 type IObjectStore interface {
 	GetSnapFileReader(ctx context.Context, filePath string) (io.ReadCloser, error)
 	SaveFileToBucket(bucket string, filePath string) (*minio.UploadInfo, error)
-	LoadTestData(client *minio.Client, repo repository.ISnapsRepository, minioPath string) error
 	MakeBucketAndAddKey(bucketName string, keyPath string, keyName string)
 	Move(sourceBucket, destinationBucket, objectName string) error
 }
