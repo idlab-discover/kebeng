@@ -43,11 +43,12 @@ type ISnapsRepository interface {
 	GetTrackByEntryIdAndName(entryId uuid.UUID, trackName string, errorList *cerror.ErrorList) (*models.SnapTrack, *cerror.CustomError)
 	GetTracksByEntryId(snapId uuid.UUID) ([]*models.SnapTrack, *cerror.CustomError)
 	GetTrackById(id uuid.UUID) (*models.SnapTrack, *cerror.CustomError)
-	GetUploadById(id uuid.UUID) (*models.SnapUpload, *cerror.CustomError)
+	GetUploadById(id uuid.UUID, errorList *cerror.ErrorList) (*models.SnapUpload, *cerror.CustomError)
 
 	// UPDATE
 	ReleaseSnap(channels []string, snapEntryId uuid.UUID, revisionId uuid.UUID) *cerror.CustomError
 	UpdateRevision(revision *models.SnapRevision, revisionBytes *[]byte) (*models.SnapRevision, *cerror.CustomError)
+	UpdateUploadStatus(uploadId uuid.UUID, status string, el *cerror.ErrorList) *cerror.CustomError
 }
 
 type SnapsRepository struct {
@@ -635,6 +636,27 @@ func (sp *SnapsRepository) UpdateRevision(revision *models.SnapRevision, revisio
 	return &newRevision, nil
 }
 
+func (sp *SnapsRepository) UpdateUploadStatus(uploadId uuid.UUID, status string, el *cerror.ErrorList) *cerror.CustomError {
+	upload := models.SnapUpload{
+		ID:     uploadId,
+		Errors: el,
+	}
+	query := `
+		UPDATE upload
+		SET status = $1, errors = $2
+		WHERE id = $3
+		RETURNING *
+	`
+	err := sp.db.Get(&upload, query, status, upload.Errors, uploadId)
+	if err != nil {
+		logrus.Error(err)
+		el.AddCustomError(cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("resource not found: upload with id = '%s'", uploadId.String())))
+		return cerror.ConvertError(err, fmt.Sprintf("resource not found: upload with id = '%s'", uploadId.String()))
+	}
+
+	return nil
+}
+
 func (sp *SnapsRepository) GetTrackByEntryIdAndName(entryId uuid.UUID, trackName string, el *cerror.ErrorList) (*models.SnapTrack, *cerror.CustomError) {
 	var track models.SnapTrack
 	query := `
@@ -682,7 +704,7 @@ func (sp *SnapsRepository) GetChannelById(id uuid.UUID) (*models.SnapChannel, *c
 	return &channel, nil
 }
 
-func (sp *SnapsRepository) GetUploadById(id uuid.UUID) (*models.SnapUpload, *cerror.CustomError) {
+func (sp *SnapsRepository) GetUploadById(id uuid.UUID, el *cerror.ErrorList) (*models.SnapUpload, *cerror.CustomError) {
 	var upload models.SnapUpload
 	query := `
 		SELECT *
@@ -692,6 +714,7 @@ func (sp *SnapsRepository) GetUploadById(id uuid.UUID) (*models.SnapUpload, *cer
 	err := sp.db.Get(&upload, query, id)
 	if err != nil {
 		logrus.Error(err)
+		el.AddCustomError(cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("resource not found: upload with id = '%s'", id.String())))
 		return nil, cerror.ConvertError(err, fmt.Sprintf("resource not found: upload with id = '%s'", id.String()))
 	}
 	return &upload, nil

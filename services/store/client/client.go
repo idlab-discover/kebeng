@@ -335,6 +335,25 @@ func (c *StoreClient) GetUploadStatus(uploadId string) *proto.GetUploadStatusRes
 	return resp
 }
 
+func (c *StoreClient) UpdateUploadStatus(uploadId string, status string, el *cerror.ErrorList) *proto.UpdateUploadStatusResponse {
+	req := &proto.UpdateUploadStatusRequest{
+		UploadId: uploadId,
+		Status:   status,
+		Errors:   el.ConvertToProtoErrorList(),
+	}
+
+	resp, err := c.client.UpdateUploadStatus(context.Background(), req)
+	if err != nil {
+		resp = &proto.UpdateUploadStatusResponse{
+			Errors: []*cerrorpb.Error{{
+				Code:    cerror.InternalServerError,
+				Message: err.Error()},
+			},
+		}
+	}
+	return resp
+}
+
 func (c *StoreClient) AddRevision(snapName string, sha3384 string, size uint64, architectures []string, tracksAndChannels []string, unscannedFileName string) *proto.AddRevisionResponse {
 	req := &proto.AddRevisionRequest{
 		SnapName:          snapName,

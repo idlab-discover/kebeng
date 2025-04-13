@@ -182,3 +182,11 @@ func (m *MockStoreServiceClient) GetObjectCustomMetadata(ctx context.Context, in
 	}
 	return args.Get(0).(*proto.GetObjectCustomMetadataResponse), nil
 }
+
+func (m *MockStoreServiceClient) UpdateUploadStatus(ctx context.Context, in *proto.UpdateUploadStatusRequest, opts ...grpc.CallOption) (*proto.UpdateUploadStatusResponse, error) {
+	args := m.Called(ctx, in)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*proto.UpdateUploadStatusResponse), nil
+}

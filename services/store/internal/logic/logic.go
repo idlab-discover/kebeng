@@ -834,15 +834,18 @@ func (s *StoreLogic) GetUploadStatus(ctx context.Context, req *proto.GetUploadSt
 		return &proto.GetUploadStatusResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
 
-	snapUpload, cerr := s.repo.GetUploadById(id)
+	snapUpload, cerr := s.repo.GetUploadById(id, el)
 	if cerr != nil {
-		logrus.Error(cerr)
-		el.AddCustomError(cerr)
+		// Already logged in GetUploadById (repository)
 		return &proto.GetUploadStatusResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
 
+	if snapUpload.Errors != nil {
+		el.Extend(*snapUpload.Errors)
+	}
+
 	processed := false
-	if snapUpload.Status == "success" {
+	if snapUpload.Status == "processed" {
 		processed = true
 	}
 
@@ -850,9 +853,42 @@ func (s *StoreLogic) GetUploadStatus(ctx context.Context, req *proto.GetUploadSt
 		UploadId:  snapUpload.ID.String(),
 		Processed: processed,
 		Revision:  snapUpload.Revision,
+		Errors:    el.ConvertToProtoErrorList(),
 	}
 
 	return resp, nil
+}
+
+func (s *StoreLogic) UpdateUploadStatus(ctx context.Context, req *proto.UpdateUploadStatusRequest) (*proto.UpdateUploadStatusResponse, error) {
+	el := cerror.NewErrorList()
+	if req.GetUploadId() == "" {
+		el.Add(cerror.MissingField, "id is required")
+		return &proto.UpdateUploadStatusResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	id, err := uuid.Parse(req.GetUploadId())
+	if err != nil {
+		logrus.Error(err)
+		el.Add(cerror.InvalidField, "invalid UUID format")
+		return &proto.UpdateUploadStatusResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	if req.Errors != nil {
+		for _, err := range req.Errors {
+			el.Add(err.GetCode(), err.GetMessage())
+		}
+	}
+
+	cerr := s.repo.UpdateUploadStatus(id, req.Status, el)
+	if cerr != nil {
+		// Already logged in UpdateUploadStatus (repository)
+		return &proto.UpdateUploadStatusResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	return &proto.UpdateUploadStatusResponse{
+		Status: req.Status,
+		Errors: el.ConvertToProtoErrorList(),
+	}, nil
 }
 
 func (s *StoreLogic) AddRevision(ctx context.Context, req *proto.AddRevisionRequest) (*proto.AddRevisionResponse, error) {
@@ -941,7 +977,9 @@ func (s *StoreLogic) AddRevision(ctx context.Context, req *proto.AddRevisionRequ
 	}
 
 	return &proto.AddRevisionResponse{
-		Status: "success",
+		SnapName: req.SnapName,
+		Status:   "success",
+		Revision: uint64(sequenceNumber),
 	}, nil
 }
 
