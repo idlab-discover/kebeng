@@ -78,6 +78,8 @@ github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250413143104-b8d1f6
 github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250413143104-b8d1f68735b2/go.mod h1:esKpJHQtnlB3wcpAVr7wYvMLGDffDD5BTPAuxlVzA4A=
 github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250413144539-4b872259f6f7 h1:IOQst0+Gg+xkgsdCGs9O2sqVkx/SM/wZ2+Ak1jXtTlY=
 github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250413144539-4b872259f6f7/go.mod h1:esKpJHQtnlB3wcpAVr7wYvMLGDffDD5BTPAuxlVzA4A=
+github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250413170917-00d1a2417079 h1:EjxtjorqsGkQxR7dXPdFyg7Pn+pLwlk+n6egrKMrBXA=
+github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250413170917-00d1a2417079/go.mod h1:esKpJHQtnlB3wcpAVr7wYvMLGDffDD5BTPAuxlVzA4A=
 github.com/idlab-discover/kebeng/services/store v0.0.0-20250410134233-c4f86861c29e h1:B112lrxOuVKtemCa0rY4v10i3TCRWscoGJZ/6bqRnqs=
 github.com/idlab-discover/kebeng/services/store v0.0.0-20250410134233-c4f86861c29e/go.mod h1:4Pyrp7HRrMD7YZvOkpJlE46VI4Ij3vajjJBqUvyY1gc=
 github.com/idlab-discover/kebeng/services/store v0.0.0-20250412140028-6eae94f86593 h1:oEXSvzSjjOwy3nD8nYlwduVtkDx95RCmQH3F6kmUd7w=
