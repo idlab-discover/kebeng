@@ -97,3 +97,8 @@ func (m *MockObjectStore) GetObjectCustomMetadata(bucket string, objectName stri
 	args := m.Called(bucket, objectName)
 	return args.Get(0).(map[string]string), args.Error(1)
 }
+
+func (m *MockObjectStore) DeleteFileFromBucket(bucket string, filePath string) error {
+	args := m.Called(bucket, filePath)
+	return args.Error(0)
+}
