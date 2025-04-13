@@ -19,17 +19,18 @@ message SnapBuildAssertionRequest {
 }
 
 message SnapBuildAssertionResponse {
-    string authority_id = 1;
-    string grade = 2;
-    string sign_key_sha3_384 = 3;
-    string snap_id = 4;
-    string snap_sha3_384 = 5;
-    string snap_size = 6;
-    string timestamp = 7;
-    string revision = 8;
-    string type = 9;
-    string developer_id = 10;
-    repeated proto.Error errors = 11;
+    string id = 1;
+    string authority_id = 2;
+    string grade = 3;
+    string sign_key_sha3_384 = 4;
+    string snap_id = 5;
+    string snap_sha3_384 = 6;
+    string snap_size = 7;
+    string timestamp = 8;
+    string revision = 9;
+    string type = 10;
+    string developer_id = 11;
+    repeated proto.Error errors = 12;
 }
 
 message AddSnapRevisionAssertionRequest {
@@ -52,8 +53,9 @@ message SnapRevisionAssertionResponse {
   string sign_key_sha3_384 = 8;
   string signature = 9;
   string type = 10;
+  string id = 11;
 
-  repeated proto.Error errors = 11;
+  repeated proto.Error errors = 12;
 }
 
 message AddAccountKeyAssertionRequest {
@@ -75,13 +77,14 @@ message AccountKeyAssertionResponse {
   google.protobuf.Timestamp since = 7;
   google.protobuf.Timestamp until = 8;
   string sign_key_sha3_384 = 9;
+  string id = 10;
 
-  bytes body = 10;
-  uint64 body_length = 11;
+  bytes body = 11;
+  uint64 body_length = 12;
 
-  string signature = 12;
+  string signature = 13;
 
-  repeated proto.Error errors = 13;
+  repeated proto.Error errors = 14;
 }
 
 message GetSnapRevisionAssertionBySHA3_384Request {

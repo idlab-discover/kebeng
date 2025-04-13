@@ -87,6 +87,7 @@ func (s *AssertionService) AddSnapRevisionAssertion(ctx context.Context, req *pr
 	}
 
 	return &proto.SnapRevisionAssertionResponse{
+		Id:                         snapRevisionAssertion.ID.String(),
 		AuthorityId:                snapRevisionAssertion.AuthorityID,
 		SignKeySha3_384:            snapRevisionAssertion.SignKeySHA3_384,
 		SnapEntryId:                snapRevisionAssertion.SnapEntryID.String(),
@@ -162,6 +163,7 @@ func (s *AssertionService) AddAccountKeyAssertion(ctx context.Context, req *prot
 	}
 
 	return &proto.AccountKeyAssertionResponse{
+		Id:                     accountKeyAssertion.ID.String(),
 		AuthorityId:            accountKeyAssertion.AuthorityID,
 		SignKeySha3_384:        accountKeyAssertion.SignKeySHA3_384,
 		AccountId:              accountKeyAssertion.AccountID.String(),
@@ -193,6 +195,7 @@ func (s *AssertionService) GetSnapRevisionAssertionBySHA3_384(ctx context.Contex
 	}
 
 	return &proto.SnapRevisionAssertionResponse{
+		Id:                         snapRevisionAssertion.ID.String(),
 		AuthorityId:                snapRevisionAssertion.AuthorityID,
 		SignKeySha3_384:            snapRevisionAssertion.SignKeySHA3_384,
 		SnapEntryId:                snapRevisionAssertion.SnapEntryID.String(),
@@ -220,6 +223,7 @@ func (s *AssertionService) GetAccountKeyAssertionByName(ctx context.Context, req
 	}
 
 	return &proto.AccountKeyAssertionResponse{
+		Id:                     accountKeyAssertion.ID.String(),
 		AuthorityId:            accountKeyAssertion.AuthorityID,
 		SignKeySha3_384:        accountKeyAssertion.SignKeySHA3_384,
 		AccountId:              accountKeyAssertion.AccountID.String(),
