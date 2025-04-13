@@ -343,6 +343,8 @@ func (h *Handler) SnapPush(c *gin.Context) {
 		return
 	}
 
+	logrus.Debugf("Metadata: %v", metadata)
+
 	// Create a new revision for the snap upload
 	revision := h.StoreClient.AddRevision(entry.SnapName, metadata.Sha3_384, uint64(req.BinaryFileSize), []string{"amd64"}, req.Channels, req.UnscannedFileName) // FIX: architectures should be passed from the request
 	if len(revision.Errors) > 0 {

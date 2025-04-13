@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/lib/pq"
+	"github.com/minio/minio-go/v7"
 )
 
 const (
@@ -120,4 +121,9 @@ type SnapUpload struct {
 	StatusDetailsURL  string            `json:"status_details_url" db:"status_details_url"`
 	Revision          *uint64           `json:"revision" db:"revision"`
 	Errors            *cerror.ErrorList `json:"errors" db:"errors"`
+}
+
+type Metadata struct {
+	UploadInfo *minio.UploadInfo `json:"upload_info" db:"upload_info"`
+	Sha3_384   *string           `json:"sha3_384" db:"sha3_384"`
 }

@@ -5,6 +5,7 @@ import (
 	"context"
 	"io"
 
+	"github.com/idlab-discover/kebeng/services/store/internal/models"
 	"github.com/idlab-discover/kebeng/services/store/internal/repository"
 	"github.com/minio/minio-go/v7"
 	"github.com/stretchr/testify/mock"
@@ -31,12 +32,12 @@ func (m *MockObjectStore) LoadTestData(client *minio.Client, repo repository.ISn
 }
 
 // SaveFileToBucket implements IObjectStore.
-func (m *MockObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_384 string) (*minio.UploadInfo, error) {
+func (m *MockObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_384 string) (*models.Metadata, error) {
 	args := m.Called(bucket, filePath, sha3_384)
 	if args.Get(0) != nil {
-		return args.Get(0).(*minio.UploadInfo), nil
+		return args.Get(0).(*models.Metadata), nil
 	}
-	return &minio.UploadInfo{}, args.Get(1).(error)
+	return &models.Metadata{}, args.Get(1).(error)
 }
 
 func (m *MockObjectStore) GetObject(ctx context.Context, bucket, object string, opts minio.GetObjectOptions) (*minio.Object, error) {
@@ -93,9 +94,9 @@ func (m *MockObjectStore) StatObject(ctx context.Context, bucket, object string,
 	return args.Get(0).(minio.ObjectInfo), args.Error(1)
 }
 
-func (m *MockObjectStore) GetObjectCustomMetadata(bucket string, objectName string) (map[string]string, error) {
+func (m *MockObjectStore) GetObjectCustomMetadata(bucket string, objectName string) (*models.Metadata, error) {
 	args := m.Called(bucket, objectName)
-	return args.Get(0).(map[string]string), args.Error(1)
+	return args.Get(0).(*models.Metadata), args.Error(1)
 }
 
 func (m *MockObjectStore) DeleteFileFromBucket(bucket string, filePath string) error {
