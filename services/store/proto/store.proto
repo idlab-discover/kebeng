@@ -254,7 +254,7 @@ message GetObjectCustomMetadataRequest {
 }
 
 message GetObjectCustomMetadataResponse {
-    map<string, string> metadata = 1;
+    string sha3_384 = 1;
     repeated proto.Error errors = 2;
 }
 
