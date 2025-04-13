@@ -83,7 +83,7 @@ func LoadTestData(filePath string, db *sqlx.DB, repo repository.ISnapsRepository
 			logrus.Warnf("Checking for entryId: %s, Snap ID mapping: %+v", track.SnapEntryID, idMap)
 			return fmt.Errorf("no registered snap entry found for track (%s)", track.ID)
 		}
-		registeredTrack, cerr := repo.AddTrack(newEntryID, track.Name)
+		registeredTrack, cerr := repo.AddTrack(newEntryID, track.Name, el)
 		if cerr != nil {
 			return fmt.Errorf("failed to register track (%s): %v", track.Name, cerr)
 		}

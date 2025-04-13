@@ -20,7 +20,7 @@ type ISnapsRepository interface {
 	AddChannel(snapEntryId uuid.UUID, snapTrackId uuid.UUID, channelName string, errorList *cerror.ErrorList) (*models.SnapChannel, *cerror.CustomError)
 	AddDefaultChannels(snapEntryId uuid.UUID, snapTrackId uuid.UUID, errorList *cerror.ErrorList) *cerror.CustomError
 	AddRevision(entryId uuid.UUID, trackId uuid.UUID, channelId uuid.UUID, snapName string, size uint64, sequenceNumber uint, architectures []string, sha3_384 string, minioFilePath string, errorList *cerror.ErrorList) (*models.SnapRevision, *cerror.CustomError)
-	AddTrack(entryId uuid.UUID, trackName string) (*models.SnapTrack, *cerror.CustomError)
+	AddTrack(entryId uuid.UUID, trackName string, errorList *cerror.ErrorList) (*models.SnapTrack, *cerror.CustomError)
 	AddUpload(snapName string, entrId uuid.UUID, status string, accountId uuid.UUID, unscannedFileName string) (*models.SnapUpload, *cerror.CustomError)
 	RegisterSnap(snapName string, isPrivate bool, store string, accountId uuid.UUID) (*models.SnapEntry, *cerror.CustomError)
 
@@ -124,7 +124,7 @@ func (sp *SnapsRepository) AddRevision(entryId uuid.UUID, trackId uuid.UUID, cha
 	return &snapRevision, nil
 }
 
-func (sp *SnapsRepository) AddTrack(entryId uuid.UUID, trackName string) (*models.SnapTrack, *cerror.CustomError) {
+func (sp *SnapsRepository) AddTrack(entryId uuid.UUID, trackName string, el *cerror.ErrorList) (*models.SnapTrack, *cerror.CustomError) {
 	track := models.SnapTrack{
 		Name:        trackName,
 		SnapEntryID: entryId,
@@ -138,6 +138,7 @@ func (sp *SnapsRepository) AddTrack(entryId uuid.UUID, trackName string) (*model
 	err := sp.db.Get(&track.ID, query, track.Name, track.SnapEntryID)
 	if err != nil {
 		logrus.Error(err)
+		el.AddCustomError(cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("resource not found: track with name = '%s' for entry with id = '%s'", trackName, entryId.String())))
 		return nil, cerror.ConvertError(err)
 	}
 

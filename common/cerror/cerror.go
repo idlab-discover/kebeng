@@ -9,6 +9,7 @@ import (
 
 	cerrorpb "github.com/idlab-discover/kebeng/common/cerror/proto"
 	"github.com/lib/pq"
+	"slices"
 )
 
 const (
@@ -212,10 +213,13 @@ func (el *ErrorList) Scan(value interface{}) error {
 }
 
 func (el *ErrorList) RemoveErrorWithCode(errorCode string) {
+	// Iterate through the error list in reverse order
 	for i := len(*el) - 1; i >= 0; i-- {
-		cerr := (*el)[i]
-		if cerr.Code == ResourceNotFound {
-			*el = append((*el)[:i], (*el)[i+1:]...)
+		currentError := (*el)[i]
+		// Check if the current error's code matches the provided errorCode
+		if currentError.Code == errorCode {
+			// Remove the error from the list
+			*el = slices.Delete(*el, i, i+1)
 		}
 	}
 }

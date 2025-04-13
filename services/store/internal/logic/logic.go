@@ -83,7 +83,7 @@ func (s *StoreLogic) RegisterSnapName(ctx context.Context, req *proto.RegisterSn
 	}
 
 	// Add "latest" track to the snap entry
-	snapTrack, cerr := s.repo.AddTrack(snapEntry.ID, "latest")
+	snapTrack, cerr := s.repo.AddTrack(snapEntry.ID, "latest", el)
 	if cerr != nil {
 		el.AddCustomError(cerr)
 		return &proto.RegisterSnapNameResponse{Errors: el.ConvertToProtoErrorList()}, nil
@@ -946,6 +946,21 @@ func (s *StoreLogic) AddRevision(ctx context.Context, req *proto.AddRevisionRequ
 			if cerr != nil {
 				// Already logged in GetTracksByEntryIdAndName (repository)
 				return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
+			}
+
+			if trackResp == nil {
+				// If the track is not found, create a new one
+				trackResp, cerr = s.repo.AddTrack(entry.ID, track, el)
+				if cerr != nil {
+					// Already logged in AddTrack (repository)
+					return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
+				}
+				// Add default channels to the new track
+				cerr = s.repo.AddDefaultChannels(trackResp.SnapEntryID, trackResp.ID, el)
+				if cerr != nil {
+					// Already logged in AddDefaultChannels (repository)
+					return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
+				}
 			}
 
 			// Get the channel to which the revision will be associated
