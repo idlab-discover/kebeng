@@ -799,7 +799,7 @@ func (s *StoreLogic) UnscannedUpload(stream proto.StoreService_UnscannedUploadSe
 
 	tmpPath := path.Join(os.TempDir(), snapFileName)
 
-	uploadInfo, err := s.obs.SaveFileToBucket("unscanned", tmpPath, sha3_384HashEncoded)
+	metadata, err := s.obs.SaveFileToBucket("unscanned", tmpPath, sha3_384HashEncoded)
 	if err != nil {
 		logrus.Errorf("failed to save file to object store: %v", err)
 		el.Add(cerror.InternalServerError, fmt.Sprintf("failed to save file to object store: %v", err))
@@ -807,8 +807,8 @@ func (s *StoreLogic) UnscannedUpload(stream proto.StoreService_UnscannedUploadSe
 	}
 
 	err = stream.SendAndClose(&proto.UnscannedUploadCompleteResponse{
-		TempFileName: uploadInfo.Key,
-		Size:         uint64(uploadInfo.Size),
+		TempFileName: metadata.UploadInfo.Key,
+		Size:         uint64(metadata.UploadInfo.Size),
 		Errors:       el.ConvertToProtoErrorList(),
 	})
 	if err != nil {
@@ -905,10 +905,12 @@ func (s *StoreLogic) AddRevision(ctx context.Context, req *proto.AddRevisionRequ
 		return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
 
+	logrus.Infof("SHA: %s", req.Sha3_384)
+
 	// Check if a revision with the same SHA3_384 already exists -> this means that the uploaded file is the same as one already in the database
 	existingRevision, cerr := s.repo.GetRevisionBySHA(req.Sha3_384, false, el)
 	if cerr != nil && cerr.GetCode() != cerror.ResourceNotFound {
-		// Already logged in GetRevisionBySHA (repository)
+		// Already logged in GetRevisionBySHA (repository))
 		return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
 	if existingRevision != nil {
@@ -1001,11 +1003,8 @@ func (s *StoreLogic) GetObjectCustomMetadata(ctx context.Context, req *proto.Get
 		return &proto.GetObjectCustomMetadataResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
 
-	// Extract the sha3_384 value from the metadata
-	sha3_384 := metadata["sha3_384"]
-
 	return &proto.GetObjectCustomMetadataResponse{
-		Sha3_384: sha3_384,
+		Sha3_384: *metadata.Sha3_384,
 	}, nil
 }
 

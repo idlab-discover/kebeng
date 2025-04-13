@@ -12,6 +12,7 @@ import (
 
 	"github.com/idlab-discover/kebeng/common/crypto"
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
+	"github.com/idlab-discover/kebeng/services/store/internal/models"
 	"github.com/idlab-discover/kebeng/services/store/internal/repository"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -31,12 +32,12 @@ type IMinioClient interface {
 }
 
 type IObjectStore interface {
-	SaveFileToBucket(bucket string, filePath string, sha3_384 string) (*minio.UploadInfo, error)
+	SaveFileToBucket(bucket string, filePath string, sha3_384 string) (*models.Metadata, error)
 	GetSnapFileReader(filePath string) (io.ReadCloser, error)
 	LoadTestData(client *minio.Client, repo repository.ISnapsRepository, minioPath string) error
 	MakeBucketAndAddKey(bucketName string, keyPath string, keyName string)
 	Move(sourceBucket, destinationBucket, objectName string, newObjectName string) error
-	GetObjectCustomMetadata(bucket string, objectName string) (map[string]string, error)
+	GetObjectCustomMetadata(bucket string, objectName string) (*models.Metadata, error)
 	DeleteFileFromBucket(bucket string, filePath string) error
 }
 
@@ -114,7 +115,7 @@ func (obs *ObjectStore) Move(sourceBucket, destinationBucket, objectName, newObj
 	return errors.New("source or destination bucket does not exist")
 }
 
-func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_384 string) (*minio.UploadInfo, error) {
+func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_384 string) (*models.Metadata, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -130,19 +131,21 @@ func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_38
 
 	uploadInfo, err := obs.MinioClient.FPutObject(ctx, bucket, base, filePath, minio.PutObjectOptions{
 		UserMetadata: map[string]string{
-			"sha3-384": sha3_384,
+			"Sha3-384": sha3_384,
 		},
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	logrus.Infof("Saved to bucket: %+v", uploadInfo)
+	metadata := &models.Metadata{
+		UploadInfo: &uploadInfo,
+	}
 
-	return &uploadInfo, nil
+	return metadata, nil
 }
 
-func (obs *ObjectStore) GetObjectCustomMetadata(bucket string, objectName string) (map[string]string, error) {
+func (obs *ObjectStore) GetObjectCustomMetadata(bucket string, objectName string) (*models.Metadata, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -152,9 +155,12 @@ func (obs *ObjectStore) GetObjectCustomMetadata(bucket string, objectName string
 		return nil, err
 	}
 
-	metadata := make(map[string]string)
-	for key, value := range objectInfo.UserMetadata {
-		metadata[key] = value
+	logrus.Infof("Object info: %v", objectInfo.UserMetadata)
+
+	sha3_384 := objectInfo.UserMetadata["Sha3-384"]
+
+	metadata := &models.Metadata{
+		Sha3_384: &sha3_384,
 	}
 
 	return metadata, nil
