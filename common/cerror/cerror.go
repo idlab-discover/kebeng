@@ -211,11 +211,11 @@ func (el *ErrorList) Scan(value interface{}) error {
 	return json.Unmarshal(bytes, el)
 }
 
-func (el *ErrorList) RemoveError(cerr *CustomError) {
-	for i, err := range *el {
-		if err.Code == cerr.Code && err.Message == cerr.Message {
+func (el *ErrorList) RemoveErrorWithCode(errorCode string) {
+	for i := len(*el) - 1; i >= 0; i-- {
+		cerr := (*el)[i]
+		if cerr.Code == ResourceNotFound {
 			*el = append((*el)[:i], (*el)[i+1:]...)
-			break
 		}
 	}
 }
