@@ -56,7 +56,7 @@ func (s *AssertionService) AddSnapRevisionAssertion(ctx context.Context, req *pr
 		"snap-id":       req.GetSnapEntryId(),
 		"snap-revision": req.GetSnapRevisionSequenceNumber(),
 		"snap-size":     req.GetSnapSize(),
-		"timestamp":     req.GetTimestamp(),
+		"timestamp":     req.GetTimestamp().AsTime().Format(time.RFC3339),
 		// The 'sign-key-sha3-384' header is generated during signing.
 	}
 	signedAssertion, err := s.assertionDB.Sign(asserts.SnapRevisionType, headers, nil, s.cfg.RootKey.PublicKey().ID())
@@ -116,11 +116,11 @@ func (s *AssertionService) AddAccountKeyAssertion(ctx context.Context, req *prot
 	latestAccountKeyAssertion, cerr := s.repo.GetLatestAccountKeyAssertion(el, parsedAccountId)
 	if cerr == nil {
 		sequenceNumber = latestAccountKeyAssertion.RevisionSequenceNumber
-	} else if cerr != nil && cerr.GetCode() == cerror.ResourceNotFound {
+	} else if cerr.GetCode() == cerror.ResourceNotFound {
 		// this is ok, we just need to create the first assertion
 		// we are adding 1 later so we set it to 0
 		sequenceNumber = 0
-	} else if cerr != nil {
+	} else {
 		logrus.Errorf("failed to get latest sequence number: %v", cerr)
 		el.Add(cerror.Invalid, fmt.Sprintf("failed to get latest sequence number: %s", cerr))
 		return &proto.AccountKeyAssertionResponse{
@@ -134,8 +134,8 @@ func (s *AssertionService) AddAccountKeyAssertion(ctx context.Context, req *prot
 		"public-key-sha3-384": req.GetPublicKeySha3_384(),
 		"account-id":          req.GetAccountId(),
 		"name":                req.GetName(),
-		"since":               req.GetSince(),
-		"until":               req.GetSince().AsTime().Add(time.Duration(365 * 24 * time.Hour)), // a key is valid for 1 year
+		"since":               req.GetSince().AsTime().Format(time.RFC3339),
+		"until":               req.GetSince().AsTime().Add(time.Duration(365 * 24 * time.Hour)).Format(time.RFC3339), // a key is valid for 1 year
 		// The 'sign-key-sha3-384' header is generated during signing.
 	}
 	body := []byte(req.Body)
