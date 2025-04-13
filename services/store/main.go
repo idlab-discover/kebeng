@@ -70,17 +70,7 @@ func main() {
 	storeLogic := logic.NewStoreLogic(repo, cfg, objectstore)
 
 	if cfg.TestMode {
-		logrus.Infof("Running in test mode, using test data file: %s", cfg.TestDataFilePath)
-		err := database.LoadTestData(cfg.TestDataFilePath, db, repo)
-		if err != nil {
-			logrus.Errorf("Failed to load test data: %v", err)
-		}
-
-		logrus.Infof("Loaded test data, uploading to minio: %s", cfg.TestDataMinioPath)
-		err = objectstore.LoadTestData(minioClient, repo, cfg.TestDataMinioPath)
-		if err != nil {
-			logrus.Errorf("Failed to load test data to minio: %v", err)
-		}
+		logrus.Infof("Running in test mode")
 	}
 
 	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", cfg.GRPCHost, cfg.GRPCPort))
