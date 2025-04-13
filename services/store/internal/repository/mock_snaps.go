@@ -177,8 +177,8 @@ func (m *MockSnapsRepository) UpdateRevision(revision *models.SnapRevision, revi
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
-func (m *MockSnapsRepository) UpdateUploadStatus(uploadId uuid.UUID, status string, el *cerror.ErrorList) *cerror.CustomError {
-	args := m.Called(uploadId, status, el)
+func (m *MockSnapsRepository) UpdateUploadStatus(uploadId uuid.UUID, status string, revision uint64, el *cerror.ErrorList) *cerror.CustomError {
+	args := m.Called(uploadId, status, revision, el)
 	if args.Get(0) != nil {
 		return args.Get(0).(*cerror.CustomError)
 	}

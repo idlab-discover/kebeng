@@ -1092,6 +1092,7 @@ func TestUpdateUploadStatus(t *testing.T) {
 		name              string
 		uploadId          uuid.UUID
 		status            string
+		revision          uint64
 		el                *cerror.ErrorList
 		expectError       bool
 		expectedErrorCode string
@@ -1100,6 +1101,7 @@ func TestUpdateUploadStatus(t *testing.T) {
 			name:              "Success updating upload status",
 			uploadId:          mockUUID,
 			status:            "completed",
+			revision:          1,
 			el:                cerror.NewErrorList(),
 			expectError:       false,
 			expectedErrorCode: "",
@@ -1108,6 +1110,7 @@ func TestUpdateUploadStatus(t *testing.T) {
 			name:              "Fail updating upload status for non-existing upload",
 			uploadId:          uuid.New(),
 			status:            "completed",
+			revision:          1,
 			el:                cerror.NewErrorList(),
 			expectError:       true,
 			expectedErrorCode: cerror.ResourceNotFound,
@@ -1116,7 +1119,7 @@ func TestUpdateUploadStatus(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := globalRepo.UpdateUploadStatus(tt.uploadId, tt.status, tt.el)
+			err := globalRepo.UpdateUploadStatus(tt.uploadId, tt.status, tt.revision, tt.el)
 			if tt.expectError {
 				assert.NotNil(t, err)
 				if err != nil {
