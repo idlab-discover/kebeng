@@ -44,7 +44,10 @@ func (r *AssertionRepository) AddAssertion(snapEntryId uuid.UUID, assertionStrin
 }
 
 func (r *AssertionRepository) AddAccountKeyAssertion(el *cerror.ErrorList, authority_id, public_key_SHA3_384, sign_key_SHA3_384, name string, revision uint32, account_id uuid.UUID, since time.Time, until time.Time, body []byte, body_length uint64, signature string) (*model.AccountKeyAssertion, *cerror.CustomError) {
-	query := `INSERT INTO account_key_assertion (authority_id, public_key_SHA3_384, sign_key_SHA3_384, name, revision, account_id, since, until, body, body_length, signature) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`
+	query := `
+		INSERT INTO account_key_assertion (authority_id, public_key_SHA3_384, sign_key_SHA3_384, name, revision, account_id, since, until, body, body_length, signature) 
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) 
+		RETURNING id`
 	assertion := &model.AccountKeyAssertion{}
 
 	err := r.db.Get(assertion, query, authority_id, public_key_SHA3_384, sign_key_SHA3_384, name, revision, account_id, since, until, body, body_length, signature)
@@ -58,7 +61,11 @@ func (r *AssertionRepository) AddAccountKeyAssertion(el *cerror.ErrorList, autho
 }
 
 func (r *AssertionRepository) AddSnapRevisionAssertion(el *cerror.ErrorList, authority_id, snap_sha3_384, sign_key_SHA3_384 string, developer_id, snap_entry_id uuid.UUID, snap_revision_sequence_number uint32, snap_size uint64, timestamp time.Time, signature string) (*model.SnapRevisionAssertion, *cerror.CustomError) {
-	query := `INSERT INTO snap_revision_assertion (authority_id, snap_sha3_384, sign_key_SHA3_384, developer_id, snap_entry_id, snap_revision_sequence_number, timestamp, snap_size, signature) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`
+	query := `
+		INSERT INTO snap_revision_assertion (authority_id, snap_sha3_384, sign_key_SHA3_384, developer_id, snap_entry_id, snap_revision_sequence_number, timestamp, snap_size, signature) 
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
+		RETURNING id
+	`
 	assertion := &model.SnapRevisionAssertion{}
 	err := r.db.Get(assertion, query, authority_id, snap_sha3_384, sign_key_SHA3_384, developer_id, snap_entry_id, snap_revision_sequence_number, timestamp, snap_size, signature)
 	if err != nil {
@@ -71,7 +78,11 @@ func (r *AssertionRepository) AddSnapRevisionAssertion(el *cerror.ErrorList, aut
 }
 
 func (r *AssertionRepository) GetAccountKeyAssertionByName(el *cerror.ErrorList, name string) (*model.AccountKeyAssertion, *cerror.CustomError) {
-	query := `SELECT id, authority_id, public_key_SHA3_384, sign_key_SHA3_384, name, revision, account_id, since, until, body_length, signature FROM account_key_assertion WHERE name = $1`
+	query := `
+		SELECT id, authority_id, public_key_SHA3_384, sign_key_SHA3_384, name, revision, account_id, since, until, body_length, signature 
+		FROM account_key_assertion 
+		WHERE name = $1
+	`
 	assertion := &model.AccountKeyAssertion{}
 
 	err := r.db.Get(assertion, query, name)
@@ -103,7 +114,11 @@ func (r *AssertionRepository) GetLatestAccountKeyAssertion(el *cerror.ErrorList,
 }
 
 func (r *AssertionRepository) GetSnapRevisionAssertionBySHA3_384(el *cerror.ErrorList, snap_sha3_384 string) (*model.SnapRevisionAssertion, *cerror.CustomError) {
-	query := `SELECT id, authority_id, snap_sha3_384, developer_id, snap_entry_id, snap_revision_sequence_number, timestamp, signature FROM snap_revision_assertion WHERE snap_sha3_384 = $1`
+	query := `
+		SELECT id, authority_id, snap_sha3_384, developer_id, snap_entry_id, snap_revision_sequence_number, timestamp, signature 
+		FROM snap_revision_assertion 
+		WHERE snap_sha3_384 = $1
+	`
 	assertion := &model.SnapRevisionAssertion{}
 	err := r.db.Get(assertion, query, snap_sha3_384)
 	if err != nil {
