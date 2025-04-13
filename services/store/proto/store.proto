@@ -19,6 +19,7 @@ service StoreService {
     rpc GetUploadStatus(GetUploadStatusRequest) returns (GetUploadStatusResponse);
     rpc AddRevision(AddRevisionRequest) returns (AddRevisionResponse);
     rpc GetObjectCustomMetadata(GetObjectCustomMetadataRequest) returns (GetObjectCustomMetadataResponse);
+    rpc UpdateUploadStatus(UpdateUploadStatusRequest) returns (UpdateUploadStatusResponse);
 }
 
 message RegisterSnapNameRequest {
@@ -255,4 +256,16 @@ message GetObjectCustomMetadataRequest {
 message GetObjectCustomMetadataResponse {
     map<string, string> metadata = 1;
     repeated proto.Error errors = 2;
+}
+
+message UpdateUploadStatusRequest {
+    string upload_id = 1;
+    string status = 2;
+    repeated proto.Error errors = 3;
+}
+
+message UpdateUploadStatusResponse {
+    string upload_id = 1;
+    string status = 2;
+    repeated proto.Error errors = 3;
 }

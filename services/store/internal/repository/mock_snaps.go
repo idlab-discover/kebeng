@@ -177,6 +177,14 @@ func (m *MockSnapsRepository) UpdateRevision(revision *models.SnapRevision, revi
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
+func (m *MockSnapsRepository) UpdateUploadStatus(uploadId uuid.UUID, status string, el *cerror.ErrorList) *cerror.CustomError {
+	args := m.Called(uploadId, status, el)
+	if args.Get(0) != nil {
+		return args.Get(0).(*cerror.CustomError)
+	}
+	return nil
+}
+
 func (m *MockSnapsRepository) GetLatestRevisionByTrackAndChannel(snapName string, track string, channel string) (*models.SnapRevision, *cerror.CustomError) {
 	args := m.Called(snapName, track, channel)
 	if args.Get(0) != nil {
@@ -209,8 +217,8 @@ func (m *MockSnapsRepository) GetPreloadAssociations(entry *models.SnapEntry, pr
 	return args.Get(1).(*cerror.CustomError)
 }
 
-func (m *MockSnapsRepository) GetUploadById(id uuid.UUID) (*models.SnapUpload, *cerror.CustomError) {
-	args := m.Called(id)
+func (m *MockSnapsRepository) GetUploadById(id uuid.UUID, el *cerror.ErrorList) (*models.SnapUpload, *cerror.CustomError) {
+	args := m.Called(id, el)
 	if args.Get(0) != nil {
 		return args.Get(0).(*models.SnapUpload), nil
 	}

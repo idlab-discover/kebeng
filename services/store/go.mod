@@ -3,7 +3,7 @@ module github.com/idlab-discover/kebeng/services/store
 go 1.22.2
 
 require (
-	github.com/idlab-discover/kebeng v0.0.0-20250410132007-6a9946cf93cd
+	github.com/idlab-discover/kebeng v0.0.0-20250413113527-82d2a960fa52
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/lib/pq v1.10.9
 	github.com/mattn/go-sqlite3 v1.14.22

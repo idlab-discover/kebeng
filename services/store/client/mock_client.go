@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/google/uuid"
+	"github.com/idlab-discover/kebeng/common/cerror"
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
 	"github.com/stretchr/testify/mock"
 	"google.golang.org/grpc"
@@ -143,6 +144,14 @@ func (m *MockStoreClient) AddRevision(snapName string, sha3384 string, size uint
 func (m *MockStoreClient) GetObjectCustomMetadata(bucket string, objectKey string) *proto.GetObjectCustomMetadataResponse {
 	args := m.Called(bucket, objectKey)
 	if resp, ok := args.Get(0).(*proto.GetObjectCustomMetadataResponse); ok {
+		return resp
+	}
+	return nil
+}
+
+func (m *MockStoreClient) UpdateUploadStatus(uploadId string, status string, el *cerror.ErrorList) *proto.UpdateUploadStatusResponse {
+	args := m.Called(uploadId, status, el)
+	if resp, ok := args.Get(0).(*proto.UpdateUploadStatusResponse); ok {
 		return resp
 	}
 	return nil

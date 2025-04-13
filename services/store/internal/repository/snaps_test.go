@@ -1051,18 +1051,21 @@ func TestGetUploadById(t *testing.T) {
 	tests := []struct {
 		name              string
 		uploadId          uuid.UUID
+		el                *cerror.ErrorList
 		expectError       bool
 		expectedErrorCode string
 	}{
 		{
 			name:              "Success getting upload by id",
 			uploadId:          mockUUID,
+			el:                cerror.NewErrorList(),
 			expectError:       false,
 			expectedErrorCode: "",
 		},
 		{
 			name:              "Fail getting upload by id for non-existing upload",
 			uploadId:          uuid.New(),
+			el:                cerror.NewErrorList(),
 			expectError:       true,
 			expectedErrorCode: cerror.ResourceNotFound,
 		},
@@ -1070,7 +1073,7 @@ func TestGetUploadById(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			upload, err := globalRepo.GetUploadById(tt.uploadId)
+			upload, err := globalRepo.GetUploadById(tt.uploadId, tt.el)
 			if tt.expectError {
 				assert.NotNil(t, err)
 				if err != nil {
@@ -1079,6 +1082,48 @@ func TestGetUploadById(t *testing.T) {
 			} else {
 				assert.Nil(t, err)
 				assert.NotNil(t, upload)
+			}
+		})
+	}
+}
+
+func TestUpdateUploadStatus(t *testing.T) {
+	tests := []struct {
+		name              string
+		uploadId          uuid.UUID
+		status            string
+		el                *cerror.ErrorList
+		expectError       bool
+		expectedErrorCode string
+	}{
+		{
+			name:              "Success updating upload status",
+			uploadId:          mockUUID,
+			status:            "completed",
+			el:                cerror.NewErrorList(),
+			expectError:       false,
+			expectedErrorCode: "",
+		},
+		{
+			name:              "Fail updating upload status for non-existing upload",
+			uploadId:          uuid.New(),
+			status:            "completed",
+			el:                cerror.NewErrorList(),
+			expectError:       true,
+			expectedErrorCode: cerror.ResourceNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := globalRepo.UpdateUploadStatus(tt.uploadId, tt.status, tt.el)
+			if tt.expectError {
+				assert.NotNil(t, err)
+				if err != nil {
+					assert.Equal(t, tt.expectedErrorCode, err.GetCode())
+				}
+			} else {
+				assert.Nil(t, err)
 			}
 		})
 	}
@@ -1260,10 +1305,12 @@ func mockData(db *sqlx.DB) {
 	}
 
 	// Mock snap upload
+	el := cerror.NewErrorList()
+	el.Add(cerror.InvalidField, "mock-error")
 	_, err = db.Exec(`
-		INSERT INTO public.upload (id, entry_id, snap_name, status, account_id, unscanned_file_name, revision)
-		VALUES ($1, $2, 'test-snap', 'pending', $3, 'mock-file', 1);
-	`, mockUUID, mockUUID, mockUUID)
+		INSERT INTO public.upload (id, entry_id, snap_name, status, account_id, unscanned_file_name, revision, errors)
+		VALUES ($1, $2, 'test-snap', 'pending', $3, 'mock-file', 1, $4);
+	`, mockUUID, mockUUID, mockUUID, el)
 	if err != nil {
 		logrus.Fatalf("failed to insert mock data for snap upload: %v", err)
 	}
