@@ -51,6 +51,8 @@ github.com/hashicorp/hcl v1.0.0 h1:0Anlzjpi4vEasTeNFn2mLJgTSwt0+6sfsiTG8qcWGx4=
 github.com/hashicorp/hcl v1.0.0/go.mod h1:E5yfLk+7swimpb2L/Alb/PJmXilQ/rhwaUYs4T20WEQ=
 github.com/idlab-discover/kebeng v0.0.0-20250410133923-a134256345a7 h1:6DeMDth0NTvFT0HBELG/pnPaOzUCYS0MTY8W9GI6juk=
 github.com/idlab-discover/kebeng v0.0.0-20250410133923-a134256345a7/go.mod h1:oL4wiGQMlCIATI2/LRjQcGpaD4XojLfC0YxeKHj1FLs=
+github.com/idlab-discover/kebeng v0.0.0-20250413113527-82d2a960fa52 h1:3TxR3FNy+wXJW2EjWerdbY6ex82rdrMz7euKDEb8OlM=
+github.com/idlab-discover/kebeng v0.0.0-20250413113527-82d2a960fa52/go.mod h1:eLVgHaIlm/pL91dOVhkLI/Q6osWN8LL9E6hGfa9cNAU=
 github.com/idlab-discover/kebeng/services/account v0.0.0-20250410134233-c4f86861c29e h1:Y1fCRw5vB+wB0P3A50fHMM4FnXGNMoEbzg0Y4EDg/6o=
 github.com/idlab-discover/kebeng/services/account v0.0.0-20250410134233-c4f86861c29e/go.mod h1:YSQDM2AVA8dgmTTQzaGTpl9Ru77VtADMGpmAdus7KP0=
 github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250410134233-c4f86861c29e h1:uXfbu7BWQDS/DizfQd7/o4KlTBkBXBVzIaSLd0zi6/c=
@@ -83,6 +85,8 @@ github.com/idlab-discover/kebeng/services/store v0.0.0-20250412225529-14572b295f
 github.com/idlab-discover/kebeng/services/store v0.0.0-20250412225529-14572b295ff2/go.mod h1:LyJKuRQ5I520WAFUxelh3B1ZzmTorRvCmRa5kTpo5hg=
 github.com/idlab-discover/kebeng/services/store v0.0.0-20250413093202-9d0a99c77896 h1:4BYaal6J45SIU85urzIt9V1XEdrCgddjK8xDRveW4IM=
 github.com/idlab-discover/kebeng/services/store v0.0.0-20250413093202-9d0a99c77896/go.mod h1:LyJKuRQ5I520WAFUxelh3B1ZzmTorRvCmRa5kTpo5hg=
+github.com/idlab-discover/kebeng/services/store v0.0.0-20250413115308-0bf9526e7434 h1:LBzG4IGG8baHISwFQal2GSvrsqs70afnOverHqjC7VA=
+github.com/idlab-discover/kebeng/services/store v0.0.0-20250413115308-0bf9526e7434/go.mod h1:ZQhj8TIjoLCP2YUYUQMRjiIO2UoURbnzb5MBgQFEdis=
 github.com/jmoiron/sqlx v1.4.0 h1:1PLqN7S1UYp5t4SrVVnt4nUVNemrDAtxlulVe+Qgm3o=
 github.com/jmoiron/sqlx v1.4.0/go.mod h1:ZrZ7UsYB/weZdl2Bxg6jCRO9c3YHl8r3ahlKmRT4JLY=
 github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnrnM=
