@@ -5,6 +5,7 @@ import (
 	"context"
 	"io"
 
+	"github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/idlab-discover/kebeng/services/store/internal/models"
 	"github.com/idlab-discover/kebeng/services/store/internal/repository"
 	"github.com/minio/minio-go/v7"
@@ -99,7 +100,7 @@ func (m *MockObjectStore) GetObjectCustomMetadata(bucket string, objectName stri
 	return args.Get(0).(*models.Metadata), args.Error(1)
 }
 
-func (m *MockObjectStore) DeleteFileFromBucket(bucket string, filePath string) error {
+func (m *MockObjectStore) DeleteFileFromBucket(bucket string, filePath string) *cerror.CustomError {
 	args := m.Called(bucket, filePath)
-	return args.Error(0)
+	return args.Get(0).(*cerror.CustomError)
 }

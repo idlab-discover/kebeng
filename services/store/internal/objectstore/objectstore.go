@@ -10,6 +10,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/idlab-discover/kebeng/common/crypto"
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
 	"github.com/idlab-discover/kebeng/services/store/internal/models"
@@ -38,7 +39,7 @@ type IObjectStore interface {
 	MakeBucketAndAddKey(bucketName string, keyPath string, keyName string)
 	Move(sourceBucket, destinationBucket, objectName string, newObjectName string) error
 	GetObjectCustomMetadata(bucket string, objectName string) (*models.Metadata, error)
-	DeleteFileFromBucket(bucket string, filePath string) error
+	DeleteFileFromBucket(bucket string, filePath string) *cerror.CustomError
 }
 
 type ObjectStore struct {
@@ -221,21 +222,21 @@ func (obs *ObjectStore) MakeBucketAndAddKey(bucketName string, keyPath string, k
 	}
 }
 
-func (obs *ObjectStore) DeleteFileFromBucket(bucket string, filePath string) error {
+func (obs *ObjectStore) DeleteFileFromBucket(bucket string, filePath string) *cerror.CustomError {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	exists, err := obs.MinioClient.BucketExists(ctx, bucket)
 	if err != nil {
 		logrus.Error(err)
-		return err
+		return cerror.NewCustomError(cerror.InternalServerError, err.Error())
 	}
 
 	if exists {
 		err = obs.MinioClient.RemoveObject(ctx, bucket, filePath, minio.RemoveObjectOptions{})
 		if err != nil {
 			logrus.Error(err)
-			return err
+			return cerror.NewCustomError(cerror.InternalServerError, err.Error())
 		}
 	}
 
