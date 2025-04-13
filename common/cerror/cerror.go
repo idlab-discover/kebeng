@@ -2,6 +2,7 @@ package cerror
 
 import (
 	"database/sql"
+	"database/sql/driver"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -183,6 +184,31 @@ func FormatBindError(err error) string {
 
 	// default
 	return err.Error()
+}
+
+// Value maakt van ErrorList een JSON-string voor opslag in PostgreSQL
+func (el ErrorList) Value() (driver.Value, error) {
+	if len(el) == 0 {
+		return "[]", nil
+	}
+	return json.Marshal(el)
+}
+
+// Scan leest een JSONB-veld uit PostgreSQL in een ErrorList
+func (el *ErrorList) Scan(value interface{}) error {
+	if value == nil {
+		if el != nil {
+			*el = ErrorList{}
+		}
+		return nil
+	}
+
+	bytes, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("expected []byte, got %T", value)
+	}
+
+	return json.Unmarshal(bytes, el)
 }
 
 func (el *ErrorList) GetHTTPStatus() int {
