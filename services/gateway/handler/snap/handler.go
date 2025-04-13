@@ -340,14 +340,21 @@ func (h *Handler) SnapPush(c *gin.Context) {
 	metadata := h.StoreClient.GetObjectCustomMetadata("unscanned", req.UnscannedFileName)
 	if len(metadata.Errors) > 0 {
 		el.ExtendProtoError(metadata.Errors)
-		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
 		return
 	}
 
 	// Create a new revision for the snap upload
-	revision := h.StoreClient.AddRevision(entry.SnapName, metadata.Metadata["Sha3-384"], uint64(req.BinaryFileSize), []string{"amd64"}, req.Channels, req.UnscannedFileName)
-	logrus.Infof("revision: %s", revision)
+	revision := h.StoreClient.AddRevision(entry.SnapName, metadata.Metadata["Sha3-384"], uint64(req.BinaryFileSize), []string{"amd64"}, req.Channels, req.UnscannedFileName) // FIX: architectures should be passed from the request
+	if len(revision.Errors) > 0 {
+		el.ExtendProtoError(revision.Errors)
+	}
 
+	// Update the upload status to "processed"
+	updatedUpload := h.StoreClient.UpdateUploadStatus(upload.Id, "processed", revision.Revision, el)
+	if len(updatedUpload.Errors) > 0 {
+		el.ExtendProtoError(updatedUpload.Errors)
+		return
+	}
 }
 
 func (h *Handler) UnscannedUpload(c *gin.Context) {
@@ -416,6 +423,7 @@ func (h *Handler) GetUploadStatus(c *gin.Context) {
 		"code":      "200",
 		"processed": uploadStatus.Processed,
 		"revision":  uploadStatus.Revision,
+		"errors":    uploadStatus.Errors,
 	})
 }
 

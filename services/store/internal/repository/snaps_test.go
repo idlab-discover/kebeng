@@ -1088,6 +1088,8 @@ func TestGetUploadById(t *testing.T) {
 }
 
 func TestUpdateUploadStatus(t *testing.T) {
+	el := cerror.NewErrorList()
+	el.Add(cerror.InternalServerError, "mock error")
 	tests := []struct {
 		name              string
 		uploadId          uuid.UUID
@@ -1102,7 +1104,7 @@ func TestUpdateUploadStatus(t *testing.T) {
 			uploadId:          mockUUID,
 			status:            "completed",
 			revision:          1,
-			el:                cerror.NewErrorList(),
+			el:                el,
 			expectError:       false,
 			expectedErrorCode: "",
 		},
@@ -1111,7 +1113,7 @@ func TestUpdateUploadStatus(t *testing.T) {
 			uploadId:          uuid.New(),
 			status:            "completed",
 			revision:          1,
-			el:                cerror.NewErrorList(),
+			el:                el,
 			expectError:       true,
 			expectedErrorCode: cerror.ResourceNotFound,
 		},

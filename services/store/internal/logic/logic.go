@@ -824,20 +824,20 @@ func (s *StoreLogic) GetUploadStatus(ctx context.Context, req *proto.GetUploadSt
 	el := cerror.NewErrorList()
 	if req.GetUploadId() == "" {
 		el.Add(cerror.MissingField, "id is required")
-		return &proto.GetUploadStatusResponse{Errors: el.ConvertToProtoErrorList()}, nil
+		return &proto.GetUploadStatusResponse{Processed: true, Errors: el.ConvertToProtoErrorList()}, nil
 	}
 
 	id, err := uuid.Parse(req.GetUploadId())
 	if err != nil {
 		logrus.Error(err)
 		el.Add(cerror.InvalidField, "invalid UUID format")
-		return &proto.GetUploadStatusResponse{Errors: el.ConvertToProtoErrorList()}, nil
+		return &proto.GetUploadStatusResponse{Processed: true, Errors: el.ConvertToProtoErrorList()}, nil
 	}
 
 	snapUpload, cerr := s.repo.GetUploadById(id, el)
 	if cerr != nil {
 		// Already logged in GetUploadById (repository)
-		return &proto.GetUploadStatusResponse{Errors: el.ConvertToProtoErrorList()}, nil
+		return &proto.GetUploadStatusResponse{Processed: true, Errors: el.ConvertToProtoErrorList()}, nil
 	}
 
 	if snapUpload.Errors != nil {
