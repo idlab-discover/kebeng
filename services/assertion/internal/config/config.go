@@ -28,8 +28,7 @@ type Config struct {
 	AuthorityID string `mapstructure:"authority_id" yaml:"authority_id"`
 	StoreName   string `mapstructure:"store_name" yaml:"store_name"`
 
-	TestMode         bool
-	TestDataFilePath string `mapstructure:"test_data_file_path" yaml:"test_data_file_path"`
+	TestMode bool
 }
 
 func LoadConfig() (*Config, error) {
@@ -132,12 +131,6 @@ func (c *Config) checkConfig() error {
 	}
 	if c.StoreName == "" {
 		errs = append(errs, "StoreName is required")
-	}
-
-	if c.TestMode {
-		if c.TestDataFilePath == "" {
-			errs = append(errs, "TestDataFilePath is required in test mode")
-		}
 	}
 
 	if len(errs) > 0 {
