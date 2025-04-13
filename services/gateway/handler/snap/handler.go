@@ -344,7 +344,7 @@ func (h *Handler) SnapPush(c *gin.Context) {
 	}
 
 	// Create a new revision for the snap upload
-	revision := h.StoreClient.AddRevision(entry.SnapName, metadata.Metadata["Sha3-384"], uint64(req.BinaryFileSize), []string{"amd64"}, req.Channels, req.UnscannedFileName) // FIX: architectures should be passed from the request
+	revision := h.StoreClient.AddRevision(entry.SnapName, metadata.Sha3_384, uint64(req.BinaryFileSize), []string{"amd64"}, req.Channels, req.UnscannedFileName) // FIX: architectures should be passed from the request
 	if len(revision.Errors) > 0 {
 		el.ExtendProtoError(revision.Errors)
 	}
