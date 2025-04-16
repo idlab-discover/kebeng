@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
+	"github.com/idlab-discover/kebeng/services/store/internal/models"
 	"github.com/idlab-discover/kebeng/services/store/internal/objectstore"
 	"github.com/minio/minio-go/v7"
 	"github.com/stretchr/testify/assert"
@@ -30,10 +31,10 @@ func TestSaveFileToBucket(t *testing.T) {
 	mockMinio.On("FPutObject", mock.Anything, "test-bucket", "testfile.txt", "some/path/testfile.txt", mock.Anything).
 		Return(minio.UploadInfo{Size: 456}, nil)
 
-	uploadInfo, err := testObjectStore.SaveFileToBucket("test-bucket", "some/path/testfile.txt")
+	metadata, err := testObjectStore.SaveFileToBucket("test-bucket", "some/path/testfile.txt", "sha3_384_hash")
 	assert.NoError(t, err)
-	assert.NotNil(t, uploadInfo)
-	assert.Equal(t, int64(456), uploadInfo.Size)
+	assert.NotNil(t, metadata)
+	assert.Equal(t, int64(456), metadata.Size)
 
 	mockMinio.AssertExpectations(t)
 }
@@ -51,6 +52,7 @@ func TestMove_Success(t *testing.T) {
 	srcBucket := "source"
 	dstBucket := "destination"
 	object := "file.snap"
+	newObjectName := "newfile.snap"
 
 	// Expectations
 	mockMinio.On("BucketExists", mock.Anything, srcBucket).Return(true, nil)
@@ -59,9 +61,10 @@ func TestMove_Success(t *testing.T) {
 		mock.AnythingOfType("minio.CopyDestOptions"),
 		mock.AnythingOfType("minio.CopySrcOptions"),
 	).Return(minio.UploadInfo{}, nil)
+	mockMinio.On("RemoveObject", mock.Anything, srcBucket, object, mock.Anything).Return(nil)
 
 	// Act
-	err := store.Move(srcBucket, dstBucket, object)
+	err := store.Move(srcBucket, dstBucket, object, newObjectName)
 
 	// Assert
 	assert.NoError(t, err)
@@ -75,9 +78,9 @@ func TestMove_BucketDoesNotExist(t *testing.T) {
 	mockMinio.On("BucketExists", mock.Anything, "source").Return(false, nil)
 	mockMinio.On("BucketExists", mock.Anything, "destination").Return(true, nil)
 
-	err := store.Move("source", "destination", "file.snap")
+	err := store.Move("source", "destination", "file.snap", "newfile.snap")
 	assert.Error(t, err)
-	assert.EqualError(t, err, "something went wrong")
+	assert.EqualError(t, err, "source or destination bucket does not exist")
 
 	mockMinio.AssertExpectations(t)
 }
@@ -199,5 +202,124 @@ func TestMakeBucketAndAddKey(t *testing.T) {
 	store.MakeBucketAndAddKey("my-bucket", tmpFile, "my-key.pem")
 
 	// Assert
+	mockMinio.AssertExpectations(t)
+}
+
+func TestGetObjectCustomMetadata(t *testing.T) {
+	mockMinio := new(objectstore.MockObjectStore)
+	cfg := &config.Config{}
+	store := &objectstore.ObjectStore{MinioClient: mockMinio, Cfg: cfg}
+
+	bucket := "test-bucket"
+	object := "test-object"
+
+	mockObjectInfo := minio.ObjectInfo{
+		UserMetadata: map[string]string{
+			"sha3_384": "",
+		},
+	}
+
+	sha3_384 := mockObjectInfo.UserMetadata["sha3_384"]
+
+	expectedMetadata := &models.Metadata{
+		Sha3_384: &sha3_384,
+	}
+
+	mockMinio.On("StatObject", mock.Anything, bucket, object, mock.Anything).
+		Return(mockObjectInfo, nil)
+
+	metadata, err := store.GetObjectCustomMetadata(bucket, object)
+	assert.NoError(t, err)
+	assert.NotNil(t, metadata)
+	assert.Equal(t, expectedMetadata, metadata)
+
+	mockMinio.AssertExpectations(t)
+}
+
+func TestGetObjectMetadata_Error(t *testing.T) {
+	mockMinio := new(objectstore.MockObjectStore)
+	cfg := &config.Config{}
+	store := &objectstore.ObjectStore{MinioClient: mockMinio, Cfg: cfg}
+
+	bucket := "test-bucket"
+	object := "non-existent-object"
+
+	expectedError := errors.New("object not found")
+
+	mockMinio.On("StatObject", mock.Anything, bucket, object, mock.Anything).
+		Return(minio.ObjectInfo{}, expectedError)
+
+	metadata, err := store.GetObjectCustomMetadata(bucket, object)
+	assert.Error(t, err)
+	assert.Nil(t, metadata)
+	assert.EqualError(t, err, "object not found")
+
+	mockMinio.AssertExpectations(t)
+}
+
+func TestDeleteFileFromBucket(t *testing.T) {
+	mockMinio := new(objectstore.MockObjectStore)
+	cfg := &config.Config{}
+
+	store := &objectstore.ObjectStore{
+		Cfg:         cfg,
+		MinioClient: mockMinio,
+	}
+
+	bucket := "test-bucket"
+	object := "test-object"
+
+	mockMinio.On("BucketExists", mock.Anything, bucket).Return(true, nil)
+	mockMinio.On("RemoveObject", mock.Anything, bucket, object, mock.Anything).Return(nil)
+
+	cerr := store.DeleteFileFromBucket(bucket, object)
+	assert.Nil(t, cerr)
+
+	mockMinio.AssertExpectations(t)
+}
+func TestDeleteFileFromBucket_Error(t *testing.T) {
+	mockMinio := new(objectstore.MockObjectStore)
+	cfg := &config.Config{}
+
+	store := &objectstore.ObjectStore{
+		Cfg:         cfg,
+		MinioClient: mockMinio,
+	}
+
+	bucket := "test-bucket"
+	object := "non-existent-object"
+
+	expectedError := errors.New("object not found")
+
+	mockMinio.On("BucketExists", mock.Anything, bucket).Return(true, nil)
+	mockMinio.On("RemoveObject", mock.Anything, bucket, object, mock.Anything).Return(expectedError)
+
+	cerr := store.DeleteFileFromBucket(bucket, object)
+	assert.NotNil(t, cerr)
+	assert.Equal(t, cerr.GetMessage(), "object not found")
+
+	mockMinio.AssertExpectations(t)
+}
+
+func TestDeleteFileFromBucket_BucketDoesNotExist(t *testing.T) {
+	mockMinio := new(objectstore.MockObjectStore)
+	cfg := &config.Config{}
+
+	store := &objectstore.ObjectStore{
+		Cfg:         cfg,
+		MinioClient: mockMinio,
+	}
+
+	bucket := "non-existent-bucket"
+	object := "test-object"
+
+	expectedError := errors.New("bucket does not exist")
+
+	mockMinio.On("BucketExists", mock.Anything, bucket).Return(false, expectedError)
+
+	cerr := store.DeleteFileFromBucket(bucket, object)
+	assert.NotNil(t, cerr)
+	assert.Equal(t, cerr.GetMessage(), "bucket does not exist")
+
 	mockMinio.AssertExpectations(t)
 }
