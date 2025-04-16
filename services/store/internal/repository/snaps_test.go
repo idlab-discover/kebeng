@@ -9,7 +9,6 @@ import (
 	embeddedpostgres "github.com/fergusstrange/embedded-postgres"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
-	"github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3" // SQLite driver
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -87,6 +86,7 @@ func TestAddChannel(t *testing.T) {
 		snapEntryId       uuid.UUID
 		trackId           uuid.UUID
 		channelName       string
+		el                *cerror.ErrorList
 		expectError       bool
 		expectedErrorCode string
 	}{
@@ -95,6 +95,7 @@ func TestAddChannel(t *testing.T) {
 			snapEntryId: mockUUID,
 			trackId:     mockUUID,
 			channelName: "mock-channel",
+			el:          cerror.NewErrorList(),
 			expectError: false,
 		},
 		{
@@ -102,6 +103,7 @@ func TestAddChannel(t *testing.T) {
 			snapEntryId: mockUUID,
 			trackId:     mockUUID,
 			channelName: "stable",
+			el:          cerror.NewErrorList(),
 			expectError: false,
 		},
 		{
@@ -109,6 +111,7 @@ func TestAddChannel(t *testing.T) {
 			snapEntryId:       uuid.New(),
 			trackId:           mockUUID,
 			channelName:       "mock-channel",
+			el:                cerror.NewErrorList(),
 			expectError:       true,
 			expectedErrorCode: cerror.ResourceNotFound,
 		},
@@ -117,13 +120,14 @@ func TestAddChannel(t *testing.T) {
 			snapEntryId:       mockUUID,
 			trackId:           uuid.New(),
 			channelName:       "mock-channel",
+			el:                cerror.NewErrorList(),
 			expectError:       true,
 			expectedErrorCode: cerror.ResourceNotFound,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resp, err := globalRepo.AddChannel(tt.snapEntryId, tt.trackId, tt.channelName)
+			resp, err := globalRepo.AddChannel(tt.snapEntryId, tt.trackId, tt.channelName, tt.el)
 			if tt.expectError {
 				assert.NotNil(t, err)
 				if err != nil {
@@ -142,6 +146,7 @@ func TestAddDefaultChannels(t *testing.T) {
 		name              string
 		snapEntryId       uuid.UUID
 		snapTrackId       uuid.UUID
+		el                *cerror.ErrorList
 		expectError       bool
 		expectedErrorCode string
 	}{
@@ -149,12 +154,14 @@ func TestAddDefaultChannels(t *testing.T) {
 			name:        "Success adding default channels",
 			snapEntryId: mockUUID,
 			snapTrackId: mockUUID,
+			el:          cerror.NewErrorList(),
 			expectError: false,
 		},
 		{
 			name:              "Fail adding default channels for non-existing snap entry",
 			snapEntryId:       uuid.New(),
 			snapTrackId:       mockUUID,
+			el:                cerror.NewErrorList(),
 			expectError:       true,
 			expectedErrorCode: cerror.ResourceNotFound,
 		},
@@ -162,6 +169,7 @@ func TestAddDefaultChannels(t *testing.T) {
 			name:              "Fail adding default channels for non-existing track",
 			snapEntryId:       mockUUID,
 			snapTrackId:       uuid.New(),
+			el:                cerror.NewErrorList(),
 			expectError:       true,
 			expectedErrorCode: cerror.ResourceNotFound,
 		},
@@ -169,7 +177,7 @@ func TestAddDefaultChannels(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := globalRepo.AddDefaultChannels(tt.snapEntryId, tt.snapTrackId)
+			err := globalRepo.AddDefaultChannels(tt.snapEntryId, tt.snapTrackId, tt.el)
 			if tt.expectError {
 				assert.NotNil(t, err)
 				if err != nil {
@@ -187,6 +195,7 @@ func TestAddTrack(t *testing.T) {
 		name              string
 		snapEntryId       uuid.UUID
 		trackName         string
+		el                *cerror.ErrorList
 		expectError       bool
 		expectedErrorCode string
 	}{
@@ -194,25 +203,28 @@ func TestAddTrack(t *testing.T) {
 			name:        "Success adding track",
 			snapEntryId: mockUUID,
 			trackName:   "mock-track",
+			el:          cerror.NewErrorList(),
 			expectError: false,
 		},
 		{
 			name:        "Succes adding track for already existing track",
 			snapEntryId: mockUUID,
 			trackName:   "latest",
+			el:          cerror.NewErrorList(),
 			expectError: false,
 		},
 		{
 			name:              "Fail adding track for non-existing snap entry",
 			snapEntryId:       uuid.New(),
 			trackName:         "mock-track",
+			el:                cerror.NewErrorList(),
 			expectError:       true,
 			expectedErrorCode: cerror.ResourceNotFound,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resp, err := globalRepo.AddTrack(tt.snapEntryId, tt.trackName)
+			resp, err := globalRepo.AddTrack(tt.snapEntryId, tt.trackName, tt.el)
 			if tt.expectError {
 				assert.NotNil(t, err)
 				if err != nil {
@@ -236,6 +248,9 @@ func TestAddRevision(t *testing.T) {
 		size              uint64
 		sequenceNumber    uint
 		architectures     []string
+		sha3384           string
+		minioFilePath     string
+		el                *cerror.ErrorList
 		expectError       bool
 		expectedErrorCode string
 	}{
@@ -248,6 +263,9 @@ func TestAddRevision(t *testing.T) {
 			size:           123456,
 			sequenceNumber: 1,
 			architectures:  []string{"x86_64", "arm64"},
+			sha3384:        "mock-sha3-384",
+			minioFilePath:  "some/path/mock-snap.snap",
+			el:             cerror.NewErrorList(),
 			expectError:    false,
 		},
 		{
@@ -259,6 +277,9 @@ func TestAddRevision(t *testing.T) {
 			size:              123456,
 			sequenceNumber:    1,
 			architectures:     []string{"x86_64", "arm64"},
+			sha3384:           "mock-sha3-384",
+			minioFilePath:     "some/path/mock-snap.snap",
+			el:                cerror.NewErrorList(),
 			expectError:       true,
 			expectedErrorCode: cerror.ResourceNotFound,
 		},
@@ -271,6 +292,9 @@ func TestAddRevision(t *testing.T) {
 			size:              123456,
 			sequenceNumber:    1,
 			architectures:     []string{"x86_64", "arm64"},
+			sha3384:           "mock-sha3-384",
+			minioFilePath:     "some/path/mock-snap.snap",
+			el:                cerror.NewErrorList(),
 			expectError:       true,
 			expectedErrorCode: cerror.ResourceNotFound,
 		},
@@ -283,13 +307,16 @@ func TestAddRevision(t *testing.T) {
 			size:              123456,
 			sequenceNumber:    1,
 			architectures:     []string{"x86_64", "arm64"},
+			sha3384:           "mock-sha3-384",
+			minioFilePath:     "some/path/mock-snap.snap",
+			el:                cerror.NewErrorList(),
 			expectError:       true,
 			expectedErrorCode: cerror.ResourceNotFound,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			revision, err := globalRepo.AddRevision(tt.entryId, tt.trackId, tt.channelId, tt.snapName, tt.size, tt.sequenceNumber, tt.architectures)
+			revision, err := globalRepo.AddRevision(tt.entryId, tt.trackId, tt.channelId, tt.snapName, tt.size, tt.sequenceNumber, tt.architectures, tt.sha3384, tt.minioFilePath, tt.el)
 			if tt.expectError {
 				assert.NotNil(t, err)
 				if err != nil {
@@ -684,18 +711,21 @@ func TestGetRevisionBySHA(t *testing.T) {
 	tests := []struct {
 		name              string
 		sha               string
+		el                *cerror.ErrorList
 		expectError       bool
 		expectedErrorCode string
 	}{
 		{
 			name:              "Success getting revision by sha",
 			sha:               "mock-sha3-384",
+			el:                cerror.NewErrorList(),
 			expectError:       false,
 			expectedErrorCode: "",
 		},
 		{
 			name:              "Fail getting revision by sha for non-existing revision",
 			sha:               "nonexistent",
+			el:                cerror.NewErrorList(),
 			expectError:       true,
 			expectedErrorCode: cerror.ResourceNotFound,
 		},
@@ -703,7 +733,7 @@ func TestGetRevisionBySHA(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			revision, err := globalRepo.GetRevisionBySHA(tt.sha, false)
+			revision, err := globalRepo.GetRevisionBySHA(tt.sha, false, tt.el)
 			if tt.expectError {
 				assert.NotNil(t, err)
 				if err != nil {
@@ -721,18 +751,21 @@ func TestGetRevisionBySHAEncoded(t *testing.T) {
 	tests := []struct {
 		name              string
 		sha               string
+		el                *cerror.ErrorList
 		expectError       bool
 		expectedErrorCode string
 	}{
 		{
 			name:              "Success getting revision by sha",
 			sha:               "mock-sha3-384-encoded",
+			el:                cerror.NewErrorList(),
 			expectError:       false,
 			expectedErrorCode: "",
 		},
 		{
 			name:              "Fail getting revision by sha for non-existing revision",
 			sha:               "nonexistent",
+			el:                cerror.NewErrorList(),
 			expectError:       true,
 			expectedErrorCode: cerror.ResourceNotFound,
 		},
@@ -740,7 +773,7 @@ func TestGetRevisionBySHAEncoded(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			revision, err := globalRepo.GetRevisionBySHA(tt.sha, true)
+			revision, err := globalRepo.GetRevisionBySHA(tt.sha, true, tt.el)
 			if tt.expectError {
 				assert.NotNil(t, err)
 				if err != nil {
@@ -835,156 +868,6 @@ func TestGetPreloadAssociations(t *testing.T) {
 	}
 }
 
-func TestReleaseSnap(t *testing.T) {
-	tests := []struct {
-		name              string
-		channels          []string
-		snapEntryId       uuid.UUID
-		revisionID        uuid.UUID
-		expectError       bool
-		expectedErrorCode string
-	}{
-		{
-			name:              "Success releasing snap to multiple channels",
-			channels:          []string{"stable", "latest/stable"},
-			snapEntryId:       mockUUID,
-			revisionID:        mockUUID,
-			expectError:       false,
-			expectedErrorCode: "",
-		},
-		{
-			name:              "Fail releasing snap to multiple channels for non-existing snap entry",
-			channels:          []string{"stable", "latest/stable"},
-			snapEntryId:       uuid.New(),
-			revisionID:        mockUUID,
-			expectError:       true,
-			expectedErrorCode: cerror.ResourceNotFound,
-		},
-		{
-			name:              "Fail releasing snap to multiple channels for non-existing revision",
-			channels:          []string{"stable", "latest/stable"},
-			snapEntryId:       mockUUID,
-			revisionID:        uuid.New(),
-			expectError:       true,
-			expectedErrorCode: cerror.ResourceNotFound,
-		},
-		{
-			name:              "Fail releasing snap to multiple channels for non-existing channel",
-			channels:          []string{"nonexistent"},
-			snapEntryId:       mockUUID,
-			revisionID:        mockUUID,
-			expectError:       true,
-			expectedErrorCode: cerror.ResourceNotFound,
-		},
-		{
-			name:              "Fail releasing snap to multiple channels for non-existing track",
-			channels:          []string{"nonexistent/stable"},
-			snapEntryId:       mockUUID,
-			revisionID:        mockUUID,
-			expectError:       true,
-			expectedErrorCode: cerror.ResourceNotFound,
-		},
-		{
-			name:              "Fail releasing snap to multiple channels for non-existing track and channel",
-			channels:          []string{"nonexistent/nonexistent"},
-			snapEntryId:       mockUUID,
-			revisionID:        mockUUID,
-			expectError:       true,
-			expectedErrorCode: cerror.ResourceNotFound,
-		},
-		{
-			name:              "Fail releasing snap because of specifying a branch (not supported yet)",
-			channels:          []string{"latest/stable/branch"},
-			expectError:       true,
-			expectedErrorCode: cerror.NotImplemented,
-		},
-		{
-			name:              "Fail releasing snap because of incorrect channel format",
-			channels:          []string{"latest/stable/branch/extra"},
-			expectError:       true,
-			expectedErrorCode: cerror.InvalidField,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := globalRepo.ReleaseSnap(tt.channels, tt.snapEntryId, tt.revisionID)
-			if tt.expectError {
-				assert.NotNil(t, err)
-				if err != nil {
-					assert.Equal(t, tt.expectedErrorCode, err.GetCode())
-				}
-			}
-		})
-	}
-}
-
-func TestUpdateRevision(t *testing.T) {
-	buildAssertionFileName := "mock-build-assertion"
-	sha3_384 := "mock-sha3-384"
-	sha3_384_Encoded := "mock-sha3-384-encoded"
-	size := uint64(999)
-	sequenceNumber := uint(1)
-	architectures := pq.StringArray{"mock-arch"}
-	status := "active"
-	version := "1.0.0"
-	tests := []struct {
-		name              string
-		revision          models.SnapRevision
-		expectError       bool
-		expectedErrorCode string
-	}{
-		{
-			name: "Success updating revision",
-			revision: models.SnapRevision{
-				ID:                     mockUUID,
-				SnapEntryID:            mockUUID,
-				BuildAssertionFileName: &buildAssertionFileName,
-				SHA3_384:               &sha3_384,
-				SHA3_384_Encoded:       &sha3_384_Encoded,
-				Size:                   &size,
-				SequenceNumber:         &sequenceNumber,
-				Architectures:          architectures,
-				Status:                 &status,
-				Version:                &version,
-			},
-			expectError: false,
-		},
-		{
-			name: "Fail updating revision for non-existing revision",
-			revision: models.SnapRevision{
-				ID:                     uuid.New(),
-				SnapEntryID:            mockUUID,
-				BuildAssertionFileName: &buildAssertionFileName,
-				SHA3_384:               &sha3_384,
-				SHA3_384_Encoded:       &sha3_384_Encoded,
-				Size:                   &size,
-				SequenceNumber:         &sequenceNumber,
-				Architectures:          architectures,
-				Status:                 &status,
-				Version:                &version,
-			},
-			expectError:       true,
-			expectedErrorCode: cerror.ResourceNotFound,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			revision, err := globalRepo.UpdateRevision(&tt.revision, nil)
-			if tt.expectError {
-				assert.NotNil(t, err)
-				if err != nil {
-					assert.Equal(t, tt.expectedErrorCode, err.GetCode())
-				}
-			} else {
-				assert.Nil(t, err)
-				assert.NotNil(t, revision)
-			}
-		})
-	}
-}
-
 func TestAddUpload(t *testing.T) {
 	tests := []struct {
 		name              string
@@ -1023,6 +906,219 @@ func TestAddUpload(t *testing.T) {
 	}
 }
 
+func TestGetUploadById(t *testing.T) {
+	tests := []struct {
+		name              string
+		uploadId          uuid.UUID
+		el                *cerror.ErrorList
+		expectError       bool
+		expectedErrorCode string
+	}{
+		{
+			name:              "Success getting upload by id",
+			uploadId:          mockUUID,
+			el:                cerror.NewErrorList(),
+			expectError:       false,
+			expectedErrorCode: "",
+		},
+		{
+			name:              "Fail getting upload by id for non-existing upload",
+			uploadId:          uuid.New(),
+			el:                cerror.NewErrorList(),
+			expectError:       true,
+			expectedErrorCode: cerror.ResourceNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			upload, err := globalRepo.GetUploadById(tt.uploadId, tt.el)
+			if tt.expectError {
+				assert.NotNil(t, err)
+				if err != nil {
+					assert.Equal(t, tt.expectedErrorCode, err.GetCode())
+				}
+			} else {
+				assert.Nil(t, err)
+				assert.NotNil(t, upload)
+			}
+		})
+	}
+}
+
+func TestUpdateUploadStatus(t *testing.T) {
+	el := cerror.NewErrorList()
+	el.Add(cerror.InternalServerError, "mock error")
+	tests := []struct {
+		name              string
+		uploadId          uuid.UUID
+		status            string
+		revision          uint64
+		el                *cerror.ErrorList
+		expectError       bool
+		expectedErrorCode string
+	}{
+		{
+			name:              "Success updating upload status",
+			uploadId:          mockUUID,
+			status:            "completed",
+			revision:          1,
+			el:                el,
+			expectError:       false,
+			expectedErrorCode: "",
+		},
+		{
+			name:              "Fail updating upload status for non-existing upload",
+			uploadId:          uuid.New(),
+			status:            "completed",
+			revision:          1,
+			el:                el,
+			expectError:       true,
+			expectedErrorCode: cerror.ResourceNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := globalRepo.UpdateUploadStatus(tt.uploadId, tt.status, tt.revision, tt.el)
+			if tt.expectError {
+				assert.NotNil(t, err)
+				if err != nil {
+					assert.Equal(t, tt.expectedErrorCode, err.GetCode())
+				}
+			} else {
+				assert.Nil(t, err)
+			}
+		})
+	}
+}
+
+func TestGetChannelByTrackIdAndName(t *testing.T) {
+	tests := []struct {
+		name              string
+		trackId           uuid.UUID
+		channelName       string
+		el                *cerror.ErrorList
+		expectError       bool
+		expectedErrorCode string
+	}{
+		{
+			name:              "Success getting channel by track id and name",
+			trackId:           mockUUID,
+			channelName:       "stable",
+			el:                cerror.NewErrorList(),
+			expectError:       false,
+			expectedErrorCode: "",
+		},
+		{
+			name:              "Fail getting channel by track id and name for non-existing channel",
+			trackId:           mockUUID,
+			channelName:       "nonexistent",
+			el:                cerror.NewErrorList(),
+			expectError:       true,
+			expectedErrorCode: cerror.ResourceNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			channel, err := globalRepo.GetChannelByTrackIdAndName(tt.trackId, tt.channelName, tt.el)
+			if tt.expectError {
+				assert.NotNil(t, err)
+				if err != nil {
+					assert.Equal(t, tt.expectedErrorCode, err.GetCode())
+				}
+			} else {
+				assert.Nil(t, err)
+				assert.NotNil(t, channel)
+			}
+		})
+	}
+}
+
+func TestGetLatestRevisionByEntryId(t *testing.T) {
+	tests := []struct {
+		name              string
+		entryId           uuid.UUID
+		el                *cerror.ErrorList
+		expectError       bool
+		expectedErrorCode string
+	}{
+		{
+			name:              "Success getting latest revision by entry id",
+			entryId:           mockUUID,
+			el:                cerror.NewErrorList(),
+			expectError:       false,
+			expectedErrorCode: "",
+		},
+		{
+			name:              "Fail getting latest revision by entry id for non-existing entry",
+			entryId:           uuid.New(),
+			el:                cerror.NewErrorList(),
+			expectError:       true,
+			expectedErrorCode: cerror.ResourceNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			revision, err := globalRepo.GetLatestRevisionByEntryId(tt.entryId, tt.el)
+			if tt.expectError {
+				assert.NotNil(t, err)
+				if err != nil {
+					assert.Equal(t, tt.expectedErrorCode, err.GetCode())
+				}
+			} else {
+				assert.Nil(t, err)
+				assert.NotNil(t, revision)
+			}
+		})
+	}
+}
+
+func TestGetTrackByEntryIdAndName(t *testing.T) {
+	tests := []struct {
+		name              string
+		entryId           uuid.UUID
+		trackName         string
+		el                *cerror.ErrorList
+		expectError       bool
+		expectedErrorCode string
+	}{
+		{
+			name:              "Success getting track by entry id and name",
+			entryId:           mockUUID,
+			trackName:         "latest",
+			el:                cerror.NewErrorList(),
+			expectError:       false,
+			expectedErrorCode: "",
+		},
+		{
+			name:              "Fail getting track by entry id and name for non-existing track",
+			entryId:           mockUUID,
+			trackName:         "nonexistent",
+			el:                cerror.NewErrorList(),
+			expectError:       true,
+			expectedErrorCode: cerror.ResourceNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			track, err := globalRepo.GetTrackByEntryIdAndName(tt.entryId, tt.trackName, tt.el)
+			if tt.expectError {
+				assert.NotNil(t, err)
+				if err != nil {
+					assert.Equal(t, tt.expectedErrorCode, err.GetCode())
+				}
+			} else {
+				assert.Nil(t, err)
+				assert.NotNil(t, track)
+			}
+		})
+	}
+}
+
 // Helper function to insert mock data
 func mockData(db *sqlx.DB) {
 	// Mock snap entry
@@ -1056,8 +1152,8 @@ func mockData(db *sqlx.DB) {
 	// Mock snap revision
 	revisionID := mockUUID
 	_, err = db.Exec(`
-		INSERT INTO public.revision (id, entry_id, build_assertion_filename, sha3_384, sha3_384_encoded, size, sequence_number, architectures, status, version, snap_track_id, snap_channel_id)
-		VALUES ($1, $2, 'mock-build-assertion', 'mock-sha3-384', 'mock-sha3-384-encoded', 999, 1, ARRAY['mock-arch'], 'active', '1.0.0', $3, $4);
+		INSERT INTO public.revision (id, entry_id, build_assertion_filename, sha3_384, sha3_384_encoded, size, sequence_number, architectures, snap_track_id, snap_channel_id)
+		VALUES ($1, $2, 'mock-build-assertion', 'mock-sha3-384', 'mock-sha3-384-encoded', 999, 1, ARRAY['mock-arch'], $3, $4);
 	`, revisionID, mockUUID, trackID, channelID)
 	if err != nil {
 		logrus.Fatalf("failed to insert mock data for snap revision: %v", err)
@@ -1067,9 +1163,20 @@ func mockData(db *sqlx.DB) {
 	_, err = db.Exec(`
 		INSERT INTO public.comment (id, entry_id, author_id, reason, comment)
 		VALUES ($1, $2, $3, 'mock-reason', 'mock-comment');
-	`, uuid.New(), mockUUID, uuid.New())
+	`, mockUUID, mockUUID, uuid.New())
 	if err != nil {
 		logrus.Fatalf("failed to insert mock data for snap comment: %v", err)
+	}
+
+	// Mock snap upload
+	el := cerror.NewErrorList()
+	el.Add(cerror.InvalidField, "mock-error")
+	_, err = db.Exec(`
+		INSERT INTO public.upload (id, entry_id, snap_name, status, account_id, unscanned_file_name, revision, errors)
+		VALUES ($1, $2, 'test-snap', 'pending', $3, 'mock-file', 1, $4);
+	`, mockUUID, mockUUID, mockUUID, el)
+	if err != nil {
+		logrus.Fatalf("failed to insert mock data for snap upload: %v", err)
 	}
 }
 
@@ -1108,11 +1215,11 @@ func TestGetLatestRevision(t *testing.T) {
 	rev3ID := uuid.New()
 	snapName := "test-snap"
 	_, err = globalDB.Exec(`
-		INSERT INTO revision (id, entry_id, snap_track_id, snap_channel_id, snap_name, updated_at, sequence_number, version, status)
+		INSERT INTO revision (id, entry_id, snap_track_id, snap_channel_id, snap_name, updated_at, sequence_number)
 		VALUES 
-		($1, $2, $3, $4, $10, $5, 1, '1.0.0', 'active'),
-		($6, $2, $3, $4, $10, $7, 2, '1.0.1', 'active'),
-		($8, $2, $3, $4, $10, $9, 3, '1.0.2', 'active');
+		($1, $2, $3, $4, $10, $5, 1),
+		($6, $2, $3, $4, $10, $7, 2),
+		($8, $2, $3, $4, $10, $9, 3);
 	`, rev1ID, entryID, trackID, channelID, now.Add(-10*time.Minute),
 		rev2ID, now.Add(-5*time.Minute),
 		rev3ID, now.Add(-1*time.Minute),
@@ -1122,17 +1229,16 @@ func TestGetLatestRevision(t *testing.T) {
 	// Insert 1 revision in a different track/channel but with the most recent update
 	altRevID := uuid.New()
 	_, err = globalDB.Exec(`
-		INSERT INTO revision (id, entry_id, snap_track_id, snap_channel_id, updated_at, sequence_number, version, status)
-		VALUES ($1, $2, $3, $4, $5, 99, '9.9.9', 'active');
+		INSERT INTO revision (id, entry_id, snap_track_id, snap_channel_id, updated_at, sequence_number)
+		VALUES ($1, $2, $3, $4, $5, 99);
 	`, altRevID, entryID, altTrackID, altChannelID, now.Add(1*time.Minute))
 	assert.NoError(t, err)
 
 	// Call the method under test
-	revision, errObj := globalRepo.GetLatestRevision("getLatestRevision", "latest", "stable")
+	revision, errObj := globalRepo.GetLatestRevisionByTrackAndChannel("getLatestRevision", "latest", "stable")
 	assert.Nil(t, errObj)
 	assert.NotNil(t, revision)
 
-	assert.Equal(t, "1.0.2", *revision.Version)
 	assert.Equal(t, int64(3), int64(*revision.SequenceNumber))
 	assert.Equal(t, rev3ID, revision.ID)
 }

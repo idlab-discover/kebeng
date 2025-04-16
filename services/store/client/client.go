@@ -27,6 +27,10 @@ type StoreClientInterface interface {
 	SnapDownload(revisionId string) *proto.SnapDownloadCompleteResponse
 	UnscannedUpload(ctx context.Context, snapFile io.Reader) *proto.UnscannedUploadCompleteResponse
 	AddUpload(snapName string, entryId uuid.UUID, status string, accountId uuid.UUID, unscannedFileName string) *proto.AddUploadResponse
+	GetUploadStatus(uploadId string) *proto.GetUploadStatusResponse
+	AddRevision(snapName string, sha3384 string, size uint64, architectures []string, tracksAndChannels []string, unscannedFileName string) *proto.AddRevisionResponse
+	GetObjectCustomMetadata(bucket string, objectKey string) *proto.GetObjectCustomMetadataResponse
+	UpdateUploadStatus(uploadId string, status string, revision uint64, el *cerror.ErrorList) *proto.UpdateUploadStatusResponse
 }
 
 var _ StoreClientInterface = (*StoreClient)(nil)
@@ -156,7 +160,7 @@ func (c *StoreClient) GetLatestRevision(snapName, track, channel string) *proto.
 		Channel:  channel,
 	}
 
-	resp, err := c.client.GetLatestRevision(context.Background(), req)
+	resp, err := c.client.GetLatestRevisionByTrackAndChannel(context.Background(), req)
 	if err != nil {
 		resp = &proto.GetRevisionResponse{
 			Errors: []*cerrorpb.Error{{
@@ -313,4 +317,84 @@ func (c *StoreClient) SnapDownload(revisionId string) *proto.SnapDownloadComplet
 
 	response.Data = fileData.Bytes()
 	return response
+}
+
+func (c *StoreClient) GetUploadStatus(uploadId string) *proto.GetUploadStatusResponse {
+	req := &proto.GetUploadStatusRequest{
+		UploadId: uploadId,
+	}
+
+	resp, err := c.client.GetUploadStatus(context.Background(), req)
+	if err != nil {
+		resp = &proto.GetUploadStatusResponse{
+			Errors: []*cerrorpb.Error{{
+				Code:    cerror.InternalServerError,
+				Message: err.Error()},
+			},
+		}
+	}
+	return resp
+}
+
+// UpdateUploadStatus updates the status of an upload
+// It takes the upload ID, status, revision number, and a list of errors
+// Errors are stored in the database and are retrieved later by Snapcraft to check if any errors occurred during the upload
+func (c *StoreClient) UpdateUploadStatus(uploadId string, status string, revision uint64, el *cerror.ErrorList) *proto.UpdateUploadStatusResponse {
+	req := &proto.UpdateUploadStatusRequest{
+		UploadId: uploadId,
+		Status:   status,
+		Revision: revision,
+		Errors:   el.ConvertToProtoErrorList(),
+	}
+
+	resp, err := c.client.UpdateUploadStatus(context.Background(), req)
+	if err != nil {
+		resp = &proto.UpdateUploadStatusResponse{
+			Errors: []*cerrorpb.Error{{
+				Code:    cerror.InternalServerError,
+				Message: err.Error()},
+			},
+		}
+	}
+	return resp
+}
+
+func (c *StoreClient) AddRevision(snapName string, sha3384 string, size uint64, architectures []string, tracksAndChannels []string, unscannedFileName string) *proto.AddRevisionResponse {
+	req := &proto.AddRevisionRequest{
+		SnapName:          snapName,
+		Sha3_384:          sha3384,
+		Size:              size,
+		Architectures:     architectures,
+		TracksAndChannels: tracksAndChannels,
+		UnscannedFileName: unscannedFileName,
+	}
+
+	resp, err := c.client.AddRevision(context.Background(), req)
+	if err != nil {
+		resp = &proto.AddRevisionResponse{
+			Errors: []*cerrorpb.Error{{
+				Code:    cerror.InternalServerError,
+				Message: err.Error()},
+			},
+		}
+	}
+	return resp
+}
+
+func (c *StoreClient) GetObjectCustomMetadata(bucket string, objectKey string) *proto.GetObjectCustomMetadataResponse {
+	req := &proto.GetObjectCustomMetadataRequest{
+		Bucket:    bucket,
+		ObjectKey: objectKey,
+	}
+
+	resp, err := c.client.GetObjectCustomMetadata(context.Background(), req)
+	if err != nil {
+		return &proto.GetObjectCustomMetadataResponse{
+			Errors: []*cerrorpb.Error{{
+				Code:    cerror.InternalServerError,
+				Message: err.Error()},
+			},
+		}
+	}
+	return resp
 }
