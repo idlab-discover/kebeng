@@ -2,6 +2,7 @@ package logic
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"strings"
 	"time"
@@ -106,30 +107,57 @@ func (s *AssertionService) AddAccountKeyAssertion(ctx context.Context, req *prot
 	el := cerror.NewErrorList()
 	parsedAccountId, err := uuid.Parse(req.GetAccountId())
 	if err != nil {
-		logrus.Errorf("failed to parse account id: %s", err)
-		el.Add(cerror.Invalid, fmt.Sprintf("invalid account id could not parse to uuid: %s", err))
+		cerr := cerror.NewCustomError(cerror.InvalidField, fmt.Sprintf("failed to parse account id: %s", err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
 		return &proto.AccountKeyAssertionResponse{
 			Errors: el.ConvertToProtoErrorList(),
 		}, nil
 	}
+
 	var sequenceNumber uint32
 	latestAccountKeyAssertion, cerr := s.repo.GetLatestAccountKeyAssertion(el, parsedAccountId)
-	if cerr == nil {
-		sequenceNumber = latestAccountKeyAssertion.RevisionSequenceNumber
+	if cerr != nil && cerr.GetCode() != cerror.ResourceNotFound {
+		// should have been logged and added to error list in repo function
+		return &proto.AccountKeyAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}, nil
 	} else if cerr.GetCode() == cerror.ResourceNotFound {
-		// this is ok, we just need to create the first assertion
-		// we are adding 1 later so we set it to 0
-		sequenceNumber = 0
+		sequenceNumber = 1
 	} else {
-		logrus.Errorf("failed to get latest sequence number: %v", cerr)
-		el.Add(cerror.Invalid, fmt.Sprintf("failed to get latest sequence number: %s", cerr))
+		sequenceNumber = latestAccountKeyAssertion.RevisionSequenceNumber + 1
+	}
+
+	decodedPublicKey, err := base64.StdEncoding.DecodeString(req.GetEncodedPublicKey())
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.Invalid, fmt.Sprintf("failed to decode public key: %s", err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
 		return &proto.AccountKeyAssertionResponse{
 			Errors: el.ConvertToProtoErrorList(),
 		}, nil
 	}
-	sequenceNumber++
+	pubKey, err := asserts.DecodePublicKey(decodedPublicKey)
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.Invalid, fmt.Sprintf("failed to decode public key: %s", err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.AccountKeyAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}, nil
+	}
+	bodyBytes, err := asserts.EncodePublicKey(pubKey)
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.Invalid, fmt.Sprintf("failed to encode public key: %s", err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.AccountKeyAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}, nil
+	}
+
 	headers := map[string]any{
-		"authority-id":        s.cfg.RootKey.PublicKey().ID(),
+		"authority-id":        s.cfg.AuthorityID,
 		"revision":            fmt.Sprintf("%d", sequenceNumber),
 		"public-key-sha3-384": req.GetPublicKeySha3_384(),
 		"account-id":          req.GetAccountId(),
@@ -138,11 +166,11 @@ func (s *AssertionService) AddAccountKeyAssertion(ctx context.Context, req *prot
 		"until":               req.GetSince().AsTime().Add(time.Duration(365 * 24 * time.Hour)).Format(time.RFC3339), // a key is valid for 1 year
 		// The 'sign-key-sha3-384' header is generated during signing.
 	}
-	body := []byte(req.Body)
-	signedAssertion, err := s.assertionDB.Sign(asserts.AccountKeyType, headers, body, s.cfg.RootKey.PublicKey().ID())
+	signedAssertion, err := s.assertionDB.Sign(asserts.AccountKeyType, headers, bodyBytes, s.cfg.RootKey.PublicKey().ID())
 	if err != nil {
-		logrus.Errorf("failed to sign account key assertion: %v", err)
-		el.Add(cerror.Invalid, fmt.Sprintf("failed to sign account key assertion: %s", err))
+		cerr := cerror.NewCustomError(cerror.Invalid, fmt.Sprintf("failed to sign account key assertion: %s", err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
 		return &proto.AccountKeyAssertionResponse{
 			Errors: el.ConvertToProtoErrorList(),
 		}, nil
@@ -150,6 +178,7 @@ func (s *AssertionService) AddAccountKeyAssertion(ctx context.Context, req *prot
 
 	signature := string(asserts.Encode(signedAssertion))
 
+	// NOTE: maybe also store encoded public key?
 	accountKeyAssertion, cerr := s.repo.AddAccountKeyAssertion(
 		el,
 		s.cfg.AuthorityID,
@@ -160,18 +189,21 @@ func (s *AssertionService) AddAccountKeyAssertion(ctx context.Context, req *prot
 		parsedAccountId,
 		req.GetSince().AsTime(),
 		req.GetUntil().AsTime(),
-		req.GetBody(),
-		uint64(len(req.Body)),
+		bodyBytes,
+		uint64(len(bodyBytes)),
 		signature,
 	)
 	if cerr != nil {
 		// should have been logged and added to error list in repo function
-		return nil, fmt.Errorf("failed to add account key assertion: %v", cerr)
+		return &proto.AccountKeyAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}, nil
 	}
 
 	return &proto.AccountKeyAssertionResponse{
 		Id:                     accountKeyAssertion.ID.String(),
 		AuthorityId:            accountKeyAssertion.AuthorityID,
+		PublicKeySha3_384:      accountKeyAssertion.PublicKeySHA3_384,
 		SignKeySha3_384:        accountKeyAssertion.SignKeySHA3_384,
 		AccountId:              accountKeyAssertion.AccountID.String(),
 		Name:                   accountKeyAssertion.Name,
