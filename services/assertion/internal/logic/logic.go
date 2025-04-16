@@ -119,6 +119,7 @@ func (s *AssertionService) AddAccountKeyAssertion(ctx context.Context, req *prot
 	latestAccountKeyAssertion, cerr := s.repo.GetLatestAccountKeyAssertion(el, parsedAccountId)
 	if cerr != nil && cerr.GetCode() != cerror.ResourceNotFound {
 		// should have been logged and added to error list in repo function
+		// TODO: actually remove the ResourceNotFound error from errorlist with function Bram wrote
 		return &proto.AccountKeyAssertionResponse{
 			Errors: el.ConvertToProtoErrorList(),
 		}, nil
@@ -128,6 +129,7 @@ func (s *AssertionService) AddAccountKeyAssertion(ctx context.Context, req *prot
 		sequenceNumber = latestAccountKeyAssertion.RevisionSequenceNumber + 1
 	}
 
+	logrus.Infof("About to decode public key: %#v", req.GetEncodedPublicKey())
 	decodedPublicKey, err := base64.StdEncoding.DecodeString(req.GetEncodedPublicKey())
 	if err != nil {
 		cerr := cerror.NewCustomError(cerror.Invalid, fmt.Sprintf("failed to decode public key: %s", err))
@@ -137,6 +139,7 @@ func (s *AssertionService) AddAccountKeyAssertion(ctx context.Context, req *prot
 			Errors: el.ConvertToProtoErrorList(),
 		}, nil
 	}
+	logrus.Infof("Decoded public key: %#v", decodedPublicKey)
 	pubKey, err := asserts.DecodePublicKey(decodedPublicKey)
 	if err != nil {
 		cerr := cerror.NewCustomError(cerror.Invalid, fmt.Sprintf("failed to decode public key: %s", err))
@@ -146,6 +149,7 @@ func (s *AssertionService) AddAccountKeyAssertion(ctx context.Context, req *prot
 			Errors: el.ConvertToProtoErrorList(),
 		}, nil
 	}
+	logrus.Infof("Decoded public key: %#v", pubKey)
 	bodyBytes, err := asserts.EncodePublicKey(pubKey)
 	if err != nil {
 		cerr := cerror.NewCustomError(cerror.Invalid, fmt.Sprintf("failed to encode public key: %s", err))
