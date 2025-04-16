@@ -213,12 +213,9 @@ func (el *ErrorList) Scan(value interface{}) error {
 }
 
 func (el *ErrorList) RemoveErrorWithCode(errorCode string) {
-	// Iterate through the error list in reverse order
 	for i := len(*el) - 1; i >= 0; i-- {
 		currentError := (*el)[i]
-		// Check if the current error's code matches the provided errorCode
 		if currentError.Code == errorCode {
-			// Remove the error from the list
 			*el = slices.Delete(*el, i, i+1)
 		}
 	}
