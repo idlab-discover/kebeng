@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"strings"
 
@@ -70,16 +69,6 @@ func LoadConfig() (*Config, error) {
 		return nil, fmt.Errorf("failed to load root key from %s", cfg.RootKeyPath)
 	}
 	cfg.RootKey = rootKey
-
-	db, err := asserts.OpenDatabase(&asserts.DatabaseConfig{
-		KeypairManager: asserts.NewMemoryKeypairManager(),
-	})
-	if err != nil {
-		log.Fatalf("failed to open assertion database: %v", err)
-	}
-	if err := db.ImportKey(rootKey); err != nil {
-		log.Fatalf("failed to import signing key: %v", err)
-	}
 
 	logrus.Infof("loaded config: %+v", cfg)
 

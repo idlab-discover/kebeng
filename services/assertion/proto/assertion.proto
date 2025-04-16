@@ -59,12 +59,12 @@ message SnapRevisionAssertionResponse {
 }
 
 message AddAccountKeyAssertionRequest {
+  string encoded_public_key = 1;
   string public_key_sha3_384 = 2;
   string account_id = 3;
   string name = 4;
   google.protobuf.Timestamp since = 5;
   google.protobuf.Timestamp until = 6;
-  bytes body = 7;
 }
 
 message AccountKeyAssertionResponse {
