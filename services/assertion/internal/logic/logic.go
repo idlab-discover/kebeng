@@ -129,7 +129,7 @@ func (s *AssertionService) AddAccountKeyAssertion(ctx context.Context, req *prot
 	}
 	sequenceNumber++
 	headers := map[string]any{
-		"authority-id":        s.cfg.AuthorityID,
+		"authority-id":        s.cfg.RootKey.PublicKey().ID(),
 		"revision":            fmt.Sprintf("%d", sequenceNumber),
 		"public-key-sha3-384": req.GetPublicKeySha3_384(),
 		"account-id":          req.GetAccountId(),

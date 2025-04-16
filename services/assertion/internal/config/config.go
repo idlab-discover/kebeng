@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strings"
 
@@ -70,9 +71,15 @@ func LoadConfig() (*Config, error) {
 	}
 	cfg.RootKey = rootKey
 
-	logrus.Infof("rootkey : %+v", cfg.RootKey)
-	logrus.Info("public key of rootKey : ", cfg.RootKey.PublicKey())
-	logrus.Infof("public key ID of rootKey : %+v", cfg.RootKey.PublicKey().ID())
+	db, err := asserts.OpenDatabase(&asserts.DatabaseConfig{
+		KeypairManager: asserts.NewMemoryKeypairManager(),
+	})
+	if err != nil {
+		log.Fatalf("failed to open assertion database: %v", err)
+	}
+	if err := db.ImportKey(rootKey); err != nil {
+		log.Fatalf("failed to import signing key: %v", err)
+	}
 
 	logrus.Infof("loaded config: %+v", cfg)
 
