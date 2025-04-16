@@ -337,6 +337,7 @@ func TestRegisterSnap(t *testing.T) {
 		entryPrivate      bool
 		storeName         string
 		accountId         uuid.UUID
+		el                *cerror.ErrorList
 		expectError       bool
 		expectedErrorCode string
 	}{
@@ -346,6 +347,7 @@ func TestRegisterSnap(t *testing.T) {
 			entryPrivate:      false,
 			storeName:         "test-store",
 			accountId:         mockUUID,
+			el:                cerror.NewErrorList(),
 			expectError:       false,
 			expectedErrorCode: "",
 		},
@@ -355,6 +357,7 @@ func TestRegisterSnap(t *testing.T) {
 			entryPrivate:      false,
 			storeName:         "test-store",
 			accountId:         mockUUID,
+			el:                cerror.NewErrorList(),
 			expectError:       true,
 			expectedErrorCode: cerror.AlreadyRegistered,
 		},
@@ -362,7 +365,7 @@ func TestRegisterSnap(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			entry, err := globalRepo.RegisterSnap(tt.entryName, tt.entryPrivate, tt.storeName, tt.accountId)
+			entry, err := globalRepo.RegisterSnap(tt.entryName, tt.entryPrivate, tt.storeName, tt.accountId, tt.el)
 			if tt.expectError {
 				assert.NotNil(t, err)
 				if err != nil {
@@ -377,15 +380,48 @@ func TestRegisterSnap(t *testing.T) {
 }
 
 func TestGetAllSnapEntries(t *testing.T) {
-	snaps, err := globalRepo.GetAllSnapEntries()
-	assert.Nil(t, err)
-	assert.NotNil(t, snaps)
+	tests := []struct {
+		name              string
+		el                *cerror.ErrorList
+		expectError       bool
+		expectedErrorCode string
+	}{
+		{
+			name:              "Success getting all snap entries",
+			el:                cerror.NewErrorList(),
+			expectError:       false,
+			expectedErrorCode: "",
+		},
+		// We can't test this case because we add mock data in the setup function, therefore there will always be at least one entry
+		// {
+		// 	name:              "Fail getting all snap entries",
+		// 	el:                cerror.NewErrorList(),
+		// 	expectError:       true,
+		// 	expectedErrorCode: cerror.ResourceNotFound,
+		// },
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			entries, err := globalRepo.GetAllSnapEntries(tt.el)
+			if tt.expectError {
+				assert.NotNil(t, err)
+				if err != nil {
+					assert.Equal(t, tt.expectedErrorCode, err.GetCode())
+				}
+			} else {
+				assert.Nil(t, err)
+				assert.NotNil(t, entries)
+			}
+		})
+	}
 }
 
 func TestGetChannelsByTrackId(t *testing.T) {
 	tests := []struct {
 		name              string
 		trackId           uuid.UUID
+		el                *cerror.ErrorList
 		expectError       bool
 		expectedErrorCode string
 	}{
@@ -393,11 +429,13 @@ func TestGetChannelsByTrackId(t *testing.T) {
 			name:              "Success getting channels by track id",
 			trackId:           mockUUID,
 			expectError:       false,
+			el:                cerror.NewErrorList(),
 			expectedErrorCode: "",
 		},
 		{
 			name:              "Fail getting channels by track id for non-existing track",
 			trackId:           uuid.New(),
+			el:                cerror.NewErrorList(),
 			expectError:       true,
 			expectedErrorCode: cerror.ResourceNotFound,
 		},
@@ -405,7 +443,7 @@ func TestGetChannelsByTrackId(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			channels, err := globalRepo.GetChannelsByTrackId(tt.trackId)
+			channels, err := globalRepo.GetChannelsByTrackId(tt.trackId, tt.el)
 			if tt.expectError {
 				assert.NotNil(t, err)
 				if err != nil {
@@ -423,18 +461,21 @@ func TestGetCommentsByEntryId(t *testing.T) {
 	tests := []struct {
 		name              string
 		entryId           uuid.UUID
+		el                *cerror.ErrorList
 		expectError       bool
 		expectedErrorCode string
 	}{
 		{
 			name:              "Success getting comments by entry id",
 			entryId:           mockUUID,
+			el:                cerror.NewErrorList(),
 			expectError:       false,
 			expectedErrorCode: "",
 		},
 		{
 			name:              "Fail getting comments by entry id for non-existing entry",
 			entryId:           uuid.New(),
+			el:                cerror.NewErrorList(),
 			expectError:       true,
 			expectedErrorCode: cerror.ResourceNotFound,
 		},
@@ -442,7 +483,7 @@ func TestGetCommentsByEntryId(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			comments, err := globalRepo.GetCommentsByEntryId(tt.entryId)
+			comments, err := globalRepo.GetCommentsByEntryId(tt.entryId, tt.el)
 			if tt.expectError {
 				assert.NotNil(t, err)
 				if err != nil {
@@ -589,6 +630,7 @@ func TestGetRevisionsByEntryId(t *testing.T) {
 	tests := []struct {
 		name              string
 		entryId           uuid.UUID
+		el                *cerror.ErrorList
 		expectError       bool
 		expectedErrorCode string
 	}{
@@ -596,11 +638,13 @@ func TestGetRevisionsByEntryId(t *testing.T) {
 			name:              "Success getting revisions by entry id",
 			entryId:           mockUUID,
 			expectError:       false,
+			el:                cerror.NewErrorList(),
 			expectedErrorCode: "",
 		},
 		{
 			name:              "Fail getting revisions by entry id for non-existing entry",
 			entryId:           uuid.New(),
+			el:                cerror.NewErrorList(),
 			expectError:       true,
 			expectedErrorCode: cerror.ResourceNotFound,
 		},
@@ -608,7 +652,7 @@ func TestGetRevisionsByEntryId(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			revisions, err := globalRepo.GetRevisionsByEntryId(tt.entryId)
+			revisions, err := globalRepo.GetRevisionsByEntryId(tt.entryId, tt.el)
 			if tt.expectError {
 				assert.NotNil(t, err)
 				if err != nil {
@@ -626,6 +670,7 @@ func TestGetRevisionById(t *testing.T) {
 	tests := []struct {
 		name              string
 		revisionId        uuid.UUID
+		el                *cerror.ErrorList
 		expectError       bool
 		expectedErrorCode string
 	}{
@@ -633,11 +678,13 @@ func TestGetRevisionById(t *testing.T) {
 			name:              "Success getting revision by id",
 			revisionId:        mockUUID,
 			expectError:       false,
+			el:                cerror.NewErrorList(),
 			expectedErrorCode: "",
 		},
 		{
 			name:              "Fail getting revision by id for non-existing revision",
 			revisionId:        uuid.New(),
+			el:                cerror.NewErrorList(),
 			expectError:       true,
 			expectedErrorCode: cerror.ResourceNotFound,
 		},
@@ -645,7 +692,7 @@ func TestGetRevisionById(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			revision, err := globalRepo.GetRevisionById(tt.revisionId)
+			revision, err := globalRepo.GetRevisionById(tt.revisionId, tt.el)
 			if tt.expectError {
 				assert.NotNil(t, err)
 				if err != nil {
@@ -665,6 +712,7 @@ func TestGetRevisionByNameAndSequence(t *testing.T) {
 		name              string
 		entryName         string
 		sequence          uint
+		el                *cerror.ErrorList
 		expectError       bool
 		expectedErrorCode string
 	}{
@@ -673,12 +721,14 @@ func TestGetRevisionByNameAndSequence(t *testing.T) {
 			entryName:         "mock-snap",
 			sequence:          1,
 			expectError:       false,
+			el:                cerror.NewErrorList(),
 			expectedErrorCode: "",
 		},
 		{
 			name:              "Fail getting revision by name and sequence for non-existing entry",
 			entryName:         "nonexistent",
 			sequence:          1,
+			el:                cerror.NewErrorList(),
 			expectError:       true,
 			expectedErrorCode: cerror.ResourceNotFound,
 		},
@@ -686,6 +736,7 @@ func TestGetRevisionByNameAndSequence(t *testing.T) {
 			name:              "Fail getting revision by name and sequence for non-existing sequence",
 			entryName:         "mock-snap",
 			sequence:          999,
+			el:                cerror.NewErrorList(),
 			expectError:       true,
 			expectedErrorCode: cerror.ResourceNotFound,
 		},
@@ -693,7 +744,7 @@ func TestGetRevisionByNameAndSequence(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			revision, err := globalRepo.GetRevisionByNameAndSequence(tt.entryName, tt.sequence)
+			revision, err := globalRepo.GetRevisionByNameAndSequence(tt.entryName, tt.sequence, tt.el)
 			if tt.expectError {
 				assert.NotNil(t, err)
 				if err != nil {
@@ -791,6 +842,7 @@ func TestGetTracksBySnapId(t *testing.T) {
 	tests := []struct {
 		name              string
 		snapId            uuid.UUID
+		el                *cerror.ErrorList
 		expectError       bool
 		expectedErrorCode string
 	}{
@@ -798,11 +850,13 @@ func TestGetTracksBySnapId(t *testing.T) {
 			name:              "Success getting tracks by snap id",
 			snapId:            mockUUID,
 			expectError:       false,
+			el:                cerror.NewErrorList(),
 			expectedErrorCode: "",
 		},
 		{
 			name:              "Fail getting tracks by snap id for non-existing snap",
 			snapId:            uuid.New(),
+			el:                cerror.NewErrorList(),
 			expectError:       true,
 			expectedErrorCode: cerror.ResourceNotFound,
 		},
@@ -810,7 +864,7 @@ func TestGetTracksBySnapId(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tracks, err := globalRepo.GetTracksByEntryId(tt.snapId)
+			tracks, err := globalRepo.GetTracksByEntryId(tt.snapId, tt.el)
 			if tt.expectError {
 				assert.NotNil(t, err)
 				if err != nil {
@@ -876,6 +930,7 @@ func TestAddUpload(t *testing.T) {
 		accountId         uuid.UUID
 		status            string
 		unscannedFileName string
+		el                *cerror.ErrorList
 		expectError       bool
 		expectedErrorCode string
 	}{
@@ -886,13 +941,14 @@ func TestAddUpload(t *testing.T) {
 			accountId:         mockUUID,
 			status:            "pending",
 			unscannedFileName: "mock-file",
+			el:                cerror.NewErrorList(),
 			expectError:       false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			upload, err := globalRepo.AddUpload(tt.snapName, tt.entryId, tt.status, tt.accountId, tt.unscannedFileName)
+			upload, err := globalRepo.AddUpload(tt.snapName, tt.entryId, tt.status, tt.accountId, tt.unscannedFileName, tt.el)
 			if tt.expectError {
 				assert.NotNil(t, err)
 				if err != nil {
@@ -1119,6 +1175,161 @@ func TestGetTrackByEntryIdAndName(t *testing.T) {
 	}
 }
 
+
+func TestGetLatestRevision(t *testing.T) {
+	el := cerror.NewErrorList()
+	entryID := uuid.New()
+	trackID := uuid.New()
+	channelID := uuid.New()
+	altTrackID := uuid.New()
+	altChannelID := uuid.New()
+
+	// Insert mock entry
+	_, err := globalDB.Exec(`
+		INSERT INTO entry (id, name, private, type, confinement, status, price, store, icon_url, account_id)
+		VALUES ($1, 'getLatestRevision', false, 'app', 'strict', 'active', 0.0, 'mock-store', 'http://icon', $1);
+	`, entryID)
+	assert.NoError(t, err)
+
+	// Insert two tracks
+	_, err = globalDB.Exec(`
+		INSERT INTO track (id, name, entry_id) 
+		VALUES ($1, 'latest', $2), ($3, 'beta', $2);
+	`, trackID, entryID, altTrackID)
+	assert.NoError(t, err)
+
+	// Insert two channels
+	_, err = globalDB.Exec(`
+		INSERT INTO channel (id, name, snap_track_id, entry_id) 
+		VALUES ($1, 'stable', $2, $3), ($4, 'edge', $5, $3);
+	`, channelID, trackID, entryID, altChannelID, altTrackID)
+	assert.NoError(t, err)
+
+	// Insert 3 revisions in the correct track/channel
+	now := time.Now()
+	rev1ID := uuid.New()
+	rev2ID := uuid.New()
+	rev3ID := uuid.New()
+	snapName := "test-snap"
+	_, err = globalDB.Exec(`
+		INSERT INTO revision (id, entry_id, snap_track_id, snap_channel_id, snap_name, updated_at, sequence_number)
+		VALUES 
+		($1, $2, $3, $4, $10, $5, 1),
+		($6, $2, $3, $4, $10, $7, 2),
+		($8, $2, $3, $4, $10, $9, 3);
+	`, rev1ID, entryID, trackID, channelID, now.Add(-10*time.Minute),
+		rev2ID, now.Add(-5*time.Minute),
+		rev3ID, now.Add(-1*time.Minute),
+		snapName)
+	assert.NoError(t, err)
+
+	// Insert 1 revision in a different track/channel but with the most recent update
+	altRevID := uuid.New()
+	_, err = globalDB.Exec(`
+		INSERT INTO revision (id, entry_id, snap_track_id, snap_channel_id, updated_at, sequence_number)
+		VALUES ($1, $2, $3, $4, $5, 99);
+	`, altRevID, entryID, altTrackID, altChannelID, now.Add(1*time.Minute))
+	assert.NoError(t, err)
+
+	// Call the method under test
+	revision, errObj := globalRepo.GetLatestRevisionByTrackAndChannel("getLatestRevision", "latest", "stable", el)
+	assert.Nil(t, errObj)
+	assert.NotNil(t, revision)
+
+	assert.Equal(t, int64(3), int64(*revision.SequenceNumber))
+	assert.Equal(t, rev3ID, revision.ID)
+}
+
+func TestGetTrackById(t *testing.T) {
+	tests := []struct {
+		name              string
+		trackID           uuid.UUID
+		expectError       bool
+		expectedErrorCode string
+		expectedTrackName string
+	}{
+		{
+			name:              "Success retrieving existing track",
+			trackID:           mockUUID,
+			expectError:       false,
+			expectedErrorCode: "",
+			expectedTrackName: "latest",
+		},
+		{
+			name:              "Fail retrieving non-existing track",
+			trackID:           uuid.New(),
+			expectError:       true,
+			expectedErrorCode: cerror.ResourceNotFound,
+			expectedTrackName: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			el := cerror.NewErrorList()
+			track, cerr := globalRepo.GetTrackById(tt.trackID, el)
+
+			if tt.expectError {
+				assert.NotNil(t, cerr, "expected error when retrieving track")
+				assert.Nil(t, track, "expected nil track for error case")
+				if cerr != nil {
+					assert.Equal(t, tt.expectedErrorCode, cerr.GetCode(), "unexpected error code")
+				}
+			} else {
+				assert.Nil(t, cerr, "expected no error when retrieving track")
+				assert.NotNil(t, track, "expected track to be not nil")
+				assert.Equal(t, tt.expectedTrackName, track.Name, "unexpected track name")
+			}
+		})
+	}
+}
+
+func TestGetChannelById(t *testing.T) {
+	tests := []struct {
+		name              string
+		channelID         uuid.UUID
+		expectError       bool
+		expectedErrorCode string
+		expectedName      string
+	}{
+		{
+			name:              "Success retrieving existing channel",
+			channelID:         mockUUID,
+			expectError:       false,
+			expectedErrorCode: "",
+			expectedName:      "stable",
+		},
+		{
+			name:              "Fail retrieving non-existing channel",
+			channelID:         uuid.New(),
+			expectError:       true,
+			expectedErrorCode: cerror.ResourceNotFound,
+			expectedName:      "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			el := cerror.NewErrorList()
+
+			channel, cerr := globalRepo.GetChannelById(tt.channelID, el)
+
+			if tt.expectError {
+				assert.NotNil(t, cerr, "expected error when retrieving channel")
+				assert.Nil(t, channel, "expected nil channel for error case")
+				if cerr != nil {
+					assert.Equal(t, tt.expectedErrorCode, cerr.GetCode(), "unexpected error code")
+				}
+			} else {
+				assert.Nil(t, cerr, "expected no error when retrieving channel")
+				assert.NotNil(t, channel, "expected channel to be not nil")
+				assert.Equal(t, tt.expectedName, channel.Name, "unexpected channel name")
+			}
+		})
+	}
+}
+
+
 // Helper function to insert mock data
 func mockData(db *sqlx.DB) {
 	// Mock snap entry
@@ -1180,113 +1391,3 @@ func mockData(db *sqlx.DB) {
 	}
 }
 
-func TestGetLatestRevision(t *testing.T) {
-	entryID := uuid.New()
-	trackID := uuid.New()
-	channelID := uuid.New()
-	altTrackID := uuid.New()
-	altChannelID := uuid.New()
-
-	// Insert mock entry
-	_, err := globalDB.Exec(`
-		INSERT INTO entry (id, name, private, type, confinement, status, price, store, icon_url, account_id)
-		VALUES ($1, 'getLatestRevision', false, 'app', 'strict', 'active', 0.0, 'mock-store', 'http://icon', $1);
-	`, entryID)
-	assert.NoError(t, err)
-
-	// Insert two tracks
-	_, err = globalDB.Exec(`
-		INSERT INTO track (id, name, entry_id) 
-		VALUES ($1, 'latest', $2), ($3, 'beta', $2);
-	`, trackID, entryID, altTrackID)
-	assert.NoError(t, err)
-
-	// Insert two channels
-	_, err = globalDB.Exec(`
-		INSERT INTO channel (id, name, snap_track_id, entry_id) 
-		VALUES ($1, 'stable', $2, $3), ($4, 'edge', $5, $3);
-	`, channelID, trackID, entryID, altChannelID, altTrackID)
-	assert.NoError(t, err)
-
-	// Insert 3 revisions in the correct track/channel
-	now := time.Now()
-	rev1ID := uuid.New()
-	rev2ID := uuid.New()
-	rev3ID := uuid.New()
-	snapName := "test-snap"
-	_, err = globalDB.Exec(`
-		INSERT INTO revision (id, entry_id, snap_track_id, snap_channel_id, snap_name, updated_at, sequence_number)
-		VALUES 
-		($1, $2, $3, $4, $10, $5, 1),
-		($6, $2, $3, $4, $10, $7, 2),
-		($8, $2, $3, $4, $10, $9, 3);
-	`, rev1ID, entryID, trackID, channelID, now.Add(-10*time.Minute),
-		rev2ID, now.Add(-5*time.Minute),
-		rev3ID, now.Add(-1*time.Minute),
-		snapName)
-	assert.NoError(t, err)
-
-	// Insert 1 revision in a different track/channel but with the most recent update
-	altRevID := uuid.New()
-	_, err = globalDB.Exec(`
-		INSERT INTO revision (id, entry_id, snap_track_id, snap_channel_id, updated_at, sequence_number)
-		VALUES ($1, $2, $3, $4, $5, 99);
-	`, altRevID, entryID, altTrackID, altChannelID, now.Add(1*time.Minute))
-	assert.NoError(t, err)
-
-	// Call the method under test
-	revision, errObj := globalRepo.GetLatestRevisionByTrackAndChannel("getLatestRevision", "latest", "stable")
-	assert.Nil(t, errObj)
-	assert.NotNil(t, revision)
-
-	assert.Equal(t, int64(3), int64(*revision.SequenceNumber))
-	assert.Equal(t, rev3ID, revision.ID)
-}
-
-func TestGetTrackById(t *testing.T) {
-	trackID := uuid.New()
-
-	_, err := globalDB.Exec(`
-		INSERT INTO track (id, name, entry_id)
-		VALUES ($1, 'latest', $2);
-	`, trackID, mockUUID)
-	assert.NoError(t, err, "failed to insert test track")
-
-	track, cerr := globalRepo.GetTrackById(trackID)
-	assert.Nil(t, cerr, "expected no error when retrieving an existing track")
-	assert.NotNil(t, track, "expected track to be not nil")
-	assert.Equal(t, "latest", track.Name, "expected track name to be 'latest'")
-
-	nonExistingID := uuid.New()
-	track, cerr = globalRepo.GetTrackById(nonExistingID)
-	assert.NotNil(t, cerr, "expected error when retrieving a non-existing track")
-	assert.Nil(t, track, "expected nil track for non-existing id")
-	if cerr != nil {
-		assert.Equal(t, cerror.ResourceNotFound, cerr.GetCode(), "expected error code to be ResourceNotFound")
-	}
-}
-
-func TestGetChannelById(t *testing.T) {
-	channelID := uuid.New()
-
-	_, err := globalDB.Exec(`
-		INSERT INTO channel (id, name, snap_track_id, entry_id)
-		VALUES ($1, 'stable', $2, $3);
-	`, channelID, mockUUID, mockUUID)
-	assert.NoError(t, err, "failed to insert test channel")
-
-	// Test retrieving the inserted channel.
-	channel, cerr := globalRepo.GetChannelById(channelID)
-	assert.Nil(t, cerr, "expected no error when retrieving an existing channel")
-	assert.NotNil(t, channel, "expected channel to be not nil")
-	assert.Equal(t, "stable", channel.Name, "expected channel name to be 'stable'")
-
-	// Test retrieving a non-existing channel.
-	nonExistingID := uuid.New()
-	channel, cerr = globalRepo.GetChannelById(nonExistingID)
-	assert.NotNil(t, cerr, "expected error when retrieving a non-existing channel")
-	assert.Nil(t, channel, "expected nil channel for non-existing id")
-	if cerr != nil {
-		assert.Equal(t, cerror.ResourceNotFound, cerr.GetCode(), "expected error code to be ResourceNotFound")
-	}
-}
