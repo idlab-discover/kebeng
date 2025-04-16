@@ -70,6 +70,10 @@ func LoadConfig() (*Config, error) {
 	}
 	cfg.RootKey = rootKey
 
+	logrus.Infof("rootkey : %+v", cfg.RootKey)
+	logrus.Info("public key of rootKey : ", cfg.RootKey.PublicKey())
+	logrus.Infof("public key ID of rootKey : %+v", cfg.RootKey.PublicKey().ID())
+
 	logrus.Infof("loaded config: %+v", cfg)
 
 	return cfg, nil
