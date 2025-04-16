@@ -187,7 +187,6 @@ func FormatBindError(err error) string {
 	return err.Error()
 }
 
-// Value maakt van ErrorList een JSON-string voor opslag in PostgreSQL
 func (el ErrorList) Value() (driver.Value, error) {
 	if len(el) == 0 {
 		return "[]", nil
@@ -195,7 +194,6 @@ func (el ErrorList) Value() (driver.Value, error) {
 	return json.Marshal(el)
 }
 
-// Scan leest een JSONB-veld uit PostgreSQL in een ErrorList
 func (el *ErrorList) Scan(value interface{}) error {
 	if value == nil {
 		if el != nil {
