@@ -20,7 +20,7 @@ import (
 type AssertionClientInterface interface {
 	ProcessSnapBuildAssertion(assertion []byte) *proto.SnapBuildAssertionResponse
 
-	AddAccountKeyAssertion(encoded_public_key, publicKeySha3_384, accountId, name string, since *time.Time, until *time.Time, body []byte) *proto.AccountKeyAssertionResponse
+	AddAccountKeyAssertion(encoded_public_key, publicKeySha3_384, accountId, name string, since *time.Time, until *time.Time) *proto.AccountKeyAssertionResponse
 	AddSnapRevisionAssertion(snapSha3_384 string, developerId string, snapEntryId string, snapRevisionSequenceNumber uint32, snapSize uint64, timestamp *time.Time) *proto.SnapRevisionAssertionResponse
 
 	GetAccountKeyAssertionByName(name string) *proto.AccountKeyAssertionResponse
@@ -73,7 +73,7 @@ func (c *AssertionClient) ProcessSnapBuildAssertion(assertion []byte) *proto.Sna
 	return resp
 }
 
-func (c *AssertionClient) AddAccountKeyAssertion(encoded_public_key, publicKeySha3_384, accountId, name string, since *time.Time, until *time.Time, body []byte) *proto.AccountKeyAssertionResponse {
+func (c *AssertionClient) AddAccountKeyAssertion(encoded_public_key, publicKeySha3_384, accountId, name string, since *time.Time, until *time.Time) *proto.AccountKeyAssertionResponse {
 	el := cerror.NewErrorList()
 
 	// check input
