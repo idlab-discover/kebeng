@@ -258,7 +258,7 @@ func (sp *SnapsRepository) GetChannelsByTrackId(trackId uuid.UUID, el *cerror.Er
 	// manual check for empty result because db.Select doesn't return an error for empty results
 	if len(channels) == 0 {
 		cerr := cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("resource not found: channels for track with id = '%s'", trackId.String()))
-		logrus.Error(fmt.Sprintf(cerr.GetMessage()))
+		logrus.Error(cerr.GetMessage())
 		el.AddCustomError(cerr)
 		return nil, cerr
 	}
