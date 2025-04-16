@@ -124,6 +124,6 @@ type SnapUpload struct {
 }
 
 type Metadata struct {
-	UploadInfo *minio.UploadInfo `json:"upload_info" db:"upload_info"`
+	*minio.UploadInfo `json:"upload_info" db:"upload_info"`
 	Sha3_384   *string           `json:"sha3_384" db:"sha3_384"`
 }

@@ -34,7 +34,7 @@ func TestSaveFileToBucket(t *testing.T) {
 	metadata, err := testObjectStore.SaveFileToBucket("test-bucket", "some/path/testfile.txt", "sha3_384_hash")
 	assert.NoError(t, err)
 	assert.NotNil(t, metadata)
-	assert.Equal(t, int64(456), metadata.UploadInfo.Size)
+	assert.Equal(t, int64(456), metadata.Size)
 
 	mockMinio.AssertExpectations(t)
 }
