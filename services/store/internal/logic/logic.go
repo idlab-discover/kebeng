@@ -807,8 +807,8 @@ func (s *StoreLogic) UnscannedUpload(stream proto.StoreService_UnscannedUploadSe
 	}
 
 	err = stream.SendAndClose(&proto.UnscannedUploadCompleteResponse{
-		TempFileName: metadata.UploadInfo.Key,
-		Size:         uint64(metadata.UploadInfo.Size),
+		TempFileName: metadata.Key,
+		Size:         uint64(metadata.Size),
 		Errors:       el.ConvertToProtoErrorList(),
 	})
 	if err != nil {
