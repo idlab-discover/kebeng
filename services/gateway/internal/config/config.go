@@ -35,6 +35,7 @@ type Config struct {
 
 	TestMode           bool   `mapstructure:"test_mode" yaml:"test_mode"`
 	TestDataFolderPath string `mapstructure:"test_data_folder_path" yaml:"test_data_folder_path"`
+	StoreIP string `mapstructure:"store_ip" yaml:"store_ip"`
 }
 
 func LoadConfig() (*Config, error) {

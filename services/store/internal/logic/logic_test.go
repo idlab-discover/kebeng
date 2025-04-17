@@ -211,7 +211,7 @@ func TestRegisterSnapName(t *testing.T) {
 					case "RegisterSnap":
 						mockRepo.On(function, tt.req.SnapName, mock.Anything, mock.Anything, mock.Anything).Return(nil, mockReturn).Once()
 					case "AddTrack":
-						mockRepo.On(function, mock.Anything, mock.Anything).Return(nil, mockReturn).Once()
+						mockRepo.On(function, mock.Anything, mock.Anything, mock.Anything).Return(nil, mockReturn).Once()
 					case "AddDefaultChannels":
 						mockRepo.On(function, mock.Anything, mock.Anything).Return(mockReturn).Once()
 					default:
@@ -229,7 +229,7 @@ func TestRegisterSnapName(t *testing.T) {
 				case *models.SnapTrack:
 					switch function {
 					case "AddTrack":
-						mockRepo.On(function, mock.Anything, mock.Anything).Return(mockReturn, nil).Once()
+						mockRepo.On(function, mock.Anything, mock.Anything, mock.Anything).Return(mockReturn, nil).Once()
 					default:
 						t.Fatalf("invalid mock return function for SnapTrack")
 					}
