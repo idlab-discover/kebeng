@@ -119,12 +119,12 @@ func (s *AssertionService) AddAccountKeyAssertion(ctx context.Context, req *prot
 	latestAccountKeyAssertion, cerr := s.repo.GetLatestAccountKeyAssertion(el, parsedAccountId)
 	if cerr != nil && cerr.GetCode() != cerror.ResourceNotFound {
 		// should have been logged and added to error list in repo function
-		// remove ResourceNotFound since its not a real error in this case
-		el.RemoveErrorWithCode(cerror.ResourceNotFound)
 		return &proto.AccountKeyAssertionResponse{
 			Errors: el.ConvertToProtoErrorList(),
 		}, nil
 	} else if cerr.GetCode() == cerror.ResourceNotFound {
+		// remove ResourceNotFound since its not a real error in this case
+		el.RemoveErrorWithCode(cerror.ResourceNotFound)
 		sequenceNumber = 1
 	} else {
 		sequenceNumber = latestAccountKeyAssertion.RevisionSequenceNumber + 1
