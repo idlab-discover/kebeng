@@ -245,7 +245,7 @@ func TestCreateAccountHandler(t *testing.T) {
 			}
 
 			// Call the CreateAccount handler.
-			h.CreateAccount(c)
+			h.AddAccount(c)
 
 			// Verify the HTTP status.
 			assert.Equal(t, tc.expectedHTTPStatus, w.Code, "unexpected HTTP status")

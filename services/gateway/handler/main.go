@@ -41,7 +41,7 @@ func (h *Handler) SetupEndpoints(r *gin.Engine) {
 
 	// ********** ACCOUNT **********
 
-	r.POST("/createAccount", h.accountHandler.CreateAccount)
+	r.POST("/AddAccount", h.accountHandler.AddAccount)
 	authGroup.GET("/account/", h.accountHandler.GetAccount)
 	authGroup.PATCH("/account", h.accountHandler.PatchAccount)
 
