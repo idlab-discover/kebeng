@@ -141,7 +141,7 @@ func TestRefreshSnapHandler_DownloadAction(t *testing.T) {
 	// Set up a dummy BaseHandler with our mocks and a dummy config.
 	baseHandler := util.NewBaseHandler(mockAccClient, mockStoreClient, nil, nil)
 	baseHandler.Config = &config.Config{
-		StoreIP: "https://store.example.com",
+		StoreUrl: "https://store.example.com",
 	}
 	handler := &Handler{BaseHandler: baseHandler}
 
@@ -211,7 +211,7 @@ func TestRefreshSnapHandler_DownloadAction_NoLatestRevision(t *testing.T) {
 	// Set up a dummy BaseHandler with our mocks and a dummy config.
 	baseHandler := util.NewBaseHandler(mockAccClient, mockStoreClient, nil, nil)
 	baseHandler.Config = &config.Config{
-		StoreIP: "https://store.example.com",
+		StoreUrl: "https://store.example.com",
 	}
 	handler := &Handler{BaseHandler: baseHandler}
 

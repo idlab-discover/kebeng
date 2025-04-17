@@ -131,7 +131,7 @@ store_ip: "192.168.0.105:8080"
 	assert.Contains(t, err.Error(), "macaroon.root_key is required")
 }
 
-func TestLoadConfig_MissingStoreIP(t *testing.T) {
+func TestLoadConfig_MissingStoreUrl(t *testing.T) {
 	// YAML config with an empty store_url.
 	content := `
 debug_mode: false
@@ -148,7 +148,7 @@ macaroon:
   discharge_key: "some-discharge-key"
   third_party_caveat_id: "some-third-party-caveat-id"
   third_party_location: "some-third-party-location"
-store_ip: ""
+store_url: ""
 `
 	tmpFile := createTempConfigFile(t, content)
 	os.Setenv("CONFIG_FILE_PATH", tmpFile)
@@ -158,7 +158,7 @@ store_ip: ""
 	cfg, err := LoadConfig()
 	assert.Nil(t, cfg)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "store ip is required: example: 192.168.0.105:8080")
+	assert.Contains(t, err.Error(), "store_url is required")
 }
 
 func TestLoadConfig_Success(t *testing.T) {
@@ -177,7 +177,7 @@ macaroon:
   discharge_key: "some-discharge-key"
   third_party_caveat_id: "some-third-party-caveat-id"
   third_party_location: "some-third-party-location"
-store_ip: "192.168.0.105:8080"
+store_url: "https://store.example.com"
 `
 	tmpFile := createTempConfigFile(t, content)
 	os.Setenv("CONFIG_FILE_PATH", tmpFile)
@@ -195,5 +195,5 @@ store_ip: "192.168.0.105:8080"
 	assert.NotNil(t, cfg.MacaroonConfig)
 	assert.Equal(t, "some-root-key", cfg.MacaroonConfig.RootKey)
 	assert.Equal(t, "some-discharge-key", cfg.MacaroonConfig.DischargeKey)
-	assert.Equal(t, "192.168.0.105:8080", cfg.StoreIP)
+	assert.Equal(t, "https://store.example.com", cfg.StoreUrl)
 }
