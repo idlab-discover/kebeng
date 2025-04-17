@@ -56,7 +56,7 @@ func (s *AssertionService) AddSnapRevisionAssertion(ctx context.Context, req *pr
 		"developer-id":  req.GetDeveloperId(),
 		"snap-id":       req.GetSnapEntryId(),
 		"snap-revision": fmt.Sprintf("%d", req.GetSnapRevisionSequenceNumber()),
-		"snap-size":     req.GetSnapSize(),
+		"snap-size":     fmt.Sprintf("%d", req.GetSnapSize()),
 		"timestamp":     req.GetTimestamp().AsTime().Format(time.RFC3339),
 		// The 'sign-key-sha3-384' header is generated during signing.
 	}

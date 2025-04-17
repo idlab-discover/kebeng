@@ -18,6 +18,207 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+func TestAddSnapRevisionAssertion(t *testing.T) {
+	rootKey, err := asserts.GenerateKey()
+	assert.NoError(t, err)
+
+	assertionDB, err := asserts.OpenDatabase(&asserts.DatabaseConfig{})
+	assert.NoError(t, err)
+
+	cfg := &config.Config{
+		AuthorityID: "kebeng",
+		RootKey:     rootKey,
+	}
+	assert.NoError(t, assertionDB.ImportKey(rootKey))
+
+	mockRepo := new(repository.MockAssertionRepository)
+	svc := &AssertionService{
+		cfg:         cfg,
+		assertionDB: assertionDB,
+		repo:        mockRepo,
+	}
+
+	now := time.Now().UTC()
+	validDev := uuid.New().String()
+	validSnap := uuid.New().String()
+
+	// generate a valid multihash to use as snap‐sha3‐384
+	snapKey, err := asserts.GenerateKey()
+	assert.NoError(t, err)
+	validHash := snapKey.PublicKey().ID()
+
+	// a “golden” model record
+	golden := &model.SnapRevisionAssertion{
+		ID:                         uuid.New(),
+		AuthorityID:                cfg.AuthorityID,
+		SignKeySHA3_384:            rootKey.PublicKey().ID(),
+		SnapSHA3_384:               validHash,
+		DeveloperID:                uuid.MustParse(validDev),
+		SnapEntryID:                uuid.MustParse(validSnap),
+		SnapRevisionSequenceNumber: 1,
+		SnapSize:                   42,
+		Timestamp:                  now,
+		Type:                       asserts.SnapRevisionType.Name,
+		Signature:                  "signature-bytes",
+	}
+
+	tests := []struct {
+		name               string
+		req                *proto.AddSnapRevisionAssertionRequest
+		mockReturn         map[string]any // only "AddSnapRevisionAssertion" key
+		expectError        bool           // Go‐error != nil
+		expectProtoErrors  bool           // response.Errors non‐empty
+		expectProtoErrCode string         // if expectProtoErrors
+	}{
+		{
+			name: "happy path",
+			req: &proto.AddSnapRevisionAssertionRequest{
+				DeveloperId:                validDev,
+				SnapEntryId:                validSnap,
+				SnapSha3_384:               validHash,
+				SnapRevisionSequenceNumber: 1,
+				SnapSize:                   42,
+				Timestamp:                  timestamppb.New(now),
+			},
+			mockReturn: map[string]any{
+				"AddSnapRevisionAssertion": golden,
+			},
+		},
+		{
+			name: "invalid developer id",
+			req: &proto.AddSnapRevisionAssertionRequest{
+				DeveloperId:                "not-a-uuid",
+				SnapEntryId:                validSnap,
+				SnapSha3_384:               validHash,
+				SnapRevisionSequenceNumber: 1,
+				SnapSize:                   42,
+				Timestamp:                  timestamppb.New(now),
+			},
+			mockReturn: map[string]any{
+				// still stub repo so AssertExpectations won't panic
+				"AddSnapRevisionAssertion": golden,
+			},
+			expectProtoErrors:  true,
+			expectProtoErrCode: cerror.Invalid,
+		},
+		{
+			name: "invalid snap entry id",
+			req: &proto.AddSnapRevisionAssertionRequest{
+				DeveloperId:                validDev,
+				SnapEntryId:                "not-a-uuid",
+				SnapSha3_384:               validHash,
+				SnapRevisionSequenceNumber: 1,
+				SnapSize:                   42,
+				Timestamp:                  timestamppb.New(now),
+			},
+			mockReturn: map[string]any{
+				"AddSnapRevisionAssertion": golden,
+			},
+			expectProtoErrors:  true,
+			expectProtoErrCode: cerror.Invalid,
+		},
+		{
+			name: "signing failure (bad hash length)",
+			req: &proto.AddSnapRevisionAssertionRequest{
+				DeveloperId:                validDev,
+				SnapEntryId:                validSnap,
+				SnapSha3_384:               "too-short",
+				SnapRevisionSequenceNumber: 1,
+				SnapSize:                   42,
+				Timestamp:                  timestamppb.New(now),
+			},
+			mockReturn:         nil, // no repo call expected
+			expectProtoErrors:  true,
+			expectProtoErrCode: cerror.Invalid,
+		},
+		{
+			name: "repo error",
+			req: &proto.AddSnapRevisionAssertionRequest{
+				DeveloperId:                validDev,
+				SnapEntryId:                validSnap,
+				SnapSha3_384:               validHash,
+				SnapRevisionSequenceNumber: 1,
+				SnapSize:                   42,
+				Timestamp:                  timestamppb.New(now),
+			},
+			mockReturn: map[string]any{
+				"AddSnapRevisionAssertion": cerror.NewCustomError(cerror.DatabaseError, "insert failed"),
+			},
+			expectError: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// set up mock expectations
+			for fn, ret := range tc.mockReturn {
+				switch fn {
+				case "AddSnapRevisionAssertion":
+					switch v := ret.(type) {
+					case *model.SnapRevisionAssertion:
+						mockRepo.
+							On("AddSnapRevisionAssertion",
+								mock.Anything, cfg.AuthorityID, tc.req.GetSnapSha3_384(),
+								rootKey.PublicKey().ID(), mock.Anything, mock.Anything,
+								tc.req.GetSnapRevisionSequenceNumber(), tc.req.GetSnapSize(),
+								tc.req.GetTimestamp().AsTime(), mock.Anything,
+							).
+							Return(v, nil).
+							Once()
+					case *cerror.CustomError:
+						mockRepo.
+							On("AddSnapRevisionAssertion",
+								mock.Anything, mock.Anything, mock.Anything,
+								mock.Anything, mock.Anything, mock.Anything,
+								mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+							).
+							Return(nil, v).
+							Once()
+					default:
+						t.Fatalf("unknown mockReturn[%s] type %T", fn, v)
+					}
+				}
+			}
+
+			resp, err := svc.AddSnapRevisionAssertion(context.Background(), tc.req)
+
+			if tc.expectError {
+				assert.Error(t, err, tc.name)
+				assert.Nil(t, resp, tc.name)
+			} else {
+				// service always returns (resp, nil) except repo‐error
+				assert.NoError(t, err, tc.name)
+				assert.NotNil(t, resp, tc.name)
+
+				if tc.expectProtoErrors {
+					assert.NotEmpty(t, resp.Errors, tc.name)
+					found := false
+					for _, e := range resp.Errors {
+						if e.Code == tc.expectProtoErrCode {
+							found = true
+							break
+						}
+					}
+					assert.True(t, found, "expected error code %q", tc.expectProtoErrCode)
+				} else {
+					assert.Empty(t, resp.Errors, tc.name)
+					// verify the happy‐path result matches our golden
+					assert.Equal(t, golden.ID.String(), resp.Id)
+					assert.Equal(t, golden.SignKeySHA3_384, resp.SignKeySha3_384)
+					assert.Equal(t, validDev, resp.DeveloperId)
+					assert.Equal(t, validSnap, resp.SnapEntryId)
+					assert.Equal(t, validHash, resp.SnapSha3_384)
+					assert.Equal(t, uint64(42), resp.SnapSize)
+					assert.Equal(t, uint32(1), resp.SnapRevisionSequenceNumber)
+					assert.NotEmpty(t, resp.Signature)
+				}
+			}
+
+			mockRepo.AssertExpectations(t)
+		})
+	}
+}
+
 func TestAddAccountKeyAssertion(t *testing.T) {
 	privKey, err := asserts.GenerateKey()
 	assert.NoError(t, err)
