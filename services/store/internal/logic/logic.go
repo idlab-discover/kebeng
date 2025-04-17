@@ -19,6 +19,7 @@ import (
 	"github.com/idlab-discover/kebeng/services/store/internal/objectstore"
 	"github.com/idlab-discover/kebeng/services/store/internal/repository"
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
+	"github.com/multiformats/go-multihash"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/sha3"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -794,8 +795,9 @@ func (s *StoreLogic) UnscannedUpload(stream proto.StoreService_UnscannedUploadSe
 	}
 
 	// Calculate sha3_384 hash of the file
-	sha3_384Hash := sha.Sum(nil)
-	sha3_384HashEncoded := base64.StdEncoding.EncodeToString(sha3_384Hash) // Encode the hash to base64 for storage
+	digest := sha.Sum(nil)
+	mhWrapped, err := multihash.Encode(digest, multihash.SHA3_384)
+	sha3_384HashEncoded := base64.RawURLEncoding.EncodeToString(mhWrapped) // Encode the hash to base64 for storage
 
 	tmpPath := path.Join(os.TempDir(), snapFileName)
 
