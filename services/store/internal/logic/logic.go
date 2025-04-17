@@ -117,7 +117,7 @@ func (s *StoreLogic) GetEntries(ctx context.Context, req *proto.GetEntriesReques
 		if entry.Id != nil && *entry.Id != "" {
 			id, err := uuid.Parse(*entry.Id)
 			if err != nil {
-				cerr := cerror.NewCustomError(cerror.InvalidField, "invalid UUID format")
+				cerr := cerror.NewCustomError(cerror.InvalidField, fmt.Sprintf("invalid UUID format: %s", *entry.Id))
 				logrus.Error(cerr)
 				el.AddCustomError(cerr)
 				continue
@@ -196,7 +196,7 @@ func (s *StoreLogic) GetEntryById(ctx context.Context, req *proto.GetEntryReques
 
 	id, err := uuid.Parse(*req.Id)
 	if err != nil {
-		cerr := cerror.NewCustomError(cerror.InvalidField, "invalid UUID format")
+		cerr := cerror.NewCustomError(cerror.InvalidField, fmt.Sprintf("invalid UUID format: %s", *req.Id))
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
 		return &proto.GetEntryResponse{Errors: el.ConvertToProtoErrorList()}, nil
@@ -286,7 +286,7 @@ func (s *StoreLogic) GetRevisions(ctx context.Context, req *proto.GetRevisionsRe
 		if revision.Id != "" {
 			id, err := uuid.Parse(revision.Id)
 			if err != nil {
-				cerr := cerror.NewCustomError(cerror.InvalidField, "invalid UUID format")
+				cerr := cerror.NewCustomError(cerror.InvalidField, fmt.Sprintf("invalid UUID format: %s", revision.Id))
 				logrus.Error(cerr)
 				el.AddCustomError(cerr)
 				continue
@@ -430,7 +430,7 @@ func (s *StoreLogic) GetEntriesByAccountId(ctx context.Context, req *proto.GetEn
 	}
 	accId, err := uuid.Parse(req.AccountId)
 	if err != nil {
-		cerr := cerror.NewCustomError(cerror.InvalidField, "invalid UUID format")
+		cerr := cerror.NewCustomError(cerror.InvalidField, fmt.Sprintf("invalid UUID format: %s", req.AccountId))
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
 		return &proto.GetEntriesResponse{Errors: el.ConvertToProtoErrorList()}, nil
@@ -476,7 +476,7 @@ func (s *StoreLogic) GetRevisionsByEntryIds(ctx context.Context, req *proto.GetR
 
 		entryId, err := uuid.Parse(entryIdReq.EntryId)
 		if err != nil {
-			cerr := cerror.NewCustomError(cerror.InvalidField, "invalid UUID format")
+			cerr := cerror.NewCustomError(cerror.InvalidField, fmt.Sprintf("invalid UUID format: %s", entryIdReq.EntryId))
 			logrus.Error(cerr)
 			el.AddCustomError(cerr)
 			continue
@@ -574,7 +574,7 @@ func (s *StoreLogic) SnapDownload(req *proto.SnapDownloadRequest, stream proto.S
 
 	parsedRevisionId, err := uuid.Parse(req.RevisionId)
 	if err != nil {
-		cerr := cerror.NewCustomError(cerror.InvalidField, "invalid UUID format")
+		cerr := cerror.NewCustomError(cerror.InvalidField, fmt.Sprintf("invalid UUID format: %s", req.RevisionId))
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
 		err := stream.Send(&proto.SnapDownloadResponse{
@@ -869,7 +869,7 @@ func (s *StoreLogic) GetUploadStatus(ctx context.Context, req *proto.GetUploadSt
 
 	id, err := uuid.Parse(req.GetUploadId())
 	if err != nil {
-		cerr := cerror.NewCustomError(cerror.InvalidField, "invalid UUID format")
+		cerr := cerror.NewCustomError(cerror.InvalidField, fmt.Sprintf("invalid UUID format: %s", req.GetUploadId()))
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
 		return &proto.GetUploadStatusResponse{Processed: true, Errors: el.ConvertToProtoErrorList()}, nil
@@ -906,7 +906,7 @@ func (s *StoreLogic) UpdateUploadStatus(ctx context.Context, req *proto.UpdateUp
 	id, err := uuid.Parse(req.GetUploadId())
 	if err != nil {
 		logrus.Error(err)
-		el.Add(cerror.InvalidField, "invalid UUID format")
+		el.Add(cerror.InvalidField, fmt.Sprintf("invalid UUID format: %s", req.GetUploadId()))
 		return &proto.UpdateUploadStatusResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
 
