@@ -19,7 +19,6 @@ import (
 	"github.com/idlab-discover/kebeng/services/store/internal/objectstore"
 	"github.com/idlab-discover/kebeng/services/store/internal/repository"
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
-	"github.com/multiformats/go-multihash"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/sha3"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -795,9 +794,8 @@ func (s *StoreLogic) UnscannedUpload(stream proto.StoreService_UnscannedUploadSe
 	}
 
 	// Calculate sha3_384 hash of the file
-	digest := sha.Sum(nil)
-	mhWrapped, err := multihash.Encode(digest, multihash.SHA3_384)
-	sha3_384HashEncoded := base64.RawURLEncoding.EncodeToString(mhWrapped) // Encode the hash to base64 for storage
+	digest := sha.Sum(nil)                                                 // returns [48]byte
+	sha3_384HashEncoded := base64.RawURLEncoding.EncodeToString(digest[:]) // just raw hash
 
 	tmpPath := path.Join(os.TempDir(), snapFileName)
 
@@ -906,8 +904,6 @@ func (s *StoreLogic) AddRevision(ctx context.Context, req *proto.AddRevisionRequ
 		// Already logged in GetEntryByName (repository)
 		return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
-
-	logrus.Infof("SHA: %s", req.Sha3_384)
 
 	// Check if a revision with the same SHA3_384 already exists -> this means that the uploaded file is the same as one already in the database
 	existingRevision, cerr := s.repo.GetRevisionBySHA(req.Sha3_384, false, el)
