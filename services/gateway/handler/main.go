@@ -57,7 +57,7 @@ func (h *Handler) SetupEndpoints(r *gin.Engine) {
 	r.GET("/download/:revision_id", h.snapHandler.DownloadSnap)
 	authGroup.POST("/snap-push/", h.snapHandler.SnapPush)
 	r.POST("/unscanned-upload/", h.snapHandler.UnscannedUpload)
-	//authGroup.GET("/snaps/:rev_id/status", h.snapHandler.GetStatus)
+	authGroup.GET("/snaps/:upload_id/status", h.snapHandler.GetUploadStatus)
 
 	// ********** ASSERTION **********
 	r.GET("v2/assertions/snap-revision/:rev_sha3_384", h.assertionHandler.GetSnapRevisionAssertion)

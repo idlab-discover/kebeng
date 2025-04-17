@@ -12,10 +12,14 @@ service StoreService {
     rpc GetEntries(GetEntriesRequest) returns (GetEntriesResponse);
     rpc GetEntriesByAccountId(GetEntriesByAccountIdRequest) returns (GetEntriesResponse);
     rpc GetRevisionsByEntryIds(GetRevisionsByEntryIdRequests) returns (GetRevisionsByEntryIdResponses);
-    rpc GetLatestRevision(GetLatestRevisionRequest) returns (GetRevisionResponse);
+    rpc GetLatestRevisionByTrackAndChannel(GetLatestRevisionRequest) returns (GetRevisionResponse);
     rpc SnapDownload(SnapDownloadRequest) returns (stream SnapDownloadResponse);
     rpc UnscannedUpload(stream UnscannedUploadRequest) returns (UnscannedUploadCompleteResponse);
     rpc AddUpload(AddUploadRequest) returns (AddUploadResponse);
+    rpc GetUploadStatus(GetUploadStatusRequest) returns (GetUploadStatusResponse);
+    rpc AddRevision(AddRevisionRequest) returns (AddRevisionResponse);
+    rpc GetObjectCustomMetadata(GetObjectCustomMetadataRequest) returns (GetObjectCustomMetadataResponse);
+    rpc UpdateUploadStatus(UpdateUploadStatusRequest) returns (UpdateUploadStatusResponse);
 }
 
 message RegisterSnapNameRequest {
@@ -216,4 +220,53 @@ message AddUploadResponse {
     repeated proto.Error errors = 4;
 }
 
+message GetUploadStatusRequest {
+    string upload_id = 1;
+}
 
+message GetUploadStatusResponse {
+    string upload_id = 1;
+    bool processed = 2;
+    optional uint64 revision = 3;
+    repeated proto.Error errors = 4;
+}
+
+message AddRevisionRequest {
+    string snap_name = 1;
+    string sha3_384 = 2;
+    uint64 size = 3;
+    repeated string architectures = 4;
+    repeated string tracks_and_channels = 5;
+    string unscanned_file_name = 7;
+}
+
+message AddRevisionResponse {
+    string id = 1;
+    string snap_name = 2;
+    string status = 3;
+    uint64 revision = 4;
+    repeated proto.Error errors = 5;
+}
+
+message GetObjectCustomMetadataRequest {
+    string bucket = 1;
+    string object_key = 2;
+}
+
+message GetObjectCustomMetadataResponse {
+    string sha3_384 = 1;
+    repeated proto.Error errors = 2;
+}
+
+message UpdateUploadStatusRequest {
+    string upload_id = 1;
+    string status = 2;
+    uint64 revision = 3;
+    repeated proto.Error errors = 4;
+}
+
+message UpdateUploadStatusResponse {
+    string upload_id = 1;
+    string status = 2;
+    repeated proto.Error errors = 3;
+}

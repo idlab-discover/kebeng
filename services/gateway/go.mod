@@ -9,6 +9,10 @@ require (
 	github.com/idlab-discover/kebeng/services/account v0.0.0-20250413194946-7881d962a645
 	github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250416201649-a2715a877503
 	github.com/idlab-discover/kebeng/services/store v0.0.0-20250413174200-63c100a6bca8
+	github.com/idlab-discover/kebeng v0.0.0-20250413173508-f870352503d7
+	github.com/idlab-discover/kebeng/services/account v0.0.0-20250410134233-c4f86861c29e
+	github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250410134233-c4f86861c29e
+	github.com/idlab-discover/kebeng/services/store v0.0.0-20250413141144-ed89486bdd09
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.10.0
