@@ -14,7 +14,6 @@ import (
 	"github.com/idlab-discover/kebeng/common/crypto"
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
 	"github.com/idlab-discover/kebeng/services/store/internal/models"
-	"github.com/idlab-discover/kebeng/services/store/internal/repository"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/sirupsen/logrus"
@@ -35,7 +34,6 @@ type IMinioClient interface {
 type IObjectStore interface {
 	SaveFileToBucket(bucket string, filePath string, sha3_384 string) (*models.Metadata, error)
 	GetSnapFileReader(filePath string) (io.ReadCloser, error)
-	LoadTestData(client *minio.Client, repo repository.ISnapsRepository, minioPath string) error
 	MakeBucketAndAddKey(bucketName string, keyPath string, keyName string)
 	Move(sourceBucket, destinationBucket, objectName string, newObjectName string) error
 	GetObjectCustomMetadata(bucket string, objectName string) (*models.Metadata, error)
@@ -55,15 +53,19 @@ func NewObjectStore(minio *minio.Client, cfg *config.Config) IObjectStore {
 }
 
 // don't forget to close the reader after use
-func (obs *ObjectStore) GetSnapFileReader(ctx context.Context, filePath string) (io.ReadCloser, error) {
-	logrus.Debugf("Getting file reader for file path: %s", filePath)
+func (obs *ObjectStore) GetSnapFileReader(filePath string) (io.ReadCloser, error) {
+	logrus.Infof("Getting file reader for file path: %s", filePath)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	objectPtr, err := obs.MinioClient.GetObject(ctx, "snaps", filePath, minio.GetObjectOptions{})
 	if err != nil {
+		cancel()
 		logrus.Errorf("error getting object from bucket 'snaps', file path: %s, err: %v", filePath, err)
 		return nil, err
 	}
 	if objectPtr == nil {
+		cancel()
 		logrus.Errorf("error getting object from bucket 'snaps', file path: %s, err: %v", filePath, err)
 		return nil, errors.New("object not found")
 	}

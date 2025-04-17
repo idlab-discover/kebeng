@@ -1,7 +1,6 @@
 package objectstore_test
 
 import (
-	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -100,7 +99,7 @@ func TestGetSnapFileReader_Success(t *testing.T) {
 	mockMinio.On("GetObject", mock.Anything, "snaps", filePath, mock.Anything).
 		Return(mockObject, nil)
 
-	reader, err := store.GetSnapFileReader(context.Background(), filePath)
+	reader, err := store.GetSnapFileReader(filePath)
 	assert.NoError(t, err)
 	assert.NotNil(t, reader)
 
@@ -122,7 +121,7 @@ func TestGetSnapFileReader_Error(t *testing.T) {
 	mockMinio.On("GetObject", mock.Anything, "snaps", filePath, mock.Anything).
 		Return(&minio.Object{}, expectedError)
 
-	reader, err := store.GetSnapFileReader(context.Background(), filePath)
+	reader, err := store.GetSnapFileReader(filePath)
 	assert.Error(t, err)
 	assert.Nil(t, reader)
 	assert.EqualError(t, err, "failed to get object")
@@ -145,7 +144,7 @@ func TestGetSnapFileReader_InvalidBucket(t *testing.T) {
 	mockMinio.On("GetObject", mock.Anything, "snaps", filePath, mock.Anything).
 		Return(&minio.Object{}, expectedError)
 
-	reader, err := store.GetSnapFileReader(context.Background(), filePath)
+	reader, err := store.GetSnapFileReader(filePath)
 	assert.Error(t, err)
 	assert.Nil(t, reader)
 	assert.EqualError(t, err, "bucket does not exist")
