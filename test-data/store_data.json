@@ -2,14 +2,14 @@
   "snap_entries": [
     {
       "id": "test_entry",
-      "name": "test-snap",
+      "name": "test",
       "private": false,
       "account_id": "acc1",
       "store": "kebeng"
     },
     {
       "id": "core_entry",
-      "name": "core-snap",
+      "name": "core",
       "private": false,
       "account_id": "acc2",
       "store": "kebeng"
