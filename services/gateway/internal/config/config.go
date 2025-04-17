@@ -34,7 +34,7 @@ type Config struct {
 	StoreUrl string `mapstructure:"store_url" yaml:"store_url"`
 
 	TestMode           bool   `mapstructure:"test_mode" yaml:"test_mode"`
-	TestDataFolderPath string `mapstructure:"test_data_folfder_path" yaml:"test_data_folder_path"`
+	TestDataFolderPath string `mapstructure:"test_data_folder_path" yaml:"test_data_folder_path"`
 }
 
 func LoadConfig() (*Config, error) {
@@ -128,7 +128,7 @@ func (c *Config) checkConfig() error {
 	// Test mode settings
 	if c.TestMode {
 		if c.TestDataFolderPath == "" {
-			errs = append(errs, "test_data_file_path is required in test mode")
+			errs = append(errs, "test_data_folder_path is required in test mode")
 		}
 	}
 

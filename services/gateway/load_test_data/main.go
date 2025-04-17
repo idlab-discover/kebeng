@@ -2,6 +2,7 @@ package loadtestdata
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"github.com/idlab-discover/kebeng/services/gateway/internal/util"
 	"github.com/idlab-discover/kebeng/services/gateway/load_test_data/model"
 	"github.com/sirupsen/logrus"
+	"github.com/snapcore/snapd/asserts"
 )
 
 type testHandler struct {
@@ -121,10 +123,10 @@ func (h *testHandler) loadInStoreTestData() (*TestStoreData, error) {
 
 //  ################# INSERT TEST DATA IN DB ####################
 
-func (h *testHandler) loadInAccountDataInDB(ctx context.Context, accountTestData *TestAccountData, accountIDMap map[string]string, assertionIDMap map[string]string) error {
+func (h *testHandler) loadInAccountDataInDB(_ context.Context, accountTestData *TestAccountData, accountIDMap map[string]string, assertionIDMap map[string]string) error {
 	// Create the accounts
 	for _, account := range accountTestData.Accounts {
-		accountResp := h.AccountClient.CreateAccount(account.DisplayName, account.Username, account.Email)
+		accountResp := h.AccountClient.AddAccount(account.DisplayName, account.Username, account.Email, account.HashedPassword)
 		if len(accountResp.Errors) > 0 {
 			return fmt.Errorf("failed to create account: %v", accountResp.Errors)
 		}
@@ -134,23 +136,37 @@ func (h *testHandler) loadInAccountDataInDB(ctx context.Context, accountTestData
 
 	// Create the keys
 	for _, key := range accountTestData.Keys {
-		keyResp := h.AccountClient.AddKey(key.AccountID, key.Name, key.SHA3384, key.EncodedPublicKey)
+		accId, err := h.getID(accountIDMap, key.AccountID)
+		if err != nil {
+			return fmt.Errorf("failed to get account ID: %v", err)
+		}
+
+		// Create the key
+		priv, err := asserts.GenerateKey()
+		if err != nil {
+			return fmt.Errorf("failed to generate key: %v", err)
+		}
+		wire, err := asserts.EncodePublicKey(priv.PublicKey())
+		if err != nil {
+			return fmt.Errorf("failed to encode public key: %v", err)
+		}
+		fp := priv.PublicKey().ID()
+		b64 := base64.StdEncoding.EncodeToString(wire)
+
+		key.SHA3384 = fp
+		key.EncodedPublicKey = b64
+
+		keyResp := h.AccountClient.AddKey(key.AccountEmail, key.Name, key.SHA3384, key.EncodedPublicKey)
 		if len(keyResp.Errors) > 0 {
 			return fmt.Errorf("failed to create key: %v", keyResp.Errors)
 		}
 		// Store the key ID in the map
 		h.saveID(accountIDMap, key.ID, keyResp.Id)
 
-		accId, err := h.getID(accountIDMap, key.AccountID)
-		if err != nil {
-			return fmt.Errorf("failed to get account ID: %v", err)
-		}
-
 		since := time.Now()
 		until := time.Now().Add(365 * 24 * time.Hour)
 
-		// body is empty since i don't know what should be in there
-		accountKeyAssertResponse := h.AssertionClient.AddAccountKeyAssertion(key.EncodedPublicKey, accId.String(), key.Name, &since, &until, []byte{})
+		accountKeyAssertResponse := h.AssertionClient.AddAccountKeyAssertion(key.EncodedPublicKey, key.SHA3384, accId.String(), key.Name, &since, &until)
 		if len(accountKeyAssertResponse.Errors) > 0 {
 			return fmt.Errorf("failed to create account key assertion: %v", accountKeyAssertResponse.Errors)
 		}
@@ -215,12 +231,12 @@ func (h *testHandler) loadInStoreDataInDB(ctx context.Context, storeTestData *Te
 		}
 
 		// creates revision
-		revisionResp := h.StoreClient.AddRevision(entry.Name, metadata.GetMetadata()["sha3_384"], uint64(fileInfo.Size()), []string{"amd64"}, []string{"latest", "1.0"}, uploadResp.GetTempFileName())
+		revisionResp := h.StoreClient.AddRevision(entry.Name, metadata.GetSha3_384(), uint64(fileInfo.Size()), []string{"amd64"}, []string{"latest", "1.0"}, uploadResp.GetTempFileName())
 		if len(revisionResp.Errors) > 0 {
 			return fmt.Errorf("failed to add revision: %v", revisionResp.Errors)
 		}
 		now := time.Now()
-		revisionAssertionRespo := h.AssertionClient.AddSnapRevisionAssertion(metadata.GetMetadata()["sha3_384"], accID.String(), snapEntryId.String(), uint32(revisionResp.Revision), uint64(fileInfo.Size()), &now)
+		revisionAssertionRespo := h.AssertionClient.AddSnapRevisionAssertion(metadata.GetSha3_384(), accID.String(), snapEntryId.String(), uint32(revisionResp.Revision), uint64(fileInfo.Size()), &now)
 		if len(revisionAssertionRespo.Errors) > 0 {
 			return fmt.Errorf("failed to add revision assertion: %v", revisionAssertionRespo.Errors)
 		}
