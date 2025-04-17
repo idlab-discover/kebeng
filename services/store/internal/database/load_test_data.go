@@ -61,7 +61,7 @@ func LoadTestData(filePath string, db *sqlx.DB, repo repository.ISnapsRepository
 		}
 		// Use RegisterSnap to insert the snap entry.
 		// (Note: you may later update this to include the account id.)
-		registeredSnap, cerr := repo.RegisterSnap(entry.Name, isPrivate, *entry.Store, entry.AccountID)
+		registeredSnap, cerr := repo.RegisterSnap(entry.Name, isPrivate, *entry.Store, entry.AccountID, el)
 		if cerr != nil {
 			return fmt.Errorf("failed to register snap (%s): %v", entry.Name, cerr)
 		}
