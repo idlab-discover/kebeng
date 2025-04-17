@@ -154,8 +154,6 @@ func (obs *ObjectStore) GetObjectCustomMetadata(bucket string, objectName string
 		return nil, err
 	}
 
-	logrus.Infof("Object info: %v", objectInfo.UserMetadata)
-
 	sha3_384 := objectInfo.UserMetadata["Sha3-384"]
 
 	metadata := &models.Metadata{
