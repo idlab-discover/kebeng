@@ -238,7 +238,7 @@ func TestCreateAccountHandler(t *testing.T) {
 				// If there is an error in binding JSON here, it will be handled in the actual handler.
 				if err == nil {
 					mockAccClient.
-						On("CreateAccount", req.DisplayName, req.Username, req.Email).
+						On("AddAccount", req.DisplayName, req.Username, req.Email).
 						Return(tc.accountClientResponse).
 						Once()
 				}
