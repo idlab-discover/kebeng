@@ -669,7 +669,6 @@ func (sp *SnapsRepository) GetPreloadAssociations(entry *models.SnapEntry, prelo
 		resp, cerr := sp.GetCommentsByEntryId(entry.ID, el)
 		if cerr != nil {
 			// Already logged in GetCommentsByEntryId
-			el.Add(cerror.InternalServerError, "failed to preload comments")
 		} else {
 			entry.LatestComments = resp
 		}
@@ -679,7 +678,6 @@ func (sp *SnapsRepository) GetPreloadAssociations(entry *models.SnapEntry, prelo
 		resp, cerr := sp.GetTracksByEntryId(entry.ID, el)
 		if cerr != nil {
 			// Already logged in GetTracksByEntryId
-			el.Add(cerror.InternalServerError, "failed to preload tracks")
 		} else {
 			entry.Tracks = resp
 		}
@@ -689,7 +687,6 @@ func (sp *SnapsRepository) GetPreloadAssociations(entry *models.SnapEntry, prelo
 		resp, cerr := sp.GetChannelsByTrackId(entry.ID, el)
 		if cerr != nil {
 			// Already logged in GetChannelsByTrackId
-			el.Add(cerror.InternalServerError, "failed to preload channels")
 		} else {
 			entry.Channels = resp
 		}
@@ -699,7 +696,6 @@ func (sp *SnapsRepository) GetPreloadAssociations(entry *models.SnapEntry, prelo
 		resp, cerr := sp.GetRevisionsByEntryId(entry.ID, el)
 		if cerr != nil {
 			// Already logged in GetRevisionsByEntryId
-			el.Add(cerror.InternalServerError, "failed to preload revisions")
 		} else {
 			entry.Revisions = resp
 		}
