@@ -1,0 +1,77 @@
+package repository
+
+import (
+	"time"
+
+	"github.com/google/uuid"
+	cerror "github.com/idlab-discover/kebeng/common/cerror"
+	"github.com/idlab-discover/kebeng/services/assertion/internal/model"
+	"github.com/stretchr/testify/mock"
+)
+
+// Ensure that MockAssertionRepository implements the interface.
+var _ IAssertionRepository = (*MockAssertionRepository)(nil)
+
+// MockAssertionRepository is a mock implementation of IAssertionRepository.
+type MockAssertionRepository struct {
+	mock.Mock
+}
+
+// AddAssertion mocks AddAssertion method.
+func (m *MockAssertionRepository) AddAssertion(snapEntryId uuid.UUID, assertionString string) (*model.Assertion, *cerror.CustomError) {
+	args := m.Called(snapEntryId, assertionString)
+	if args.Get(0) != nil {
+		return args.Get(0).(*model.Assertion), nil
+	}
+	return nil, args.Get(1).(*cerror.CustomError)
+}
+
+// AddAccountKeyAssertion mocks AddAccountKeyAssertion method.
+func (m *MockAssertionRepository) AddAccountKeyAssertion(el *cerror.ErrorList, authority_id, public_key_SHA3_384, sign_key_SHA3_384, name string, revision uint32, account_id uuid.UUID, since, until time.Time, body []byte, body_length uint64, signature string) (*model.AccountKeyAssertion, *cerror.CustomError) {
+	args := m.Called(el, authority_id, public_key_SHA3_384, sign_key_SHA3_384, name, revision, account_id, since, until, body, body_length, signature)
+	if args.Get(0) != nil {
+		return args.Get(0).(*model.AccountKeyAssertion), nil
+	}
+	el.AddCustomError(args.Get(1).(*cerror.CustomError))
+	return nil, args.Get(1).(*cerror.CustomError)
+}
+
+// AddSnapRevisionAssertion mocks AddSnapRevisionAssertion method.
+func (m *MockAssertionRepository) AddSnapRevisionAssertion(el *cerror.ErrorList, authority_id, snap_sha3_384, sign_key_SHA3_384 string, developer_id, snap_entry_id uuid.UUID, snap_revision_sequence_number uint32, snap_size uint64, timestamp time.Time, signature string) (*model.SnapRevisionAssertion, *cerror.CustomError) {
+	args := m.Called(el, authority_id, snap_sha3_384, sign_key_SHA3_384, developer_id, snap_entry_id, snap_revision_sequence_number, snap_size, timestamp, signature)
+	if args.Get(0) != nil {
+		return args.Get(0).(*model.SnapRevisionAssertion), nil
+	}
+	el.AddCustomError(args.Get(1).(*cerror.CustomError))
+	return nil, args.Get(1).(*cerror.CustomError)
+}
+
+// GetAccountKeyAssertionByName mocks GetAccountKeyAssertionByName method.
+func (m *MockAssertionRepository) GetAccountKeyAssertionByName(el *cerror.ErrorList, name string) (*model.AccountKeyAssertion, *cerror.CustomError) {
+	args := m.Called(el, name)
+	if args.Get(0) != nil {
+		return args.Get(0).(*model.AccountKeyAssertion), nil
+	}
+	el.AddCustomError(args.Get(1).(*cerror.CustomError))
+	return nil, args.Get(1).(*cerror.CustomError)
+}
+
+// GetLatestAccountKeyAssertion mocks GetLatestAccountKeyAssertion method.
+func (m *MockAssertionRepository) GetLatestAccountKeyAssertion(el *cerror.ErrorList, account_id uuid.UUID) (*model.AccountKeyAssertion, *cerror.CustomError) {
+	args := m.Called(el, account_id)
+	if args.Get(0) != nil {
+		return args.Get(0).(*model.AccountKeyAssertion), nil
+	}
+	el.AddCustomError(args.Get(1).(*cerror.CustomError))
+	return nil, args.Get(1).(*cerror.CustomError)
+}
+
+// GetSnapRevisionAssertionBySHA3_384 mocks GetSnapRevisionAssertionBySHA3_384 method.
+func (m *MockAssertionRepository) GetSnapRevisionAssertionBySHA3_384(el *cerror.ErrorList, snap_sha3_384 string) (*model.SnapRevisionAssertion, *cerror.CustomError) {
+	args := m.Called(el, snap_sha3_384)
+	if args.Get(0) != nil {
+		return args.Get(0).(*model.SnapRevisionAssertion), nil
+	}
+	el.AddCustomError(args.Get(1).(*cerror.CustomError))
+	return nil, args.Get(1).(*cerror.CustomError)
+}

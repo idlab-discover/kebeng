@@ -9,16 +9,15 @@ import (
 )
 
 type Config struct {
-	DBHost           string `mapstructure:"db_host" yaml:"db_host"`
-	DBPort           int    `mapstructure:"db_port" yaml:"db_port"`
-	DBUser           string `mapstructure:"db_user" yaml:"db_user"`
-	DBPassword       string `mapstructure:"db_password" yaml:"db_password"`
-	DBName           string `mapstructure:"db_name" yaml:"db_name"`
-	GRPCHost         string `mapstructure:"grpc_host" yaml:"grpc_host"`
-	GRPCPort         int    `mapstructure:"grpc_port" yaml:"grpc_port"`
-	MigrationPath    string `mapstructure:"migration_path" yaml:"migration_path"`
-	TestMode         bool
-	TestDataFilePath string `mapstructure:"test_data_file_path" yaml:"test_data_file_path"`
+	DBHost        string `mapstructure:"db_host" yaml:"db_host"`
+	DBPort        int    `mapstructure:"db_port" yaml:"db_port"`
+	DBUser        string `mapstructure:"db_user" yaml:"db_user"`
+	DBPassword    string `mapstructure:"db_password" yaml:"db_password"`
+	DBName        string `mapstructure:"db_name" yaml:"db_name"`
+	GRPCHost      string `mapstructure:"grpc_host" yaml:"grpc_host"`
+	GRPCPort      int    `mapstructure:"grpc_port" yaml:"grpc_port"`
+	MigrationPath string `mapstructure:"migration_path" yaml:"migration_path"`
+	TestMode      bool
 }
 
 func LoadConfig() (*Config, error) {
@@ -46,6 +45,10 @@ func LoadConfig() (*Config, error) {
 		cfg.TestMode = true
 	}
 
+	if err := cfg.checkConfig(); err != nil {
+		return nil, fmt.Errorf("configuration validation failed: %v", err)
+	}
+
 	logrus.Infof("loaded config: %+v", cfg)
 
 	return cfg, nil
@@ -58,4 +61,33 @@ func GetAccountServiceAddress(host string, port int) string {
 	}
 
 	return fmt.Sprintf("%s:%d", host, port)
+}
+
+func (cfg *Config) checkConfig() error {
+	if cfg.DBHost == "" {
+		return fmt.Errorf("db_host is required")
+	}
+	if cfg.DBPort == 0 {
+		return fmt.Errorf("db_port is required")
+	}
+	if cfg.DBUser == "" {
+		return fmt.Errorf("db_user is required")
+	}
+	if cfg.DBPassword == "" {
+		return fmt.Errorf("db_password is required")
+	}
+	if cfg.DBName == "" {
+		return fmt.Errorf("db_name is required")
+	}
+	if cfg.GRPCHost == "" {
+		return fmt.Errorf("grpc_host is required")
+	}
+	if cfg.GRPCPort == 0 {
+		return fmt.Errorf("grpc_port is required")
+	}
+	if cfg.MigrationPath == "" {
+		return fmt.Errorf("migration_path is required")
+	}
+
+	return nil
 }

@@ -1,12 +1,17 @@
 syntax = "proto3";
 
 import "common/cerror/proto/error.proto";
+import "google/protobuf/timestamp.proto";
 
 package assertion;
 option go_package = "github.com/idlab-discover/kebeng/services/assertion/proto;assertion";
 
 service AssertionService {
     rpc ProcessSnapBuildAssertion(SnapBuildAssertionRequest) returns (SnapBuildAssertionResponse);
+    rpc AddSnapRevisionAssertion(AddSnapRevisionAssertionRequest) returns (SnapRevisionAssertionResponse);
+    rpc AddAccountKeyAssertion(AddAccountKeyAssertionRequest) returns (AccountKeyAssertionResponse);
+    rpc GetSnapRevisionAssertionBySHA3_384(GetSnapRevisionAssertionBySHA3_384Request) returns (SnapRevisionAssertionResponse);
+    rpc GetAccountKeyAssertionByName(GetAccountKeyAssertionByNameRequest) returns (AccountKeyAssertionResponse);
 }
 
 message SnapBuildAssertionRequest {
@@ -14,15 +19,79 @@ message SnapBuildAssertionRequest {
 }
 
 message SnapBuildAssertionResponse {
-    string authority_id = 1;
-    string grade = 2;
-    string sign_key_sha3_384 = 3;
-    string snap_id = 4;
-    string snap_sha3_384 = 5;
-    string snap_size = 6;
-    string timestamp = 7;
-    string revision = 8;
-    string type = 9;
-    string developer_id = 10;
-    repeated proto.Error errors = 11;
+    string id = 1;
+    string authority_id = 2;
+    string grade = 3;
+    string sign_key_sha3_384 = 4;
+    string snap_id = 5;
+    string snap_sha3_384 = 6;
+    string snap_size = 7;
+    string timestamp = 8;
+    string revision = 9;
+    string type = 10;
+    string developer_id = 11;
+    repeated proto.Error errors = 12;
 }
+
+message AddSnapRevisionAssertionRequest {
+  string snap_sha3_384 = 1;
+  string developer_id = 2;
+  string snap_entry_id = 3;
+  uint32 snap_revision_sequence_number = 4;
+  uint64 snap_size = 5;
+  google.protobuf.Timestamp timestamp = 6;
+}
+
+message SnapRevisionAssertionResponse {
+  string authority_id = 1;
+  string snap_sha3_384 = 2;
+  string developer_id = 3;
+  string snap_entry_id = 4;
+  uint32 snap_revision_sequence_number = 5;
+  uint64 snap_size = 6;
+  google.protobuf.Timestamp timestamp = 7;
+  string sign_key_sha3_384 = 8;
+  string signature = 9;
+  string type = 10;
+  string id = 11;
+
+  repeated proto.Error errors = 12;
+}
+
+message AddAccountKeyAssertionRequest {
+  string encoded_public_key = 1;
+  string public_key_sha3_384 = 2;
+  string account_id = 3;
+  string name = 4;
+  google.protobuf.Timestamp since = 5;
+  google.protobuf.Timestamp until = 6;
+}
+
+message AccountKeyAssertionResponse {
+  string type = 1;
+  string authority_id = 2;
+  uint32 revision_sequence_number = 3;
+  string public_key_sha3_384 = 4;
+  string account_id = 5;
+  string name = 6;
+  google.protobuf.Timestamp since = 7;
+  google.protobuf.Timestamp until = 8;
+  string sign_key_sha3_384 = 9;
+  string id = 10;
+
+  bytes body = 11;
+  uint64 body_length = 12;
+
+  string signature = 13;
+
+  repeated proto.Error errors = 14;
+}
+
+message GetSnapRevisionAssertionBySHA3_384Request {
+  string snap_sha3_384 = 1;
+}
+
+message GetAccountKeyAssertionByNameRequest {
+  string name = 1;
+}
+

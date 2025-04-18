@@ -17,8 +17,8 @@ type MockAccountRepository struct {
 
 var _ IAccountRepository = (*MockAccountRepository)(nil)
 
-// Mock CreateAccount
-func (m *MockAccountRepository) CreateAccount(ctx context.Context, account *models.Account) (*models.Account, *cerror.CustomError) {
+// Mock AddAccount
+func (m *MockAccountRepository) AddAccount(ctx context.Context, account *models.Account) (*models.Account, *cerror.CustomError) {
 	args := m.Called(ctx, account)
 	if args.Get(0) != nil {
 		return args.Get(0).(*models.Account), nil
