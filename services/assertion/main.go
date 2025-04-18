@@ -44,12 +44,8 @@ func main() {
 	assertionLogic := logic.NewAssertionLogic(cfg, repo, assertionDB)
 
 	if cfg.TestMode {
-		err := database.LoadTestData(cfg.TestDataFilePath, repo)
-		if err != nil {
-			logrus.Fatalf("Failed to load test data: %v", err)
-		}
+		logrus.Infof("Running in test mode")
 	}
-
 	// start grpc server
 	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", cfg.GRPCHost, cfg.GRPCPort))
 	if err != nil {

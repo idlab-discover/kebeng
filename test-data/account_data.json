@@ -1,0 +1,39 @@
+{
+  "accounts": [
+    {
+      "id": "acc1",
+      "display_name": "John Doe",
+      "username": "jdoe",
+      "email": "jdoe@example.com",
+      "hashed_password": "$2b$12$eImiTXuWVxfS5Z0vE1p6eO"
+    },
+    {
+      "id": "acc2",
+      "display_name": "Jane Roe",
+      "username": "jroe",
+      "email": "jroe@example.com",
+      "hashed_password": "$2b$12$eImiTXuWVxfS5Z0vE1p6eO"
+    }
+  ],
+  "keys": [
+    {
+      "id": "key1",
+      "name": "key1-name",
+      "account_id": "acc1",
+      "account_email": "jdoe@example.com"
+    },
+    {
+      "id": "key2",
+      "name": "key2-name",
+      "account_id": "acc2",
+      "account_email": "jroe@example.com"
+    }
+  ],
+  "ssh_keys": [
+    {
+      "id": "ssh_key1",
+      "public_key_string": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQD...",
+      "account_id": "acc1"
+    }
+  ]
+}

@@ -12,7 +12,7 @@ type BaseHandler struct {
 	Config          *config.Config
 	AccountClient   accClient.AccountClientInterface
 	StoreClient     storeClient.StoreClientInterface
-	AssertionClient assertionClient.AssertionClientInterface // TODO: change to interface
+	AssertionClient assertionClient.AssertionClientInterface
 }
 
 func NewBaseHandler(accountClient accClient.AccountClientInterface, storeClient storeClient.StoreClientInterface, assertionClient assertionClient.AssertionClientInterface, config *config.Config) *BaseHandler {

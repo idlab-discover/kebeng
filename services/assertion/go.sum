@@ -51,8 +51,10 @@ github.com/hashicorp/go-multierror v1.1.1 h1:H5DkEtf6CXdFp0N0Em5UCwQpXMWke8IA0+l
 github.com/hashicorp/go-multierror v1.1.1/go.mod h1:iw975J/qwKPdAO1clOe2L8331t/9/fmwbPZ6JB6eMoM=
 github.com/hashicorp/hcl v1.0.0 h1:0Anlzjpi4vEasTeNFn2mLJgTSwt0+6sfsiTG8qcWGx4=
 github.com/hashicorp/hcl v1.0.0/go.mod h1:E5yfLk+7swimpb2L/Alb/PJmXilQ/rhwaUYs4T20WEQ=
-github.com/idlab-discover/kebeng v0.0.0-20250410184401-cd557fa55b32 h1:PGDVHGfkQmaXO+SUTgxBdAMW8eIYstNskQVS7VS8M2Y=
-github.com/idlab-discover/kebeng v0.0.0-20250410184401-cd557fa55b32/go.mod h1:eLVgHaIlm/pL91dOVhkLI/Q6osWN8LL9E6hGfa9cNAU=
+github.com/idlab-discover/kebeng v0.0.0-20250413170917-00d1a2417079 h1:YEkCMh5eYSvgDvIK6mYyYCjRPj9ub8Q0XYoC6OzqaHA=
+github.com/idlab-discover/kebeng v0.0.0-20250413170917-00d1a2417079/go.mod h1:eLVgHaIlm/pL91dOVhkLI/Q6osWN8LL9E6hGfa9cNAU=
+github.com/idlab-discover/kebeng v0.0.0-20250417102054-28cdb3ec3408 h1:VeB273Wl7wQeLsxCN/65azT24qSYvdmUWf7Hjg0ZNHg=
+github.com/idlab-discover/kebeng v0.0.0-20250417102054-28cdb3ec3408/go.mod h1:eLVgHaIlm/pL91dOVhkLI/Q6osWN8LL9E6hGfa9cNAU=
 github.com/jmoiron/sqlx v1.4.0 h1:1PLqN7S1UYp5t4SrVVnt4nUVNemrDAtxlulVe+Qgm3o=
 github.com/jmoiron/sqlx v1.4.0/go.mod h1:ZrZ7UsYB/weZdl2Bxg6jCRO9c3YHl8r3ahlKmRT4JLY=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=

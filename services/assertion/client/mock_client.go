@@ -28,8 +28,8 @@ func (m *MockAssertionClient) ProcessSnapBuildAssertion(assertion []byte) *proto
 	return nil
 }
 
-func (m *MockAssertionClient) AddAccountKeyAssertion(revisionSequenceNumber uint32, publicKeySha3_384 string, accountId string, name string, since *time.Time, until *time.Time, body []byte) *proto.AccountKeyAssertionResponse {
-	args := m.Called(revisionSequenceNumber, publicKeySha3_384, accountId, name, since, until, body)
+func (m *MockAssertionClient) AddAccountKeyAssertion(encoded_public_key, publicKeySha3_384 string, accountId string, name string, since *time.Time, until *time.Time) *proto.AccountKeyAssertionResponse {
+	args := m.Called(publicKeySha3_384, accountId, name, since, until)
 	if resp, ok := args.Get(0).(*proto.AccountKeyAssertionResponse); ok {
 		return resp
 	}
@@ -38,6 +38,30 @@ func (m *MockAssertionClient) AddAccountKeyAssertion(revisionSequenceNumber uint
 
 func (m *MockAssertionClient) AddSnapRevisionAssertion(snapSha3_384 string, developerId string, snapEntryId string, snapRevisionSequenceNumber uint32, snapSize uint64, timestamp *time.Time) *proto.SnapRevisionAssertionResponse {
 	args := m.Called(snapSha3_384, developerId, snapEntryId, snapRevisionSequenceNumber, snapSize, timestamp)
+	if resp, ok := args.Get(0).(*proto.SnapRevisionAssertionResponse); ok {
+		return resp
+	}
+	return nil
+}
+
+func (m *MockAssertionClient) GetAccountKeyAssertionByName(name string) *proto.AccountKeyAssertionResponse {
+	args := m.Called(name)
+	if resp, ok := args.Get(0).(*proto.AccountKeyAssertionResponse); ok {
+		return resp
+	}
+	return nil
+}
+
+func (m *MockAssertionClient) GetLatestAccountKeyAssertion(accountId string) *proto.AccountKeyAssertionResponse {
+	args := m.Called(accountId)
+	if resp, ok := args.Get(0).(*proto.AccountKeyAssertionResponse); ok {
+		return resp
+	}
+	return nil
+}
+
+func (m *MockAssertionClient) GetSnapRevisionAssertionBySHA3_384(snapSha3_384 string) *proto.SnapRevisionAssertionResponse {
+	args := m.Called(snapSha3_384)
 	if resp, ok := args.Get(0).(*proto.SnapRevisionAssertionResponse); ok {
 		return resp
 	}

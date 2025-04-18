@@ -13,6 +13,7 @@ services:
       - account_db
     volumes:
       - ./services/gateway/config.yaml:/app/config.yaml  # config file
+      - ./test-data:/app/test-data 
     environment:
       - CONFIG_FILE_PATH=/app/config.yaml
       - TEST_MODE=1
@@ -33,7 +34,6 @@ services:
       - ./services/store/config.yaml:/app/config.yaml  # config file
       - ./init-config-example.json:/app/init-config-example.json  # init example
       - ./services/store/internal/keys/:/app/keys/  # keys needed by store
-      - ./test-data/store:/app/test-data
     environment:
       - CONFIG_FILE_PATH=/app/config.yaml
       - TEST_MODE=1
@@ -80,7 +80,6 @@ services:
       - account_db
     volumes:
       - ./services/account/config.yaml:/app/config.yaml  # config file
-      - ./test-data/account:/app/test-data
     environment:
       - CONFIG_FILE_PATH=/app/config.yaml
       - TEST_MODE=1
@@ -112,7 +111,6 @@ services:
       - assertion_db
     volumes:
       - ./services/assertion/config.yaml:/app/config.yaml  # config file
-      - ./test-data/assertion:/app/test-data
       - ./services/assertion/keys/:/app/keys/  # TODO: this path should become a variable instead of hardcoded
 
     environment:

@@ -25,9 +25,7 @@ type Config struct {
 	MinioHost      string `mapstructure:"minio_host" yaml:"minio_host"`
 	MinioSecure    bool   `mapstructure:"minio_secure" yaml:"minio_secure"`
 
-	TestMode          bool
-	TestDataFilePath  string `mapstructure:"test_data_file_path" yaml:"test_data_file_path"`
-	TestDataMinioPath string `mapstructure:"test_data_minio_path" yaml:"test_data_minio_path"`
+	TestMode bool
 }
 
 func LoadConfig() (*Config, error) {
@@ -123,17 +121,6 @@ func (c *Config) checkConfig() error {
 	}
 	if c.MinioHost == "" {
 		errs = append(errs, "MinioHost is required")
-	}
-
-	// Optionally, if not in test mode, you could enforce that test-specific fields be empty.
-	// Conversely, if in test mode, you might require them:
-	if c.TestMode {
-		if c.TestDataFilePath == "" {
-			errs = append(errs, "TestDataFilePath is required in test mode")
-		}
-		if c.TestDataMinioPath == "" {
-			errs = append(errs, "TestDataMinioPath is required in test mode")
-		}
 	}
 
 	if len(errs) > 0 {

@@ -23,13 +23,11 @@ type Config struct {
 
 	RootKey        asserts.PrivateKey
 	RootKeyPath    string `mapstructure:"root_key_path" yaml:"root_key_path"`
-	GenericKeyPath string `mapstructure:"generic_key_path" yaml:"generic_key_path"`
 
 	AuthorityID string `mapstructure:"authority_id" yaml:"authority_id"`
 	StoreName   string `mapstructure:"store_name" yaml:"store_name"`
 
-	TestMode         bool
-	TestDataFilePath string `mapstructure:"test_data_file_path" yaml:"test_data_file_path"`
+	TestMode bool
 }
 
 func LoadConfig() (*Config, error) {
@@ -122,9 +120,6 @@ func (c *Config) checkConfig() error {
 	if c.RootKeyPath == "" {
 		errs = append(errs, "RootKeyPath is required")
 	}
-	if c.GenericKeyPath == "" {
-		errs = append(errs, "GenericKeyPath is required")
-	}
 
 	// Check authority ID and store name.
 	if c.AuthorityID == "" {
@@ -132,12 +127,6 @@ func (c *Config) checkConfig() error {
 	}
 	if c.StoreName == "" {
 		errs = append(errs, "StoreName is required")
-	}
-
-	if c.TestMode {
-		if c.TestDataFilePath == "" {
-			errs = append(errs, "TestDataFilePath is required in test mode")
-		}
 	}
 
 	if len(errs) > 0 {

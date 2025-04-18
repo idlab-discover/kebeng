@@ -98,7 +98,7 @@ store_url: "https://store.example.com"
 	cfg, err := LoadConfig()
 	assert.Nil(t, cfg)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "discharge key is required")
+	assert.Contains(t, err.Error(), "macaroon.discharge_key is required")
 }
 
 func TestLoadConfig_MissingRootKey(t *testing.T) {
@@ -128,7 +128,7 @@ store_url: "https://store.example.com"
 	cfg, err := LoadConfig()
 	assert.Nil(t, cfg)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "root key is required")
+	assert.Contains(t, err.Error(), "macaroon.root_key is required")
 }
 
 func TestLoadConfig_MissingStoreUrl(t *testing.T) {
@@ -158,7 +158,7 @@ store_url: ""
 	cfg, err := LoadConfig()
 	assert.Nil(t, cfg)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "store url is required")
+	assert.Contains(t, err.Error(), "store_url is required")
 }
 
 func TestLoadConfig_Success(t *testing.T) {

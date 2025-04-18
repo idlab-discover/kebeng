@@ -294,7 +294,7 @@ func TestGetAccountKeyAssertionByAccountName(t *testing.T) {
 				assert.NotNil(t, record, "Expected a non-nil assertion record")
 				assert.Equal(t, tt.assertionName, record.Name, "Account ID should match")
 				assert.Equal(t, "canonical", record.AuthorityID, "AuthorityID should match")
-				assert.Equal(t, uint32(2), record.SnapRevisionSequenceNumber, "Revision should match")
+				assert.Equal(t, uint32(2), record.RevisionSequenceNumber, "Revision should match")
 			}
 		})
 	}

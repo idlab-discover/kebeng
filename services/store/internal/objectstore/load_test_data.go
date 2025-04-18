@@ -52,21 +52,21 @@ func (obs *ObjectStore) LoadTestData(client *minio.Client, repo repository.ISnap
 			continue
 		}
 
-		track, errObj := repo.GetTracksByEntryId(snapEntry.ID)
+		track, errObj := repo.GetTracksByEntryId(snapEntry.ID, el)
 		if errObj != nil || len(track) == 0 {
 			logrus.Errorf("No track found for snap entry %s", snapEntry.Name)
 			continue
 		}
 		trackName := track[0].Name // use first track NOTE: this is a simplification, normally when generating we would know which track to use
 
-		channels, errObj := repo.GetChannelsByTrackId(track[0].ID)
+		channels, errObj := repo.GetChannelsByTrackId(track[0].ID, el)
 		if errObj != nil || len(channels) == 0 {
 			logrus.Errorf("No channel found for track %s", trackName)
 			continue
 		}
 		channelName := channels[0].Name // use first channel NOTE: this is a simplification, normally when generating we would know which channel to use
 
-		revs, errObj := repo.GetRevisionsByEntryId(snapEntry.ID)
+		revs, errObj := repo.GetRevisionsByEntryId(snapEntry.ID, el)
 		if errObj != nil {
 			logrus.Errorf("Could not get revisions for snap %s: %v", snapName, errObj)
 			continue
