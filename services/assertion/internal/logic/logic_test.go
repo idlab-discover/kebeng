@@ -94,10 +94,7 @@ func TestAddSnapRevisionAssertion(t *testing.T) {
 				SnapSize:                   42,
 				Timestamp:                  timestamppb.New(now),
 			},
-			mockReturn: map[string]any{
-				// still stub repo so AssertExpectations won't panic
-				"AddSnapRevisionAssertion": golden,
-			},
+			mockReturn:         nil,
 			expectProtoErrors:  true,
 			expectProtoErrCode: cerror.Invalid,
 		},
@@ -111,9 +108,7 @@ func TestAddSnapRevisionAssertion(t *testing.T) {
 				SnapSize:                   42,
 				Timestamp:                  timestamppb.New(now),
 			},
-			mockReturn: map[string]any{
-				"AddSnapRevisionAssertion": golden,
-			},
+			mockReturn:         nil,
 			expectProtoErrors:  true,
 			expectProtoErrCode: cerror.Invalid,
 		},
