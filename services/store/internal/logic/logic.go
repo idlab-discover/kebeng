@@ -528,7 +528,7 @@ func (s *StoreLogic) GetRevisionsByEntryIds(ctx context.Context, req *proto.GetR
 	return &proto.GetRevisionsByEntryIdResponses{Responses: responses}, nil
 }
 
-func (s *StoreLogic) GetLatestRevision(ctx context.Context, req *proto.GetLatestRevisionRequest) (*proto.GetRevisionResponse, error) {
+func (s *StoreLogic) GetLatestRevisionByTrackAndChannel(ctx context.Context, req *proto.GetLatestRevisionRequest) (*proto.GetRevisionResponse, error) {
 	el := cerror.NewErrorList()
 	if req.SnapName == "" {
 		cerr := cerror.NewCustomError(cerror.MissingField, "snap name is required")
