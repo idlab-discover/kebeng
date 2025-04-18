@@ -49,6 +49,11 @@ func (s *AssertionService) AddSnapRevisionAssertion(ctx context.Context, req *pr
 		logrus.Errorf("failed to parse snap entry id: %s", err)
 		el.Add(cerror.Invalid, fmt.Sprintf("invalid snap entry id could not parse to uuid: %s", err))
 	}
+	if el.HasError() {
+		return &proto.SnapRevisionAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}, nil
+	}
 
 	headers := map[string]any{
 		"authority-id":  s.cfg.AuthorityID,
@@ -62,8 +67,9 @@ func (s *AssertionService) AddSnapRevisionAssertion(ctx context.Context, req *pr
 	}
 	signedAssertion, err := s.assertionDB.Sign(asserts.SnapRevisionType, headers, nil, s.cfg.RootKey.PublicKey().ID())
 	if err != nil {
-		logrus.Errorf("failed to sign assertion: %v", err)
-		el.Add(cerror.Invalid, fmt.Sprintf("failed to sign assertion: %s", err))
+		cerr := cerror.NewCustomError(cerror.Invalid, fmt.Sprintf("failed to sign assertion: %s", err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
 		return &proto.SnapRevisionAssertionResponse{
 			Errors: el.ConvertToProtoErrorList()}, nil
 	}
