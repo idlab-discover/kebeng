@@ -7,7 +7,6 @@ import (
 
 	"github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/idlab-discover/kebeng/services/store/internal/models"
-	"github.com/idlab-discover/kebeng/services/store/internal/repository"
 	"github.com/minio/minio-go/v7"
 	"github.com/stretchr/testify/mock"
 )
@@ -19,17 +18,12 @@ type MockObjectStore struct {
 }
 
 // GetSnapFileReader implements IObjectStore.
-func (m *MockObjectStore) GetSnapFileReader(filePath string) (io.ReadCloser, error) {
-	args := m.Called(filePath)
+func (m *MockObjectStore) GetSnapFileReader(ctx context.Context, filePath string) (io.ReadCloser, error) {
+	args := m.Called(ctx, filePath)
 	if args.Get(0) != nil {
 		return args.Get(0).(io.ReadCloser), nil
 	}
 	return nil, args.Get(1).(error)
-}
-
-// LoadTestData implements IObjectStore.
-func (m *MockObjectStore) LoadTestData(client *minio.Client, repo repository.ISnapsRepository, minioPath string) error {
-	panic("unimplemented")
 }
 
 // SaveFileToBucket implements IObjectStore.

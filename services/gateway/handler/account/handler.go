@@ -17,7 +17,7 @@ type Handler struct {
 	*util.BaseHandler
 }
 
-func (h *Handler) CreateAccount(c *gin.Context) {
+func (h *Handler) AddAccount(c *gin.Context) {
 	var req model.CreateAccountRequest
 	el := cerror.NewErrorList()
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -25,7 +25,7 @@ func (h *Handler) CreateAccount(c *gin.Context) {
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
-	account := h.AccountClient.CreateAccount(req.DisplayName, req.Username, req.Email)
+	account := h.AccountClient.AddAccount(req.DisplayName, req.Username, req.Email, req.HashedPassword)
 	if len(account.Errors) > 0 {
 		el.ExtendProtoError(account.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})

@@ -1,13 +1,3 @@
--- check if manager role exists, if not create
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'manager') THEN
-       CREATE ROLE manager LOGIN;
-    END IF;
-END
-$$;
-
--- Enable the uuid-ossp extension for uuid_generate_v4()
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE IF NOT EXISTS public.assertions

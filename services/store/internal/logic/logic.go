@@ -563,6 +563,8 @@ func (s *StoreLogic) GetLatestRevision(ctx context.Context, req *proto.GetLatest
 
 func (s *StoreLogic) SnapDownload(req *proto.SnapDownloadRequest, stream proto.StoreService_SnapDownloadServer) error {
 	el := cerror.NewErrorList()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	if req.RevisionId == "" {
 		cerr := cerror.NewCustomError(cerror.MissingField, "revision id is required")
 		logrus.Error(cerr)
@@ -613,7 +615,7 @@ func (s *StoreLogic) SnapDownload(req *proto.SnapDownloadRequest, stream proto.S
 		return fmt.Errorf("failed to retrieve snap from objectstore with filePath: %v", filePath)
 	}
 
-	snapFileReader, err := s.obs.GetSnapFileReader(filePath)
+	snapFileReader, err := s.obs.GetSnapFileReader(ctx, filePath)
 	if err != nil {
 		cerr := cerror.NewCustomError(cerror.InternalServerError, "failed to get snap file reader")
 		logrus.Error(cerr)
@@ -830,8 +832,8 @@ func (s *StoreLogic) UnscannedUpload(stream proto.StoreService_UnscannedUploadSe
 	}
 
 	// Calculate sha3_384 hash of the file
-	sha3_384Hash := sha.Sum(nil)
-	sha3_384HashEncoded := base64.StdEncoding.EncodeToString(sha3_384Hash) // Encode the hash to base64 for storage
+	digest := sha.Sum(nil)                                                 // returns [48]byte
+	sha3_384HashEncoded := base64.RawURLEncoding.EncodeToString(digest[:]) // just raw hash
 
 	tmpPath := path.Join(os.TempDir(), snapFileName)
 

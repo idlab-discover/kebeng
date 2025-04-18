@@ -89,7 +89,7 @@ func (h *Handler) refreshSnapDownload(action *model.Action, el *cerror.ErrorList
 		return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("account error: %v", publisher.Errors))
 	}
 
-	downloadUrl := fmt.Sprintf("http://%s/download/%s", h.Config.StoreIP, latestRevision.Id)
+	downloadUrl := fmt.Sprintf("%s/download/%s", h.Config.StoreUrl, latestRevision.Id)
 
 	res.InstanceKey = &action.InstanceKey
 	res.SnapId = &snapEntry.Id
@@ -332,7 +332,7 @@ func (h *Handler) SnapPush(c *gin.Context) {
 		"success":            true,
 		"snap_name":          entry.SnapName,
 		"upload_id":          upload.Id,
-		"status_details_url": fmt.Sprintf("http://%s/dev/api/snaps/%s/status", h.Config.StoreIP, upload.Id), // FIX: change ClientIP to value in config
+		"status_details_url": fmt.Sprintf("%s/dev/api/snaps/%s/status", h.Config.StoreUrl, upload.Id), // FIX: change ClientIP to value in config
 	})
 
 	// After the status details URL is returned, we can proceed with creating a new revision

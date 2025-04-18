@@ -13,6 +13,8 @@ type MockAccountServiceClient struct {
 	mock.Mock
 }
 
+var _ proto.AccountServiceClient = (*MockAccountServiceClient)(nil)
+
 // PatchAccountByEmail is implemented as follows.
 func (m *MockAccountServiceClient) PatchAccountByEmail(ctx context.Context, in *proto.PatchAccountByEmailRequest, opts ...grpc.CallOption) (*proto.PatchAccountByEmailResponse, error) {
 	args := m.Called(ctx, in)
@@ -23,8 +25,8 @@ func (m *MockAccountServiceClient) PatchAccountByEmail(ctx context.Context, in *
 	return resp.(*proto.PatchAccountByEmailResponse), args.Error(1)
 }
 
-// CreateAccount mocks the CreateAccount method.
-func (m *MockAccountServiceClient) CreateAccount(ctx context.Context, in *proto.CreateAccountRequest, opts ...grpc.CallOption) (*proto.AccountResponse, error) {
+// AddAccount mocks the AddAccount method.
+func (m *MockAccountServiceClient) AddAccount(ctx context.Context, in *proto.AddAccountRequest, opts ...grpc.CallOption) (*proto.AccountResponse, error) {
 	args := m.Called(ctx, in)
 	resp := args.Get(0)
 	if resp == nil {
