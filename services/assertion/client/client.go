@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -18,6 +19,13 @@ import (
 
 type AssertionClientInterface interface {
 	ProcessSnapBuildAssertion(assertion []byte) *proto.SnapBuildAssertionResponse
+
+	AddAccountKeyAssertion(encoded_public_key, publicKeySha3_384, accountId, name string, since *time.Time, until *time.Time) *proto.AccountKeyAssertionResponse
+	AddSnapRevisionAssertion(snapSha3_384 string, developerId string, snapEntryId string, snapRevisionSequenceNumber uint32, snapSize uint64, timestamp *time.Time) *proto.SnapRevisionAssertionResponse
+
+	GetAccountKeyAssertionByName(name string) *proto.AccountKeyAssertionResponse
+	GetSnapRevisionAssertionBySHA3_384(snapSha3_384 string) *proto.SnapRevisionAssertionResponse
+
 	Close()
 }
 
@@ -65,12 +73,12 @@ func (c *AssertionClient) ProcessSnapBuildAssertion(assertion []byte) *proto.Sna
 	return resp
 }
 
-func (c *AssertionClient) AddAccountKeyAssertion(revisionSequenceNumber uint32, publicKeySha3_384 string, accountId string, name string, since *time.Time, until *time.Time, body []byte) *proto.AccountKeyAssertionResponse {
+func (c *AssertionClient) AddAccountKeyAssertion(encoded_public_key, publicKeySha3_384, accountId, name string, since *time.Time, until *time.Time) *proto.AccountKeyAssertionResponse {
 	el := cerror.NewErrorList()
 
 	// check input
-	if revisionSequenceNumber == 0 {
-		el.Add(cerror.InvalidField, "revision sequence number is required")
+	if encoded_public_key == "" {
+		el.Add(cerror.InvalidField, "encoded public key is required")
 	}
 	if publicKeySha3_384 == "" {
 		el.Add(cerror.InvalidField, "public key sha3_384 is required")
@@ -83,6 +91,13 @@ func (c *AssertionClient) AddAccountKeyAssertion(revisionSequenceNumber uint32, 
 	}
 	if name == "" {
 		el.Add(cerror.InvalidField, "name is required")
+	}
+	// doesn't allow spaces
+	if strings.Contains(name, " ") || strings.Contains(name, "_") {
+		el.Add(cerror.InvalidField, fmt.Sprintf("name cannot contain spaces or _ in name: '%s'", name))
+	}
+	if strings.ToLower(name) != name {
+		el.Add(cerror.InvalidField, fmt.Sprintf("name must be lowercase: '%s'", name))
 	}
 	if since == nil {
 		el.Add(cerror.InvalidField, "since is required")
@@ -100,13 +115,12 @@ func (c *AssertionClient) AddAccountKeyAssertion(revisionSequenceNumber uint32, 
 	}
 
 	req := &proto.AddAccountKeyAssertionRequest{
-		SnapRevisionSequenceNumber: revisionSequenceNumber,
-		PublicKeySha3_384:          publicKeySha3_384,
-		AccountId:                  accountId,
-		Name:                       name,
-		Since:                      timestamppb.New(*since),
-		Until:                      timestamppb.New(*until),
-		Body:                       body,
+		EncodedPublicKey:  encoded_public_key,
+		PublicKeySha3_384: publicKeySha3_384,
+		AccountId:         accountId,
+		Name:              name,
+		Since:             timestamppb.New(*since),
+		Until:             timestamppb.New(*until),
 	}
 
 	resp, err := c.client.AddAccountKeyAssertion(context.Background(), req)
@@ -120,7 +134,7 @@ func (c *AssertionClient) AddAccountKeyAssertion(revisionSequenceNumber uint32, 
 	return resp
 }
 
-func (c *AssertionClient) AddSnapRevisionAssertion(snapSha3_384 string, developerId string, snapEntryId string, snapRevisionSequenceNumber uint32, snapSize uint64, timestamp *time.Time) *proto.SnapRevisionAssertionResponse {
+func (c *AssertionClient) AddSnapRevisionAssertion(snapSha3_384, developerId, snapEntryId string, snapRevisionSequenceNumber uint32, snapSize uint64, timestamp *time.Time) *proto.SnapRevisionAssertionResponse {
 	el := cerror.NewErrorList()
 
 	// check input

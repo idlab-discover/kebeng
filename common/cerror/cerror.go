@@ -2,12 +2,14 @@ package cerror
 
 import (
 	"database/sql"
+	"database/sql/driver"
 	"encoding/json"
 	"fmt"
 	"net/http"
 
 	cerrorpb "github.com/idlab-discover/kebeng/common/cerror/proto"
 	"github.com/lib/pq"
+	"slices"
 )
 
 const (
@@ -183,6 +185,38 @@ func FormatBindError(err error) string {
 
 	// default
 	return err.Error()
+}
+
+func (el ErrorList) Value() (driver.Value, error) {
+	if len(el) == 0 {
+		return "[]", nil
+	}
+	return json.Marshal(el)
+}
+
+func (el *ErrorList) Scan(value interface{}) error {
+	if value == nil {
+		if el != nil {
+			*el = ErrorList{}
+		}
+		return nil
+	}
+
+	bytes, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("expected []byte, got %T", value)
+	}
+
+	return json.Unmarshal(bytes, el)
+}
+
+func (el *ErrorList) RemoveErrorWithCode(errorCode string) {
+	for i := len(*el) - 1; i >= 0; i-- {
+		currentError := (*el)[i]
+		if currentError.Code == errorCode {
+			*el = slices.Delete(*el, i, i+1)
+		}
+	}
 }
 
 func (el *ErrorList) GetHTTPStatus() int {

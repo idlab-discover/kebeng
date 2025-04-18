@@ -23,8 +23,6 @@ require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250318141246-77a544f56023 // indirect
-	github.com/idlab-discover/kebeng/services/store v0.0.0-20250318141246-77a544f56023 // indirect
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect

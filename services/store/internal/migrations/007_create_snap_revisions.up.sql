@@ -12,9 +12,9 @@ CREATE TABLE IF NOT EXISTS public.revision
     sha3_384_encoded text COLLATE pg_catalog."default",
     size bigint,
     sequence_number bigint,
-    architectures TEXT[], -- TODO: check if ok like this?
-    status TEXT COLLATE pg_catalog."default",
-    version TEXT COLLATE pg_catalog."default",
+    architectures TEXT[],
+    minio_file_path TEXT COLLATE pg_catalog."default",
+
 
     CONSTRAINT revision_pkey PRIMARY KEY (id),
 

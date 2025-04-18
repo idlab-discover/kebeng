@@ -38,15 +38,16 @@ func ptrTimeToPtrTimestamp(t *time.Time) *timestamppb.Timestamp {
 	return timestamppb.New(*t)
 }
 
-func (a *AccountService) CreateAccount(ctx context.Context, req *proto.CreateAccountRequest) (*proto.AccountResponse, error) {
+func (a *AccountService) AddAccount(ctx context.Context, req *proto.AddAccountRequest) (*proto.AccountResponse, error) {
 	el := make([]*cerrorpb.Error, 0)
 	account := &models.Account{
-		DisplayName: req.DisplayName,
-		Username:    req.Username,
-		Email:       req.Email,
+		DisplayName:  req.DisplayName,
+		Username:     req.Username,
+		Email:        req.Email,
+		PasswordHash: req.HashedPassword,
 	}
 
-	createdAccount, err := a.repo.CreateAccount(ctx, account)
+	createdAccount, err := a.repo.AddAccount(ctx, account)
 
 	if err != nil {
 		el = append(el, &cerrorpb.Error{

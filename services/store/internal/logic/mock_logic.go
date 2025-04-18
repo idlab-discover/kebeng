@@ -134,12 +134,21 @@ func (m *MockStoreServiceClient) AddUpload(ctx context.Context, in *proto.AddUpl
 	return args.Get(0).(*proto.AddUploadResponse), nil
 }
 
-func (m *MockStoreServiceClient) GetLatestRevision(ctx context.Context, in *proto.GetLatestRevisionRequest, opts ...grpc.CallOption) (*proto.GetRevisionResponse, error) {
+func (m *MockStoreServiceClient) GetLatestRevisionByTrackAndChannel(ctx context.Context, in *proto.GetLatestRevisionRequest, opts ...grpc.CallOption) (*proto.GetRevisionResponse, error) {
 	args := m.Called(ctx, in)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
 	return args.Get(0).(*proto.GetRevisionResponse), nil
+}
+
+func (m *MockStoreServiceClient) GetRevisionById(ctx context.Context, in *proto.GetRevisionRequest, opts ...grpc.CallOption) (*proto.GetRevisionResponse, error) {
+	args := m.Called(ctx, in)
+	resp := args.Get(0)
+	if resp == nil {
+		return nil, args.Error(1)
+	}
+	return resp.(*proto.GetRevisionResponse), args.Error(1)
 }
 
 func (m *MockStoreServiceClient) SnapDownload(ctx context.Context, in *proto.SnapDownloadRequest, opts ...grpc.CallOption) (proto.StoreService_SnapDownloadClient, error) {
@@ -148,4 +157,36 @@ func (m *MockStoreServiceClient) SnapDownload(ctx context.Context, in *proto.Sna
 		return nil, args.Error(1)
 	}
 	return args.Get(0).(proto.StoreService_SnapDownloadClient), args.Error(1)
+}
+
+func (m *MockStoreServiceClient) GetUploadStatus(ctx context.Context, in *proto.GetUploadStatusRequest, opts ...grpc.CallOption) (*proto.GetUploadStatusResponse, error) {
+	args := m.Called(ctx, in)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*proto.GetUploadStatusResponse), nil
+}
+
+func (m *MockStoreServiceClient) AddRevision(ctx context.Context, in *proto.AddRevisionRequest, opts ...grpc.CallOption) (*proto.AddRevisionResponse, error) {
+	args := m.Called(ctx, in)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*proto.AddRevisionResponse), nil
+}
+
+func (m *MockStoreServiceClient) GetObjectCustomMetadata(ctx context.Context, in *proto.GetObjectCustomMetadataRequest, opts ...grpc.CallOption) (*proto.GetObjectCustomMetadataResponse, error) {
+	args := m.Called(ctx, in)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*proto.GetObjectCustomMetadataResponse), nil
+}
+
+func (m *MockStoreServiceClient) UpdateUploadStatus(ctx context.Context, in *proto.UpdateUploadStatusRequest, opts ...grpc.CallOption) (*proto.UpdateUploadStatusResponse, error) {
+	args := m.Called(ctx, in)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*proto.UpdateUploadStatusResponse), nil
 }

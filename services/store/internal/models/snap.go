@@ -4,7 +4,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/lib/pq"
+	"github.com/minio/minio-go/v7"
 )
 
 const (
@@ -79,15 +81,14 @@ type SnapRevision struct {
 	CreatedAt              time.Time      `json:"created_at" db:"created_at"`
 	UpdatedAt              time.Time      `json:"updated_at" db:"updated_at"`
 	DeletedAt              *time.Time     `json:"deleted_at,omitempty" db:"deleted_at"`
-	SnapName               *string         `json:"snap_name" db:"snap_name"`
+	SnapName               *string        `json:"snap_name" db:"snap_name"`
 	BuildAssertionFileName *string        `json:"build_assertion_filename,omitempty" db:"build_assertion_filename"`
 	SHA3_384               *string        `json:"sha3_384,omitempty" db:"sha3_384"`
 	SHA3_384_Encoded       *string        `json:"sha3_384_encoded,omitempty" db:"sha3_384_encoded"`
 	Size                   *uint64        `json:"size,omitempty" db:"size"`
 	SequenceNumber         *uint          `json:"sequence_number,omitempty" db:"sequence_number"`
 	Architectures          pq.StringArray `json:"architectures,omitempty" db:"architectures"`
-	Status                 *string        `json:"status,omitempty" db:"status"`
-	Version                *string        `json:"version,omitempty" db:"version"`
+	MinioFilePath          *string        `json:"minio_file_path,omitempty" db:"minio_file_path"`
 	SnapEntryID            uuid.UUID      `json:"snap_entry_id" db:"entry_id"`
 	SnapTrackID            uuid.UUID      `json:"snap_track_id" db:"snap_track_id"`
 	SnapChannelID          uuid.UUID      `json:"snap_channel_id" db:"snap_channel_id"`
@@ -108,14 +109,21 @@ type SnapComment struct {
 }
 
 type SnapUpload struct {
-	ID                uuid.UUID  `json:"id" db:"id"`
-	CreatedAt         time.Time  `json:"created_at" db:"created_at"`
-	UpdatedAt         time.Time  `json:"updated_at" db:"updated_at"`
-	DeletedAt         *time.Time `json:"deleted_at,omitempty" db:"deleted_at"`
-	EntryID           uuid.UUID  `json:"entry_id" db:"entry_id"`
-	AccountID         uuid.UUID  `json:"account_id" db:"account_id"`
-	UnscannedFileName string     `json:"unscanned_file_name" db:"unscanned_file_name"`
-	SnapName          string     `json:"snap_name" db:"snap_name"`
-	Status            string     `json:"status" db:"status"`
-	StatusDetailsURL  string     `json:"status_details_url" db:"status_details_url"`
+	ID                uuid.UUID         `json:"id" db:"id"`
+	CreatedAt         time.Time         `json:"created_at" db:"created_at"`
+	UpdatedAt         time.Time         `json:"updated_at" db:"updated_at"`
+	DeletedAt         *time.Time        `json:"deleted_at,omitempty" db:"deleted_at"`
+	EntryID           uuid.UUID         `json:"entry_id" db:"entry_id"`
+	AccountID         uuid.UUID         `json:"account_id" db:"account_id"`
+	UnscannedFileName string            `json:"unscanned_file_name" db:"unscanned_file_name"`
+	SnapName          string            `json:"snap_name" db:"snap_name"`
+	Status            string            `json:"status" db:"status"`
+	StatusDetailsURL  string            `json:"status_details_url" db:"status_details_url"`
+	Revision          *uint64           `json:"revision" db:"revision"`
+	Errors            *cerror.ErrorList `json:"errors" db:"errors"`
+}
+
+type Metadata struct {
+	*minio.UploadInfo `json:"upload_info" db:"upload_info"`
+	Sha3_384   *string           `json:"sha3_384" db:"sha3_384"`
 }

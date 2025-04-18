@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/google/uuid"
+	"github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/idlab-discover/kebeng/services/store/internal/models"
 	"github.com/idlab-discover/kebeng/services/store/internal/repository"
 	"github.com/jmoiron/sqlx"
@@ -50,6 +51,8 @@ func LoadTestData(filePath string, db *sqlx.DB, repo repository.ISnapsRepository
 
 	idMap := make(map[uuid.UUID]uuid.UUID)
 
+	el := cerror.NewErrorList()
+
 	// --- Insert Entries ---
 	for _, entry := range testData.Entries {
 		isPrivate := false
@@ -58,7 +61,7 @@ func LoadTestData(filePath string, db *sqlx.DB, repo repository.ISnapsRepository
 		}
 		// Use RegisterSnap to insert the snap entry.
 		// (Note: you may later update this to include the account id.)
-		registeredSnap, cerr := repo.RegisterSnap(entry.Name, isPrivate, *entry.Store, entry.AccountID)
+		registeredSnap, cerr := repo.RegisterSnap(entry.Name, isPrivate, *entry.Store, entry.AccountID, el)
 		if cerr != nil {
 			return fmt.Errorf("failed to register snap (%s): %v", entry.Name, cerr)
 		}
@@ -80,7 +83,7 @@ func LoadTestData(filePath string, db *sqlx.DB, repo repository.ISnapsRepository
 			logrus.Warnf("Checking for entryId: %s, Snap ID mapping: %+v", track.SnapEntryID, idMap)
 			return fmt.Errorf("no registered snap entry found for track (%s)", track.ID)
 		}
-		registeredTrack, cerr := repo.AddTrack(newEntryID, track.Name)
+		registeredTrack, cerr := repo.AddTrack(newEntryID, track.Name, el)
 		if cerr != nil {
 			return fmt.Errorf("failed to register track (%s): %v", track.Name, cerr)
 		}
@@ -99,7 +102,7 @@ func LoadTestData(filePath string, db *sqlx.DB, repo repository.ISnapsRepository
 			return fmt.Errorf("no registered snap track found for channel (%s)", channel.ID)
 		}
 
-		registeredChannel, cerr := repo.AddChannel(newEntryID, newTrackId, channel.Name)
+		registeredChannel, cerr := repo.AddChannel(newEntryID, newTrackId, channel.Name, el)
 		if cerr != nil {
 			return fmt.Errorf("failed to register channel (%s): %v", channel.Name, cerr)
 		}
@@ -129,7 +132,7 @@ func LoadTestData(filePath string, db *sqlx.DB, repo repository.ISnapsRepository
 			size = *rev.Size
 		}
 
-		registeredRevision, cerr := repo.AddRevision(newEntryID, newTrackId, newChannelId, *rev.SnapName, size, *rev.SequenceNumber, rev.Architectures)
+		registeredRevision, cerr := repo.AddRevision(newEntryID, newTrackId, newChannelId, *rev.SnapName, size, *rev.SequenceNumber, rev.Architectures, *rev.SHA3_384, *rev.MinioFilePath, el)
 		if cerr != nil {
 			return fmt.Errorf("failed to add revision for snap (%s): %v", newEntryID, cerr)
 		}

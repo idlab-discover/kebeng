@@ -15,7 +15,7 @@ import (
 
 // IAccountRepository defines the interface for account-related database operations
 type IAccountRepository interface {
-	CreateAccount(ctx context.Context, account *models.Account) (*models.Account, *cerror.CustomError)
+	AddAccount(ctx context.Context, account *models.Account) (*models.Account, *cerror.CustomError)
 	UpdateAccount(ctx context.Context, account *models.Account) (*models.Account, *cerror.CustomError)
 	DeleteAccount(ctx context.Context, accountID uuid.UUID) *cerror.CustomError
 
@@ -40,7 +40,7 @@ func NewAccountRepository(db *sqlx.DB) *AccountRepository {
 	return &AccountRepository{db: db}
 }
 
-func (a *AccountRepository) CreateAccount(ctx context.Context, account *models.Account) (*models.Account, *cerror.CustomError) {
+func (a *AccountRepository) AddAccount(ctx context.Context, account *models.Account) (*models.Account, *cerror.CustomError) {
 	resp := &models.Account{}
 	query := `
         INSERT INTO account (display_name, username, email, password_hash, updated_at, validation)

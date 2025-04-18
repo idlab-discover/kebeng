@@ -8,9 +8,10 @@ import (
 )
 
 type CreateAccountRequest struct {
-	DisplayName string `json:"display_name"`
-	Email       string `json:"email"`
-	Username    string `json:"username"`
+	DisplayName    string `json:"display_name"`
+	Email          string `json:"email"`
+	Username       string `json:"username"`
+	HashedPassword string `json:"hashed_password"`
 }
 
 type CreateAccountResponse struct {

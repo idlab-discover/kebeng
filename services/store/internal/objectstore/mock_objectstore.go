@@ -5,7 +5,8 @@ import (
 	"context"
 	"io"
 
-	"github.com/idlab-discover/kebeng/services/store/internal/repository"
+	"github.com/idlab-discover/kebeng/common/cerror"
+	"github.com/idlab-discover/kebeng/services/store/internal/models"
 	"github.com/minio/minio-go/v7"
 	"github.com/stretchr/testify/mock"
 )
@@ -17,7 +18,7 @@ type MockObjectStore struct {
 }
 
 // GetSnapFileReader implements IObjectStore.
-func (m *MockObjectStore) GetSnapFileReader(ctx context.Context, filePath string) (io.ReadCloser, error) {
+func (m *MockObjectStore) GetSnapFileReader(filePath string) (io.ReadCloser, error) {
 	args := m.Called(filePath)
 	if args.Get(0) != nil {
 		return args.Get(0).(io.ReadCloser), nil
@@ -25,18 +26,13 @@ func (m *MockObjectStore) GetSnapFileReader(ctx context.Context, filePath string
 	return nil, args.Get(1).(error)
 }
 
-// LoadTestData implements IObjectStore.
-func (m *MockObjectStore) LoadTestData(client *minio.Client, repo repository.ISnapsRepository, minioPath string) error {
-	panic("unimplemented")
-}
-
 // SaveFileToBucket implements IObjectStore.
-func (m *MockObjectStore) SaveFileToBucket(bucket string, filePath string) (*minio.UploadInfo, error) {
-	args := m.Called(bucket, filePath)
+func (m *MockObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_384 string) (*models.Metadata, error) {
+	args := m.Called(bucket, filePath, sha3_384)
 	if args.Get(0) != nil {
-		return args.Get(0).(*minio.UploadInfo), nil
+		return args.Get(0).(*models.Metadata), nil
 	}
-	return &minio.UploadInfo{}, args.Get(1).(error)
+	return &models.Metadata{}, args.Get(1).(error)
 }
 
 func (m *MockObjectStore) GetObject(ctx context.Context, bucket, object string, opts minio.GetObjectOptions) (*minio.Object, error) {
@@ -58,7 +54,7 @@ func (m *MockObjectStore) MakeBucketAndAddKey(bucketName string, keyPath string,
 	m.Called(bucketName, keyPath, keyName)
 }
 
-func (m *MockObjectStore) Move(sourceBucket, destinationBucket, objectName string) error {
+func (m *MockObjectStore) Move(sourceBucket, destinationBucket, objectName string, newObjectName string) error {
 	args := m.Called(sourceBucket, destinationBucket, objectName)
 	return args.Error(0)
 }
@@ -81,4 +77,24 @@ func (m *MockObjectStore) CopyObject(ctx context.Context, dst minio.CopyDestOpti
 func (m *MockObjectStore) ListObjects(ctx context.Context, bucket string, opts minio.ListObjectsOptions) <-chan minio.ObjectInfo {
 	args := m.Called(ctx, bucket, opts)
 	return args.Get(0).(<-chan minio.ObjectInfo)
+}
+
+func (m *MockObjectStore) RemoveObject(ctx context.Context, bucket, object string, opts minio.RemoveObjectOptions) error {
+	args := m.Called(ctx, bucket, object, opts)
+	return args.Error(0)
+}
+
+func (m *MockObjectStore) StatObject(ctx context.Context, bucket, object string, opts minio.GetObjectOptions) (minio.ObjectInfo, error) {
+	args := m.Called(ctx, bucket, object, opts)
+	return args.Get(0).(minio.ObjectInfo), args.Error(1)
+}
+
+func (m *MockObjectStore) GetObjectCustomMetadata(bucket string, objectName string) (*models.Metadata, error) {
+	args := m.Called(bucket, objectName)
+	return args.Get(0).(*models.Metadata), args.Error(1)
+}
+
+func (m *MockObjectStore) DeleteFileFromBucket(bucket string, filePath string) *cerror.CustomError {
+	args := m.Called(bucket, filePath)
+	return args.Get(0).(*cerror.CustomError)
 }
