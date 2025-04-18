@@ -229,9 +229,9 @@ func (h *testHandler) loadInStoreDataInDB(ctx context.Context, storeTestData *Te
 		if len(metadata.Errors) > 0 {
 			return fmt.Errorf("failed to get object metadata: %v", metadata.Errors)
 		}
-		
+
 		// creates revision
-		revisionResp := h.StoreClient.AddRevision(entry.Name, metadata.GetSha3_384(), uint64(fileInfo.Size()), []string{"amd64"}, []string{"latest", "1.0"}, uploadResp.GetTempFileName())
+		revisionResp := h.StoreClient.AddRevision(entry.Name, metadata.GetSha3_384(), uint64(fileInfo.Size()), []string{"amd64"}, []string{"latest/stable"}, uploadResp.GetTempFileName())
 		if len(revisionResp.Errors) > 0 {
 			return fmt.Errorf("failed to add revision: %v", revisionResp.Errors)
 		}

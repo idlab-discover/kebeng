@@ -2,8 +2,8 @@ package middleware
 
 import (
 	"bytes"
-	"fmt"
 	"io"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -23,34 +23,44 @@ func (w *bodyLogWriter) Write(b []byte) (int, error) {
 
 func RequestLoggerMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		method := c.Request.Method
+		path := c.Request.URL.RequestURI()
+		reqID := time.Now().UnixNano()
 
-		if c.ContentType() == "multipart/form-data" {
-			logrus.Infof("Skipping body for multipart/form-data")
-		} else if c.ContentType() == "application/octet-stream" {
-			logrus.Infof("Skipping body for application/octet-stream")
+		logrus.Infof("=== START REQUEST %d %s %s ===", reqID, method, path)
+
+		// log request body (unless it’s a binary multipart or octet stream)
+		ct := c.ContentType()
+		if ct == "multipart/form-data" || ct == "application/octet-stream" {
+			logrus.Infof("[%d] Skipping body for %s", reqID, ct)
 		} else {
 			var buf bytes.Buffer
 			tee := io.TeeReader(c.Request.Body, &buf)
 			body, _ := io.ReadAll(tee)
 			c.Request.Body = io.NopCloser(&buf)
-			fmt.Println("Body:")
-
-			fmt.Println(string(body))
+			if len(body) > 0 {
+				logrus.Infof("Request Body:\n%s", string(body))
+			}
 		}
 
-		fmt.Println("Header:")
-		fmt.Println(c.Request.Header)
+		// log headers
+		logrus.Infof("Request Headers: %v", c.Request.Header)
 
+		// swap in a ResponseWriter that captures the body
 		blw := &bodyLogWriter{
 			ResponseWriter: c.Writer,
-			body:           bytes.NewBufferString(""),
+			body:           new(bytes.Buffer),
 		}
 		c.Writer = blw
 
-		// Execute the request and capture the response.
+		// process next handlers
 		c.Next()
 
-		// After endpoint execution, log the captured response body.
-		fmt.Printf("Response body: %s", blw.body.String())
+		// after handlers
+		status := c.Writer.Status()
+		logrus.Infof("Response Status: %d", status)
+		if blw.body.Len() > 0 {
+			logrus.Infof("Response Body:\n%s", blw.body.String())
+		}
 	}
 }

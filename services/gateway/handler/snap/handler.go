@@ -1,6 +1,8 @@
 package snap
 
 import (
+	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"slices"
@@ -91,6 +93,14 @@ func (h *Handler) refreshSnapDownload(action *model.Action, el *cerror.ErrorList
 
 	downloadUrl := fmt.Sprintf("%s/download/%s", h.Config.StoreUrl, latestRevision.Id)
 
+	raw, err := base64.RawURLEncoding.DecodeString(latestRevision.Sha3_384)
+	if err != nil {
+		el.Add(cerror.InternalServerError, fmt.Sprintf("error decoding sha3_384: %s", err.Error()))
+	}
+
+	hexSum := hex.EncodeToString(raw)
+	logrus.Infof("hexSum: %s", hexSum)
+
 	res.InstanceKey = &action.InstanceKey
 	res.SnapId = &snapEntry.Id
 	res.Name = &snapEntry.SnapName
@@ -104,7 +114,7 @@ func (h *Handler) refreshSnapDownload(action *model.Action, el *cerror.ErrorList
 		},
 		Download: &model.Download{
 			URL:      &downloadUrl,
-			Sha3_384: &latestRevision.Sha3_384,
+			Sha3_384: &hexSum,
 			Size:     &latestRevision.Size,
 		},
 		Version:     &latestRevision.Version,
@@ -455,10 +465,10 @@ func (h *Handler) downloadSnap(c *gin.Context, revisionId string, el *cerror.Err
 		filename = fmt.Sprintf("%s_%d.snap", response.Revision.SnapName, response.Revision.SequenceNumber)
 	}
 
-	// set correct headers for file download
-	c.Writer.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filename))
+	// … write the body …
+	c.Writer.Header().Set("Content-Disposition",
+		fmt.Sprintf(`attachment; filename="%s"`, filename))
 	c.Writer.Header().Set("Content-Type", "application/octet-stream")
-
 	if _, err := c.Writer.Write(response.Data); err != nil {
 		logrus.Error("error writing snap to response: ", err)
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error_list": el})
@@ -514,7 +524,7 @@ func (h *Handler) getLatestRevisionByEntryName(el *cerror.ErrorList, entryName s
 
 	// NOTE: track is not given to use with default "snap install <name>" so put it to default latest now if we do get it with other variations of command
 	// use that and put to default if not passed
-	latestRevision := h.StoreClient.GetLatestRevision(entryName, track, channel)
+	latestRevision := h.StoreClient.GetLatestRevisionByTrackAndChannel(entryName, track, channel)
 	if len(latestRevision.Errors) > 0 {
 		el.ExtendProtoError(latestRevision.Errors)
 		return snapEntry, nil
