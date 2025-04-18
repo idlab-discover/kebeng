@@ -28,9 +28,10 @@ func NewHandler(accountClient accClient.AccountClientInterface, storeClient stor
 	baseHandler := util.NewBaseHandler(accountClient, storeClient, assertionClient, config)
 
 	return &Handler{
-		snapHandler:    snap.Handler{BaseHandler: baseHandler},
-		accountHandler: account.Handler{BaseHandler: baseHandler},
-		authHandler:    auth.Handler{BaseHandler: baseHandler},
+		snapHandler:      snap.Handler{BaseHandler: baseHandler},
+		accountHandler:   account.Handler{BaseHandler: baseHandler},
+		authHandler:      auth.Handler{BaseHandler: baseHandler},
+		assertionHandler: assertion.Handler{BaseHandler: baseHandler},
 	}
 }
 
@@ -60,6 +61,8 @@ func (h *Handler) SetupEndpoints(r *gin.Engine) {
 	authGroup.GET("/snaps/:upload_id/status", h.snapHandler.GetUploadStatus)
 
 	// ********** ASSERTION **********
+	// NOTE: maybe put all the assertions under v2/assertions/:type/:id
+	// instead of all seperate endpoints, the above way is the one snapcraft uses but doesn't really matter i think for simplicity this for now
 	r.GET("v2/assertions/snap-revision/:rev_sha3_384", h.assertionHandler.GetSnapRevisionAssertion)
 
 	// ********** AUTH **********
