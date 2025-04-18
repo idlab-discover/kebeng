@@ -563,6 +563,8 @@ func (s *StoreLogic) GetLatestRevision(ctx context.Context, req *proto.GetLatest
 
 func (s *StoreLogic) SnapDownload(req *proto.SnapDownloadRequest, stream proto.StoreService_SnapDownloadServer) error {
 	el := cerror.NewErrorList()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	if req.RevisionId == "" {
 		cerr := cerror.NewCustomError(cerror.MissingField, "revision id is required")
 		logrus.Error(cerr)
@@ -613,7 +615,7 @@ func (s *StoreLogic) SnapDownload(req *proto.SnapDownloadRequest, stream proto.S
 		return fmt.Errorf("failed to retrieve snap from objectstore with filePath: %v", filePath)
 	}
 
-	snapFileReader, err := s.obs.GetSnapFileReader(filePath)
+	snapFileReader, err := s.obs.GetSnapFileReader(ctx, filePath)
 	if err != nil {
 		cerr := cerror.NewCustomError(cerror.InternalServerError, "failed to get snap file reader")
 		logrus.Error(cerr)
