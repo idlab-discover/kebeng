@@ -467,3 +467,167 @@ func TestAddAccountKeyAssertion(t *testing.T) {
 		})
 	}
 }
+
+func TestAddSnapDeclarationAssertion(t *testing.T) {
+	// generate and import a root signing key
+	rootKey, err := asserts.GenerateKey()
+	assert.NoError(t, err)
+
+	assertionDB, err := asserts.OpenDatabase(&asserts.DatabaseConfig{})
+	assert.NoError(t, err)
+	assert.NoError(t, assertionDB.ImportKey(rootKey))
+
+	cfg := &config.Config{
+		AuthorityID: "kebeng",
+		RootKey:     rootKey,
+	}
+
+	mockRepo := new(repository.MockAssertionRepository)
+	svc := &AssertionService{
+		cfg:         cfg,
+		assertionDB: assertionDB,
+		repo:        mockRepo,
+	}
+
+	now := time.Now().UTC()
+
+	// a “golden” model record returned by the repo
+	goldenModel := &model.SnapDeclarationAssertion{
+		ID:              uuid.New(),
+		AuthorityID:     cfg.AuthorityID,
+		SignKeySHA3_384: rootKey.PublicKey().ID(),
+		SnapID:          "snap-123",
+		SnapName:        "test-snap",
+		PublisherID:     "pub-456",
+		Revision:        7,
+		Series:          42,
+		Timestamp:       now,
+		RefreshControl:  []string{"refresh-control"},
+		Aliases:         []model.Alias{{Name: "alias1", Target: "target1"}, {Name: "alias2", Target: "target2"}},
+		Plugs:           map[string]model.Plug{"foo": {AllowConnection: boolPtr(true)}},
+		Slots:           map[string]model.Slot{"bar": {AllowInstallation: boolPtr(false)}},
+		Type:            asserts.SnapDeclarationType.Name,
+		Signature:       "deadbeef",
+	}
+
+	tests := []struct {
+		name               string
+		req                *proto.AddSnapDeclarationAssertionRequest
+		mockReturn         any  // either *model.SnapDeclarationAssertion or *cerror.CustomError
+		expectErr          bool // Go‐error return
+		expectProtoError   bool // resp.Errors non‐empty
+		expectProtoErrCode string
+	}{
+		{
+			name: "happy path",
+			req: &proto.AddSnapDeclarationAssertionRequest{
+				SnapId:         "snap-123",
+				SnapName:       "test-snap",
+				PublisherId:    "pub-456",
+				Revision:       7,
+				Series:         42,
+				Timestamp:      timestamppb.New(now),
+				RefreshControl: []string{"refresh-control"},
+				Aliases:        []*proto.Alias{{Name: "alias1", Target: "target1"}, {Name: "alias2", Target: "target2"}},
+				Plugs:          map[string]*proto.PlugRule{"foo": {AllowConnection: boolPtr(true)}},
+				Slots:          map[string]*proto.SlotRule{"bar": {AllowInstallation: boolPtr(false)}},
+			},
+			mockReturn: goldenModel,
+		},
+		{
+			name: "repo error",
+			req: &proto.AddSnapDeclarationAssertionRequest{
+				SnapId:         "snap-123",
+				SnapName:       "test-snap",
+				PublisherId:    "pub-456",
+				Revision:       7,
+				Series:         42,
+				Timestamp:      timestamppb.New(now),
+				RefreshControl: []string{"refresh-control"},
+			},
+			mockReturn:         cerror.NewCustomError(cerror.DatabaseError, "insert failed"),
+			expectErr:          false,
+			expectProtoError:   true,
+			expectProtoErrCode: cerror.DatabaseError,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// set up mock
+			switch ret := tc.mockReturn.(type) {
+			case *model.SnapDeclarationAssertion:
+				mockRepo.
+					On("AddSnapDeclarationAssertion",
+						mock.Anything,
+						tc.req.GetSnapId(),
+						tc.req.GetSnapName(),
+						tc.req.GetPublisherId(),
+						tc.req.GetRevision(),
+						tc.req.GetSeries(),
+						tc.req.GetTimestamp().AsTime(),
+						tc.req.GetRefreshControl(),
+						mock.Anything,
+						mock.Anything,
+						mock.Anything,
+					).
+					Return(ret, nil).
+					Once()
+			case *cerror.CustomError:
+				mockRepo.
+					On("AddSnapDeclarationAssertion",
+						mock.Anything, mock.Anything, mock.Anything,
+						mock.Anything, mock.Anything, mock.Anything,
+						mock.Anything, mock.Anything,
+						mock.Anything, mock.Anything, mock.Anything,
+					).
+					Return(nil, ret).
+					Once()
+			default:
+				t.Fatalf("unexpected mockReturn type %T", ret)
+			}
+
+			resp, err := svc.AddSnapDeclarationAssertion(context.Background(), tc.req)
+
+			if tc.expectErr {
+				assert.Error(t, err)
+				assert.Nil(t, resp)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, resp)
+				if tc.expectProtoError {
+					// error list must contain our expected code
+					assert.NotEmpty(t, resp.Errors)
+					found := false
+					for _, e := range resp.Errors {
+						if e.Code == tc.expectProtoErrCode {
+							found = true
+							break
+						}
+					}
+					assert.True(t, found, "expected proto error %q", tc.expectProtoErrCode)
+				} else {
+					assert.Empty(t, resp.Errors)
+					// check that the happy‐path response fields match the golden model
+					assert.Equal(t, goldenModel.ID.String(), resp.Id)
+					assert.Equal(t, goldenModel.SignKeySHA3_384, resp.SignKeySha3_384)
+					assert.Equal(t, goldenModel.SnapID, resp.SnapId)
+					assert.Equal(t, goldenModel.SnapName, resp.SnapName)
+					assert.Equal(t, goldenModel.PublisherID, resp.PublisherId)
+					assert.Equal(t, goldenModel.Revision, resp.Revision)
+					assert.Equal(t, goldenModel.Series, resp.Series)
+					assert.Equal(t, goldenModel.RefreshControl, resp.RefreshControl)
+					assert.Equal(t, tc.req.GetAliases(), resp.Aliases)
+					assert.Equal(t, tc.req.GetPlugs(), resp.Plugs)
+					assert.Equal(t, tc.req.GetSlots(), resp.Slots)
+					assert.NotEmpty(t, resp.Signature)
+				}
+			}
+
+			mockRepo.AssertExpectations(t)
+		})
+	}
+}
+
+// helper to get a *bool
+func boolPtr(b bool) *bool { return &b }

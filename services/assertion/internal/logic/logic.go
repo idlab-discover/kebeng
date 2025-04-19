@@ -11,6 +11,7 @@ import (
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	cerrorpb "github.com/idlab-discover/kebeng/common/cerror/proto"
 	"github.com/idlab-discover/kebeng/services/assertion/internal/config"
+	"github.com/idlab-discover/kebeng/services/assertion/internal/model"
 	"github.com/idlab-discover/kebeng/services/assertion/internal/repository"
 	proto "github.com/idlab-discover/kebeng/services/assertion/proto"
 	"github.com/sirupsen/logrus"
@@ -62,8 +63,9 @@ func (s *AssertionService) AddSnapRevisionAssertion(ctx context.Context, req *pr
 	}
 	signedAssertion, err := s.assertionDB.Sign(asserts.SnapRevisionType, headers, nil, s.cfg.RootKey.PublicKey().ID())
 	if err != nil {
-		logrus.Errorf("failed to sign assertion: %v", err)
-		el.Add(cerror.Invalid, fmt.Sprintf("failed to sign assertion: %s", err))
+		cerr := cerror.NewCustomError(cerror.Invalid, fmt.Sprintf("failed to sign snapRevisionAssertion: %s", err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
 		return &proto.SnapRevisionAssertionResponse{
 			Errors: el.ConvertToProtoErrorList()}, nil
 	}
@@ -217,6 +219,67 @@ func (s *AssertionService) AddAccountKeyAssertion(ctx context.Context, req *prot
 		Signature:              signature,
 		Type:                   accountKeyAssertion.Type,
 		Errors:                 el.ConvertToProtoErrorList(),
+	}, nil
+}
+
+func (s *AssertionService) AddSnapDeclarationAssertion(ctx context.Context, req *proto.AddSnapDeclarationAssertionRequest) (*proto.SnapDeclarationAssertionResponse, error) {
+	el := cerror.NewErrorList()
+	headers := map[string]any{
+		"authority-id": s.cfg.AuthorityID,
+		"revision":     fmt.Sprintf("%d", req.GetRevision()),
+		"series":       fmt.Sprintf("%d", req.GetSeries()),
+		"snap-id":      req.GetSnapId(),
+		"snap-name":    req.GetSnapName(),
+		"publisher-id": req.GetPublisherId(),
+		"timestamp":    req.GetTimestamp().AsTime().Format(time.RFC3339),
+	}
+	signedAssertion, err := s.assertionDB.Sign(asserts.SnapDeclarationType, headers, nil, s.cfg.RootKey.PublicKey().ID())
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.Invalid, fmt.Sprintf("failed to sign snap declaration assertion: %s", err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.SnapDeclarationAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}, nil
+	}
+
+	signature := string(asserts.Encode(signedAssertion))
+	snapDeclarationAssertion, cerr := s.repo.AddSnapDeclarationAssertion(
+		el,
+		req.GetSnapId(),
+		req.GetSnapName(),
+		req.GetPublisherId(),
+		req.GetRevision(),
+		req.GetSeries(),
+		req.GetTimestamp().AsTime(),
+		req.GetRefreshControl(),
+		protoAliasToModelAlias(req.GetAliases()),
+		protoPlugToModelPlug(req.GetPlugs()),
+		protoSlotToModelSlot(req.GetSlots()),
+	)
+	if cerr != nil {
+		// should have been logged and added to error list in repo function
+		return &proto.SnapDeclarationAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}, nil
+	}
+	return &proto.SnapDeclarationAssertionResponse{
+		Id:              snapDeclarationAssertion.ID.String(),
+		AuthorityId:     snapDeclarationAssertion.AuthorityID,
+		SignKeySha3_384: snapDeclarationAssertion.SignKeySHA3_384,
+		SnapId:          snapDeclarationAssertion.SnapID,
+		SnapName:        snapDeclarationAssertion.SnapName,
+		PublisherId:     snapDeclarationAssertion.PublisherID,
+		Revision:        snapDeclarationAssertion.Revision,
+		Series:          snapDeclarationAssertion.Series,
+		Timestamp:       timestamppb.New(snapDeclarationAssertion.Timestamp),
+		RefreshControl:  snapDeclarationAssertion.RefreshControl,
+		Aliases:         req.GetAliases(),
+		Plugs:           req.GetPlugs(),
+		Slots:           req.GetSlots(),
+		Signature:       signature,
+		Type:            snapDeclarationAssertion.Type,
+		Errors:          el.ConvertToProtoErrorList(),
 	}, nil
 }
 
@@ -411,4 +474,48 @@ func parseAssertion(data string) map[string]string {
 		}
 	}
 	return result
+}
+
+// convert proto Alias to model Alias
+func protoAliasToModelAlias(protoAliases []*proto.Alias) []model.Alias {
+	aliases := make([]model.Alias, len(protoAliases))
+	for i, protoAlias := range protoAliases {
+		aliases[i] = model.Alias{
+			Name:   protoAlias.Name,
+			Target: protoAlias.Target,
+		}
+	}
+	return aliases
+}
+
+// convert proto Plug to model Plug
+func protoPlugToModelPlug(protoPlug map[string]*proto.PlugRule) map[string]*model.Plug {
+	plugs := make(map[string]*model.Plug)
+	for k, v := range protoPlug {
+		plugs[k] = &model.Plug{
+			AllowInstallation:   v.AllowInstallation,
+			DenyInstallation:    v.DenyInstallation,
+			AllowConnection:     v.AllowConnection,
+			DenyConnection:      v.DenyConnection,
+			AllowAutoConnection: v.AllowAutoConnection,
+			DenyAutoConnection:  v.DenyAutoConnection,
+		}
+	}
+	return plugs
+}
+
+// convert proto Slot to model Slot
+func protoSlotToModelSlot(protoSlot map[string]*proto.SlotRule) map[string]*model.Slot {
+	slots := make(map[string]*model.Slot)
+	for k, v := range protoSlot {
+		slots[k] = &model.Slot{
+			AllowInstallation:   v.AllowInstallation,
+			DenyInstallation:    v.DenyInstallation,
+			AllowConnection:     v.AllowConnection,
+			DenyConnection:      v.DenyConnection,
+			AllowAutoConnection: v.AllowAutoConnection,
+			DenyAutoConnection:  v.DenyAutoConnection,
+		}
+	}
+	return slots
 }
