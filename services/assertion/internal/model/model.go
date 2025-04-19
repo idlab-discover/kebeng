@@ -48,3 +48,49 @@ type SnapRevisionAssertion struct {
 	SignKeySHA3_384            string    `json:"sign_key_sha3_384" db:"sign_key_sha3_384"`
 	Signature                  string    `json:"signature" db:"signature"`
 }
+
+type SnapDeclarationAssertion struct {
+	ID              uuid.UUID       `json:"id" db:"id"`
+	CreatedAt       time.Time       `json:"created_at" db:"created_at"`
+	DeletedAt       *time.Time      `json:"deleted_at,omitempty" db:"deleted_at"`
+	Type            string          `json:"type" db:"type"`
+	AuthorityID     string          `json:"authority_id" db:"authority_id"`
+	Revision        uint32          `json:"revision" db:"revision"`
+	Series          uint32          `json:"series" db:"series"`
+	SnapID          string          `json:"snap_id" db:"snap_id"`
+	SnapName        string          `json:"snap_name" db:"snap_name"`
+	PublisherID     string          `json:"publisher_id" db:"publisher_id"`
+	Timestamp       time.Time       `json:"timestamp" db:"timestamp"`
+	RefreshControl  []string        `json:"refresh_control" db:"refresh_control"`
+	Aliases         []Alias         `json:"aliases" db:"aliases"`
+	Plugs           map[string]Plug `json:"plugs" db:"plugs"`
+	Slots           map[string]Slot `json:"slots" db:"slots"`
+	SignKeySHA3_384 string          `json:"sign_key_sha3_384" db:"sign_key_sha3_384"`
+	Signature       string          `json:"signature" db:"signature"`
+}
+
+type Alias struct {
+	Name   string `json:"name" db:"name"`
+	Target string `json:"target" db:"target"`
+}
+
+// Same as models in client
+// NOTE: maybe change this to use an enum? with states like Allowed, Denied and NotSet and can be expanded later on to support more complex objects
+// bools are pointers so that we can use nil to indicate that the field is not set
+type Plug struct {
+	AllowInstallation   *bool
+	DenyInstallation    *bool
+	AllowConnection     *bool
+	DenyConnection      *bool
+	AllowAutoConnection *bool
+	DenyAutoConnection  *bool
+}
+
+type Slot struct {
+	AllowInstallation   *bool
+	DenyInstallation    *bool
+	AllowConnection     *bool
+	DenyConnection      *bool
+	AllowAutoConnection *bool
+	DenyAutoConnection  *bool
+}
