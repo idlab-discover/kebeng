@@ -854,7 +854,7 @@ func (s *StoreLogic) AddRevision(ctx context.Context, req *proto.AddRevisionRequ
 	}
 
 	// Get the file path in the object store
-	minioFilePath := s.createObjectStoreFilePath(entry.Name, uint(sequenceNumber))
+	minioFilePath := s.createObjectStoreFilePath(entry.Name, sequenceNumber)
 
 	// Parse the tracks and channels
 	tracksAndChannels := parseTracksAndChannels(req.TracksAndChannels)
@@ -966,10 +966,10 @@ func (s *StoreLogic) getObjectStoreFilePath(revisionID string, el *cerror.ErrorL
 		// Already logged in GetRevisionById (repository)
 		return "", nil, cerr
 	}
-	return s.createObjectStoreFilePath(revision.SnapName,revision.SequenceNumber, revision, nil)
+	return s.createObjectStoreFilePath(revision.SnapName, revision.SequenceNumber), revision, nil
 }
 
-func (s *StoreLogic) createObjectStoreFilePath(entryName string, sequenceNumber uint) string {
+func (s *StoreLogic) createObjectStoreFilePath(entryName string, sequenceNumber uint32) string {
 	return fmt.Sprintf("%s/%s_%d.snap", entryName, entryName, sequenceNumber)
 }
 
