@@ -99,7 +99,6 @@ func (h *Handler) refreshSnapDownload(action *model.Action, el *cerror.ErrorList
 	}
 
 	hexSum := hex.EncodeToString(raw)
-	logrus.Infof("hexSum: %s", hexSum)
 
 	res.InstanceKey = &action.InstanceKey
 	res.SnapId = &snapEntry.Id

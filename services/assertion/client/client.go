@@ -249,7 +249,7 @@ func (c *AssertionClient) AddSnapDeclarationAssertion(snapID, snapName, publishe
 		}
 	}
 
-	// think the other 3 parameters could be empty, assertion of snap package "core" does not have any of the last 3 parameters
+	// QUESTION: think the other 3 parameters could be empty, assertion of snap package "core" does not have any of the last 3 parameters
 	resp, err := c.client.AddSnapDeclarationAssertion(context.Background(), req)
 	if err != nil {
 		el.Add(cerror.InternalServerError, err.Error())
