@@ -228,21 +228,41 @@ func (r *AssertionRepository) GetSnapRevisionAssertionBySHA3_384(el *cerror.Erro
 	return assertion, nil
 }
 
-// TODO: implement this correctly and decide how to store in db
-func (r *AssertionRepository) GetSnapDeclarationAssertionByID(el *cerror.ErrorList, snapID string) (*model.SnapDeclarationAssertion, *cerror.CustomError) {
-	query := `
-		SELECT id, snap_id, snap_name, publisher_id, revision, series, timestamp, refresh_control, aliases, plugs, slots 
-		FROM snap_declaration_assertion 
-		WHERE snap_id = $1
-	`
-	assertion := &model.SnapDeclarationAssertion{}
-	err := r.db.Get(assertion, query, snapID)
-	if err != nil {
-		cerr := cerror.ConvertError(err, fmt.Sprintf("failed to get snap declaration assertion by ID: %s, err: %v", snapID, err))
+func (r *AssertionRepository) GetSnapDeclarationAssertionByID(
+	el *cerror.ErrorList,
+	assertionID string,
+) (*model.SnapDeclarationAssertion, *cerror.CustomError) {
+	const parentQuery = `
+        SELECT
+            id, authority_id, sign_key_sha3_384, snap_id, snap_name, publisher_id, revision, series, timestamp,
+            refresh_control, plugs, slots, signature, created_at
+        FROM snap_declaration_assertion
+        WHERE id = $1
+    `
+
+	var assertion model.SnapDeclarationAssertion
+	if err := r.db.Get(&assertion, parentQuery, assertionID); err != nil {
+		cerr := cerror.ConvertError(err, fmt.Sprintf("failed to load snap_declaration_assertion %q: %v", assertionID, err))
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
 		return nil, cerr
 	}
 
-	return assertion, nil
+	// now load aliases
+	const aliasQuery = `
+        SELECT name, target
+          FROM alias
+         WHERE assertion_id = $1
+         ORDER BY name
+    `
+	var aliases []model.Alias
+	if err := r.db.Select(&aliases, aliasQuery, assertion.ID); err != nil {
+		cerr := cerror.ConvertError(err, fmt.Sprintf("failed to load aliases for assertion %q: %v", assertionID, err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return nil, cerr
+	}
+	assertion.Aliases = aliases
+
+	return &assertion, nil
 }
