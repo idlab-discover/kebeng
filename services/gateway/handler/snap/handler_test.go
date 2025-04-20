@@ -107,12 +107,12 @@ func TestRefreshSnapHandler_DownloadAction(t *testing.T) {
 	}
 	// Dummy latest revision.
 	dummyRev := &storepb.GetRevisionResponse{
-		Id:             "rev1",
-		Architectures:  []string{"amd64"},
-		Sha3_384:       "sha384hash",
-		Size:           1000,
-		Version:        "v1",
-		SequenceNumber: 1,
+		Id:              "rev1",
+		Architectures:   []string{"amd64"},
+		Sha3_384Encoded: "sha384hash",
+		Size:            1000,
+		Version:         "v1",
+		SequenceNumber:  1,
 	}
 
 	// Expectation: getLatestRevisionByEntryName calls StoreClient.GetEntries.

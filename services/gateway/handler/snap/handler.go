@@ -103,9 +103,9 @@ func (h *Handler) refreshSnapDownload(action *model.Action, el *cerror.ErrorList
 			ID:       publisher.Id,
 		},
 		Download: &model.Download{
-			URL:      &downloadUrl,
-			Sha3_384: &latestRevision.Sha3_384,
-			Size:     &latestRevision.Size,
+			URL:              &downloadUrl,
+			Sha3_384_encoded: &latestRevision.Sha3_384Encoded,
+			Size:             &latestRevision.Size,
 		},
 		Version:     &latestRevision.Version,
 		Revision:    &latestRevision.SequenceNumber,
