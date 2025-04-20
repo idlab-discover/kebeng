@@ -55,25 +55,25 @@ func (h *Handler) GetSnapDeclarationAssertion(c *gin.Context) {
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
-	maxFormat := c.Query("max-format")
-	if maxFormat == "" {
-		el.Add(cerror.BadRequest, "missing max-format")
+
+	// TODO: figure out what to do with the series maybe check specifically for the series
+	series := c.Param("series")
+	if series == "" {
+		el.Add(cerror.BadRequest, "missing series")
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
 
-	/*
-		resp := h.AssertionClient.GetSnapDeclarationAssertion(snapID)
-		if len(resp.Errors) > 0 {
-			logrus.Errorf("GetSnapDeclarationAssertion error: %v", resp.Errors)
-			c.JSON(http.StatusInternalServerError, gin.H{"error_list": resp.Errors})
-			return
-		}
-	*/
+	resp := h.AssertionClient.GetSnapDeclarationAssertionBySnapID(snapID)
+	if len(resp.Errors) > 0 {
+		logrus.Errorf("GetSnapDeclarationAssertion error: %v", resp.Errors)
+		c.JSON(http.StatusInternalServerError, gin.H{"error_list": resp.Errors})
+		return
+	}
 	c.Writer.Header().Set("Content-Type", "application/x.ubuntu.assertion")
 	c.Writer.Header().Set("Content-Disposition",
 		fmt.Sprintf(`attachment; filename="%s.assert"`, snapID),
 	)
 	c.Writer.WriteHeader(http.StatusOK)
-	// io.WriteString(c.Writer, resp.Signature)
+	io.WriteString(c.Writer, resp.Signature)
 }
