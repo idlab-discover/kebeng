@@ -528,7 +528,7 @@ func (s *StoreLogic) GetRevisionsByEntryIds(ctx context.Context, req *proto.GetR
 	return &proto.GetRevisionsByEntryIdResponses{Responses: responses}, nil
 }
 
-func (s *StoreLogic) GetLatestRevision(ctx context.Context, req *proto.GetLatestRevisionRequest) (*proto.GetRevisionResponse, error) {
+func (s *StoreLogic) GetLatestRevisionByTrackAndChannel(ctx context.Context, req *proto.GetLatestRevisionRequest) (*proto.GetRevisionResponse, error) {
 	el := cerror.NewErrorList()
 	if req.SnapName == "" {
 		cerr := cerror.NewCustomError(cerror.MissingField, "snap name is required")
@@ -574,35 +574,8 @@ func (s *StoreLogic) SnapDownload(req *proto.SnapDownloadRequest, stream proto.S
 		})
 	}
 
-	parsedRevisionId, err := uuid.Parse(req.RevisionId)
-	if err != nil {
-		cerr := cerror.NewCustomError(cerror.InvalidField, fmt.Sprintf("invalid UUID format: %s", req.RevisionId))
-		logrus.Error(cerr)
-		el.AddCustomError(cerr)
-		err := stream.Send(&proto.SnapDownloadResponse{
-			Errors: el.ConvertToProtoErrorList(),
-		})
-		if err != nil {
-			logrus.Error("failed to send error response: ", err)
-			return err
-		}
-		return err
-	}
-	revision, cerr := s.repo.GetRevisionById(parsedRevisionId, el)
-	if cerr != nil {
-		// Already logged in GetRevisionById (repository)
-		err := stream.Send(&proto.SnapDownloadResponse{
-			Errors: el.ConvertToProtoErrorList(),
-		})
-		if err != nil {
-			logrus.Error("failed to send error response: ", err)
-			return err
-		}
-		return fmt.Errorf("failed to get revision by id: %v", cerr)
-	}
-
 	// retrieve file path inside minio to find correct snap package
-	filePath, cerr := s.retrieveObjectStoreFilePath(revision, el)
+	filePath, revision, cerr := s.getObjectStoreFilePath(req.RevisionId, el)
 	if cerr != nil {
 		// Already logged in retrieveObjectStoreFilePath (repository)
 		err := stream.Send(&proto.SnapDownloadResponse{
@@ -1076,23 +1049,20 @@ func (s *StoreLogic) GetObjectCustomMetadata(ctx context.Context, req *proto.Get
 
 // ################# HELPERS #################
 
-func (s *StoreLogic) retrieveObjectStoreFilePath(revision *models.SnapRevision, el *cerror.ErrorList) (string, *cerror.CustomError) {
-	entry, cerr := s.repo.GetEntryById(revision.SnapEntryID, nil, el)
-	if cerr != nil {
-		// Already logged in GetEntryById (repository)
-		return "", cerr
+func (s *StoreLogic) getObjectStoreFilePath(revisionID string, el *cerror.ErrorList) (string, *models.SnapRevision, *cerror.CustomError) {
+	parsedRevisionId, err := uuid.Parse(revisionID)
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.InvalidField, fmt.Sprintf("invalid UUID format: %s", revisionID))
+		logrus.Error(cerr)
+		return "", nil, cerr
 	}
-	track, cerr := s.repo.GetTrackById(revision.SnapTrackID, el)
+
+	revision, cerr := s.repo.GetRevisionById(parsedRevisionId, el)
 	if cerr != nil {
-		// Already logged in GetTrackById (repository)
-		return "", cerr
+		// Already logged in GetRevisionById (repository)
+		return "", nil, cerr
 	}
-	channel, cerr := s.repo.GetChannelById(revision.SnapChannelID, el)
-	if cerr != nil {
-		// Already logged in GetChannelById (repository)
-		return "", cerr
-	}
-	return fmt.Sprintf("%s/%s/%s/%s_%d.snap", entry.Name, track.Name, channel.Name, entry.Name, uintPointerToUint(revision.SequenceNumber)), nil
+	return s.createObjectStoreFilePath(pointerToString(revision.SnapName), uintPointerToUint(revision.SequenceNumber)), revision, nil
 }
 
 func (s *StoreLogic) createObjectStoreFilePath(entryName string, sequenceNumber uint) string {

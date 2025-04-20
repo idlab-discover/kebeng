@@ -89,8 +89,8 @@ func (m *MockStoreClient) GetRevisionsByEntryIds(entryIds *proto.GetRevisionsByE
 	return nil
 }
 
-// GetLatestRevision mocks the GetLatestRevision function.
-func (m *MockStoreClient) GetLatestRevision(snapName, track, channel string) *proto.GetRevisionResponse {
+// GetLatestRevisionByTrackAndChannel mocks the GetLatestRevisionByTrackAndChannel function.
+func (m *MockStoreClient) GetLatestRevisionByTrackAndChannel(snapName, track, channel string) *proto.GetRevisionResponse {
 	args := m.Called(snapName, track, channel)
 	if resp, ok := args.Get(0).(*proto.GetRevisionResponse); ok {
 		return resp
