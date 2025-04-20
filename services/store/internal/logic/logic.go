@@ -1003,25 +1003,11 @@ func (s *StoreLogic) createObjectStoreFilePath(entryName string, sequenceNumber 
 	return fmt.Sprintf("%s/%s_%d.snap", entryName, entryName, sequenceNumber)
 }
 
-func pointerToString(s *string) string {
-	if s != nil {
-		return *s
-	}
-	return ""
-}
-
 func timePointerToTimestamp(s *time.Time) *timestamppb.Timestamp {
 	if s != nil {
 		return timestamppb.New(*s)
 	}
 	return nil
-}
-
-func uint64PointerToUint64(s *uint64) uint64 {
-	if s != nil {
-		return uint64(*s)
-	}
-	return 0
 }
 
 func convertRevisionToProto(revision *models.SnapRevision) *proto.GetRevisionResponse {
