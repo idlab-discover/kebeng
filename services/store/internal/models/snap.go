@@ -86,7 +86,7 @@ type SnapRevision struct {
 	SHA3_384               *string        `json:"sha3_384,omitempty" db:"sha3_384"`
 	SHA3_384_Encoded       *string        `json:"sha3_384_encoded,omitempty" db:"sha3_384_encoded"`
 	Size                   *uint64        `json:"size,omitempty" db:"size"`
-	SequenceNumber         *uint          `json:"sequence_number,omitempty" db:"sequence_number"`
+	SequenceNumber         *uint64        `json:"sequence_number,omitempty" db:"sequence_number"`
 	Architectures          pq.StringArray `json:"architectures,omitempty" db:"architectures"`
 	MinioFilePath          *string        `json:"minio_file_path,omitempty" db:"minio_file_path"`
 	SnapEntryID            uuid.UUID      `json:"snap_entry_id" db:"entry_id"`
@@ -125,5 +125,5 @@ type SnapUpload struct {
 
 type Metadata struct {
 	*minio.UploadInfo `json:"upload_info" db:"upload_info"`
-	Sha3_384   *string           `json:"sha3_384" db:"sha3_384"`
+	Sha3_384          *string `json:"sha3_384" db:"sha3_384"`
 }

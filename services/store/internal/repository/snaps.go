@@ -18,7 +18,7 @@ type ISnapsRepository interface {
 	// CREATE
 	AddChannel(snapEntryId uuid.UUID, snapTrackId uuid.UUID, channelName string, errorList *cerror.ErrorList) (*models.SnapChannel, *cerror.CustomError)
 	AddDefaultChannels(snapEntryId uuid.UUID, snapTrackId uuid.UUID, errorList *cerror.ErrorList) *cerror.CustomError
-	AddRevision(entryId uuid.UUID, trackId uuid.UUID, channelId uuid.UUID, snapName string, size uint64, sequenceNumber uint, architectures []string, sha3_384 string, minioFilePath string, errorList *cerror.ErrorList) (*models.SnapRevision, *cerror.CustomError)
+	AddRevision(entryId uuid.UUID, trackId uuid.UUID, channelId uuid.UUID, snapName string, size uint64, sequenceNumber uint64, architectures []string, sha3_384 string, minioFilePath string, errorList *cerror.ErrorList) (*models.SnapRevision, *cerror.CustomError)
 	AddTrack(entryId uuid.UUID, trackName string, errorList *cerror.ErrorList) (*models.SnapTrack, *cerror.CustomError)
 	AddUpload(snapName string, entryId uuid.UUID, status string, accountId uuid.UUID, unscannedFileName string, errorList *cerror.ErrorList) (*models.SnapUpload, *cerror.CustomError)
 	RegisterSnap(snapName string, isPrivate bool, store string, accountId uuid.UUID, errorList *cerror.ErrorList) (*models.SnapEntry, *cerror.CustomError)
@@ -37,7 +37,7 @@ type ISnapsRepository interface {
 	GetPreloadAssociations(entry *models.SnapEntry, preloadAssociations *[]string, errorList *cerror.ErrorList) *cerror.CustomError
 	GetRevisionsByEntryId(entryId uuid.UUID, errorList *cerror.ErrorList) ([]*models.SnapRevision, *cerror.CustomError)
 	GetRevisionById(id uuid.UUID, errorList *cerror.ErrorList) (*models.SnapRevision, *cerror.CustomError)
-	GetRevisionByNameAndSequence(name string, sequence uint, errorList *cerror.ErrorList) (*models.SnapRevision, *cerror.CustomError)
+	GetRevisionByNameAndSequence(name string, sequence uint64, errorList *cerror.ErrorList) (*models.SnapRevision, *cerror.CustomError)
 	GetRevisionBySHA(SHA3_384 string, encoded bool, errorList *cerror.ErrorList) (*models.SnapRevision, *cerror.CustomError)
 	GetTrackByEntryIdAndName(entryId uuid.UUID, trackName string, errorList *cerror.ErrorList) (*models.SnapTrack, *cerror.CustomError)
 	GetTracksByEntryId(snapId uuid.UUID, errorList *cerror.ErrorList) ([]*models.SnapTrack, *cerror.CustomError)
@@ -93,7 +93,7 @@ func (sp *SnapsRepository) AddDefaultChannels(snapEntryId uuid.UUID, snapTrackId
 	return nil
 }
 
-func (sp *SnapsRepository) AddRevision(entryId uuid.UUID, trackId uuid.UUID, channelId uuid.UUID, snapName string, size uint64, sequenceNumber uint, architectures []string, sha3_384 string, minioFilePath string, el *cerror.ErrorList) (*models.SnapRevision, *cerror.CustomError) {
+func (sp *SnapsRepository) AddRevision(entryId uuid.UUID, trackId uuid.UUID, channelId uuid.UUID, snapName string, size uint64, sequenceNumber uint64, architectures []string, sha3_384 string, minioFilePath string, el *cerror.ErrorList) (*models.SnapRevision, *cerror.CustomError) {
 	// TODO: fix the need for an empty revision
 	// TODO: add build_assertion_filename if an assertion exists -> doesn't get checked in official snap store either
 	snapRevision := models.SnapRevision{
@@ -419,7 +419,7 @@ func (sp *SnapsRepository) GetRevisionById(id uuid.UUID, el *cerror.ErrorList) (
 	return &revision, nil
 }
 
-func (sp *SnapsRepository) GetRevisionByNameAndSequence(name string, sequence uint, el *cerror.ErrorList) (*models.SnapRevision, *cerror.CustomError) {
+func (sp *SnapsRepository) GetRevisionByNameAndSequence(name string, sequence uint64, el *cerror.ErrorList) (*models.SnapRevision, *cerror.CustomError) {
 	var entry models.SnapEntry
 	query := `
 		SELECT id

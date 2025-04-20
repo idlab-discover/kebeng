@@ -33,7 +33,7 @@ func (m *MockSnapsRepository) AddDefaultChannels(snapEntryId uuid.UUID, snapTrac
 	return nil
 }
 
-func (m *MockSnapsRepository) AddRevision(entryId uuid.UUID, trackId uuid.UUID, channelId uuid.UUID, snapName string, size uint64, sequenceNumber uint, architectures []string, sha3_384 string, minioFilePath string, el *cerror.ErrorList) (*models.SnapRevision, *cerror.CustomError) {
+func (m *MockSnapsRepository) AddRevision(entryId uuid.UUID, trackId uuid.UUID, channelId uuid.UUID, snapName string, size uint64, sequenceNumber uint64, architectures []string, sha3_384 string, minioFilePath string, el *cerror.ErrorList) (*models.SnapRevision, *cerror.CustomError) {
 	args := m.Called(entryId, trackId, channelId, snapName, size, sequenceNumber, architectures, sha3_384, minioFilePath, el)
 	if args.Get(0) != nil {
 		return args.Get(0).(*models.SnapRevision), nil
@@ -142,7 +142,7 @@ func (m *MockSnapsRepository) GetRevisionById(id uuid.UUID, el *cerror.ErrorList
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
-func (m *MockSnapsRepository) GetRevisionByNameAndSequence(name string, sequence uint, el *cerror.ErrorList) (*models.SnapRevision, *cerror.CustomError) {
+func (m *MockSnapsRepository) GetRevisionByNameAndSequence(name string, sequence uint64, el *cerror.ErrorList) (*models.SnapRevision, *cerror.CustomError) {
 	args := m.Called(name, sequence, el)
 	if args.Get(0) != nil {
 		return args.Get(0).(*models.SnapRevision), nil
