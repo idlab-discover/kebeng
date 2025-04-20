@@ -50,6 +50,11 @@ func (s *AssertionService) AddSnapRevisionAssertion(ctx context.Context, req *pr
 		logrus.Errorf("failed to parse snap entry id: %s", err)
 		el.Add(cerror.Invalid, fmt.Sprintf("invalid snap entry id could not parse to uuid: %s", err))
 	}
+	if el.HasError() {
+		return &proto.SnapRevisionAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}, nil
+	}
 
 	headers := map[string]any{
 		"authority-id":  s.cfg.AuthorityID,

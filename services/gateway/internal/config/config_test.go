@@ -88,7 +88,7 @@ macaroon:
   discharge_key: ""
   third_party_caveat_id: "some-third-party-caveat-id"
   third_party_location: "some-third-party-location"
-store_ip: "192.168.0.105:8080"
+store_url: "https://store.example.com"
 `
 	tmpFile := createTempConfigFile(t, content)
 	os.Setenv("CONFIG_FILE_PATH", tmpFile)
@@ -118,7 +118,7 @@ macaroon:
   discharge_key: "some-discharge-key"
   third_party_caveat_id: "some-third-party-caveat-id"
   third_party_location: "some-third-party-location"
-store_ip: "192.168.0.105:8080"
+store_url: "https://store.example.com"
 `
 	tmpFile := createTempConfigFile(t, content)
 	os.Setenv("CONFIG_FILE_PATH", tmpFile)

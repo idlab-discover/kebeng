@@ -189,13 +189,13 @@ func TestCreateAccountHandler(t *testing.T) {
 	tests := []testCase{
 		{
 			name:                      "invalid JSON",
-			requestBody:               `{"display_name": "John Doe", "username": jdoe, "email": "jdoe@example.com"}`,
+			requestBody:               `{"display_name": "John Doe", "username": jdoe, "email": "jdoe@example.com", "hashed_password": "password"}`,
 			expectedHTTPStatus:        http.StatusBadRequest,
 			expectedResponseSubstring: "Syntax error",
 		},
 		{
 			name:                      "account client error",
-			requestBody:               `{"display_name": "John Doe", "username": "jdoe", "email": "jdoe@example.com"}`,
+			requestBody:               `{"display_name": "John Doe", "username": "jdoe", "email": "jdoe@example.com", "hashed_password": "password"}`,
 			expectedHTTPStatus:        http.StatusInternalServerError,
 			expectedResponseSubstring: "client error",
 			accountClientResponse: &proto.AccountResponse{
@@ -207,7 +207,7 @@ func TestCreateAccountHandler(t *testing.T) {
 		},
 		{
 			name:                      "success",
-			requestBody:               `{"display_name": "John Doe", "username": "jdoe", "email": "jdoe@example.com"}`,
+			requestBody:               `{"display_name": "John Doe", "username": "jdoe", "email": "jdoe@example.com", "hashed_password": "password"}`,
 			expectedHTTPStatus:        http.StatusOK,
 			expectedResponseSubstring: "123e4567-e89b-12d3-a456-426614174000",
 			accountClientResponse: &proto.AccountResponse{
@@ -230,15 +230,16 @@ func TestCreateAccountHandler(t *testing.T) {
 			if tc.accountClientResponse != nil {
 				// Declare a temporary structure to unmarshal the request.
 				var req struct {
-					DisplayName string `json:"display_name"`
-					Username    string `json:"username"`
-					Email       string `json:"email"`
+					DisplayName    string `json:"display_name"`
+					Username       string `json:"username"`
+					Email          string `json:"email"`
+					HashedPassword string `json:"hashed_password"`
 				}
 				err := json.Unmarshal([]byte(tc.requestBody), &req)
 				// If there is an error in binding JSON here, it will be handled in the actual handler.
 				if err == nil {
 					mockAccClient.
-						On("AddAccount", req.DisplayName, req.Username, req.Email).
+						On("AddAccount", req.DisplayName, req.Username, req.Email, req.HashedPassword).
 						Return(tc.accountClientResponse).
 						Once()
 				}
