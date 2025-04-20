@@ -77,3 +77,36 @@ func (h *Handler) GetSnapDeclarationAssertion(c *gin.Context) {
 	c.Writer.WriteHeader(http.StatusOK)
 	io.WriteString(c.Writer, resp.Signature)
 }
+
+func (h *Handler) GetAccountAssertion(c *gin.Context) {
+	el := cerror.NewErrorList()
+
+	accountID := c.Param("account_id")
+	if accountID == "" {
+		el.Add(cerror.BadRequest, "missing account_id")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
+
+	// TODO: figure out what to do with the series maybe check specifically for the series
+	maxFormat := c.Param("max-format")
+	if maxFormat == "" {
+		el.Add(cerror.BadRequest, "missing max-format")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
+	/*
+		resp := h.AssertionClient.GetAccountAssertionByAccountID(accountID)
+		if len(resp.Errors) > 0 {
+			logrus.Errorf("GetSnapDeclarationAssertion error: %v", resp.Errors)
+			c.JSON(http.StatusInternalServerError, gin.H{"error_list": resp.Errors})
+			return
+		}
+	*/
+	c.Writer.Header().Set("Content-Type", "application/x.ubuntu.assertion")
+	c.Writer.Header().Set("Content-Disposition",
+		fmt.Sprintf(`attachment; filename="%s.assert"`, accountID),
+	)
+	c.Writer.WriteHeader(http.StatusOK)
+	// io.WriteString(c.Writer, resp.Signature)
+}
