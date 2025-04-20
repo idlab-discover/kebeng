@@ -365,7 +365,6 @@ func (s *AssertionService) GetAccountKeyAssertionByName(ctx context.Context, req
 	}, nil
 }
 
-// ####################### SHOULD BE REMOVED #########################
 func (s *AssertionService) GetSnapDeclarationAssertionBySnapID(ctx context.Context, req *proto.GetSnapDeclarationAssertionBySnapIDRequest) (*proto.SnapDeclarationAssertionResponse, error) {
 	el := cerror.NewErrorList()
 	if req.GetSnapId() == "" {
@@ -404,6 +403,7 @@ func (s *AssertionService) GetSnapDeclarationAssertionBySnapID(ctx context.Conte
 	}, nil
 }
 
+// ####################### SHOULD BE REMOVED #########################
 // TODO: remove all this and use better structure
 func (s *AssertionService) ProcessSnapBuildAssertion(ctx context.Context, req *proto.SnapBuildAssertionRequest) (*proto.SnapBuildAssertionResponse, error) {
 	errList := make([]*cerrorpb.Error, 0)
