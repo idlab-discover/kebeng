@@ -1,6 +1,8 @@
 package assertion
 
 import (
+	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -15,8 +17,9 @@ type Handler struct {
 
 func (h *Handler) GetSnapRevisionAssertion(c *gin.Context) {
 	el := cerror.NewErrorList()
-	rev_sha3_384 := c.Param("rev_sha3_384") // sha3_384 hash of the revision
-	if rev_sha3_384 == "" {
+
+	revSHA := c.Param("rev_sha3_384")
+	if revSHA == "" {
 		el.Add(cerror.BadRequest, "missing rev_sha3_384")
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
@@ -28,14 +31,97 @@ func (h *Handler) GetSnapRevisionAssertion(c *gin.Context) {
 		return
 	}
 
-	logrus.Infof("GetSnapRevisionAssertion: rev_sha3_384=%s, max-format=%s", rev_sha3_384, maxFormat)
+	resp := h.AssertionClient.GetSnapRevisionAssertionBySHA3_384(revSHA)
+	if len(resp.Errors) > 0 {
+		logrus.Errorf("GetSnapRevisionAssertion error: %v", resp.Errors)
+		c.JSON(http.StatusInternalServerError, gin.H{"error_list": resp.Errors})
+		return
+	}
+
+	c.Writer.Header().Set("Content-Type", "application/x.ubuntu.assertion")
+	c.Writer.Header().Set("Content-Disposition",
+		fmt.Sprintf(`attachment; filename="%s.assert"`, revSHA),
+	)
+	c.Writer.WriteHeader(http.StatusOK)
+	_, err := io.WriteString(c.Writer, resp.Signature)
+	if err != nil {
+		logrus.Errorf("Error writing response: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to write response"})
+		return
+	}
+}
+
+func (h *Handler) GetSnapDeclarationAssertion(c *gin.Context) {
+	el := cerror.NewErrorList()
+
+	snapID := c.Param("snap_id")
+	if snapID == "" {
+		el.Add(cerror.BadRequest, "missing snap_id")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
+
+	// TODO: figure out what to do with the series maybe check specifically for the series
+	series := c.Param("series")
+	if series == "" {
+		el.Add(cerror.BadRequest, "missing series")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
+
+	resp := h.AssertionClient.GetSnapDeclarationAssertionBySnapID(snapID)
+	if len(resp.Errors) > 0 {
+		logrus.Errorf("GetSnapDeclarationAssertion error: %v", resp.Errors)
+		c.JSON(http.StatusInternalServerError, gin.H{"error_list": resp.Errors})
+		return
+	}
+	c.Writer.Header().Set("Content-Type", "application/x.ubuntu.assertion")
+	c.Writer.Header().Set("Content-Disposition",
+		fmt.Sprintf(`attachment; filename="%s.assert"`, snapID),
+	)
+	c.Writer.WriteHeader(http.StatusOK)
+	_, err := io.WriteString(c.Writer, resp.Signature)
+	if err != nil {
+		logrus.Errorf("Error writing response: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to write response"})
+		return
+	}
+}
+
+func (h *Handler) GetAccountAssertion(c *gin.Context) {
+	el := cerror.NewErrorList()
+
+	accountID := c.Param("account_id")
+	if accountID == "" {
+		el.Add(cerror.BadRequest, "missing account_id")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
+
+	// TODO: figure out what to do with the series maybe check specifically for the series
+	maxFormat := c.Param("max-format")
+	if maxFormat == "" {
+		el.Add(cerror.BadRequest, "missing max-format")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
 	/*
-		snapRevisionAssertion, err := h.GetSnapRevisionAssertion(rev_sha3_384)
-		if err != nil {
-			el.Add(cerror.InternalServerError, err.Error())
-			c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		resp := h.AssertionClient.GetAccountAssertionByAccountID(accountID)
+		if len(resp.Errors) > 0 {
+			logrus.Errorf("GetSnapDeclarationAssertion error: %v", resp.Errors)
+			c.JSON(http.StatusInternalServerError, gin.H{"error_list": resp.Errors})
 			return
 		}
 	*/
-	c.JSON(http.StatusOK, gin.H{"snap_revision_assertion": "TODO"}) // TODO: replace with actual data
+	c.Writer.Header().Set("Content-Type", "application/x.ubuntu.assertion")
+	c.Writer.Header().Set("Content-Disposition",
+		fmt.Sprintf(`attachment; filename="%s.assert"`, accountID),
+	)
+	c.Writer.WriteHeader(http.StatusOK)
+	// _, err := io.WriteString(c.Writer, resp.Signature)
+	// if err != nil {
+	// 	logrus.Errorf("Error writing response: %v", err)
+	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to write response"})
+	// 	return
+	// }
 }

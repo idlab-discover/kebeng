@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	cerrorpb "github.com/idlab-discover/kebeng/common/cerror/proto"
+	"github.com/idlab-discover/kebeng/services/assertion/client/model"
 	"github.com/idlab-discover/kebeng/services/assertion/internal/config"
 	proto "github.com/idlab-discover/kebeng/services/assertion/proto"
 	"github.com/sirupsen/logrus"
@@ -20,11 +21,13 @@ import (
 type AssertionClientInterface interface {
 	ProcessSnapBuildAssertion(assertion []byte) *proto.SnapBuildAssertionResponse
 
-	AddAccountKeyAssertion(encoded_public_key, publicKeySha3_384, accountId, name string, since *time.Time, until *time.Time) *proto.AccountKeyAssertionResponse
-	AddSnapRevisionAssertion(snapSha3_384 string, developerId string, snapEntryId string, snapRevisionSequenceNumber uint32, snapSize uint64, timestamp *time.Time) *proto.SnapRevisionAssertionResponse
+	AddAccountKeyAssertion(encoded_public_key, publicKeySha3_384, accountId, name string, since time.Time, until time.Time) *proto.AccountKeyAssertionResponse
+	AddSnapRevisionAssertion(snapSha3_384 string, developerId string, snapEntryId string, snapRevisionSequenceNumber uint32, snapSize uint64, timestamp time.Time) *proto.SnapRevisionAssertionResponse
+	AddSnapDeclarationAssertion(snapID, snapName, publisherID string, series uint32, timestamp time.Time, refreshControl []string, aliases []model.Alias, plugs model.PlugMap, slots model.SlotMap) *proto.SnapDeclarationAssertionResponse
 
 	GetAccountKeyAssertionByName(name string) *proto.AccountKeyAssertionResponse
 	GetSnapRevisionAssertionBySHA3_384(snapSha3_384 string) *proto.SnapRevisionAssertionResponse
+	GetSnapDeclarationAssertionBySnapID(snapId string) *proto.SnapDeclarationAssertionResponse
 
 	Close()
 }
@@ -73,7 +76,7 @@ func (c *AssertionClient) ProcessSnapBuildAssertion(assertion []byte) *proto.Sna
 	return resp
 }
 
-func (c *AssertionClient) AddAccountKeyAssertion(encoded_public_key, publicKeySha3_384, accountId, name string, since *time.Time, until *time.Time) *proto.AccountKeyAssertionResponse {
+func (c *AssertionClient) AddAccountKeyAssertion(encoded_public_key, publicKeySha3_384, accountId, name string, since time.Time, until time.Time) *proto.AccountKeyAssertionResponse {
 	el := cerror.NewErrorList()
 
 	// check input
@@ -99,7 +102,7 @@ func (c *AssertionClient) AddAccountKeyAssertion(encoded_public_key, publicKeySh
 	if strings.ToLower(name) != name {
 		el.Add(cerror.InvalidField, fmt.Sprintf("name must be lowercase: '%s'", name))
 	}
-	if since == nil {
+	if since.IsZero() {
 		el.Add(cerror.InvalidField, "since is required")
 	}
 	if el.HasError() {
@@ -108,10 +111,10 @@ func (c *AssertionClient) AddAccountKeyAssertion(encoded_public_key, publicKeySh
 		}
 	}
 
-	if until == nil {
+	if until.IsZero() {
 		// set to one year further than since
 		t := since.AddDate(1, 0, 0)
-		until = &t
+		until = t
 	}
 
 	req := &proto.AddAccountKeyAssertionRequest{
@@ -119,8 +122,8 @@ func (c *AssertionClient) AddAccountKeyAssertion(encoded_public_key, publicKeySh
 		PublicKeySha3_384: publicKeySha3_384,
 		AccountId:         accountId,
 		Name:              name,
-		Since:             timestamppb.New(*since),
-		Until:             timestamppb.New(*until),
+		Since:             timestamppb.New(since),
+		Until:             timestamppb.New(until),
 	}
 
 	resp, err := c.client.AddAccountKeyAssertion(context.Background(), req)
@@ -134,7 +137,7 @@ func (c *AssertionClient) AddAccountKeyAssertion(encoded_public_key, publicKeySh
 	return resp
 }
 
-func (c *AssertionClient) AddSnapRevisionAssertion(snapSha3_384, developerId, snapEntryId string, snapRevisionSequenceNumber uint32, snapSize uint64, timestamp *time.Time) *proto.SnapRevisionAssertionResponse {
+func (c *AssertionClient) AddSnapRevisionAssertion(snapSha3_384, developerId, snapEntryId string, snapRevisionSequenceNumber uint32, snapSize uint64, timestamp time.Time) *proto.SnapRevisionAssertionResponse {
 	el := cerror.NewErrorList()
 
 	// check input
@@ -168,7 +171,7 @@ func (c *AssertionClient) AddSnapRevisionAssertion(snapSha3_384, developerId, sn
 		SnapEntryId:                snapEntryId,
 		SnapRevisionSequenceNumber: snapRevisionSequenceNumber,
 		SnapSize:                   snapSize,
-		Timestamp:                  timestamppb.New(*timestamp),
+		Timestamp:                  timestamppb.New(timestamp),
 	}
 
 	resp, err := c.client.AddSnapRevisionAssertion(context.Background(), req)
@@ -178,6 +181,83 @@ func (c *AssertionClient) AddSnapRevisionAssertion(snapSha3_384, developerId, sn
 			Errors: el.ConvertToProtoErrorList(),
 		}
 	}
+	return resp
+}
+
+func (c *AssertionClient) AddSnapDeclarationAssertion(snapID, snapName, publisherID string, series uint32, timestamp time.Time, refreshControl []string, aliases []model.Alias, plugs model.PlugMap, slots model.SlotMap) *proto.SnapDeclarationAssertionResponse {
+	el := cerror.NewErrorList()
+	// check input
+	if series == 0 {
+		el.Add(cerror.InvalidField, "series is required")
+	}
+	if snapID == "" {
+		el.Add(cerror.InvalidField, "snap id is required")
+	}
+	if snapName == "" {
+		el.Add(cerror.InvalidField, "snap name is required")
+	}
+	if publisherID == "" {
+		el.Add(cerror.InvalidField, "publisher id is required")
+	}
+	if _, err := uuid.Parse(publisherID); publisherID != "" && err != nil {
+		el.Add(cerror.InvalidField, "publisher id is not a valid uuid")
+	}
+	if timestamp.IsZero() {
+		el.Add(cerror.InvalidField, "timestamp is required")
+	}
+
+	req := &proto.AddSnapDeclarationAssertionRequest{
+		Series:         series,
+		SnapId:         snapID,
+		SnapName:       snapName,
+		PublisherId:    publisherID,
+		Timestamp:      timestamppb.New(timestamp),
+		RefreshControl: refreshControl,
+	}
+
+	req.Aliases = make([]*proto.Alias, 0, len(aliases))
+	for _, a := range aliases {
+		req.Aliases = append(req.Aliases, &proto.Alias{
+			Name:   a.Name,
+			Target: a.Target,
+		})
+	}
+
+	// plugs
+	req.Plugs = make(map[string]*proto.PlugRule, len(plugs))
+	for iface, r := range plugs {
+		req.Plugs[iface] = &proto.PlugRule{
+			AllowInstallation:   r.AllowInstallation,
+			DenyInstallation:    r.DenyInstallation,
+			AllowConnection:     r.AllowConnection,
+			DenyConnection:      r.DenyConnection,
+			AllowAutoConnection: r.AllowAutoConnection,
+			DenyAutoConnection:  r.DenyAutoConnection,
+		}
+	}
+
+	// slots
+	req.Slots = make(map[string]*proto.SlotRule, len(slots))
+	for iface, r := range slots {
+		req.Slots[iface] = &proto.SlotRule{
+			AllowInstallation:   r.AllowInstallation,
+			DenyInstallation:    r.DenyInstallation,
+			AllowConnection:     r.AllowConnection,
+			DenyConnection:      r.DenyConnection,
+			AllowAutoConnection: r.AllowAutoConnection,
+			DenyAutoConnection:  r.DenyAutoConnection,
+		}
+	}
+
+	// think the other 3 parameters could be empty, assertion of snap package "core" does not have any of the last 3 parameters
+	resp, err := c.client.AddSnapDeclarationAssertion(context.Background(), req)
+	if err != nil {
+		el.Add(cerror.InternalServerError, err.Error())
+		resp = &proto.SnapDeclarationAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}
+	}
+
 	return resp
 }
 
@@ -229,6 +309,33 @@ func (c *AssertionClient) GetSnapRevisionAssertionBySHA3_384(snapSha3_384 string
 	if err != nil {
 		el.Add(cerror.InternalServerError, err.Error())
 		resp = &proto.SnapRevisionAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}
+	}
+	return resp
+}
+
+func (c *AssertionClient) GetSnapDeclarationAssertionBySnapID(snapId string) *proto.SnapDeclarationAssertionResponse {
+	el := cerror.NewErrorList()
+
+	// check input
+	if snapId == "" {
+		el.Add(cerror.InvalidField, "snap id is required")
+	}
+	if el.HasError() {
+		return &proto.SnapDeclarationAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}
+	}
+
+	req := &proto.GetSnapDeclarationAssertionBySnapIDRequest{
+		SnapId: snapId,
+	}
+
+	resp, err := c.client.GetSnapDeclarationAssertionBySnapID(context.Background(), req)
+	if err != nil {
+		el.Add(cerror.InternalServerError, err.Error())
+		resp = &proto.SnapDeclarationAssertionResponse{
 			Errors: el.ConvertToProtoErrorList(),
 		}
 	}

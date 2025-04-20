@@ -125,7 +125,7 @@ func TestRefreshSnapHandler_DownloadAction(t *testing.T) {
 
 	// And then GetLatestRevision.
 	mockStoreClient.
-		On("GetLatestRevision", "snap1", "latest", "stable").
+		On("GetLatestRevisionByTrackAndChannel", "snap1", "latest", "stable").
 		Return(dummyRev).Once()
 
 	// For publisher: AccountClient.GetAccountByID.
@@ -203,7 +203,7 @@ func TestRefreshSnapHandler_DownloadAction_NoLatestRevision(t *testing.T) {
 
 	// return nil for GetLatestRevision to simulate no latest revision.
 	mockStoreClient.
-		On("GetLatestRevision", "snap1", "latest", "stable").
+		On("GetLatestRevisionByTrackAndChannel", "snap1", "latest", "stable").
 		Return(dummyRev).Once()
 
 	// accountID doesn't have to be mocked doesn't get there

@@ -23,7 +23,7 @@ type StoreClientInterface interface {
 	GetRevisions(revisions *proto.GetRevisionsRequest) *proto.GetRevisionsResponse
 	GetEntriesByAccountID(accountID string) *proto.GetEntriesResponse
 	GetRevisionsByEntryIds(entryIds *proto.GetRevisionsByEntryIdRequests) *proto.GetRevisionsByEntryIdResponses
-	GetLatestRevision(snapName, track, channel string) *proto.GetRevisionResponse
+	GetLatestRevisionByTrackAndChannel(snapName, track, channel string) *proto.GetRevisionResponse
 	SnapDownload(revisionId string) *proto.SnapDownloadCompleteResponse
 	UnscannedUpload(ctx context.Context, snapFile io.Reader) *proto.UnscannedUploadCompleteResponse
 	AddUpload(snapName string, entryId uuid.UUID, status string, accountId uuid.UUID, unscannedFileName string) *proto.AddUploadResponse
@@ -136,7 +136,7 @@ func (c *StoreClient) GetRevisionsByEntryIds(entryIds *proto.GetRevisionsByEntry
 	return resp
 }
 
-func (c *StoreClient) GetLatestRevision(snapName, track, channel string) *proto.GetRevisionResponse {
+func (c *StoreClient) GetLatestRevisionByTrackAndChannel(snapName, track, channel string) *proto.GetRevisionResponse {
 	// if snapName is empty we cant do anything
 	if snapName == "" {
 		return &proto.GetRevisionResponse{
