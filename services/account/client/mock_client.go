@@ -17,7 +17,7 @@ func (m *MockAccountClient) Close() {
 }
 
 func (m *MockAccountClient) AddAccount(displayName, username, email, hashedPassword string) *proto.AccountResponse {
-	args := m.Called(displayName, username, email)
+	args := m.Called(displayName, username, email, hashedPassword)
 	resp := args.Get(0)
 	if resp == nil {
 		return nil
