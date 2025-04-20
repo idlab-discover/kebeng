@@ -43,7 +43,12 @@ func (h *Handler) GetSnapRevisionAssertion(c *gin.Context) {
 		fmt.Sprintf(`attachment; filename="%s.assert"`, revSHA),
 	)
 	c.Writer.WriteHeader(http.StatusOK)
-	io.WriteString(c.Writer, resp.Signature)
+	_, err := io.WriteString(c.Writer, resp.Signature)
+	if err != nil {
+		logrus.Errorf("Error writing response: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to write response"})
+		return
+	}
 }
 
 func (h *Handler) GetSnapDeclarationAssertion(c *gin.Context) {
@@ -75,7 +80,12 @@ func (h *Handler) GetSnapDeclarationAssertion(c *gin.Context) {
 		fmt.Sprintf(`attachment; filename="%s.assert"`, snapID),
 	)
 	c.Writer.WriteHeader(http.StatusOK)
-	io.WriteString(c.Writer, resp.Signature)
+	_, err := io.WriteString(c.Writer, resp.Signature)
+	if err != nil {
+		logrus.Errorf("Error writing response: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to write response"})
+		return
+	}
 }
 
 func (h *Handler) GetAccountAssertion(c *gin.Context) {
@@ -108,5 +118,10 @@ func (h *Handler) GetAccountAssertion(c *gin.Context) {
 		fmt.Sprintf(`attachment; filename="%s.assert"`, accountID),
 	)
 	c.Writer.WriteHeader(http.StatusOK)
-	// io.WriteString(c.Writer, resp.Signature)
+	// _, err := io.WriteString(c.Writer, resp.Signature)
+	// if err != nil {
+	// 	logrus.Errorf("Error writing response: %v", err)
+	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to write response"})
+	// 	return
+	// }
 }
