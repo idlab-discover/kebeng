@@ -46,6 +46,15 @@ func (m *MockAssertionRepository) AddSnapRevisionAssertion(el *cerror.ErrorList,
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
+func (m *MockAssertionRepository) AddSnapDeclarationAssertion(el *cerror.ErrorList, authorityID, signKey, snapID, snapName, publisherID string, revision, series uint32, timestamp time.Time, refreshControl []string, aliases []model.Alias, plugs map[string]*model.Plug, slots map[string]*model.Slot, signature string) (*model.SnapDeclarationAssertion, *cerror.CustomError) {
+	args := m.Called(el, authorityID, signKey, snapID, snapName, publisherID, revision, series, timestamp, refreshControl, aliases, plugs, slots, signature)
+	if args.Get(0) != nil {
+		return args.Get(0).(*model.SnapDeclarationAssertion), nil
+	}
+	el.AddCustomError(args.Get(1).(*cerror.CustomError))
+	return nil, args.Get(1).(*cerror.CustomError)
+}
+
 // GetAccountKeyAssertionByName mocks GetAccountKeyAssertionByName method.
 func (m *MockAssertionRepository) GetAccountKeyAssertionByName(el *cerror.ErrorList, name string) (*model.AccountKeyAssertion, *cerror.CustomError) {
 	args := m.Called(el, name)
@@ -71,6 +80,15 @@ func (m *MockAssertionRepository) GetSnapRevisionAssertionBySHA3_384(el *cerror.
 	args := m.Called(el, snap_sha3_384)
 	if args.Get(0) != nil {
 		return args.Get(0).(*model.SnapRevisionAssertion), nil
+	}
+	el.AddCustomError(args.Get(1).(*cerror.CustomError))
+	return nil, args.Get(1).(*cerror.CustomError)
+}
+
+func (m *MockAssertionRepository) GetSnapDeclarationAssertionByID(el *cerror.ErrorList, id string) (*model.SnapDeclarationAssertion, *cerror.CustomError) {
+	args := m.Called(el, id)
+	if args.Get(0) != nil {
+		return args.Get(0).(*model.SnapDeclarationAssertion), nil
 	}
 	el.AddCustomError(args.Get(1).(*cerror.CustomError))
 	return nil, args.Get(1).(*cerror.CustomError)
