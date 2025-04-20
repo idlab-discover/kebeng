@@ -662,7 +662,7 @@ func TestStoreClient_GetLatestRevision(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.snapName == "" {
-				resp := storeClient.GetLatestRevision(tc.snapName, tc.track, tc.channel)
+				resp := storeClient.GetLatestRevisionByTrackAndChannel(tc.snapName, tc.track, tc.channel)
 				assert.NotNil(t, resp)
 				assert.NotEmpty(t, resp.Errors)
 				assert.Equal(t, cerror.MissingField, resp.Errors[0].Code)
@@ -675,7 +675,7 @@ func TestStoreClient_GetLatestRevision(t *testing.T) {
 				mockProtoClient.On("GetLatestRevisionByTrackAndChannel", mock.Anything, tc.expectedReq).Return(tc.expectedResp, nil).Once()
 			}
 
-			resp := storeClient.GetLatestRevision(tc.snapName, tc.track, tc.channel)
+			resp := storeClient.GetLatestRevisionByTrackAndChannel(tc.snapName, tc.track, tc.channel)
 			if !tc.expectedErrors && !tc.expectedProtoError {
 				assert.Equal(t, tc.expectedResp, resp)
 				assert.Empty(t, resp.Errors)

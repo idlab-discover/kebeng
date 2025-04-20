@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/idlab-discover/kebeng/common/cerror"
+	acmodel "github.com/idlab-discover/kebeng/services/assertion/client/model"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/util"
 	"github.com/idlab-discover/kebeng/services/gateway/load_test_data/model"
 	"github.com/sirupsen/logrus"
@@ -166,7 +167,7 @@ func (h *testHandler) loadInAccountDataInDB(_ context.Context, accountTestData *
 		since := time.Now()
 		until := time.Now().Add(365 * 24 * time.Hour)
 
-		accountKeyAssertResponse := h.AssertionClient.AddAccountKeyAssertion(key.EncodedPublicKey, key.SHA3384, accId.String(), key.Name, &since, &until)
+		accountKeyAssertResponse := h.AssertionClient.AddAccountKeyAssertion(key.EncodedPublicKey, key.SHA3384, accId.String(), key.Name, since, until)
 		if len(accountKeyAssertResponse.Errors) > 0 {
 			return fmt.Errorf("failed to create account key assertion: %v", accountKeyAssertResponse.Errors)
 		}
@@ -229,16 +230,39 @@ func (h *testHandler) loadInStoreDataInDB(ctx context.Context, storeTestData *Te
 		if len(metadata.Errors) > 0 {
 			return fmt.Errorf("failed to get object metadata: %v", metadata.Errors)
 		}
-		
+
 		// creates revision
-		revisionResp := h.StoreClient.AddRevision(entry.Name, metadata.GetSha3_384(), uint64(fileInfo.Size()), []string{"amd64"}, []string{"latest", "1.0"}, uploadResp.GetTempFileName())
+		revisionResp := h.StoreClient.AddRevision(entry.Name, metadata.GetSha3_384(), uint64(fileInfo.Size()), []string{"amd64"}, []string{"latest/stable"}, uploadResp.GetTempFileName())
 		if len(revisionResp.Errors) > 0 {
 			return fmt.Errorf("failed to add revision: %v", revisionResp.Errors)
 		}
 		now := time.Now()
-		revisionAssertionRespo := h.AssertionClient.AddSnapRevisionAssertion(metadata.GetSha3_384(), accID.String(), snapEntryId.String(), uint32(revisionResp.Revision), uint64(fileInfo.Size()), &now)
+		revisionAssertionRespo := h.AssertionClient.AddSnapRevisionAssertion(metadata.GetSha3_384(), accID.String(), snapEntryId.String(), uint32(revisionResp.Revision), uint64(fileInfo.Size()), now)
 		if len(revisionAssertionRespo.Errors) > 0 {
 			return fmt.Errorf("failed to add revision assertion: %v", revisionAssertionRespo.Errors)
+		}
+		aliases := []acmodel.Alias{{
+			Name:   "snap",
+			Target: "alias_snap",
+		}}
+		plugs := acmodel.PlugMap{
+			"camera": {
+				AllowInstallation: boolptr(true),
+			},
+		}
+		slots := acmodel.SlotMap{
+			"camera": {
+				AllowInstallation: boolptr(true),
+			},
+		}
+		entryID, err := h.getID(storeIDMap, entry.ID)
+		if err != nil {
+			logrus.Errorf("failed to get entry ID: %v", err)
+		}
+		// don't know what refreshControl field has to be so place holders for now
+		declarationAssertionResp := h.AssertionClient.AddSnapDeclarationAssertion(entryID.String(), entry.Name, accID.String(), uint32(16), now, []string{"refreshControl"}, aliases, plugs, slots)
+		if len(declarationAssertionResp.Errors) > 0 {
+			return fmt.Errorf("failed to add declaration assertion: %v", declarationAssertionResp.Errors)
 		}
 
 		// status op processed zetten
@@ -267,4 +291,8 @@ func (h *testHandler) getID(IdMap map[string]string, accountID string) (uuid.UUI
 
 func (h *testHandler) saveID(idMap map[string]string, testId string, actualId string) {
 	idMap[testId] = actualId
+}
+
+func boolptr(b bool) *bool {
+	return &b
 }

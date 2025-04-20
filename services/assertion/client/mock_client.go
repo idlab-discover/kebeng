@@ -3,6 +3,7 @@ package client
 import (
 	"time"
 
+	"github.com/idlab-discover/kebeng/services/assertion/client/model"
 	proto "github.com/idlab-discover/kebeng/services/assertion/proto"
 	"github.com/stretchr/testify/mock"
 )
@@ -28,7 +29,7 @@ func (m *MockAssertionClient) ProcessSnapBuildAssertion(assertion []byte) *proto
 	return nil
 }
 
-func (m *MockAssertionClient) AddAccountKeyAssertion(encoded_public_key, publicKeySha3_384 string, accountId string, name string, since *time.Time, until *time.Time) *proto.AccountKeyAssertionResponse {
+func (m *MockAssertionClient) AddAccountKeyAssertion(encoded_public_key, publicKeySha3_384 string, accountId string, name string, since time.Time, until time.Time) *proto.AccountKeyAssertionResponse {
 	args := m.Called(publicKeySha3_384, accountId, name, since, until)
 	if resp, ok := args.Get(0).(*proto.AccountKeyAssertionResponse); ok {
 		return resp
@@ -36,7 +37,7 @@ func (m *MockAssertionClient) AddAccountKeyAssertion(encoded_public_key, publicK
 	return nil
 }
 
-func (m *MockAssertionClient) AddSnapRevisionAssertion(snapSha3_384 string, developerId string, snapEntryId string, snapRevisionSequenceNumber uint32, snapSize uint64, timestamp *time.Time) *proto.SnapRevisionAssertionResponse {
+func (m *MockAssertionClient) AddSnapRevisionAssertion(snapSha3_384 string, developerId string, snapEntryId string, snapRevisionSequenceNumber uint32, snapSize uint64, timestamp time.Time) *proto.SnapRevisionAssertionResponse {
 	args := m.Called(snapSha3_384, developerId, snapEntryId, snapRevisionSequenceNumber, snapSize, timestamp)
 	if resp, ok := args.Get(0).(*proto.SnapRevisionAssertionResponse); ok {
 		return resp
@@ -63,6 +64,22 @@ func (m *MockAssertionClient) GetLatestAccountKeyAssertion(accountId string) *pr
 func (m *MockAssertionClient) GetSnapRevisionAssertionBySHA3_384(snapSha3_384 string) *proto.SnapRevisionAssertionResponse {
 	args := m.Called(snapSha3_384)
 	if resp, ok := args.Get(0).(*proto.SnapRevisionAssertionResponse); ok {
+		return resp
+	}
+	return nil
+}
+
+func (m *MockAssertionClient) AddSnapDeclarationAssertion(snapID, snapName, publisherID string, series uint32, timestamp time.Time, refreshControl []string, aliases []model.Alias, plugs model.PlugMap, slots model.SlotMap) *proto.SnapDeclarationAssertionResponse {
+	args := m.Called(snapID, snapName, publisherID, series, timestamp, refreshControl, aliases, plugs, slots)
+	if resp, ok := args.Get(0).(*proto.SnapDeclarationAssertionResponse); ok {
+		return resp
+	}
+	return nil
+}
+
+func (m *MockAssertionClient) GetSnapDeclarationAssertionBySnapID(snapId string) *proto.SnapDeclarationAssertionResponse {
+	args := m.Called(snapId)
+	if resp, ok := args.Get(0).(*proto.SnapDeclarationAssertionResponse); ok {
 		return resp
 	}
 	return nil
