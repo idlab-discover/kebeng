@@ -85,7 +85,7 @@ func (m *MockAssertionRepository) GetSnapRevisionAssertionBySHA3_384(el *cerror.
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
-func (m *MockAssertionRepository) GetSnapDeclarationAssertionByID(el *cerror.ErrorList, id string) (*model.SnapDeclarationAssertion, *cerror.CustomError) {
+func (m *MockAssertionRepository) GetSnapDeclarationAssertionBySnapID(el *cerror.ErrorList, id string) (*model.SnapDeclarationAssertion, *cerror.CustomError) {
 	args := m.Called(el, id)
 	if args.Get(0) != nil {
 		return args.Get(0).(*model.SnapDeclarationAssertion), nil

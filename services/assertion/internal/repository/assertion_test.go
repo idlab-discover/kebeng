@@ -613,7 +613,7 @@ func TestGetSnapDeclarationAssertionByID(t *testing.T) {
 			}
 
 			el := cerror.NewErrorList()
-			got, cerr := globalRepo.GetSnapDeclarationAssertionByID(el, tt.assertionID.String())
+			got, cerr := globalRepo.GetSnapDeclarationAssertionBySnapID(el, tt.assertionID.String())
 
 			if tt.expectError {
 				assert.NotNil(t, cerr, "expected error")
