@@ -235,7 +235,7 @@ func (r *AssertionRepository) GetSnapDeclarationAssertionBySnapID(el *cerror.Err
             id, authority_id, sign_key_sha3_384, snap_id, snap_name, publisher_id, revision, series, timestamp,
             refresh_control, plugs, slots, signature, created_at
         FROM snap_declaration_assertion
-        WHERE id = $1
+        WHERE snap_id = $1
     `
 
 	var assertion model.SnapDeclarationAssertion
@@ -275,8 +275,9 @@ func (r *AssertionRepository) GetLatestSnapDeclarationAssertion(el *cerror.Error
 
 	err := r.db.Get(assertion, query, snapID)
 	if err != nil {
-		logrus.Errorf("failed to get latest snap declaration assertion by snap id: %s, err: %v", snapID, err)
-		el.AddCustomError(cerror.ConvertError(err, fmt.Sprintf("failed to get latest snap declaration assertion by snap id: %s, err: %v", snapID, err)))
+		cerr := cerror.ConvertError(err, fmt.Sprintf("failed to get latest snap declaration assertion by snap id: %s, err: %v", snapID, err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
 		return nil, cerror.ConvertError(err, fmt.Sprintf("failed to get latest snap declaration assertion by snap id: %s, err: %v", snapID, err))
 	}
 

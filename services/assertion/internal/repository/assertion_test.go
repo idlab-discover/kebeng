@@ -465,7 +465,7 @@ func TestAddSnapDeclarationAssertion(t *testing.T) {
 	now := time.Now().UTC().Truncate(time.Second)
 	authorityID := "canonical"
 	signKey := "sign-key-123"
-	snapID := "snap-abc"
+	assertionID := "snap-abc"
 	snapName := "MySnap"
 	publisherID := "pub-xyz"
 	revision := uint32(42)
@@ -512,7 +512,7 @@ func TestAddSnapDeclarationAssertion(t *testing.T) {
 				_, err := globalDB.Exec(
 					insert,
 					authorityID, signKey,
-					snapID, snapName, publisherID,
+					assertionID, snapName, publisherID,
 					revision, series, timestamp,
 					pq.Array(refreshControl),
 					plugsJSON, slotsJSON,
@@ -525,7 +525,7 @@ func TestAddSnapDeclarationAssertion(t *testing.T) {
 			rec, cerr := globalRepo.AddSnapDeclarationAssertion(
 				el,
 				authorityID, signKey,
-				snapID, snapName, publisherID,
+				assertionID, snapName, publisherID,
 				revision, series, timestamp,
 				refreshControl, aliases,
 				plugs, slots,
@@ -543,7 +543,7 @@ func TestAddSnapDeclarationAssertion(t *testing.T) {
 				assert.False(t, el.HasError(), "error list should be empty")
 				assert.NotNil(t, rec, "returned record")
 				// spot‑check
-				assert.Equal(t, snapID, rec.SnapID)
+				assert.Equal(t, assertionID, rec.SnapID)
 				assert.Equal(t, revision, rec.Revision)
 				assert.Equal(t, aliases, rec.Aliases)
 				assert.Equal(t, plugs, rec.Plugs)
@@ -562,6 +562,7 @@ func TestGetSnapDeclarationAssertionByID(t *testing.T) {
 		name           string
 		preInsert      bool
 		assertionID    uuid.UUID
+		snapID         uuid.UUID
 		refreshControl []string
 		aliases        []model.Alias
 		expectError    bool
@@ -571,6 +572,7 @@ func TestGetSnapDeclarationAssertionByID(t *testing.T) {
 			name:           "successful fetch",
 			preInsert:      true,
 			assertionID:    uuid.New(),
+			snapID:         uuid.New(),
 			refreshControl: []string{"rc1", "rc2"},
 			aliases:        []model.Alias{{Name: "a1", Target: "t1"}, {Name: "a2", Target: "t2"}},
 		},
@@ -578,6 +580,7 @@ func TestGetSnapDeclarationAssertionByID(t *testing.T) {
 			name:        "not found",
 			preInsert:   false,
 			assertionID: uuid.New(),
+			snapID:      uuid.New(),
 			expectError: true,
 			errorCode:   cerror.ResourceNotFound,
 		},
@@ -590,16 +593,16 @@ func TestGetSnapDeclarationAssertionByID(t *testing.T) {
 				// insert the parent
 				_, err := globalDB.Exec(`
                     INSERT INTO snap_declaration_assertion
-                      (id, authority_id, sign_key_sha3_384,
+                      (id,authority_id, sign_key_sha3_384,
                        snap_id, snap_name, publisher_id,
                        revision, series, timestamp, refresh_control,
                        plugs, slots, signature)
                     VALUES
-                      ($1,'authX','signKeyX',
-                       'my-snap','My Snap','pubX',
-                       1,2,$2,$3,
+						($1,'authX','signKeyX',
+                       $2,'My Snap','pubX',
+                       1,2,$3,$4,
                        '{}'::jsonb,'{}'::jsonb,'sigX')
-                `, tt.assertionID, now, pq.Array(tt.refreshControl))
+                `, tt.assertionID, tt.snapID, now, pq.Array(tt.refreshControl))
 				assert.NoError(t, err, "failed to insert parent")
 
 				// insert any aliases
@@ -613,7 +616,7 @@ func TestGetSnapDeclarationAssertionByID(t *testing.T) {
 			}
 
 			el := cerror.NewErrorList()
-			got, cerr := globalRepo.GetSnapDeclarationAssertionBySnapID(el, tt.assertionID.String())
+			got, cerr := globalRepo.GetSnapDeclarationAssertionBySnapID(el, tt.snapID.String())
 
 			if tt.expectError {
 				assert.NotNil(t, cerr, "expected error")
@@ -626,6 +629,7 @@ func TestGetSnapDeclarationAssertionByID(t *testing.T) {
 
 				// check the parent fields
 				assert.Equal(t, tt.assertionID, got.ID)
+				assert.Equal(t, tt.snapID.String(), got.SnapID)
 				assert.Equal(t, "authX", got.AuthorityID)
 				assert.Equal(t, "signKeyX", got.SignKeySHA3_384)
 				assert.Equal(t, uint32(1), got.Revision)
