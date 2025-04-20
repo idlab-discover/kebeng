@@ -246,7 +246,7 @@ func TestAddRevision(t *testing.T) {
 		channelId         uuid.UUID
 		snapName          string
 		size              uint64
-		sequenceNumber    uint
+		sequenceNumber    uint64
 		architectures     []string
 		sha3384           string
 		minioFilePath     string
@@ -711,7 +711,7 @@ func TestGetRevisionByNameAndSequence(t *testing.T) {
 	tests := []struct {
 		name              string
 		entryName         string
-		sequence          uint
+		sequence          uint64
 		el                *cerror.ErrorList
 		expectError       bool
 		expectedErrorCode string
