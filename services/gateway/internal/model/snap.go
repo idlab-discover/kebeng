@@ -93,15 +93,15 @@ type RefreshSnap struct {
 	Download      *Download  `json:"download,omitempty"`
 	Version       *string    `json:"version,omitempty"`
 	Confinement   *string    `json:"confinement,omitempty"`
-	Revision      *uint64    `json:"revision,omitempty"`
+	Revision      *uint32    `json:"revision,omitempty"`
 	Type          *string    `json:"type,omitempty"`
 	Base          *string    `json:"base,omitempty"`
 }
 
 type Download struct {
-	URL      *string `json:"url,omitempty"`
-	Sha3_384 *string `json:"sha3-384,omitempty"`
-	Size     *uint64 `json:"size,omitempty"`
+	URL              *string `json:"url,omitempty"`
+	Sha3_384_encoded *string `json:"sha3-384,omitempty"`
+	Size             *uint64 `json:"size,omitempty"`
 }
 
 // SnapRevision represents a snap revision in the store
