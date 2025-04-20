@@ -87,6 +87,8 @@ type Plug struct {
 	DenyAutoConnection  *bool
 }
 
+type PlugMap map[string]*Plug
+
 type Slot struct {
 	AllowInstallation   *bool
 	DenyInstallation    *bool
@@ -95,3 +97,5 @@ type Slot struct {
 	AllowAutoConnection *bool
 	DenyAutoConnection  *bool
 }
+
+type SlotMap map[string]*Slot
