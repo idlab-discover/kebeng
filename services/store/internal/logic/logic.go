@@ -1017,13 +1017,6 @@ func timePointerToTimestamp(s *time.Time) *timestamppb.Timestamp {
 	return nil
 }
 
-func uintPointerToUint(s *uint) uint {
-	if s != nil {
-		return *s
-	}
-	return 0
-}
-
 func uint64PointerToUint64(s *uint64) uint64 {
 	if s != nil {
 		return uint64(*s)
