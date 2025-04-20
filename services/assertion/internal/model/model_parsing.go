@@ -9,8 +9,6 @@ import (
 // NOTE: this file contains the parsing functions to convert the JSONB in the DB to a valid Go struct.
 // This can be extended later on to support more complex parsing if needed.
 
-type PlugMap map[string]*Plug
-
 func (pm *PlugMap) Scan(src any) error {
 	var raw []byte
 	switch v := src.(type) {
@@ -79,9 +77,6 @@ func (pm PlugMap) Value() (driver.Value, error) {
 	}
 	return json.Marshal(inter)
 }
-
-// SlotMap is a mapping from interface name to Slot rules.
-type SlotMap map[string]*Slot
 
 // Scan implements sql.Scanner for SlotMap, unmarshalling JSONB into the map.
 func (sm *SlotMap) Scan(src any) error {

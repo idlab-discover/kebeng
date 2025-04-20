@@ -19,8 +19,8 @@ type Plug struct {
 	DenyAutoConnection  *bool
 }
 
-// docs at  say that Slot has similar fields to Plug so for now the same ones
-// make pointers out of the bool values so that we can use nil to indicate that the field is not set
+type PlugMap map[string]*Plug
+
 type Slot struct {
 	AllowInstallation   *bool
 	DenyInstallation    *bool
@@ -29,3 +29,5 @@ type Slot struct {
 	AllowAutoConnection *bool
 	DenyAutoConnection  *bool
 }
+
+type SlotMap map[string]*Slot
