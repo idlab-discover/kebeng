@@ -64,6 +64,7 @@ func (h *Handler) SetupEndpoints(r *gin.Engine) {
 	// NOTE: maybe put all the assertions under v2/assertions/:type/:id
 	// instead of all seperate endpoints, the above way is the one snapcraft uses but doesn't really matter i think for simplicity this for now
 	r.GET("v2/assertions/snap-revision/:rev_sha3_384", h.assertionHandler.GetSnapRevisionAssertion)
+	r.GET("v2/assertions/snap-declaration/:series/:snap_id", h.assertionHandler.GetSnapDeclarationAssertion)
 
 	// ********** AUTH **********
 
