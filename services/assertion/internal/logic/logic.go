@@ -246,6 +246,8 @@ func (s *AssertionService) AddSnapDeclarationAssertion(ctx context.Context, req 
 	signature := string(asserts.Encode(signedAssertion))
 	snapDeclarationAssertion, cerr := s.repo.AddSnapDeclarationAssertion(
 		el,
+		s.cfg.AuthorityID,
+		s.cfg.RootKey.PublicKey().ID(), // this is the sign_key_SHA3_384
 		req.GetSnapId(),
 		req.GetSnapName(),
 		req.GetPublisherId(),
@@ -256,6 +258,7 @@ func (s *AssertionService) AddSnapDeclarationAssertion(ctx context.Context, req 
 		protoAliasToModelAlias(req.GetAliases()),
 		protoPlugToModelPlug(req.GetPlugs()),
 		protoSlotToModelSlot(req.GetSlots()),
+		signature,
 	)
 	if cerr != nil {
 		// should have been logged and added to error list in repo function
@@ -263,6 +266,9 @@ func (s *AssertionService) AddSnapDeclarationAssertion(ctx context.Context, req 
 			Errors: el.ConvertToProtoErrorList(),
 		}, nil
 	}
+	// convert pq.StringArray to []string
+	refreshControl := []string(snapDeclarationAssertion.RefreshControl)
+
 	return &proto.SnapDeclarationAssertionResponse{
 		Id:              snapDeclarationAssertion.ID.String(),
 		AuthorityId:     snapDeclarationAssertion.AuthorityID,
@@ -273,7 +279,7 @@ func (s *AssertionService) AddSnapDeclarationAssertion(ctx context.Context, req 
 		Revision:        snapDeclarationAssertion.Revision,
 		Series:          snapDeclarationAssertion.Series,
 		Timestamp:       timestamppb.New(snapDeclarationAssertion.Timestamp),
-		RefreshControl:  snapDeclarationAssertion.RefreshControl,
+		RefreshControl:  refreshControl,
 		Aliases:         req.GetAliases(),
 		Plugs:           req.GetPlugs(),
 		Slots:           req.GetSlots(),

@@ -12,6 +12,7 @@ import (
 	"github.com/idlab-discover/kebeng/services/assertion/internal/model"
 	"github.com/idlab-discover/kebeng/services/assertion/internal/repository"
 	proto "github.com/idlab-discover/kebeng/services/assertion/proto"
+	"github.com/lib/pq"
 	"github.com/snapcore/snapd/asserts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -502,10 +503,10 @@ func TestAddSnapDeclarationAssertion(t *testing.T) {
 		Revision:        7,
 		Series:          42,
 		Timestamp:       now,
-		RefreshControl:  []string{"refresh-control"},
+		RefreshControl:  pq.StringArray{"refresh-control"},
 		Aliases:         []model.Alias{{Name: "alias1", Target: "target1"}, {Name: "alias2", Target: "target2"}},
-		Plugs:           map[string]model.Plug{"foo": {AllowConnection: boolPtr(true)}},
-		Slots:           map[string]model.Slot{"bar": {AllowInstallation: boolPtr(false)}},
+		Plugs:           map[string]*model.Plug{"foo": {AllowConnection: boolPtr(true)}},
+		Slots:           map[string]*model.Slot{"bar": {AllowInstallation: boolPtr(false)}},
 		Type:            asserts.SnapDeclarationType.Name,
 		Signature:       "deadbeef",
 	}
@@ -559,17 +560,11 @@ func TestAddSnapDeclarationAssertion(t *testing.T) {
 			case *model.SnapDeclarationAssertion:
 				mockRepo.
 					On("AddSnapDeclarationAssertion",
-						mock.Anything,
-						tc.req.GetSnapId(),
-						tc.req.GetSnapName(),
-						tc.req.GetPublisherId(),
-						tc.req.GetRevision(),
-						tc.req.GetSeries(),
-						tc.req.GetTimestamp().AsTime(),
-						tc.req.GetRefreshControl(),
-						mock.Anything,
-						mock.Anything,
-						mock.Anything,
+						mock.Anything, mock.Anything, mock.Anything,
+						mock.Anything, mock.Anything, mock.Anything,
+						mock.Anything, mock.Anything,
+						mock.Anything, mock.Anything, mock.Anything,
+						mock.Anything, mock.Anything, mock.Anything,
 					).
 					Return(ret, nil).
 					Once()
@@ -579,6 +574,7 @@ func TestAddSnapDeclarationAssertion(t *testing.T) {
 						mock.Anything, mock.Anything, mock.Anything,
 						mock.Anything, mock.Anything, mock.Anything,
 						mock.Anything, mock.Anything,
+						mock.Anything, mock.Anything, mock.Anything,
 						mock.Anything, mock.Anything, mock.Anything,
 					).
 					Return(nil, ret).
@@ -616,7 +612,7 @@ func TestAddSnapDeclarationAssertion(t *testing.T) {
 					assert.Equal(t, goldenModel.PublisherID, resp.PublisherId)
 					assert.Equal(t, goldenModel.Revision, resp.Revision)
 					assert.Equal(t, goldenModel.Series, resp.Series)
-					assert.Equal(t, goldenModel.RefreshControl, resp.RefreshControl)
+					assert.Equal(t, tc.req.GetRefreshControl(), resp.RefreshControl)
 					assert.Equal(t, tc.req.GetAliases(), resp.Aliases)
 					assert.Equal(t, tc.req.GetPlugs(), resp.Plugs)
 					assert.Equal(t, tc.req.GetSlots(), resp.Slots)
