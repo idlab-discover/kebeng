@@ -350,6 +350,43 @@ func (s *AssertionService) GetAccountKeyAssertionByName(ctx context.Context, req
 }
 
 // ####################### SHOULD BE REMOVED #########################
+func (s *AssertionService) GetSnapDeclarationAssertionBySnapID(ctx context.Context, req *proto.GetSnapDeclarationAssertionBySnapIDRequest) (*proto.SnapDeclarationAssertionResponse, error) {
+	el := cerror.NewErrorList()
+	if req.GetSnapId() == "" {
+		cerr := cerror.NewCustomError(cerror.Invalid, "snap id is required")
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.SnapDeclarationAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}, nil
+	}
+	snapDeclarationAssertion, cerr := s.repo.GetSnapDeclarationAssertionBySnapID(el, req.GetSnapId())
+	if cerr != nil {
+		// should have been logged and added to error list in repo function
+		return &proto.SnapDeclarationAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}, nil
+	}
+	refreshControl := []string(snapDeclarationAssertion.RefreshControl)
+	return &proto.SnapDeclarationAssertionResponse{
+		Id:              snapDeclarationAssertion.ID.String(),
+		AuthorityId:     snapDeclarationAssertion.AuthorityID,
+		SignKeySha3_384: snapDeclarationAssertion.SignKeySHA3_384,
+		SnapId:          snapDeclarationAssertion.SnapID,
+		SnapName:        snapDeclarationAssertion.SnapName,
+		PublisherId:     snapDeclarationAssertion.PublisherID,
+		Revision:        snapDeclarationAssertion.Revision,
+		Series:          snapDeclarationAssertion.Series,
+		Timestamp:       timestamppb.New(snapDeclarationAssertion.Timestamp),
+		RefreshControl:  refreshControl,
+		Aliases:         modelAliasToProtoAlias(snapDeclarationAssertion.Aliases),
+		Plugs:           modelPlugToProtoPlug(snapDeclarationAssertion.Plugs),
+		Slots:           modelSlotToProtoSlot(snapDeclarationAssertion.Slots),
+		Signature:       snapDeclarationAssertion.Signature,
+		Type:            snapDeclarationAssertion.Type,
+		Errors:          el.ConvertToProtoErrorList(),
+	}, nil
+}
 
 // TODO: remove all this and use better structure
 func (s *AssertionService) ProcessSnapBuildAssertion(ctx context.Context, req *proto.SnapBuildAssertionRequest) (*proto.SnapBuildAssertionResponse, error) {
@@ -482,6 +519,8 @@ func parseAssertion(data string) map[string]string {
 	return result
 }
 
+// ############### HELPER FUNCTIONS #################
+
 // convert proto Alias to model Alias
 func protoAliasToModelAlias(protoAliases []*proto.Alias) []model.Alias {
 	aliases := make([]model.Alias, len(protoAliases))
@@ -524,4 +563,48 @@ func protoSlotToModelSlot(protoSlot map[string]*proto.SlotRule) map[string]*mode
 		}
 	}
 	return slots
+}
+
+// convert model Alias to proto Alias
+func modelAliasToProtoAlias(modelAliases []model.Alias) []*proto.Alias {
+	protoAliases := make([]*proto.Alias, len(modelAliases))
+	for i, modelAlias := range modelAliases {
+		protoAliases[i] = &proto.Alias{
+			Name:   modelAlias.Name,
+			Target: modelAlias.Target,
+		}
+	}
+	return protoAliases
+}
+
+// convert model Plug to proto Plug
+func modelPlugToProtoPlug(modelPlugs map[string]*model.Plug) map[string]*proto.PlugRule {
+	protoPlugs := make(map[string]*proto.PlugRule)
+	for k, v := range modelPlugs {
+		protoPlugs[k] = &proto.PlugRule{
+			AllowInstallation:   v.AllowInstallation,
+			DenyInstallation:    v.DenyInstallation,
+			AllowConnection:     v.AllowConnection,
+			DenyConnection:      v.DenyConnection,
+			AllowAutoConnection: v.AllowAutoConnection,
+			DenyAutoConnection:  v.DenyAutoConnection,
+		}
+	}
+	return protoPlugs
+}
+
+// convert model Slot to proto Slot
+func modelSlotToProtoSlot(modelSlots map[string]*model.Slot) map[string]*proto.SlotRule {
+	protoSlots := make(map[string]*proto.SlotRule)
+	for k, v := range modelSlots {
+		protoSlots[k] = &proto.SlotRule{
+			AllowInstallation:   v.AllowInstallation,
+			DenyInstallation:    v.DenyInstallation,
+			AllowConnection:     v.AllowConnection,
+			DenyConnection:      v.DenyConnection,
+			AllowAutoConnection: v.AllowAutoConnection,
+			DenyAutoConnection:  v.DenyAutoConnection,
+		}
+	}
+	return protoSlots
 }

@@ -22,7 +22,7 @@ type IAssertionRepository interface {
 	GetAccountKeyAssertionByName(el *cerror.ErrorList, name string) (*model.AccountKeyAssertion, *cerror.CustomError)
 	GetLatestAccountKeyAssertion(el *cerror.ErrorList, account_id uuid.UUID) (*model.AccountKeyAssertion, *cerror.CustomError)
 	GetSnapRevisionAssertionBySHA3_384(el *cerror.ErrorList, snap_sha3_384 string) (*model.SnapRevisionAssertion, *cerror.CustomError)
-	GetSnapDeclarationAssertionByID(el *cerror.ErrorList, snapID string) (*model.SnapDeclarationAssertion, *cerror.CustomError)
+	GetSnapDeclarationAssertionBySnapID(el *cerror.ErrorList, snapID string) (*model.SnapDeclarationAssertion, *cerror.CustomError)
 }
 
 type AssertionRepository struct {
@@ -228,10 +228,7 @@ func (r *AssertionRepository) GetSnapRevisionAssertionBySHA3_384(el *cerror.Erro
 	return assertion, nil
 }
 
-func (r *AssertionRepository) GetSnapDeclarationAssertionByID(
-	el *cerror.ErrorList,
-	assertionID string,
-) (*model.SnapDeclarationAssertion, *cerror.CustomError) {
+func (r *AssertionRepository) GetSnapDeclarationAssertionBySnapID(el *cerror.ErrorList, assertionID string) (*model.SnapDeclarationAssertion, *cerror.CustomError) {
 	const parentQuery = `
         SELECT
             id, authority_id, sign_key_sha3_384, snap_id, snap_name, publisher_id, revision, series, timestamp,
