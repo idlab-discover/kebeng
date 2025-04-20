@@ -246,7 +246,7 @@ func TestAddRevision(t *testing.T) {
 		channelId         uuid.UUID
 		snapName          string
 		size              uint64
-		sequenceNumber    uint64
+		sequenceNumber    uint32
 		architectures     []string
 		sha3384           string
 		minioFilePath     string
@@ -711,7 +711,7 @@ func TestGetRevisionByNameAndSequence(t *testing.T) {
 	tests := []struct {
 		name              string
 		entryName         string
-		sequence          uint64
+		sequence          uint32
 		el                *cerror.ErrorList
 		expectError       bool
 		expectedErrorCode string
@@ -768,46 +768,6 @@ func TestGetRevisionBySHA(t *testing.T) {
 	}{
 		{
 			name:              "Success getting revision by sha",
-			sha:               "mock-sha3-384",
-			el:                cerror.NewErrorList(),
-			expectError:       false,
-			expectedErrorCode: "",
-		},
-		{
-			name:              "Fail getting revision by sha for non-existing revision",
-			sha:               "nonexistent",
-			el:                cerror.NewErrorList(),
-			expectError:       true,
-			expectedErrorCode: cerror.ResourceNotFound,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			revision, err := globalRepo.GetRevisionBySHA(tt.sha, false, tt.el)
-			if tt.expectError {
-				assert.NotNil(t, err)
-				if err != nil {
-					assert.Equal(t, tt.expectedErrorCode, err.GetCode())
-				}
-			} else {
-				assert.Nil(t, err)
-				assert.NotNil(t, revision)
-			}
-		})
-	}
-}
-
-func TestGetRevisionBySHAEncoded(t *testing.T) {
-	tests := []struct {
-		name              string
-		sha               string
-		el                *cerror.ErrorList
-		expectError       bool
-		expectedErrorCode string
-	}{
-		{
-			name:              "Success getting revision by sha",
 			sha:               "mock-sha3-384-encoded",
 			el:                cerror.NewErrorList(),
 			expectError:       false,
@@ -824,7 +784,7 @@ func TestGetRevisionBySHAEncoded(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			revision, err := globalRepo.GetRevisionBySHA(tt.sha, true, tt.el)
+			revision, err := globalRepo.GetRevisionBySHA(tt.sha, tt.el)
 			if tt.expectError {
 				assert.NotNil(t, err)
 				if err != nil {
@@ -1175,7 +1135,6 @@ func TestGetTrackByEntryIdAndName(t *testing.T) {
 	}
 }
 
-
 func TestGetLatestRevision(t *testing.T) {
 	el := cerror.NewErrorList()
 	entryID := uuid.New()
@@ -1212,11 +1171,11 @@ func TestGetLatestRevision(t *testing.T) {
 	rev3ID := uuid.New()
 	snapName := "test-snap"
 	_, err = globalDB.Exec(`
-		INSERT INTO revision (id, entry_id, snap_track_id, snap_channel_id, snap_name, updated_at, sequence_number)
+		INSERT INTO revision (id, entry_id, build_assertion_filename, sha3_384_encoded, size, sequence_number, architectures, snap_track_id, snap_channel_id, snap_name, minio_file_path, updated_at)
 		VALUES 
-		($1, $2, $3, $4, $10, $5, 1),
-		($6, $2, $3, $4, $10, $7, 2),
-		($8, $2, $3, $4, $10, $9, 3);
+		($1, $2, 'mock-build-assertion-1', 'mock-sha3-384-1', 12345, 1, ARRAY['x86_64'], $3, $4, $10, 'mock-path-1', $5),
+		($6, $2, 'mock-build-assertion-2', 'mock-sha3-384-2', 67890, 2, ARRAY['arm64'], $3, $4, $10, 'mock-path-2', $7),
+		($8, $2, 'mock-build-assertion-3', 'mock-sha3-384-3', 54321, 3, ARRAY['x86_64', 'arm64'], $3, $4, $10, 'mock-path-3', $9);
 	`, rev1ID, entryID, trackID, channelID, now.Add(-10*time.Minute),
 		rev2ID, now.Add(-5*time.Minute),
 		rev3ID, now.Add(-1*time.Minute),
@@ -1226,8 +1185,8 @@ func TestGetLatestRevision(t *testing.T) {
 	// Insert 1 revision in a different track/channel but with the most recent update
 	altRevID := uuid.New()
 	_, err = globalDB.Exec(`
-		INSERT INTO revision (id, entry_id, snap_track_id, snap_channel_id, updated_at, sequence_number)
-		VALUES ($1, $2, $3, $4, $5, 99);
+		INSERT INTO revision (id, entry_id, build_assertion_filename, sha3_384_encoded, size, sequence_number, architectures, snap_track_id, snap_channel_id, snap_name, minio_file_path, updated_at)
+		VALUES ($1, $2, 'alt-build-assertion', 'alt-sha3-384', 98765, 99, ARRAY['x86_64'], $3, $4, 'alt-snap', 'alt-path', $5);
 	`, altRevID, entryID, altTrackID, altChannelID, now.Add(1*time.Minute))
 	assert.NoError(t, err)
 
@@ -1236,7 +1195,7 @@ func TestGetLatestRevision(t *testing.T) {
 	assert.Nil(t, errObj)
 	assert.NotNil(t, revision)
 
-	assert.Equal(t, int64(3), int64(*revision.SequenceNumber))
+	assert.Equal(t, int64(3), int64(revision.SequenceNumber))
 	assert.Equal(t, rev3ID, revision.ID)
 }
 
@@ -1329,7 +1288,6 @@ func TestGetChannelById(t *testing.T) {
 	}
 }
 
-
 // Helper function to insert mock data
 func mockData(db *sqlx.DB) {
 	// Mock snap entry
@@ -1363,8 +1321,8 @@ func mockData(db *sqlx.DB) {
 	// Mock snap revision
 	revisionID := mockUUID
 	_, err = db.Exec(`
-		INSERT INTO public.revision (id, entry_id, build_assertion_filename, sha3_384, sha3_384_encoded, size, sequence_number, architectures, snap_track_id, snap_channel_id)
-		VALUES ($1, $2, 'mock-build-assertion', 'mock-sha3-384', 'mock-sha3-384-encoded', 999, 1, ARRAY['mock-arch'], $3, $4);
+		INSERT INTO public.revision (id, entry_id, build_assertion_filename, sha3_384_encoded, size, sequence_number, architectures, snap_track_id, snap_channel_id, snap_name, minio_file_path)
+		VALUES ($1, $2, 'mock-build-assertion', 'mock-sha3-384-encoded', 999, 1, ARRAY['mock-arch'], $3, $4, 'mock-snap', 'mock-minio-file-path');
 	`, revisionID, mockUUID, trackID, channelID)
 	if err != nil {
 		logrus.Fatalf("failed to insert mock data for snap revision: %v", err)
@@ -1390,4 +1348,3 @@ func mockData(db *sqlx.DB) {
 		logrus.Fatalf("failed to insert mock data for snap upload: %v", err)
 	}
 }
-

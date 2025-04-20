@@ -852,7 +852,7 @@ func (s *StoreLogic) AddRevision(ctx context.Context, req *proto.AddRevisionRequ
 	}
 
 	// Check if a revision with the same SHA3_384 already exists -> this means that the uploaded file is the same as one already in the database
-	existingRevision, cerr := s.repo.GetRevisionBySHA(req.Sha3_384, false, el)
+	existingRevision, cerr := s.repo.GetRevisionBySHA(req.Sha3_384Encoded, el)
 	if cerr != nil && cerr.GetCode() != cerror.ResourceNotFound {
 		// Already logged in GetRevisionBySHA (repository))
 		return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
@@ -874,10 +874,10 @@ func (s *StoreLogic) AddRevision(ctx context.Context, req *proto.AddRevisionRequ
 		// Already logged in GetLatestRevisionByEntryId (repository)
 		return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
-	sequenceNumber := uint64(1) // Initialize to 1
+	sequenceNumber := uint32(1) // Initialize to 1
 	// If there is a last revision, increment the sequence number
-	if lastRevision != nil && lastRevision.SequenceNumber != nil {
-		sequenceNumber = *lastRevision.SequenceNumber + 1
+	if lastRevision != nil {
+		sequenceNumber = lastRevision.SequenceNumber + 1
 	}
 
 	// Get the file path in the object store
@@ -927,7 +927,7 @@ func (s *StoreLogic) AddRevision(ctx context.Context, req *proto.AddRevisionRequ
 			}
 
 			// Create the revision
-			_, cerr = s.repo.AddRevision(entry.ID, trackResp.ID, channelResp.ID, req.SnapName, req.Size, sequenceNumber, req.Architectures, req.Sha3_384, minioFilePath, el)
+			_, cerr = s.repo.AddRevision(entry.ID, trackResp.ID, channelResp.ID, req.SnapName, req.Size, sequenceNumber, req.Architectures, req.Sha3_384Encoded, minioFilePath, el)
 			if cerr != nil {
 				// Already logged in AddRevision (repository)
 				return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
@@ -947,7 +947,7 @@ func (s *StoreLogic) AddRevision(ctx context.Context, req *proto.AddRevisionRequ
 	return &proto.AddRevisionResponse{
 		SnapName: req.SnapName,
 		Status:   "success",
-		Revision: uint64(sequenceNumber),
+		Revision: sequenceNumber,
 	}, nil
 }
 
@@ -996,7 +996,7 @@ func (s *StoreLogic) retrieveObjectStoreFilePath(revision *models.SnapRevision, 
 		// Already logged in GetChannelById (repository)
 		return "", cerr
 	}
-	return fmt.Sprintf("%s/%s/%s/%s_%d.snap", entry.Name, track.Name, channel.Name, entry.Name, uint64PointerToUint64(revision.SequenceNumber)), nil
+	return fmt.Sprintf("%s/%s/%s/%s_%d.snap", entry.Name, track.Name, channel.Name, entry.Name, revision.SequenceNumber), nil
 }
 
 func (s *StoreLogic) createObjectStoreFilePath(entryName string, sequenceNumber uint) string {
@@ -1030,16 +1030,15 @@ func convertRevisionToProto(revision *models.SnapRevision) *proto.GetRevisionRes
 		CreatedAt:              timestamppb.New(revision.CreatedAt),
 		UpdatedAt:              timestamppb.New(revision.UpdatedAt),
 		DeletedAt:              timePointerToTimestamp(revision.DeletedAt),
-		BuildAssertionFilename: pointerToString(revision.BuildAssertionFileName),
-		Sha3_384:               pointerToString(revision.SHA3_384),
-		Sha3_384Encoded:        pointerToString(revision.SHA3_384_Encoded),
-		Size:                   uint64PointerToUint64(revision.Size),
-		SequenceNumber:         uint64PointerToUint64(revision.SequenceNumber),
+		BuildAssertionFilename: revision.BuildAssertionFileName,
+		Sha3_384Encoded:        revision.SHA3_384_Encoded,
+		Size:                   revision.Size,
+		SequenceNumber:         revision.SequenceNumber,
 		Architectures:          revision.Architectures,
 		EntryId:                revision.SnapEntryID.String(),
 		TrackId:                revision.SnapTrackID.String(),
 		ChannelId:              revision.SnapChannelID.String(),
-		SnapName:               pointerToString(revision.SnapName),
+		SnapName:               revision.SnapName,
 	}
 }
 

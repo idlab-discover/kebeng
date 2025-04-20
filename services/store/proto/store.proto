@@ -72,7 +72,7 @@ message GetEntriesResponse {
 message GetRevisionRequest {
     string id = 1;
     string snap_name = 2;
-    uint64 sequence = 3;
+    uint32 sequence = 3;
 }
 
 message GetRevisionResponse {
@@ -81,10 +81,9 @@ message GetRevisionResponse {
     google.protobuf.Timestamp updated_at = 3;
     optional google.protobuf.Timestamp deleted_at = 4;
     string build_assertion_filename = 5;
-    string sha3_384 = 6;
     string sha3_384_encoded = 7;
     uint64 size = 8;
-    uint64 sequence_number = 9;
+    uint32 sequence_number = 9;
     string snap_name = 10;
     repeated string architectures = 11;
     string status = 12;
@@ -233,7 +232,7 @@ message GetUploadStatusResponse {
 
 message AddRevisionRequest {
     string snap_name = 1;
-    string sha3_384 = 2;
+    string sha3_384_encoded = 2;
     uint64 size = 3;
     repeated string architectures = 4;
     repeated string tracks_and_channels = 5;
@@ -244,7 +243,7 @@ message AddRevisionResponse {
     string id = 1;
     string snap_name = 2;
     string status = 3;
-    uint64 revision = 4;
+    uint32 revision = 4;
     repeated proto.Error errors = 5;
 }
 
