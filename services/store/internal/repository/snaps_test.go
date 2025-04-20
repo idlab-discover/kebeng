@@ -969,7 +969,7 @@ func TestUpdateUploadStatus(t *testing.T) {
 		name              string
 		uploadId          uuid.UUID
 		status            string
-		revision          uint64
+		revision          uint32
 		el                *cerror.ErrorList
 		expectError       bool
 		expectedErrorCode string

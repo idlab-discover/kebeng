@@ -45,7 +45,7 @@ type ISnapsRepository interface {
 	GetUploadById(id uuid.UUID, errorList *cerror.ErrorList) (*models.SnapUpload, *cerror.CustomError)
 
 	// UPDATE
-	UpdateUploadStatus(uploadId uuid.UUID, status string, revision uint64, errorList *cerror.ErrorList) *cerror.CustomError
+	UpdateUploadStatus(uploadId uuid.UUID, status string, revision uint32, errorList *cerror.ErrorList) *cerror.CustomError
 }
 
 type SnapsRepository struct {
@@ -548,7 +548,7 @@ func (sp *SnapsRepository) GetLatestRevisionByEntryId(entryId uuid.UUID, el *cer
 
 // ============ UPDATE =============
 
-func (sp *SnapsRepository) UpdateUploadStatus(uploadId uuid.UUID, status string, revision uint64, el *cerror.ErrorList) *cerror.CustomError {
+func (sp *SnapsRepository) UpdateUploadStatus(uploadId uuid.UUID, status string, revision uint32, el *cerror.ErrorList) *cerror.CustomError {
 	upload := models.SnapUpload{
 		ID:     uploadId,
 		Errors: el,
