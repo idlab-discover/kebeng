@@ -243,7 +243,7 @@ func (m *MockSnapsRepository) GetChannelByTrackIdAndName(trackId uuid.UUID, chan
 
 // UPDATE
 
-func (m *MockSnapsRepository) UpdateUploadStatus(uploadId uuid.UUID, status string, revision uint64, el *cerror.ErrorList) *cerror.CustomError {
+func (m *MockSnapsRepository) UpdateUploadStatus(uploadId uuid.UUID, status string, revision uint32, el *cerror.ErrorList) *cerror.CustomError {
 	args := m.Called(uploadId, status, revision, el)
 	if args.Get(0) != nil {
 		return args.Get(0).(*cerror.CustomError)
