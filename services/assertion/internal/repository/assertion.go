@@ -23,6 +23,7 @@ type IAssertionRepository interface {
 	GetLatestAccountKeyAssertion(el *cerror.ErrorList, account_id uuid.UUID) (*model.AccountKeyAssertion, *cerror.CustomError)
 	GetSnapRevisionAssertionBySHA3_384(el *cerror.ErrorList, snap_sha3_384 string) (*model.SnapRevisionAssertion, *cerror.CustomError)
 	GetSnapDeclarationAssertionBySnapID(el *cerror.ErrorList, snapID string) (*model.SnapDeclarationAssertion, *cerror.CustomError)
+	GetLatestSnapDeclarationAssertion(el *cerror.ErrorList, snapID string) (*model.SnapDeclarationAssertion, *cerror.CustomError)
 }
 
 type AssertionRepository struct {
@@ -262,4 +263,22 @@ func (r *AssertionRepository) GetSnapDeclarationAssertionBySnapID(el *cerror.Err
 	assertion.Aliases = aliases
 
 	return &assertion, nil
+}
+
+func (r *AssertionRepository) GetLatestSnapDeclarationAssertion(el *cerror.ErrorList, snapID string) (*model.SnapDeclarationAssertion, *cerror.CustomError) {
+	query := `
+		SELECT id, authority_id, sign_key_sha3_384, snap_id, snap_name, publisher_id, revision, series, timestamp, refresh_control, plugs, slots, signature 
+		FROM snap_declaration_assertion 
+		WHERE snap_id = $1 ORDER BY revision DESC LIMIT 1
+	`
+	assertion := &model.SnapDeclarationAssertion{}
+
+	err := r.db.Get(assertion, query, snapID)
+	if err != nil {
+		logrus.Errorf("failed to get latest snap declaration assertion by snap id: %s, err: %v", snapID, err)
+		el.AddCustomError(cerror.ConvertError(err, fmt.Sprintf("failed to get latest snap declaration assertion by snap id: %s, err: %v", snapID, err)))
+		return nil, cerror.ConvertError(err, fmt.Sprintf("failed to get latest snap declaration assertion by snap id: %s, err: %v", snapID, err))
+	}
+
+	return assertion, nil
 }

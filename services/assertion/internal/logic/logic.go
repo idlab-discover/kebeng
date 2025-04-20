@@ -224,9 +224,25 @@ func (s *AssertionService) AddAccountKeyAssertion(ctx context.Context, req *prot
 
 func (s *AssertionService) AddSnapDeclarationAssertion(ctx context.Context, req *proto.AddSnapDeclarationAssertionRequest) (*proto.SnapDeclarationAssertionResponse, error) {
 	el := cerror.NewErrorList()
+
+	var sequenceNumber uint32
+	latestSnapDeclarationAssertion, cerr := s.repo.GetLatestSnapDeclarationAssertion(el, req.GetSnapId())
+	if cerr != nil && cerr.GetCode() != cerror.ResourceNotFound {
+		// should have been logged and added to error list in repo function
+		return &proto.SnapDeclarationAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}, nil
+	} else if cerr.GetCode() == cerror.ResourceNotFound {
+		// remove ResourceNotFound since its not a real error in this case
+		el.RemoveErrorWithCode(cerror.ResourceNotFound)
+		sequenceNumber = 1
+	} else {
+		sequenceNumber = latestSnapDeclarationAssertion.Revision + 1
+	}
+
 	headers := map[string]any{
 		"authority-id": s.cfg.AuthorityID,
-		"revision":     fmt.Sprintf("%d", req.GetRevision()),
+		"revision":     fmt.Sprintf("%d", sequenceNumber),
 		"series":       fmt.Sprintf("%d", req.GetSeries()),
 		"snap-id":      req.GetSnapId(),
 		"snap-name":    req.GetSnapName(),
@@ -251,7 +267,7 @@ func (s *AssertionService) AddSnapDeclarationAssertion(ctx context.Context, req 
 		req.GetSnapId(),
 		req.GetSnapName(),
 		req.GetPublisherId(),
-		req.GetRevision(),
+		sequenceNumber,
 		req.GetSeries(),
 		req.GetTimestamp().AsTime(),
 		req.GetRefreshControl(),
