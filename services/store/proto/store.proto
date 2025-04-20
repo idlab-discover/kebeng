@@ -260,7 +260,7 @@ message GetObjectCustomMetadataResponse {
 message UpdateUploadStatusRequest {
     string upload_id = 1;
     string status = 2;
-    uint64 revision = 3;
+    uint32 revision = 3;
     repeated proto.Error errors = 4;
 }
 
