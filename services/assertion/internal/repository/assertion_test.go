@@ -1,6 +1,7 @@
 package repository_test
 
 import (
+	"encoding/json"
 	"io"
 	"os"
 	"testing"
@@ -11,10 +12,13 @@ import (
 	"github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/idlab-discover/kebeng/services/assertion/internal/config"
 	assertionDB "github.com/idlab-discover/kebeng/services/assertion/internal/database"
+	"github.com/idlab-discover/kebeng/services/assertion/internal/model"
 	"github.com/idlab-discover/kebeng/services/assertion/internal/repository"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -449,6 +453,201 @@ func TestGetSnapRevisionAssertionBySHA3_384(t *testing.T) {
 				assert.Equal(t, tt.expectedDeveloperID, record.DeveloperID, "DeveloperID should match")
 				assert.Equal(t, tt.expectedSnapRevisionSequenceNumber, record.SnapRevisionSequenceNumber, "Revision sequence number should match")
 				assert.Equal(t, tt.expectedTimestamp, record.Timestamp.UTC(), "Timestamp should match")
+			}
+		})
+	}
+}
+
+func ptrBool(b bool) *bool { return &b }
+
+func TestAddSnapDeclarationAssertion(t *testing.T) {
+	// common inputs
+	now := time.Now().UTC().Truncate(time.Second)
+	authorityID := "canonical"
+	signKey := "sign-key-123"
+	assertionID := "snap-abc"
+	snapName := "MySnap"
+	publisherID := "pub-xyz"
+	revision := uint32(42)
+	series := uint32(16)
+	timestamp := now
+	refreshControl := []string{"foo", "bar"}
+	aliases := []model.Alias{
+		{Name: "alias1", Target: "target1"},
+	}
+	plugs := model.PlugMap{
+		"iface1": {AllowInstallation: ptrBool(true)},
+	}
+	slots := model.SlotMap{
+		"iface2": {AllowConnection: ptrBool(false)},
+	}
+	signature := "signed-bytes"
+
+	// pre‐marshal JSONB columns for duplicate‐insert setup
+	plugsJSON, _ := json.Marshal(plugs)
+	slotsJSON, _ := json.Marshal(slots)
+
+	tests := []struct {
+		name         string
+		preInsert    bool // insert a conflicting parent before calling
+		expectError  bool
+		expectedCode string // only for expectError
+	}{
+		{"successful insertion", false, false, ""},
+		{"duplicate parent error", true, true, cerror.AlreadyRegistered},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// if testing duplicate, insert a parent
+			if tt.preInsert {
+				insert := `
+					INSERT INTO snap_declaration_assertion
+					  (authority_id, sign_key_sha3_384,
+					   snap_id, snap_name, publisher_id,
+					   revision, series, timestamp,
+					   refresh_control, plugs, slots, signature)
+					VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+				`
+				_, err := globalDB.Exec(
+					insert,
+					authorityID, signKey,
+					assertionID, snapName, publisherID,
+					revision, series, timestamp,
+					pq.Array(refreshControl),
+					plugsJSON, slotsJSON,
+					signature,
+				)
+				require.NoError(t, err, "setup duplicate parent")
+			}
+
+			el := cerror.NewErrorList()
+			rec, cerr := globalRepo.AddSnapDeclarationAssertion(
+				el,
+				authorityID, signKey,
+				assertionID, snapName, publisherID,
+				revision, series, timestamp,
+				refreshControl, aliases,
+				plugs, slots,
+				signature,
+			)
+
+			if tt.expectError {
+				assert.NotNil(t, cerr, "expected error")
+				assert.True(t, el.HasError(), "error list should be non‑empty")
+				if cerr != nil {
+					assert.Equal(t, tt.expectedCode, cerr.GetCode())
+				}
+			} else {
+				assert.Nil(t, cerr, "did not expect error")
+				assert.False(t, el.HasError(), "error list should be empty")
+				assert.NotNil(t, rec, "returned record")
+				// spot‑check
+				assert.Equal(t, assertionID, rec.SnapID)
+				assert.Equal(t, revision, rec.Revision)
+				assert.Equal(t, aliases, rec.Aliases)
+				assert.Equal(t, plugs, rec.Plugs)
+				assert.Equal(t, slots, rec.Slots)
+			}
+
+			// clean up for next iteration
+			_, _ = globalDB.Exec(`DELETE FROM alias`)
+			_, _ = globalDB.Exec(`DELETE FROM snap_declaration_assertion`)
+		})
+	}
+}
+
+func TestGetSnapDeclarationAssertionByID(t *testing.T) {
+	tests := []struct {
+		name           string
+		preInsert      bool
+		assertionID    uuid.UUID
+		snapID         uuid.UUID
+		refreshControl []string
+		aliases        []model.Alias
+		expectError    bool
+		errorCode      string
+	}{
+		{
+			name:           "successful fetch",
+			preInsert:      true,
+			assertionID:    uuid.New(),
+			snapID:         uuid.New(),
+			refreshControl: []string{"rc1", "rc2"},
+			aliases:        []model.Alias{{Name: "a1", Target: "t1"}, {Name: "a2", Target: "t2"}},
+		},
+		{
+			name:        "not found",
+			preInsert:   false,
+			assertionID: uuid.New(),
+			snapID:      uuid.New(),
+			expectError: true,
+			errorCode:   cerror.ResourceNotFound,
+		},
+	}
+
+	now := time.Now().UTC()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.preInsert {
+				// insert the parent
+				_, err := globalDB.Exec(`
+                    INSERT INTO snap_declaration_assertion
+                      (id,authority_id, sign_key_sha3_384,
+                       snap_id, snap_name, publisher_id,
+                       revision, series, timestamp, refresh_control,
+                       plugs, slots, signature)
+                    VALUES
+						($1,'authX','signKeyX',
+                       $2,'My Snap','pubX',
+                       1,2,$3,$4,
+                       '{}'::jsonb,'{}'::jsonb,'sigX')
+                `, tt.assertionID, tt.snapID, now, pq.Array(tt.refreshControl))
+				assert.NoError(t, err, "failed to insert parent")
+
+				// insert any aliases
+				for _, a := range tt.aliases {
+					_, err := globalDB.Exec(`
+                        INSERT INTO alias (assertion_id,name,target)
+                        VALUES ($1,$2,$3)
+                    `, tt.assertionID, a.Name, a.Target)
+					assert.NoError(t, err, "failed to insert alias %q", a.Name)
+				}
+			}
+
+			el := cerror.NewErrorList()
+			got, cerr := globalRepo.GetSnapDeclarationAssertionBySnapID(el, tt.snapID.String())
+
+			if tt.expectError {
+				assert.NotNil(t, cerr, "expected error")
+				assert.True(t, el.HasError(), "expected error list")
+				assert.Equal(t, tt.errorCode, cerr.GetCode())
+			} else {
+				assert.Nil(t, cerr, "did not expect error")
+				assert.False(t, el.HasError(), "did not expect error list")
+				assert.NotNil(t, got, "expected non‑nil result")
+
+				// check the parent fields
+				assert.Equal(t, tt.assertionID, got.ID)
+				assert.Equal(t, tt.snapID.String(), got.SnapID)
+				assert.Equal(t, "authX", got.AuthorityID)
+				assert.Equal(t, "signKeyX", got.SignKeySHA3_384)
+				assert.Equal(t, uint32(1), got.Revision)
+				assert.Equal(t, uint32(2), got.Series)
+				assert.Equal(t, now.UTC().Truncate(time.Second), got.Timestamp.UTC().Truncate(time.Second))
+				assert.Equal(t, tt.refreshControl, []string(got.RefreshControl))
+				assert.Equal(t, "sigX", got.Signature)
+
+				// aliases must come back in name order
+				expectedNames := []string{tt.aliases[0].Name, tt.aliases[1].Name}
+				var gotNames []string
+				for _, a := range got.Aliases {
+					gotNames = append(gotNames, a.Name)
+				}
+				assert.Equal(t, expectedNames, gotNames)
+				for i, a := range tt.aliases {
+					assert.Equal(t, a.Target, got.Aliases[i].Target)
+				}
 			}
 		})
 	}
