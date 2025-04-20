@@ -93,7 +93,7 @@ func (h *Handler) refreshSnapDownload(action *model.Action, el *cerror.ErrorList
 
 	downloadUrl := fmt.Sprintf("%s/download/%s", h.Config.StoreUrl, latestRevision.Id)
 
-	raw, err := base64.RawURLEncoding.DecodeString(latestRevision.Sha3_384)
+	raw, err := base64.RawURLEncoding.DecodeString(latestRevision.Sha3_384Encoded)
 	if err != nil {
 		el.Add(cerror.InternalServerError, fmt.Sprintf("error decoding sha3_384: %s", err.Error()))
 	}
