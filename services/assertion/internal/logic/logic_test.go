@@ -470,7 +470,6 @@ func TestAddAccountKeyAssertion(t *testing.T) {
 }
 
 func TestAddSnapDeclarationAssertion(t *testing.T) {
-	// generate and import a root signing key
 	rootKey, err := asserts.GenerateKey()
 	assert.NoError(t, err)
 
@@ -492,7 +491,7 @@ func TestAddSnapDeclarationAssertion(t *testing.T) {
 
 	now := time.Now().UTC()
 
-	// a “golden” model record returned by the repo
+	// a “golden” record for the happy‑path
 	goldenModel := &model.SnapDeclarationAssertion{
 		ID:              uuid.New(),
 		AuthorityID:     cfg.AuthorityID,
@@ -500,7 +499,7 @@ func TestAddSnapDeclarationAssertion(t *testing.T) {
 		SnapID:          "snap-123",
 		SnapName:        "test-snap",
 		PublisherID:     "pub-456",
-		Revision:        7,
+		Revision:        1, // first revision
 		Series:          42,
 		Timestamp:       now,
 		RefreshControl:  pq.StringArray{"refresh-control"},
@@ -511,13 +510,16 @@ func TestAddSnapDeclarationAssertion(t *testing.T) {
 		Signature:       "deadbeef",
 	}
 
+	notFoundErr := cerror.NewCustomError(cerror.ResourceNotFound, "none")
+	dbErr := cerror.NewCustomError(cerror.DatabaseError, "db down")
+
 	tests := []struct {
-		name               string
-		req                *proto.AddSnapDeclarationAssertionRequest
-		mockReturn         any  // either *model.SnapDeclarationAssertion or *cerror.CustomError
-		expectErr          bool // Go‐error return
-		expectProtoError   bool // resp.Errors non‐empty
-		expectProtoErrCode string
+		name             string
+		req              *proto.AddSnapDeclarationAssertionRequest
+		mockGetLatest    any // *model.SnapDeclarationAssertion or *cerror.CustomError
+		mockAdd          any // *model.SnapDeclarationAssertion or *cerror.CustomError
+		wantProtoErr     bool
+		wantProtoErrCode string
 	}{
 		{
 			name: "happy path",
@@ -525,7 +527,6 @@ func TestAddSnapDeclarationAssertion(t *testing.T) {
 				SnapId:         "snap-123",
 				SnapName:       "test-snap",
 				PublisherId:    "pub-456",
-				Revision:       7,
 				Series:         42,
 				Timestamp:      timestamppb.New(now),
 				RefreshControl: []string{"refresh-control"},
@@ -533,91 +534,121 @@ func TestAddSnapDeclarationAssertion(t *testing.T) {
 				Plugs:          map[string]*proto.PlugRule{"foo": {AllowConnection: boolPtr(true)}},
 				Slots:          map[string]*proto.SlotRule{"bar": {AllowInstallation: boolPtr(false)}},
 			},
-			mockReturn: goldenModel,
+			mockGetLatest: notFoundErr, // triggers sequence = 1
+			mockAdd:       goldenModel, // insert succeeds
 		},
 		{
-			name: "repo error",
+			name: "GetLatest error",
 			req: &proto.AddSnapDeclarationAssertionRequest{
 				SnapId:         "snap-123",
 				SnapName:       "test-snap",
 				PublisherId:    "pub-456",
-				Revision:       7,
 				Series:         42,
 				Timestamp:      timestamppb.New(now),
 				RefreshControl: []string{"refresh-control"},
 			},
-			mockReturn:         cerror.NewCustomError(cerror.DatabaseError, "insert failed"),
-			expectErr:          false,
-			expectProtoError:   true,
-			expectProtoErrCode: cerror.DatabaseError,
+			mockGetLatest: dbErr, // unexpected error
+			// we never reach AddSnapDeclarationAssertion
+			wantProtoErr:     true,
+			wantProtoErrCode: cerror.DatabaseError,
+		},
+		{
+			name: "AddSnapDeclarationAssertion error",
+			req: &proto.AddSnapDeclarationAssertionRequest{
+				SnapId:         "snap-123",
+				SnapName:       "test-snap",
+				PublisherId:    "pub-456",
+				Series:         42,
+				Timestamp:      timestamppb.New(now),
+				RefreshControl: []string{"refresh-control"},
+			},
+			mockGetLatest:    notFoundErr,
+			mockAdd:          dbErr, // insert fails
+			wantProtoErr:     true,
+			wantProtoErrCode: cerror.DatabaseError,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			// set up mock
-			switch ret := tc.mockReturn.(type) {
+			// --- mock GetLatestSnapDeclarationAssertion ---
+			switch ret := tc.mockGetLatest.(type) {
 			case *model.SnapDeclarationAssertion:
 				mockRepo.
-					On("AddSnapDeclarationAssertion",
-						mock.Anything, mock.Anything, mock.Anything,
-						mock.Anything, mock.Anything, mock.Anything,
-						mock.Anything, mock.Anything,
-						mock.Anything, mock.Anything, mock.Anything,
-						mock.Anything, mock.Anything, mock.Anything,
-					).
+					On("GetLatestSnapDeclarationAssertion", mock.Anything, tc.req.GetSnapId()).
 					Return(ret, nil).
 					Once()
 			case *cerror.CustomError:
 				mockRepo.
-					On("AddSnapDeclarationAssertion",
-						mock.Anything, mock.Anything, mock.Anything,
-						mock.Anything, mock.Anything, mock.Anything,
-						mock.Anything, mock.Anything,
-						mock.Anything, mock.Anything, mock.Anything,
-						mock.Anything, mock.Anything, mock.Anything,
-					).
+					On("GetLatestSnapDeclarationAssertion", mock.Anything, tc.req.GetSnapId()).
 					Return(nil, ret).
 					Once()
 			default:
-				t.Fatalf("unexpected mockReturn type %T", ret)
+				t.Fatalf("unexpected mockGetLatest type %T", ret)
 			}
 
+			// --- mock AddSnapDeclarationAssertion if needed ---
+			if tc.mockAdd != nil {
+				switch ret := tc.mockAdd.(type) {
+				case *model.SnapDeclarationAssertion:
+					mockRepo.
+						On("AddSnapDeclarationAssertion",
+							mock.Anything, mock.Anything, mock.Anything,
+							mock.Anything, mock.Anything, mock.Anything,
+							mock.Anything, mock.Anything,
+							mock.Anything, mock.Anything, mock.Anything,
+							mock.Anything, mock.Anything, mock.Anything,
+						).
+						Return(ret, nil).
+						Once()
+				case *cerror.CustomError:
+					mockRepo.
+						On("AddSnapDeclarationAssertion",
+							mock.Anything, mock.Anything, mock.Anything,
+							mock.Anything, mock.Anything, mock.Anything,
+							mock.Anything, mock.Anything,
+							mock.Anything, mock.Anything, mock.Anything,
+							mock.Anything, mock.Anything, mock.Anything,
+						).
+						Return(nil, ret).
+						Once()
+				default:
+					t.Fatalf("unexpected mockAdd type %T", ret)
+				}
+			}
+
+			// --- call under test ---
 			resp, err := svc.AddSnapDeclarationAssertion(context.Background(), tc.req)
 
-			if tc.expectErr {
-				assert.Error(t, err)
-				assert.Nil(t, resp)
+			// --- verify ---
+			if tc.wantProtoErr {
+				assert.NotNil(t, resp)
+				assert.NotEmpty(t, resp.Errors)
+				found := false
+				for _, e := range resp.Errors {
+					if e.Code == tc.wantProtoErrCode {
+						found = true
+					}
+				}
+				assert.True(t, found, "expected proto error %q", tc.wantProtoErrCode)
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, resp)
-				if tc.expectProtoError {
-					// error list must contain our expected code
-					assert.NotEmpty(t, resp.Errors)
-					found := false
-					for _, e := range resp.Errors {
-						if e.Code == tc.expectProtoErrCode {
-							found = true
-							break
-						}
-					}
-					assert.True(t, found, "expected proto error %q", tc.expectProtoErrCode)
-				} else {
-					assert.Empty(t, resp.Errors)
-					// check that the happy‐path response fields match the golden model
-					assert.Equal(t, goldenModel.ID.String(), resp.Id)
-					assert.Equal(t, goldenModel.SignKeySHA3_384, resp.SignKeySha3_384)
-					assert.Equal(t, goldenModel.SnapID, resp.SnapId)
-					assert.Equal(t, goldenModel.SnapName, resp.SnapName)
-					assert.Equal(t, goldenModel.PublisherID, resp.PublisherId)
-					assert.Equal(t, goldenModel.Revision, resp.Revision)
-					assert.Equal(t, goldenModel.Series, resp.Series)
-					assert.Equal(t, tc.req.GetRefreshControl(), resp.RefreshControl)
-					assert.Equal(t, tc.req.GetAliases(), resp.Aliases)
-					assert.Equal(t, tc.req.GetPlugs(), resp.Plugs)
-					assert.Equal(t, tc.req.GetSlots(), resp.Slots)
-					assert.NotEmpty(t, resp.Signature)
-				}
+				assert.Empty(t, resp.Errors)
+
+				// happy‑path fields
+				assert.Equal(t, goldenModel.ID.String(), resp.Id)
+				assert.Equal(t, goldenModel.SignKeySHA3_384, resp.SignKeySha3_384)
+				assert.Equal(t, goldenModel.SnapID, resp.SnapId)
+				assert.Equal(t, goldenModel.SnapName, resp.SnapName)
+				assert.Equal(t, goldenModel.PublisherID, resp.PublisherId)
+				assert.Equal(t, uint32(1), resp.Revision) // first sequence
+				assert.Equal(t, goldenModel.Series, resp.Series)
+				assert.Equal(t, tc.req.GetRefreshControl(), resp.RefreshControl)
+				assert.Equal(t, tc.req.GetAliases(), resp.Aliases)
+				assert.Equal(t, tc.req.GetPlugs(), resp.Plugs)
+				assert.Equal(t, tc.req.GetSlots(), resp.Slots)
+				assert.NotEmpty(t, resp.Signature)
 			}
 
 			mockRepo.AssertExpectations(t)

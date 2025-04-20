@@ -69,8 +69,8 @@ func (m *MockAssertionClient) GetSnapRevisionAssertionBySHA3_384(snapSha3_384 st
 	return nil
 }
 
-func (m *MockAssertionClient) AddSnapDeclarationAssertion(snapID, snapName, publisherID string, revision, series uint32, timestamp time.Time, refreshControl []string, aliases []model.Alias, plugs map[string]model.Plug, slots map[string]model.Slot) *proto.SnapDeclarationAssertionResponse {
-	args := m.Called(snapID, snapName, publisherID, revision, series, timestamp, refreshControl, aliases, plugs, slots)
+func (m *MockAssertionClient) AddSnapDeclarationAssertion(snapID, snapName, publisherID string, series uint32, timestamp time.Time, refreshControl []string, aliases []model.Alias, plugs map[string]model.Plug, slots map[string]model.Slot) *proto.SnapDeclarationAssertionResponse {
+	args := m.Called(snapID, snapName, publisherID, series, timestamp, refreshControl, aliases, plugs, slots)
 	if resp, ok := args.Get(0).(*proto.SnapDeclarationAssertionResponse); ok {
 		return resp
 	}

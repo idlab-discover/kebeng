@@ -98,16 +98,15 @@ message GetAccountKeyAssertionByNameRequest {
 }
 
 message AddSnapDeclarationAssertionRequest {
-  uint32 revision = 1;
-  uint32 series  = 2;
-  string snap_id = 3;
-  string snap_name = 4;
-  string publisher_id = 5;
-  google.protobuf.Timestamp timestamp = 6;
-  repeated string refresh_control = 7;
-  repeated Alias aliases = 8;
-  map<string, PlugRule> plugs = 9;
-  map<string, SlotRule> slots = 10;
+  uint32 series  = 1;
+  string snap_id = 2;
+  string snap_name = 3;
+  string publisher_id = 4;
+  google.protobuf.Timestamp timestamp = 5;
+  repeated string refresh_control = 6;
+  repeated Alias aliases = 7;
+  map<string, PlugRule> plugs = 8;
+  map<string, SlotRule> slots = 9;
 }
 
 message SnapDeclarationAssertionResponse {

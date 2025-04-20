@@ -93,3 +93,12 @@ func (m *MockAssertionRepository) GetSnapDeclarationAssertionBySnapID(el *cerror
 	el.AddCustomError(args.Get(1).(*cerror.CustomError))
 	return nil, args.Get(1).(*cerror.CustomError)
 }
+
+func (m *MockAssertionRepository) GetLatestSnapDeclarationAssertion(el *cerror.ErrorList, snapID string) (*model.SnapDeclarationAssertion, *cerror.CustomError) {
+	args := m.Called(el, snapID)
+	if args.Get(0) != nil {
+		return args.Get(0).(*model.SnapDeclarationAssertion), nil
+	}
+	el.AddCustomError(args.Get(1).(*cerror.CustomError))
+	return nil, args.Get(1).(*cerror.CustomError)
+}

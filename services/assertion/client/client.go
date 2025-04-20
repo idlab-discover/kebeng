@@ -23,7 +23,7 @@ type AssertionClientInterface interface {
 
 	AddAccountKeyAssertion(encoded_public_key, publicKeySha3_384, accountId, name string, since time.Time, until time.Time) *proto.AccountKeyAssertionResponse
 	AddSnapRevisionAssertion(snapSha3_384 string, developerId string, snapEntryId string, snapRevisionSequenceNumber uint32, snapSize uint64, timestamp time.Time) *proto.SnapRevisionAssertionResponse
-	AddSnapDeclarationAssertion(snapID, snapName, publisherID string, revision, series uint32, timestamp time.Time, refreshControl []string, aliases []model.Alias, plugs map[string]model.Plug, slots map[string]model.Slot) *proto.SnapDeclarationAssertionResponse
+	AddSnapDeclarationAssertion(snapID, snapName, publisherID string, series uint32, timestamp time.Time, refreshControl []string, aliases []model.Alias, plugs map[string]model.Plug, slots map[string]model.Slot) *proto.SnapDeclarationAssertionResponse
 
 	GetAccountKeyAssertionByName(name string) *proto.AccountKeyAssertionResponse
 	GetSnapRevisionAssertionBySHA3_384(snapSha3_384 string) *proto.SnapRevisionAssertionResponse
@@ -184,12 +184,9 @@ func (c *AssertionClient) AddSnapRevisionAssertion(snapSha3_384, developerId, sn
 	return resp
 }
 
-func (c *AssertionClient) AddSnapDeclarationAssertion(snapID, snapName, publisherID string, revision, series uint32, timestamp time.Time, refreshControl []string, aliases []model.Alias, plugs map[string]model.Plug, slots map[string]model.Slot) *proto.SnapDeclarationAssertionResponse {
+func (c *AssertionClient) AddSnapDeclarationAssertion(snapID, snapName, publisherID string, series uint32, timestamp time.Time, refreshControl []string, aliases []model.Alias, plugs map[string]model.Plug, slots map[string]model.Slot) *proto.SnapDeclarationAssertionResponse {
 	el := cerror.NewErrorList()
 	// check input
-	if revision == 0 {
-		el.Add(cerror.InvalidField, "revision is required")
-	}
 	if series == 0 {
 		el.Add(cerror.InvalidField, "series is required")
 	}
@@ -210,7 +207,6 @@ func (c *AssertionClient) AddSnapDeclarationAssertion(snapID, snapName, publishe
 	}
 
 	req := &proto.AddSnapDeclarationAssertionRequest{
-		Revision:       revision,
 		Series:         series,
 		SnapId:         snapID,
 		SnapName:       snapName,
