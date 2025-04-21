@@ -192,7 +192,7 @@ func (h *testHandler) loadInStoreDataInDB(ctx context.Context, storeTestData *Te
 			return fmt.Errorf("failed to get account ID: %v", err)
 		}
 		// dry run on false to actually insert
-		registerSnapResp := h.StoreClient.RegisterSnapName(entry.Name, entry.Private, entry.Store, false, accID)
+		registerSnapResp := h.StoreClient.RegisterSnapName(entry.Name, "", "", "", entry.Private, "", 0, entry.Store, "", false, accID)
 		if len(registerSnapResp.Errors) > 0 {
 			return fmt.Errorf("failed to register snap name: %v", registerSnapResp.Errors)
 		}
