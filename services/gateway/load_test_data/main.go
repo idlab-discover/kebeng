@@ -220,7 +220,7 @@ func (h *testHandler) loadInStoreDataInDB(ctx context.Context, storeTestData *Te
 			return fmt.Errorf("failed to get snap entry ID: %v", err)
 		}
 
-		addUploadResp := h.StoreClient.AddUpload(entry.Name, snapEntryId, "processed", accID, uploadResp.GetTempFileName())
+		addUploadResp := h.StoreClient.AddUpload(snapEntryId, accID, entry.Name, "processed", uploadResp.GetTempFileName(), 1)
 		if len(addUploadResp.Errors) > 0 {
 			return fmt.Errorf("failed to add upload: %v", addUploadResp.Errors)
 		}
