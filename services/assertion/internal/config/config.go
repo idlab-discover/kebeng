@@ -24,7 +24,7 @@ type Config struct {
 
 	RootKey             asserts.PrivateKey
 	RootKeyPath         string `mapstructure:"root_key_path" yaml:"root_key_path"`
-	rootAccountIDString string `mapstructure:"root_account_id" yaml:"root_account_id"`
+	RootAccountIDString string `mapstructure:"root_account_id" yaml:"root_account_id"`
 	RootAccountID       uuid.UUID
 
 	AuthorityID string `mapstructure:"authority_id" yaml:"authority_id"`
@@ -73,9 +73,9 @@ func LoadConfig() (*Config, error) {
 	cfg.RootKey = rootKey
 
 	// Parse the root account ID from string to UUID.
-	rootAccountID, err := uuid.Parse(cfg.rootAccountIDString)
+	rootAccountID, err := uuid.Parse(cfg.RootAccountIDString)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse root account ID %s: %v", cfg.rootAccountIDString, err)
+		return nil, fmt.Errorf("failed to parse root account ID %s: %v", cfg.RootAccountIDString, err)
 	}
 	cfg.RootAccountID = rootAccountID
 
@@ -138,10 +138,10 @@ func (c *Config) checkConfig() error {
 	if c.StoreName == "" {
 		errs = append(errs, "StoreName is required")
 	}
-	if c.rootAccountIDString == "" {
+	if c.RootAccountIDString == "" {
 		errs = append(errs, "RootAccountID is required")
 	}
-	if _, err := uuid.Parse(c.rootAccountIDString); err != nil {
+	if _, err := uuid.Parse(c.RootAccountIDString); err != nil {
 		errs = append(errs, "RootAccountID must be a valid UUID")
 	}
 
