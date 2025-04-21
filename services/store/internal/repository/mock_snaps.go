@@ -51,8 +51,8 @@ func (m *MockSnapsRepository) AddTrack(entryId uuid.UUID, trackName string, el *
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
-func (m *MockSnapsRepository) AddUpload(snapName string, entryId uuid.UUID, status string, accountId uuid.UUID, unscannedFileName string, el *cerror.ErrorList) (*models.SnapUpload, *cerror.CustomError) {
-	args := m.Called(snapName, entryId, status, accountId, unscannedFileName, el)
+func (m *MockSnapsRepository) AddUpload(entryId uuid.UUID, accountId uuid.UUID, snapName, status, unscannedFileName string, revision uint32, el *cerror.ErrorList) (*models.SnapUpload, *cerror.CustomError) {
+	args := m.Called(entryId, accountId, snapName, status, unscannedFileName, revision, el)
 	if args.Get(0) != nil {
 		return args.Get(0).(*models.SnapUpload), nil
 	}

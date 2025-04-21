@@ -216,13 +216,15 @@ message AddUploadRequest {
     string status = 3;
     string account_id = 4;
     string unscanned_file_name = 5;
+    uint32 revision = 6;
 }
 
 message AddUploadResponse {
     string id = 1;
     string snap_name = 2;
     string status = 3;
-    repeated proto.Error errors = 4;
+    uint32 revision = 4;
+    repeated proto.Error errors = 5;
 }
 
 message GetUploadStatusRequest {
@@ -232,7 +234,7 @@ message GetUploadStatusRequest {
 message GetUploadStatusResponse {
     string upload_id = 1;
     bool processed = 2;
-    optional uint64 revision = 3;
+    uint32 revision = 3;
     repeated proto.Error errors = 4;
 }
 

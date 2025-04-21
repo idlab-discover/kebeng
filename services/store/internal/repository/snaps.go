@@ -20,7 +20,7 @@ type ISnapsRepository interface {
 	AddDefaultChannels(snapEntryId uuid.UUID, snapTrackId uuid.UUID, errorList *cerror.ErrorList) *cerror.CustomError
 	AddRevision(entryId uuid.UUID, trackId uuid.UUID, channelId uuid.UUID, snapName string, size uint64, sequenceNumber uint32, architectures []string, sha3_384_encoded string, minioFilePath string, errorList *cerror.ErrorList) (*models.SnapRevision, *cerror.CustomError)
 	AddTrack(entryId uuid.UUID, trackName string, errorList *cerror.ErrorList) (*models.SnapTrack, *cerror.CustomError)
-	AddUpload(snapName string, entryId uuid.UUID, status string, accountId uuid.UUID, unscannedFileName string, errorList *cerror.ErrorList) (*models.SnapUpload, *cerror.CustomError)
+	AddUpload(entryId uuid.UUID, accountId uuid.UUID, snapName string, status string, unscannedFileName string, revision uint32, errorList *cerror.ErrorList) (*models.SnapUpload, *cerror.CustomError)
 	RegisterSnap(snapName string, snapType string, confinement string, base string, isPrivate bool, status string, price float64, storeName string, iconURL string, accountId uuid.UUID, errorList *cerror.ErrorList) (*models.SnapEntry, *cerror.CustomError)
 
 	// READ
@@ -148,20 +148,21 @@ func (sp *SnapsRepository) AddTrack(entryId uuid.UUID, trackName string, el *cer
 
 }
 
-func (sp *SnapsRepository) AddUpload(snapName string, entryId uuid.UUID, status string, accountId uuid.UUID, unscannedFileName string, el *cerror.ErrorList) (*models.SnapUpload, *cerror.CustomError) {
+func (sp *SnapsRepository) AddUpload(entryId uuid.UUID, accountId uuid.UUID, snapName, status, unscannedFileName string, revision uint32, el *cerror.ErrorList) (*models.SnapUpload, *cerror.CustomError) {
 	upload := models.SnapUpload{
-		SnapName:          snapName,
 		EntryID:           entryId,
-		Status:            status,
 		AccountID:         accountId,
 		UnscannedFileName: unscannedFileName,
+		SnapName:          snapName,
+		Status:            status,
+		Revision:          revision,
 	}
 	query := `
-		INSERT INTO upload (snap_name, entry_id, status, account_id, unscanned_file_name)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO upload (snap_name, entry_id, status, account_id, unscanned_file_name, revision)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id
 	`
-	err := sp.db.Get(&upload, query, upload.SnapName, upload.EntryID, upload.Status, upload.AccountID, upload.UnscannedFileName)
+	err := sp.db.Get(&upload, query, upload.SnapName, upload.EntryID, upload.Status, upload.AccountID, upload.UnscannedFileName, upload.Revision)
 	if err != nil {
 		cerr := cerror.ConvertError(err, fmt.Sprintf("error adding upload for snap with id = '%s'", entryId.String()))
 		logrus.Error(cerr)

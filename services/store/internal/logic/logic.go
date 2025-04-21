@@ -643,7 +643,7 @@ func (s *StoreLogic) AddUpload(ctx context.Context, req *proto.AddUploadRequest)
 	}
 
 	// Add upload to the database
-	snapUpload, cerr := s.repo.AddUpload(req.SnapName, entryId, req.Status, accountId, req.UnscannedFileName, el)
+	snapUpload, cerr := s.repo.AddUpload(entryId, accountId, req.SnapName, req.Status, req.UnscannedFileName, req.Revision, el)
 	if cerr != nil {
 		// Already logged in AddUpload (repository)
 		return &proto.AddUploadResponse{Errors: el.ConvertToProtoErrorList()}, nil
@@ -653,6 +653,7 @@ func (s *StoreLogic) AddUpload(ctx context.Context, req *proto.AddUploadRequest)
 		Id:       snapUpload.ID.String(),
 		SnapName: snapUpload.SnapName,
 		Status:   snapUpload.Status,
+		Revision: snapUpload.Revision,
 	}, nil
 }
 

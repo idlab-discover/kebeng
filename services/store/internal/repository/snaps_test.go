@@ -908,6 +908,7 @@ func TestAddUpload(t *testing.T) {
 		accountId         uuid.UUID
 		status            string
 		unscannedFileName string
+		revision          uint32
 		el                *cerror.ErrorList
 		expectError       bool
 		expectedErrorCode string
@@ -919,6 +920,7 @@ func TestAddUpload(t *testing.T) {
 			accountId:         mockUUID,
 			status:            "pending",
 			unscannedFileName: "mock-file",
+			revision:          1,
 			el:                cerror.NewErrorList(),
 			expectError:       false,
 		},
@@ -926,7 +928,7 @@ func TestAddUpload(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			upload, err := globalRepo.AddUpload(tt.snapName, tt.entryId, tt.status, tt.accountId, tt.unscannedFileName, tt.el)
+			upload, err := globalRepo.AddUpload(tt.entryId, tt.accountId, tt.snapName, tt.status, tt.unscannedFileName, tt.revision, tt.el)
 			if tt.expectError {
 				assert.NotNil(t, err)
 				if err != nil {
