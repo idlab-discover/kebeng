@@ -3,16 +3,28 @@
     {
       "id": "test_entry",
       "name": "test",
+      "type": "app",
+      "confinement": "strict",
+      "base": "core",
       "private": false,
-      "account_id": "acc1",
-      "store": "kebeng"
+      "status": "active",
+      "price": 0.0,
+      "store": "kebeng",
+      "icon_url": "http://example.com/icon.png",
+      "account_id": "acc1"
     },
     {
       "id": "core_entry",
       "name": "core",
+      "type": "base",
+      "confinement": "strict",
+      "base": "",
       "private": false,
-      "account_id": "acc2",
-      "store": "kebeng"
+      "status": "active",
+      "price": 0.0,
+      "store": "kebeng",
+      "icon_url": "http://example.com/core-icon.png",
+      "account_id": "acc2"
     }
   ]
 }

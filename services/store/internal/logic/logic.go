@@ -73,7 +73,7 @@ func (s *StoreLogic) RegisterSnapName(ctx context.Context, req *proto.RegisterSn
 		el.Add(cerror.InvalidField, "invalid account id")
 		return &proto.RegisterSnapNameResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
-	snapEntry, cerr = s.repo.RegisterSnap(req.SnapName, req.IsPrivate, req.Store, accountId, el)
+	snapEntry, cerr = s.repo.RegisterSnap(req.SnapName, req.SnapType, req.Confinement, req.Base, req.IsPrivate, req.Status, req.Price, req.Store, req.IconUrl, accountId, el)
 	if cerr != nil {
 		// Already logged in RegisterSnap (repository)
 		return &proto.RegisterSnapNameResponse{Errors: el.ConvertToProtoErrorList()}, nil
@@ -643,7 +643,7 @@ func (s *StoreLogic) AddUpload(ctx context.Context, req *proto.AddUploadRequest)
 	}
 
 	// Add upload to the database
-	snapUpload, cerr := s.repo.AddUpload(req.SnapName, entryId, req.Status, accountId, req.UnscannedFileName, el)
+	snapUpload, cerr := s.repo.AddUpload(entryId, accountId, req.SnapName, req.Status, req.UnscannedFileName, req.Revision, el)
 	if cerr != nil {
 		// Already logged in AddUpload (repository)
 		return &proto.AddUploadResponse{Errors: el.ConvertToProtoErrorList()}, nil
@@ -653,6 +653,7 @@ func (s *StoreLogic) AddUpload(ctx context.Context, req *proto.AddUploadRequest)
 		Id:       snapUpload.ID.String(),
 		SnapName: snapUpload.SnapName,
 		Status:   snapUpload.Status,
+		Revision: snapUpload.Revision,
 	}, nil
 }
 
@@ -947,7 +948,7 @@ func (s *StoreLogic) GetObjectCustomMetadata(ctx context.Context, req *proto.Get
 	}
 
 	return &proto.GetObjectCustomMetadataResponse{
-		Sha3_384: *metadata.Sha3_384,
+		Sha3_384Encoded: metadata.SHA3_384_Encoded,
 	}, nil
 }
 

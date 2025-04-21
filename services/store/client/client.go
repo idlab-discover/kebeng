@@ -18,7 +18,7 @@ import (
 
 type StoreClientInterface interface {
 	Close()
-	RegisterSnapName(snapName string, isPrivate bool, storeName string, dryRun bool, accountId uuid.UUID) *proto.RegisterSnapNameResponse
+	RegisterSnapName(snapName string, snapType string, confinement string, base string, isPrivate bool, status string, price float64, storeName string, iconUrl string, dryRun bool, accountId uuid.UUID) *proto.RegisterSnapNameResponse
 	GetEntries(entries *proto.GetEntriesRequest) *proto.GetEntriesResponse
 	GetRevisions(revisions *proto.GetRevisionsRequest) *proto.GetRevisionsResponse
 	GetEntriesByAccountID(accountID string) *proto.GetEntriesResponse
@@ -26,7 +26,7 @@ type StoreClientInterface interface {
 	GetLatestRevisionByTrackAndChannel(snapName, track, channel string) *proto.GetRevisionResponse
 	SnapDownload(revisionId string) *proto.SnapDownloadCompleteResponse
 	UnscannedUpload(ctx context.Context, snapFile io.Reader) *proto.UnscannedUploadCompleteResponse
-	AddUpload(snapName string, entryId uuid.UUID, status string, accountId uuid.UUID, unscannedFileName string) *proto.AddUploadResponse
+	AddUpload(entryId uuid.UUID, accountId uuid.UUID, snapName string, status string, unscannedFileName string, revision uint32) *proto.AddUploadResponse
 	GetUploadStatus(uploadId string) *proto.GetUploadStatusResponse
 	AddRevision(snapName string, sha3_384_encoded string, size uint64, architectures []string, tracksAndChannels []string, unscannedFileName string) *proto.AddRevisionResponse
 	GetObjectCustomMetadata(bucket string, objectKey string) *proto.GetObjectCustomMetadataResponse
@@ -62,13 +62,19 @@ func (c *StoreClient) Close() {
 	}
 }
 
-func (c *StoreClient) RegisterSnapName(snapName string, isPrivate bool, storeName string, dryRun bool, accountId uuid.UUID) *proto.RegisterSnapNameResponse {
+func (c *StoreClient) RegisterSnapName(snapName string, snapType string, confinement string, base string, isPrivate bool, status string, price float64, storeName string, iconUrl string, dryRun bool, accountId uuid.UUID) *proto.RegisterSnapNameResponse {
 	req := &proto.RegisterSnapNameRequest{
-		SnapName:  snapName,
-		IsPrivate: isPrivate,
-		Store:     storeName,
-		DryRun:    dryRun,
-		AccountId: accountId.String(),
+		SnapName:    snapName,
+		SnapType:    snapType,
+		Confinement: confinement,
+		Base:        base,
+		IsPrivate:   isPrivate,
+		Status:      status,
+		Price:       price,
+		Store:       storeName,
+		IconUrl:     iconUrl,
+		DryRun:      dryRun,
+		AccountId:   accountId.String(),
 	}
 
 	resp, err := c.client.RegisterSnapName(context.Background(), req)
@@ -234,13 +240,14 @@ func (c *StoreClient) UnscannedUpload(ctx context.Context, snapFile io.Reader) *
 	return resp
 }
 
-func (c *StoreClient) AddUpload(snapName string, entryId uuid.UUID, status string, accountId uuid.UUID, unscannedFileName string) *proto.AddUploadResponse {
+func (c *StoreClient) AddUpload(entryId, accountId uuid.UUID, snapName, status, unscannedFileName string, revision uint32) *proto.AddUploadResponse {
 	req := &proto.AddUploadRequest{
-		SnapName:          snapName,
 		EntryId:           entryId.String(),
-		Status:            status,
 		AccountId:         accountId.String(),
 		UnscannedFileName: unscannedFileName,
+		SnapName:          snapName,
+		Status:            status,
+		Revision:          revision,
 	}
 
 	resp, err := c.client.AddUpload(context.Background(), req)

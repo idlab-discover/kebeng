@@ -13,6 +13,13 @@
       "username": "jroe",
       "email": "jroe@example.com",
       "hashed_password": "$2b$12$eImiTXuWVxfS5Z0vE1p6eO"
+    },
+    {
+      "id": "acc3",
+      "display_name": "Alice Smith",
+      "username": "asmith",
+      "email": "test@gmail.com",
+      "hashed_password": "$2b$12$eImiTXuWVxfS5Z0vE1p6eO"
     }
   ],
   "keys": [
@@ -27,6 +34,12 @@
       "name": "key2-name",
       "account_id": "acc2",
       "account_email": "jroe@example.com"
+    },
+    {
+      "id": "key3",
+      "name": "key3-name",
+      "account_id": "acc3",
+      "account_email": "test@gmail.com"
     }
   ],
   "ssh_keys": [
