@@ -120,3 +120,12 @@ func (m *MockAssertionRepository) GetAccountAssertionByAccountID(el *cerror.Erro
 	el.AddCustomError(args.Get(1).(*cerror.CustomError))
 	return nil, args.Get(1).(*cerror.CustomError)
 }
+
+func (m *MockAssertionRepository) GetLatestAccountAssertionByAccountID(el *cerror.ErrorList, accountID uuid.UUID) (*model.AccountAssertion, *cerror.CustomError) {
+	args := m.Called(el, accountID)
+	if args.Get(0) != nil {
+		return args.Get(0).(*model.AccountAssertion), nil
+	}
+	el.AddCustomError(args.Get(1).(*cerror.CustomError))
+	return nil, args.Get(1).(*cerror.CustomError)
+}
