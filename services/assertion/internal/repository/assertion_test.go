@@ -652,3 +652,156 @@ func TestGetSnapDeclarationAssertionByID(t *testing.T) {
 		})
 	}
 }
+
+func TestAddAccountAssertion(t *testing.T) {
+	tests := []struct {
+		name            string
+		authorityID     string
+		displayName     string
+		username        string
+		validation      string
+		accountID       uuid.UUID
+		revision        uint32
+		timestamp       time.Time
+		signKey         string
+		signature       string
+		expectDuplicate bool   // whether we expect the second insert to fail
+		expectedErrCode string // only used if expectDuplicate==true
+	}{
+		{
+			name:        "successful insert",
+			authorityID: "auth-1",
+			displayName: "Alice",
+			username:    "alice123",
+			validation:  "verified",
+			accountID:   uuid.New(),
+			revision:    1,
+			timestamp:   time.Now().UTC(),
+			signKey:     "signkey-abc",
+			signature:   "sigdata-xyz",
+			// expectDuplicate false => we only do one insert
+		},
+		{
+			name:            "duplicate insert",
+			authorityID:     "auth-1",
+			displayName:     "Alice",
+			username:        "alice123",
+			validation:      "verified",
+			accountID:       uuid.New(),
+			revision:        1,
+			timestamp:       time.Now().UTC(),
+			signKey:         "signkey-dup",
+			signature:       "sigdata-dup",
+			expectDuplicate: true,
+			expectedErrCode: cerror.AlreadyRegistered,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			el := cerror.NewErrorList()
+
+			// First insertion should always succeed.
+			rec1, cerr := globalRepo.AddAccountAssertion(el,
+				tt.authorityID,
+				tt.displayName,
+				tt.username,
+				tt.validation,
+				tt.accountID,
+				tt.revision,
+				tt.timestamp,
+				tt.signKey,
+				tt.signature,
+			)
+			require.Nil(t, cerr, "first insertion should succeed")
+			require.NotNil(t, rec1, "first insertion should return a record")
+
+			if tt.expectDuplicate {
+				// Second insertion with same accountID+revision should now fail.
+				rec2, err2 := globalRepo.AddAccountAssertion(el,
+					tt.authorityID,
+					tt.displayName,
+					tt.username,
+					tt.validation,
+					tt.accountID,
+					tt.revision,
+					tt.timestamp,
+					tt.signKey,
+					tt.signature,
+				)
+				assert.NotNil(t, err2, "second insertion should error")
+				assert.True(t, el.HasError(), "error list should be non‑empty")
+				assert.Equal(t, tt.expectedErrCode, err2.GetCode(), "error code must match")
+				assert.Nil(t, rec2, "no record should be returned on duplicate")
+			}
+
+			// Clean up so next subtest starts fresh.
+			_, _ = globalDB.Exec(`DELETE FROM account_assertion`)
+		})
+	}
+}
+
+func TestGetAccountAssertionByAccountID(t *testing.T) {
+	tests := []struct {
+		name            string
+		insertRecord    bool
+		accountID       uuid.UUID
+		expectError     bool
+		expectedErrCode string
+	}{
+		{
+			name:         "found",
+			insertRecord: true,
+			accountID:    uuid.New(),
+			expectError:  false,
+		},
+		{
+			name:            "not found",
+			insertRecord:    false,
+			accountID:       uuid.New(),
+			expectError:     true,
+			expectedErrCode: cerror.ResourceNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			el := cerror.NewErrorList()
+
+			// if we need to test found, insert a row first
+			if tt.insertRecord {
+				_, err := globalDB.Exec(`
+					INSERT INTO account_assertion
+					(id, authority_id, display_name, username, validation,
+					 account_id, revision, timestamp, sign_key_sha3_384, signature)
+					VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+					uuid.New(),
+					"auth-X", "Bob", "bob123", "ok",
+					tt.accountID, 3, time.Now().UTC(), "signkey-X", "sig-X",
+				)
+				require.NoError(t, err)
+			}
+
+			rec, cerr := globalRepo.GetAccountAssertionByAccountID(el, tt.accountID)
+
+			if tt.expectError {
+				assert.NotNil(t, cerr)
+				assert.True(t, el.HasError())
+				assert.Equal(t, tt.expectedErrCode, cerr.GetCode())
+				assert.Nil(t, rec)
+			} else {
+				assert.Nil(t, cerr)
+				assert.False(t, el.HasError())
+				require.NotNil(t, rec)
+				assert.Equal(t, tt.accountID, rec.AccountID)
+				assert.Equal(t, uint32(3), rec.Revision)
+				assert.Equal(t, "Bob", rec.DisplayName)
+				assert.Equal(t, "bob123", rec.Username)
+				assert.Equal(t, "ok", rec.Validation)
+			}
+
+			// clean up
+			_, _ = globalDB.Exec(`DELETE FROM account_assertion`)
+		})
+	}
+}
