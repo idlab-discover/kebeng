@@ -40,11 +40,15 @@ func ptrTimeToPtrTimestamp(t *time.Time) *timestamppb.Timestamp {
 
 func (a *AccountService) AddAccount(ctx context.Context, req *proto.AddAccountRequest) (*proto.AccountResponse, error) {
 	el := make([]*cerrorpb.Error, 0)
+	// TODO: figure out where validation field has to be set for now set to valid <unproven | certified >
+	// set default to unproven
+	validation := "unproven"
 	account := &models.Account{
 		DisplayName:  req.DisplayName,
 		Username:     req.Username,
 		Email:        req.Email,
 		PasswordHash: req.HashedPassword,
+		Validation:   &validation,
 	}
 
 	createdAccount, err := a.repo.AddAccount(ctx, account)
