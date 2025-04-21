@@ -33,8 +33,8 @@ func (m *MockSnapsRepository) AddDefaultChannels(snapEntryId uuid.UUID, snapTrac
 	return nil
 }
 
-func (m *MockSnapsRepository) AddRevision(entryId uuid.UUID, trackId uuid.UUID, channelId uuid.UUID, snapName string, size uint64, sequenceNumber uint32, architectures []string, sha3_384 string, minioFilePath string, el *cerror.ErrorList) (*models.SnapRevision, *cerror.CustomError) {
-	args := m.Called(entryId, trackId, channelId, snapName, size, sequenceNumber, architectures, sha3_384, minioFilePath, el)
+func (m *MockSnapsRepository) AddRevision(entryId uuid.UUID, trackId uuid.UUID, channelId uuid.UUID, snapName string, size uint64, sequenceNumber uint32, architectures []string, sha3_384_encoded string, minioFilePath string, el *cerror.ErrorList) (*models.SnapRevision, *cerror.CustomError) {
+	args := m.Called(entryId, trackId, channelId, snapName, size, sequenceNumber, architectures, sha3_384_encoded, minioFilePath, el)
 	if args.Get(0) != nil {
 		return args.Get(0).(*models.SnapRevision), nil
 	}
