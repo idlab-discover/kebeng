@@ -229,77 +229,83 @@ func TestAddAccountKeyAssertion(t *testing.T) {
 	}
 }
 
-func TestGetAccountKeyAssertionByAccountName(t *testing.T) {
+func TestGetAccountKeyAssertionByPublicKeySha(t *testing.T) {
 	tests := []struct {
-		name          string
-		assertionName string
-		preInsert     bool // if true, insert a record into the DB for this accountID before retrieval
-		expectError   bool
-		errorCode     string // expected error code (if any)
+		name              string
+		publicKeySha      string
+		assertionName     string
+		preInsert         bool // if true, insert before retrieval
+		expectError       bool
+		expectedErrorCode string
 	}{
 		{
 			name:          "Successful Get Account-Key Assertion",
-			assertionName: "KeyAccountAssertion",
-
-			preInsert:   true,
-			expectError: false,
+			publicKeySha:  "PUBKEY123",
+			assertionName: "MyKeyAssertion",
+			preInsert:     true,
+			expectError:   false,
 		},
 		{
-			name:          "Fail Get Account-Key Assertion for Nonexistent Account",
-			assertionName: "NonExistentAccountAssertion",
-			preInsert:     false,
-			expectError:   true,
-			errorCode:     cerror.ResourceNotFound,
+			name:              "Nonexistent Public Key",
+			publicKeySha:      "NO_SUCH_KEY",
+			assertionName:     "",
+			preInsert:         false,
+			expectError:       true,
+			expectedErrorCode: cerror.ResourceNotFound,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// If preInsert is true, insert a record with this accountID.
+			// optional insert
 			if tt.preInsert {
-				testID := uuid.New() // ID for the record to be inserted.
-				insertQuery := `
-				INSERT INTO account_key_assertion (
-					id, authority_id, public_key_sha3_384, sign_key_sha3_384,
-					name, revision, account_id, since, until, body, body_length, signature
-				) VALUES (
-					$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
-				)`
-				_, err := globalDB.Exec(insertQuery,
-					testID,
+				recID := uuid.New()
+				accountID := uuid.New()
+				// revision=2 just to test non‑1
+				_, err := globalDB.Exec(`
+                    INSERT INTO account_key_assertion (
+                      id, authority_id, public_key_sha3_384, sign_key_sha3_384,
+                      name, revision, account_id, since, until, body, body_length, signature
+                    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+					recID,
 					"canonical",
-					"BWDEoaqyr25nF5SNCvEv2v7QnM9QsfCc0PBMYD_i2NGSQ32EF2d4D0hqUel3m8ul",
-					"-CvQKAwRQ5h3Ffn10FILJoEZUXOv6km9FwA80-Rcj-f-6jadQ89VRswHNiEB9Lxk",
+					tt.publicKeySha,
+					"STORE_SIGN_KEY_SHA3",
 					tt.assertionName,
 					2,
-					uuid.New(),
-					time.Date(2016, 4, 1, 0, 0, 0, 0, time.UTC),
-					time.Date(2016, 4, 1, 0, 0, 0, 0, time.UTC),
-					[]byte("test-body-data"),
-					717,
-					"AcLBtest-signature-data",
+					accountID,
+					time.Date(2025, 4, 21, 0, 0, 0, 0, time.UTC),
+					time.Date(2026, 4, 21, 0, 0, 0, 0, time.UTC),
+					[]byte("dummy-body"),
+					1234,
+					"DUMMY_SIGNATURE",
 				)
-				assert.NoError(t, err, "Failed to insert test account key assertion")
+				require.NoError(t, err, "setup insert")
 			}
 
-			// Now, try to retrieve the assertion by accountID.
 			el := cerror.NewErrorList()
-			record, cerr := globalRepo.GetAccountKeyAssertionByName(el, tt.assertionName)
+			rec, cerr := globalRepo.GetAccountKeyAssertionByPublicKeySha(el, tt.publicKeySha)
 
 			if tt.expectError {
-				assert.NotNil(t, cerr, "Expected an error for non-existent account")
-				assert.True(t, el.HasError(), "Expected error list to contain errors")
-				if cerr != nil {
-					assert.Equal(t, tt.errorCode, cerr.GetCode(), "Error code should match expected")
-				}
+				assert.NotNil(t, cerr, "expected error")
+				assert.True(t, el.HasError(), "error list should be non‑empty")
+				assert.Equal(t, tt.expectedErrorCode, cerr.GetCode())
+				assert.Nil(t, rec, "should return no record")
 			} else {
-				assert.Nil(t, cerr, "Did not expect an error for existing account")
-				assert.False(t, el.HasError(), "Expected no errors in the error list")
-				assert.NotNil(t, record, "Expected a non-nil assertion record")
-				assert.Equal(t, tt.assertionName, record.Name, "Account ID should match")
-				assert.Equal(t, "canonical", record.AuthorityID, "AuthorityID should match")
-				assert.Equal(t, uint32(2), record.RevisionSequenceNumber, "Revision should match")
+				assert.Nil(t, cerr, "did not expect repo error")
+				assert.False(t, el.HasError(), "no errors in list")
+				require.NotNil(t, rec, "expected record")
+
+				// verify fields
+				assert.Equal(t, "canonical", rec.AuthorityID)
+				assert.Equal(t, tt.publicKeySha, rec.PublicKeySHA3_384)
+				assert.Equal(t, tt.assertionName, rec.Name)
+				assert.Equal(t, uint32(2), rec.RevisionSequenceNumber)
+				// and so on...
 			}
+
+			// clean up
+			_, _ = globalDB.Exec(`DELETE FROM account_key_assertion`)
 		})
 	}
 }
