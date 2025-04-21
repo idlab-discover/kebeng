@@ -21,7 +21,7 @@ type ISnapsRepository interface {
 	AddRevision(entryId uuid.UUID, trackId uuid.UUID, channelId uuid.UUID, snapName string, size uint64, sequenceNumber uint32, architectures []string, sha3_384_encoded string, minioFilePath string, errorList *cerror.ErrorList) (*models.SnapRevision, *cerror.CustomError)
 	AddTrack(entryId uuid.UUID, trackName string, errorList *cerror.ErrorList) (*models.SnapTrack, *cerror.CustomError)
 	AddUpload(snapName string, entryId uuid.UUID, status string, accountId uuid.UUID, unscannedFileName string, errorList *cerror.ErrorList) (*models.SnapUpload, *cerror.CustomError)
-	RegisterSnap(snapName string, isPrivate bool, store string, accountId uuid.UUID, errorList *cerror.ErrorList) (*models.SnapEntry, *cerror.CustomError)
+	RegisterSnap(snapName string, snapType string, confinement string, base string, isPrivate bool, status string, price float64, storeName string, iconURL string, accountId uuid.UUID, errorList *cerror.ErrorList) (*models.SnapEntry, *cerror.CustomError)
 
 	// READ
 	GetAllSnapEntries(errorList *cerror.ErrorList) (*[]models.SnapEntry, *cerror.CustomError)
@@ -174,17 +174,17 @@ func (sp *SnapsRepository) AddUpload(snapName string, entryId uuid.UUID, status 
 
 // QUESTION: maybe we can just internaly call this AddEntry -> clearer name?
 // QUESTION: right now an snap entry is bound to an account. Wouldn't it be better to bound snap revisions to an account?
-func (sp *SnapsRepository) RegisterSnap(snapName string, isPrivate bool, storeName string, accountId uuid.UUID, el *cerror.ErrorList) (*models.SnapEntry, *cerror.CustomError) {
+func (sp *SnapsRepository) RegisterSnap(snapName string, snapType string, confinement string, base string, isPrivate bool, status string, price float64, storeName string, iconURL string, accountId uuid.UUID, el *cerror.ErrorList) (*models.SnapEntry, *cerror.CustomError) {
 	snapEntry := models.SnapEntry{
 		Name:        snapName,
-		Type:        "", // TODO: add as parameter
-		Confinement: "", // TODO: add as parameter
-		Base:        "", // TODO: add as parameter
+		Type:        snapType,
+		Confinement: confinement,
+		Base:        base,
 		Private:     isPrivate,
-		Status:      "", // TODO: add as parameter
-		Price:       0,  // TODO: add as parameter
+		Status:      status,
+		Price:       price,
 		Store:       storeName,
-		IconURL:     "", // TODO: add as parameter
+		IconURL:     iconURL,
 		AccountID:   accountId,
 	}
 

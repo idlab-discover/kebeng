@@ -60,8 +60,8 @@ func (m *MockSnapsRepository) AddUpload(snapName string, entryId uuid.UUID, stat
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
-func (m *MockSnapsRepository) RegisterSnap(snapName string, isPrivate bool, storeName string, accountId uuid.UUID, el *cerror.ErrorList) (*models.SnapEntry, *cerror.CustomError) {
-	args := m.Called(snapName, isPrivate, storeName, accountId, el)
+func (m *MockSnapsRepository) RegisterSnap(snapName string, snapType string, confinement string, base string, isPrivate bool, status string, price float64, storeName string, iconURL string, accountId uuid.UUID, el *cerror.ErrorList) (*models.SnapEntry, *cerror.CustomError) {
+	args := m.Called(snapName, snapType, confinement, base, isPrivate, status, price, storeName, iconURL, accountId, el)
 	if args.Get(0) != nil {
 		return args.Get(0).(*models.SnapEntry), nil
 	}
