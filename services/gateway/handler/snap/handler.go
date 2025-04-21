@@ -327,8 +327,8 @@ func (h *Handler) SnapPush(c *gin.Context) {
 	// Get the file name of the unscanned upload from the request body
 	logrus.Debugf("Temp file name: %s", req.UnscannedFileName)
 
-	// Create a new snap upload with status "pending"
-	upload := h.StoreClient.AddUpload(entry.SnapName, parsedEntryUUID, "pending", accountUUID, req.UnscannedFileName)
+	// Create a new snap upload with status "pending" and revision 0
+	upload := h.StoreClient.AddUpload(parsedEntryUUID, accountUUID, entry.SnapName, "pending", req.UnscannedFileName, 0)
 	if len(upload.Errors) > 0 {
 		el.ExtendProtoError(upload.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
@@ -343,7 +343,7 @@ func (h *Handler) SnapPush(c *gin.Context) {
 	})
 
 	// After the status details URL is returned, we can proceed with creating a new revision
-	// We need the sha3_384 hash of the snap package
+	// We need the sha3_384_encoded hash of the snap package
 	metadata := h.StoreClient.GetObjectCustomMetadata("unscanned", req.UnscannedFileName)
 	if len(metadata.Errors) > 0 {
 		el.ExtendProtoError(metadata.Errors)
