@@ -66,7 +66,7 @@ func main() {
 	req := &proto.AddAccountKeyAssertionRequest{
 		EncodedPublicKey:  b64pub,
 		PublicKeySha3_384: cfg.RootKey.PublicKey().ID(),
-		AccountId:         "0b12c7e6-81cf-4095-938e-68a75dcb00b1",
+		AccountId:         cfg.RootAccountID.String(),
 		Name:              "root",
 		Since:             &timestamppb.Timestamp{Seconds: now.Unix()},
 		Until:             &timestamppb.Timestamp{Seconds: now.Add(24 * time.Hour).Unix()},
@@ -74,6 +74,19 @@ func main() {
 	accountKeyAssertion, err := assertionLogic.AddAccountKeyAssertion(ctx, req)
 	if len(accountKeyAssertion.Errors) != 0 {
 		logrus.Fatalf("Failed to create account key assertion: %v", accountKeyAssertion.Errors)
+	}
+
+	// also create a root account assertion
+	req2 := &proto.AddAccountAssertionRequest{
+		AccountId:   cfg.RootAccountID.String(),
+		DisplayName: "kebeng",
+		Username:    "kebeng",
+		Validation:  "certified",
+		Timestamp:   &timestamppb.Timestamp{Seconds: now.Unix()},
+	}
+	accountAssertion, err := assertionLogic.AddAccountAssertion(ctx, req2)
+	if len(accountAssertion.Errors) != 0 {
+		logrus.Fatalf("Failed to create account assertion: %v", accountAssertion.Errors)
 	}
 
 	// start grpc server
