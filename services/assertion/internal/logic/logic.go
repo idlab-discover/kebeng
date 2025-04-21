@@ -326,7 +326,7 @@ func (s *AssertionService) AddAccountAssertion(ctx context.Context, req *proto.A
 	}
 
 	var sequenceNumber uint32
-	latestSnapDeclarationAssertion, cerr := s.repo.GetLatestAccountAssertionByAccountID(el, parsedAccountId)
+	latestAccountAssertion, cerr := s.repo.GetLatestAccountAssertionByAccountID(el, parsedAccountId)
 	if cerr != nil && cerr.GetCode() != cerror.ResourceNotFound {
 		// should have been logged and added to error list in repo function
 		return &proto.AccountAssertionResponse{
@@ -337,7 +337,7 @@ func (s *AssertionService) AddAccountAssertion(ctx context.Context, req *proto.A
 		el.RemoveErrorWithCode(cerror.ResourceNotFound)
 		sequenceNumber = 1
 	} else {
-		sequenceNumber = latestSnapDeclarationAssertion.Revision + 1
+		sequenceNumber = latestAccountAssertion.Revision + 1
 	}
 
 	headers := map[string]any{
