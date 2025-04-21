@@ -26,7 +26,7 @@ type StoreClientInterface interface {
 	GetLatestRevisionByTrackAndChannel(snapName, track, channel string) *proto.GetRevisionResponse
 	SnapDownload(revisionId string) *proto.SnapDownloadCompleteResponse
 	UnscannedUpload(ctx context.Context, snapFile io.Reader) *proto.UnscannedUploadCompleteResponse
-	AddUpload(snapName string, entryId uuid.UUID, status string, accountId uuid.UUID, unscannedFileName string) *proto.AddUploadResponse
+	AddUpload(entryId uuid.UUID, accountId uuid.UUID, snapName string, status string, unscannedFileName string, revision uint32) *proto.AddUploadResponse
 	GetUploadStatus(uploadId string) *proto.GetUploadStatusResponse
 	AddRevision(snapName string, sha3_384_encoded string, size uint64, architectures []string, tracksAndChannels []string, unscannedFileName string) *proto.AddRevisionResponse
 	GetObjectCustomMetadata(bucket string, objectKey string) *proto.GetObjectCustomMetadataResponse
@@ -240,13 +240,14 @@ func (c *StoreClient) UnscannedUpload(ctx context.Context, snapFile io.Reader) *
 	return resp
 }
 
-func (c *StoreClient) AddUpload(snapName string, entryId uuid.UUID, status string, accountId uuid.UUID, unscannedFileName string) *proto.AddUploadResponse {
+func (c *StoreClient) AddUpload(entryId, accountId uuid.UUID, snapName, status, unscannedFileName string, revision uint32) *proto.AddUploadResponse {
 	req := &proto.AddUploadRequest{
-		SnapName:          snapName,
 		EntryId:           entryId.String(),
-		Status:            status,
 		AccountId:         accountId.String(),
 		UnscannedFileName: unscannedFileName,
+		SnapName:          snapName,
+		Status:            status,
+		Revision:          revision,
 	}
 
 	resp, err := c.client.AddUpload(context.Background(), req)

@@ -410,14 +410,22 @@ func TestAddUpload(t *testing.T) {
 				case *cerror.CustomError:
 					switch function {
 					case "AddUpload":
-						mockRepo.On(function, tt.req.SnapName, mock.Anything, tt.req.Status, mock.Anything, mock.Anything, mock.Anything).Return(nil, mockReturn).Once()
+						mockRepo.On(function, mock.Anything, mock.Anything, tt.req.SnapName, tt.req.Status, tt.req.UnscannedFileName, mock.Anything, mock.Anything).Return(nil, mockReturn).Once()
 					default:
 						t.Fatalf("invalid mock return function for CustomError")
 					}
 				case *models.SnapUpload:
 					switch function {
 					case "AddUpload":
-						mockRepo.On(function, tt.req.SnapName, mock.Anything, tt.req.Status, mock.Anything, mock.Anything, mock.Anything).Return(mockReturn, nil).Once()
+						entryID, err := uuid.Parse(tt.req.EntryId)
+						if err != nil {
+							t.Fatalf("invalid UUID format for EntryId: %v", err)
+						}
+						accountID, err := uuid.Parse(tt.req.AccountId)
+						if err != nil {
+							t.Fatalf("invalid UUID format for AccountId: %v", err)
+						}
+						mockRepo.On(function, entryID, accountID, tt.req.SnapName, tt.req.Status, tt.req.UnscannedFileName, mock.Anything, mock.Anything).Return(mockReturn, nil).Once()
 					default:
 						t.Fatalf("invalid mock return function for SnapUpload")
 					}
