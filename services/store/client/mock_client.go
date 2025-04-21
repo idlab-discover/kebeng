@@ -133,8 +133,8 @@ func (m *MockStoreClient) GetUploadStatus(uploadId string) *proto.GetUploadStatu
 	return nil
 }
 
-func (m *MockStoreClient) AddRevision(snapName string, sha3384 string, size uint64, architectures []string, tracksAndChannels []string, unscannedFileName string) *proto.AddRevisionResponse {
-	args := m.Called(snapName, sha3384, size, architectures, tracksAndChannels, unscannedFileName)
+func (m *MockStoreClient) AddRevision(snapName string, sha3_384_encoded string, size uint64, architectures []string, tracksAndChannels []string, unscannedFileName string) *proto.AddRevisionResponse {
+	args := m.Called(snapName, sha3_384_encoded, size, architectures, tracksAndChannels, unscannedFileName)
 	if resp, ok := args.Get(0).(*proto.AddRevisionResponse); ok {
 		return resp
 	}
@@ -149,7 +149,7 @@ func (m *MockStoreClient) GetObjectCustomMetadata(bucket string, objectKey strin
 	return nil
 }
 
-func (m *MockStoreClient) UpdateUploadStatus(uploadId string, status string, revision uint64, el *cerror.ErrorList) *proto.UpdateUploadStatusResponse {
+func (m *MockStoreClient) UpdateUploadStatus(uploadId string, status string, revision uint32, el *cerror.ErrorList) *proto.UpdateUploadStatusResponse {
 	args := m.Called(uploadId, status, revision, el)
 	if resp, ok := args.Get(0).(*proto.UpdateUploadStatusResponse); ok {
 		return resp

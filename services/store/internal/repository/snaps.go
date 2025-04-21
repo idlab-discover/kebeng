@@ -18,7 +18,7 @@ type ISnapsRepository interface {
 	// CREATE
 	AddChannel(snapEntryId uuid.UUID, snapTrackId uuid.UUID, channelName string, errorList *cerror.ErrorList) (*models.SnapChannel, *cerror.CustomError)
 	AddDefaultChannels(snapEntryId uuid.UUID, snapTrackId uuid.UUID, errorList *cerror.ErrorList) *cerror.CustomError
-	AddRevision(entryId uuid.UUID, trackId uuid.UUID, channelId uuid.UUID, snapName string, size uint64, sequenceNumber uint, architectures []string, sha3_384 string, minioFilePath string, errorList *cerror.ErrorList) (*models.SnapRevision, *cerror.CustomError)
+	AddRevision(entryId uuid.UUID, trackId uuid.UUID, channelId uuid.UUID, snapName string, size uint64, sequenceNumber uint32, architectures []string, sha3_384_encoded string, minioFilePath string, errorList *cerror.ErrorList) (*models.SnapRevision, *cerror.CustomError)
 	AddTrack(entryId uuid.UUID, trackName string, errorList *cerror.ErrorList) (*models.SnapTrack, *cerror.CustomError)
 	AddUpload(snapName string, entryId uuid.UUID, status string, accountId uuid.UUID, unscannedFileName string, errorList *cerror.ErrorList) (*models.SnapUpload, *cerror.CustomError)
 	RegisterSnap(snapName string, isPrivate bool, store string, accountId uuid.UUID, errorList *cerror.ErrorList) (*models.SnapEntry, *cerror.CustomError)
@@ -37,15 +37,15 @@ type ISnapsRepository interface {
 	GetPreloadAssociations(entry *models.SnapEntry, preloadAssociations *[]string, errorList *cerror.ErrorList) *cerror.CustomError
 	GetRevisionsByEntryId(entryId uuid.UUID, errorList *cerror.ErrorList) ([]*models.SnapRevision, *cerror.CustomError)
 	GetRevisionById(id uuid.UUID, errorList *cerror.ErrorList) (*models.SnapRevision, *cerror.CustomError)
-	GetRevisionByNameAndSequence(name string, sequence uint, errorList *cerror.ErrorList) (*models.SnapRevision, *cerror.CustomError)
-	GetRevisionBySHA(SHA3_384 string, encoded bool, errorList *cerror.ErrorList) (*models.SnapRevision, *cerror.CustomError)
+	GetRevisionByNameAndSequence(name string, sequence uint32, errorList *cerror.ErrorList) (*models.SnapRevision, *cerror.CustomError)
+	GetRevisionBySHA(SHA3_384_encoded string, errorList *cerror.ErrorList) (*models.SnapRevision, *cerror.CustomError)
 	GetTrackByEntryIdAndName(entryId uuid.UUID, trackName string, errorList *cerror.ErrorList) (*models.SnapTrack, *cerror.CustomError)
 	GetTracksByEntryId(snapId uuid.UUID, errorList *cerror.ErrorList) ([]*models.SnapTrack, *cerror.CustomError)
 	GetTrackById(id uuid.UUID, errorList *cerror.ErrorList) (*models.SnapTrack, *cerror.CustomError)
 	GetUploadById(id uuid.UUID, errorList *cerror.ErrorList) (*models.SnapUpload, *cerror.CustomError)
 
 	// UPDATE
-	UpdateUploadStatus(uploadId uuid.UUID, status string, revision uint64, errorList *cerror.ErrorList) *cerror.CustomError
+	UpdateUploadStatus(uploadId uuid.UUID, status string, revision uint32, errorList *cerror.ErrorList) *cerror.CustomError
 }
 
 type SnapsRepository struct {
@@ -93,26 +93,28 @@ func (sp *SnapsRepository) AddDefaultChannels(snapEntryId uuid.UUID, snapTrackId
 	return nil
 }
 
-func (sp *SnapsRepository) AddRevision(entryId uuid.UUID, trackId uuid.UUID, channelId uuid.UUID, snapName string, size uint64, sequenceNumber uint, architectures []string, sha3_384 string, minioFilePath string, el *cerror.ErrorList) (*models.SnapRevision, *cerror.CustomError) {
+func (sp *SnapsRepository) AddRevision(entryId uuid.UUID, trackId uuid.UUID, channelId uuid.UUID, snapName string, size uint64, sequenceNumber uint32, architectures []string, sha3_384_encoded string, minioFilePath string, el *cerror.ErrorList) (*models.SnapRevision, *cerror.CustomError) {
 	// TODO: fix the need for an empty revision
-	// TODO: add build_assertion_filename if an assertion exists -> doesn't get checked in official snap store either
+	// TODO: add build_assertion_filename if an assertion exists -> doesn't get checked in official snap store either (as of 2021)
 	snapRevision := models.SnapRevision{
-		SnapEntryID:    entryId,
-		SnapTrackID:    trackId,
-		SnapChannelID:  channelId,
-		SnapName:       &snapName,
-		SHA3_384:       &sha3_384, // TODO: calculate sha3_384 in logic and at it to the parameters
-		Size:           &size,
-		SequenceNumber: &sequenceNumber,
-		Architectures:  architectures,
-		MinioFilePath:  &minioFilePath,
+		SnapName:               snapName,
+		BuildAssertionFileName: "", // TODO: add this if an assertion exists
+		SHA3_384_Encoded:       sha3_384_encoded,
+		Size:                   size,
+		SequenceNumber:         sequenceNumber,
+		Architectures:          architectures,
+		MinioFilePath:          minioFilePath,
+		SnapEntryID:            entryId,
+		SnapTrackID:            trackId,
+		SnapChannelID:          channelId,
+		SnapBranchID:           uuid.Nil, // TODO: add this once branches are implemented
 	}
 	query := `
-		INSERT INTO revision (entry_id, snap_track_id, snap_channel_id, snap_name ,sha3_384, size, sequence_number, architectures, minio_file_path)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		INSERT INTO revision (entry_id, snap_track_id, snap_channel_id, snap_name, build_assertion_filename ,sha3_384_encoded, size, sequence_number, architectures, minio_file_path)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		RETURNING id
 	`
-	err := sp.db.Get(&snapRevision.ID, query, snapRevision.SnapEntryID, snapRevision.SnapTrackID, snapRevision.SnapChannelID, snapRevision.SnapName, snapRevision.SHA3_384, snapRevision.Size, snapRevision.SequenceNumber, snapRevision.Architectures, snapRevision.MinioFilePath)
+	err := sp.db.Get(&snapRevision.ID, query, snapRevision.SnapEntryID, snapRevision.SnapTrackID, snapRevision.SnapChannelID, snapRevision.SnapName, snapRevision.BuildAssertionFileName, snapRevision.SHA3_384_Encoded, snapRevision.Size, snapRevision.SequenceNumber, snapRevision.Architectures, snapRevision.MinioFilePath)
 	if err != nil {
 		cerr := cerror.ConvertError(err, fmt.Sprintf("error adding revision for snap with id = '%s'", entryId.String()))
 		logrus.Error(cerr)
@@ -419,7 +421,7 @@ func (sp *SnapsRepository) GetRevisionById(id uuid.UUID, el *cerror.ErrorList) (
 	return &revision, nil
 }
 
-func (sp *SnapsRepository) GetRevisionByNameAndSequence(name string, sequence uint, el *cerror.ErrorList) (*models.SnapRevision, *cerror.CustomError) {
+func (sp *SnapsRepository) GetRevisionByNameAndSequence(name string, sequence uint32, el *cerror.ErrorList) (*models.SnapRevision, *cerror.CustomError) {
 	var entry models.SnapEntry
 	query := `
 		SELECT id
@@ -451,37 +453,19 @@ func (sp *SnapsRepository) GetRevisionByNameAndSequence(name string, sequence ui
 	return &revision, nil
 }
 
-func (sp *SnapsRepository) GetRevisionBySHA(SHA3_384 string, encoded bool, el *cerror.ErrorList) (*models.SnapRevision, *cerror.CustomError) {
+func (sp *SnapsRepository) GetRevisionBySHA(SHA3_384_encoded string, el *cerror.ErrorList) (*models.SnapRevision, *cerror.CustomError) {
 	var revision models.SnapRevision
-
-	if encoded {
-		logrus.Tracef("Getting snap revision by encoded sha3_384: %s", SHA3_384)
-		query := `
+	query := `
 			SELECT *
 			FROM revision
 			WHERE sha3_384_encoded = $1
 		`
-		err := sp.db.Get(&revision, query, SHA3_384)
-		if err != nil {
-			cerr := cerror.ConvertError(err, fmt.Sprintf("error getting revision with sha3_384_encoded = '%s'", SHA3_384))
-			logrus.Error(cerr)
-			el.AddCustomError(cerr)
-			return nil, cerr
-		}
-	} else {
-		logrus.Tracef("Getting snap revision by sha3_384: %s", SHA3_384)
-		query := `
-			SELECT *
-			FROM revision
-			WHERE sha3_384 = $1
-		`
-		err := sp.db.Get(&revision, query, SHA3_384)
-		if err != nil {
-			cerr := cerror.ConvertError(err, fmt.Sprintf("error getting revision with sha3_384 = '%s'", SHA3_384))
-			logrus.Error(cerr)
-			el.AddCustomError(cerr)
-			return nil, cerr
-		}
+	err := sp.db.Get(&revision, query, SHA3_384_encoded)
+	if err != nil {
+		cerr := cerror.ConvertError(err, fmt.Sprintf("error getting revision with sha3_384_encoded = '%s'", SHA3_384_encoded))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return nil, cerr
 	}
 
 	return &revision, nil
@@ -564,7 +548,7 @@ func (sp *SnapsRepository) GetLatestRevisionByEntryId(entryId uuid.UUID, el *cer
 
 // ============ UPDATE =============
 
-func (sp *SnapsRepository) UpdateUploadStatus(uploadId uuid.UUID, status string, revision uint64, el *cerror.ErrorList) *cerror.CustomError {
+func (sp *SnapsRepository) UpdateUploadStatus(uploadId uuid.UUID, status string, revision uint32, el *cerror.ErrorList) *cerror.CustomError {
 	upload := models.SnapUpload{
 		ID:     uploadId,
 		Errors: el,

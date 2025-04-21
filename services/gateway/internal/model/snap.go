@@ -93,7 +93,7 @@ type RefreshSnap struct {
 	Download      *Download  `json:"download,omitempty"`
 	Version       *string    `json:"version,omitempty"`
 	Confinement   *string    `json:"confinement,omitempty"`
-	Revision      *uint64    `json:"revision,omitempty"`
+	Revision      *uint32    `json:"revision,omitempty"`
 	Type          *string    `json:"type,omitempty"`
 	Base          *string    `json:"base,omitempty"`
 }
