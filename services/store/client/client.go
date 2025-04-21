@@ -18,7 +18,7 @@ import (
 
 type StoreClientInterface interface {
 	Close()
-	RegisterSnapName(snapName string, isPrivate bool, storeName string, dryRun bool, accountId uuid.UUID) *proto.RegisterSnapNameResponse
+	RegisterSnapName(snapName string, snapType string, confinement string, base string, isPrivate bool, status string, price float64, storeName string, iconUrl string, dryRun bool, accountId uuid.UUID) *proto.RegisterSnapNameResponse
 	GetEntries(entries *proto.GetEntriesRequest) *proto.GetEntriesResponse
 	GetRevisions(revisions *proto.GetRevisionsRequest) *proto.GetRevisionsResponse
 	GetEntriesByAccountID(accountID string) *proto.GetEntriesResponse
@@ -62,13 +62,19 @@ func (c *StoreClient) Close() {
 	}
 }
 
-func (c *StoreClient) RegisterSnapName(snapName string, isPrivate bool, storeName string, dryRun bool, accountId uuid.UUID) *proto.RegisterSnapNameResponse {
+func (c *StoreClient) RegisterSnapName(snapName string, snapType string, confinement string, base string, isPrivate bool, status string, price float64, storeName string, iconUrl string, dryRun bool, accountId uuid.UUID) *proto.RegisterSnapNameResponse {
 	req := &proto.RegisterSnapNameRequest{
-		SnapName:  snapName,
-		IsPrivate: isPrivate,
-		Store:     storeName,
-		DryRun:    dryRun,
-		AccountId: accountId.String(),
+		SnapName:    snapName,
+		SnapType:    snapType,
+		Confinement: confinement,
+		Base:        base,
+		IsPrivate:   isPrivate,
+		Status:      status,
+		Price:       price,
+		Store:       storeName,
+		IconUrl:     iconUrl,
+		DryRun:      dryRun,
+		AccountId:   accountId.String(),
 	}
 
 	resp, err := c.client.RegisterSnapName(context.Background(), req)

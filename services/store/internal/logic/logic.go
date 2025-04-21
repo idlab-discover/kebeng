@@ -73,7 +73,7 @@ func (s *StoreLogic) RegisterSnapName(ctx context.Context, req *proto.RegisterSn
 		el.Add(cerror.InvalidField, "invalid account id")
 		return &proto.RegisterSnapNameResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
-	snapEntry, cerr = s.repo.RegisterSnap(req.SnapName, req.IsPrivate, req.Store, accountId, el)
+	snapEntry, cerr = s.repo.RegisterSnap(req.SnapName, req.SnapType, req.Confinement, req.Base, req.IsPrivate, req.Status, req.Price, req.Store, req.IconUrl, accountId, el)
 	if cerr != nil {
 		// Already logged in RegisterSnap (repository)
 		return &proto.RegisterSnapNameResponse{Errors: el.ConvertToProtoErrorList()}, nil

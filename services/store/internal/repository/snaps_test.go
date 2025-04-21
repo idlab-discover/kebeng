@@ -334,8 +334,14 @@ func TestRegisterSnap(t *testing.T) {
 	tests := []struct {
 		name              string
 		entryName         string
+		entryType         string
+		confinement       string
+		base              string
 		entryPrivate      bool
+		status            string
+		price             float64
 		storeName         string
+		iconURL           string
 		accountId         uuid.UUID
 		el                *cerror.ErrorList
 		expectError       bool
@@ -344,8 +350,14 @@ func TestRegisterSnap(t *testing.T) {
 		{
 			name:              "Success adding snap",
 			entryName:         "test-1",
+			entryType:         "application",
+			confinement:       "strict",
+			base:              "core20",
 			entryPrivate:      false,
+			status:            "active",
+			price:             0.0,
 			storeName:         "test-store",
+			iconURL:           "http://mock-icon-url.com",
 			accountId:         mockUUID,
 			el:                cerror.NewErrorList(),
 			expectError:       false,
@@ -354,8 +366,14 @@ func TestRegisterSnap(t *testing.T) {
 		{
 			name:              "Fail adding snap",
 			entryName:         "mock-snap",
+			entryType:         "application",
+			confinement:       "strict",
+			base:              "core20",
 			entryPrivate:      false,
+			status:            "active",
+			price:             0.0,
 			storeName:         "test-store",
+			iconURL:           "http://mock-icon-url.com",
 			accountId:         mockUUID,
 			el:                cerror.NewErrorList(),
 			expectError:       true,
@@ -365,7 +383,7 @@ func TestRegisterSnap(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			entry, err := globalRepo.RegisterSnap(tt.entryName, tt.entryPrivate, tt.storeName, tt.accountId, tt.el)
+			entry, err := globalRepo.RegisterSnap(tt.entryName, tt.entryType, tt.confinement, tt.base, tt.entryPrivate, tt.status, tt.price, tt.storeName, tt.iconURL, tt.accountId, tt.el)
 			if tt.expectError {
 				assert.NotNil(t, err)
 				if err != nil {

@@ -35,8 +35,14 @@ func TestStoreClient_RegisterSnapName(t *testing.T) {
 	tests := []struct {
 		name               string
 		snapName           string
+		snapType           string
+		confinement        string
+		base               string
 		isPrivate          bool
+		status             string
+		price              float64
 		storeName          string
+		iconUrl            string
 		dryRun             bool
 		accountId          uuid.UUID
 		expectedResp       *proto.RegisterSnapNameResponse
@@ -44,12 +50,18 @@ func TestStoreClient_RegisterSnapName(t *testing.T) {
 		expectedProtoError bool
 	}{
 		{
-			name:      "Successful proto call",
-			snapName:  "test_snap",
-			isPrivate: false,
-			storeName: "test_store",
-			dryRun:    false,
-			accountId: uuid.New(),
+			name:        "Successful proto call",
+			snapName:    "test_snap",
+			snapType:    "app",
+			confinement: "strict",
+			base:        "core24",
+			isPrivate:   false,
+			status:      "active",
+			price:       9.99,
+			storeName:   "test_store",
+			iconUrl:     "http://example.com/icon.png",
+			dryRun:      false,
+			accountId:   uuid.New(),
 			expectedResp: &proto.RegisterSnapNameResponse{
 				Id:       mockID.String(),
 				SnapName: "test_snap",
@@ -60,19 +72,31 @@ func TestStoreClient_RegisterSnapName(t *testing.T) {
 		{
 			name:               "proto call returns error",
 			snapName:           "test_snap",
+			snapType:           "app",
+			confinement:        "strict",
+			base:               "core24",
 			isPrivate:          false,
+			status:             "active",
+			price:              9.99,
 			storeName:          "test_store",
+			iconUrl:            "http://example.com/icon.png",
 			dryRun:             false,
 			accountId:          uuid.New(),
 			expectedResp:       nil,
 			expectedProtoError: true,
 		},
 		{
-			name:      "response contains errors",
-			snapName:  "test_snap",
-			isPrivate: false,
-			storeName: "test_store",
-			dryRun:    false,
+			name:        "response contains errors",
+			snapName:    "test_snap",
+			snapType:    "app",
+			confinement: "strict",
+			base:        "core24",
+			isPrivate:   false,
+			status:      "active",
+			price:       9.99,
+			storeName:   "test_store",
+			iconUrl:     "http://example.com/icon.png",
+			dryRun:      false,
 			expectedResp: &proto.RegisterSnapNameResponse{
 				Errors: []*cerrorpb.Error{{
 					Code:    cerror.InternalServerError,
@@ -92,7 +116,7 @@ func TestStoreClient_RegisterSnapName(t *testing.T) {
 				mockProtoClient.On("RegisterSnapName", mock.Anything, mock.Anything).Return(tc.expectedResp, nil).Once()
 			}
 
-			resp := storeClient.RegisterSnapName(tc.snapName, tc.isPrivate, tc.storeName, tc.dryRun, tc.accountId)
+			resp := storeClient.RegisterSnapName(tc.snapName, tc.snapType, tc.confinement, tc.base, tc.isPrivate, tc.status, tc.price, tc.storeName, tc.iconUrl, tc.dryRun, tc.accountId)
 			if !tc.expectedErrors && !tc.expectedProtoError {
 				assert.Equal(t, tc.expectedResp, resp)
 				assert.Empty(t, resp.Errors)
@@ -137,9 +161,9 @@ func TestStoreClient_GetEntries(t *testing.T) {
 					{
 						Id:          "test_id",
 						SnapName:    "test_name",
-						Confinement: ptrString("strict"),
-						Base:        ptrString("core24"),
-						Private:     ptrBool(false),
+						Confinement: "strict",
+						Base:        "core24",
+						Private:     false,
 						// Other fields...
 						Errors: []*cerrorpb.Error{},
 					},
@@ -180,9 +204,9 @@ func TestStoreClient_GetEntries(t *testing.T) {
 					{
 						Id:          "test_id",
 						SnapName:    "test_name",
-						Confinement: ptrString("strict"),
-						Base:        ptrString("core24"),
-						Private:     ptrBool(false),
+						Confinement: "strict",
+						Base:        "core24",
+						Private:     false,
 						// Other fields...
 						Errors: []*cerrorpb.Error{{
 							Code:    cerror.InternalServerError,
@@ -357,9 +381,9 @@ func TestStoreClient_GetEntriesByAccountID(t *testing.T) {
 					{
 						Id:          "test_id",
 						SnapName:    "test_name",
-						Confinement: ptrString("strict"),
-						Base:        ptrString("core24"),
-						Private:     ptrBool(false),
+						Confinement: "strict",
+						Base:        "core24",
+						Private:     false,
 						// Other fields...
 						Errors: []*cerrorpb.Error{},
 					},
@@ -384,9 +408,9 @@ func TestStoreClient_GetEntriesByAccountID(t *testing.T) {
 					{
 						Id:          "test_id",
 						SnapName:    "test_name",
-						Confinement: ptrString("strict"),
-						Base:        ptrString("core24"),
-						Private:     ptrBool(false),
+						Confinement: "strict",
+						Base:        "core24",
+						Private:     false,
 						// Other fields...
 						Errors: []*cerrorpb.Error{{
 							Code:    cerror.InternalServerError,
