@@ -26,6 +26,7 @@ type IAssertionRepository interface {
 	GetSnapDeclarationAssertionBySnapID(el *cerror.ErrorList, snapID string) (*model.SnapDeclarationAssertion, *cerror.CustomError)
 	GetLatestSnapDeclarationAssertion(el *cerror.ErrorList, snapID string) (*model.SnapDeclarationAssertion, *cerror.CustomError)
 	GetAccountAssertionByAccountID(el *cerror.ErrorList, accountID uuid.UUID) (*model.AccountAssertion, *cerror.CustomError)
+	GetLatestAccountAssertionByAccountID(el *cerror.ErrorList, accountID uuid.UUID) (*model.AccountAssertion, *cerror.CustomError)
 }
 
 type AssertionRepository struct {
@@ -316,6 +317,24 @@ func (r *AssertionRepository) GetAccountAssertionByAccountID(el *cerror.ErrorLis
 		logrus.Errorf("failed to get account assertion by account id: %s, err: %v", accountID.String(), err)
 		el.AddCustomError(cerror.ConvertError(err, fmt.Sprintf("failed to get account assertion by account id: %s, err: %v", accountID.String(), err)))
 		return nil, cerror.ConvertError(err, fmt.Sprintf("failed to get account assertion by account id: %s, err: %v", accountID.String(), err))
+	}
+
+	return assertion, nil
+}
+
+func (r *AssertionRepository) GetLatestAccountAssertionByAccountID(el *cerror.ErrorList, accountID uuid.UUID) (*model.AccountAssertion, *cerror.CustomError) {
+	query := `
+		SELECT id, authority_id, display_name, username, validation, account_id, revision, timestamp, sign_key_SHA3_384, signature 
+		FROM account_assertion 
+		WHERE account_id = $1 ORDER BY revision DESC LIMIT 1
+	`
+	assertion := &model.AccountAssertion{}
+
+	err := r.db.Get(assertion, query, accountID)
+	if err != nil {
+		logrus.Errorf("failed to get latest account assertion by account id: %s, err: %v", accountID.String(), err)
+		el.AddCustomError(cerror.ConvertError(err, fmt.Sprintf("failed to get latest account assertion by account id: %s, err: %v", accountID.String(), err)))
+		return nil, cerror.ConvertError(err, fmt.Sprintf("failed to get latest account assertion by account id: %s, err: %v", accountID.String(), err))
 	}
 
 	return assertion, nil

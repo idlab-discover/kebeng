@@ -805,3 +805,87 @@ func TestGetAccountAssertionByAccountID(t *testing.T) {
 		})
 	}
 }
+
+func TestGetLatestAccountAssertionByAccountID(t *testing.T) {
+	ts1 := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	ts2 := ts1.Add(time.Hour)
+
+	tests := []struct {
+		name             string
+		setupRows        []model.AccountAssertion
+		expectFound      bool
+		expectedRevision uint32
+		expectedErrCode  string
+	}{
+		{
+			name:            "no assertions",
+			setupRows:       nil,
+			expectFound:     false,
+			expectedErrCode: cerror.ResourceNotFound,
+		},
+		{
+			name: "single assertion",
+			setupRows: []model.AccountAssertion{
+				{AuthorityID: "authX", DisplayName: "Alice", Username: "alice123", Validation: "ok",
+					Revision: 7, Timestamp: ts1, SignKeySHA3_384: "key1", Signature: "sig1"},
+			},
+			expectFound:      true,
+			expectedRevision: 7,
+		},
+		{
+			name: "multiple assertions picks latest revision",
+			setupRows: []model.AccountAssertion{
+				{AuthorityID: "authX", DisplayName: "Alice", Username: "alice123", Validation: "ok",
+					Revision: 3, Timestamp: ts1, SignKeySHA3_384: "key3", Signature: "sig3"},
+				{AuthorityID: "authX", DisplayName: "Alice", Username: "alice123", Validation: "ok",
+					Revision: 5, Timestamp: ts2, SignKeySHA3_384: "key5", Signature: "sig5"},
+			},
+			expectFound:      true,
+			expectedRevision: 5,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			el := cerror.NewErrorList()
+
+			// clean slate
+			_, _ = globalDB.Exec(`DELETE FROM account_assertion`)
+
+			// pick a single accountID for all rows in this case
+			accountID := uuid.New()
+			for i := range tc.setupRows {
+				tc.setupRows[i].AccountID = accountID
+				_, err := globalDB.Exec(`
+                    INSERT INTO account_assertion
+                      (authority_id, display_name, username, validation,
+                       account_id, revision, timestamp,
+                       sign_key_sha3_384, signature)
+                    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+                `,
+					tc.setupRows[i].AuthorityID,
+					tc.setupRows[i].DisplayName,
+					tc.setupRows[i].Username,
+					tc.setupRows[i].Validation,
+					tc.setupRows[i].AccountID,
+					tc.setupRows[i].Revision,
+					tc.setupRows[i].Timestamp,
+					tc.setupRows[i].SignKeySHA3_384,
+					tc.setupRows[i].Signature,
+				)
+				require.NoError(t, err)
+			}
+
+			rec, cerr := globalRepo.GetLatestAccountAssertionByAccountID(el, accountID)
+			if tc.expectFound {
+				require.Nil(t, cerr)
+				require.NotNil(t, rec)
+				assert.Equal(t, tc.expectedRevision, rec.Revision, "should pick highest revision")
+			} else {
+				assert.NotNil(t, cerr)
+				assert.Nil(t, rec)
+				assert.Equal(t, tc.expectedErrCode, cerr.GetCode())
+			}
+		})
+	}
+}
