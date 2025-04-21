@@ -67,7 +67,7 @@ func main() {
 		EncodedPublicKey:  b64pub,
 		PublicKeySha3_384: cfg.RootKey.PublicKey().ID(),
 		AccountId:         cfg.RootAccountID.String(),
-		Name:              "root",
+		Name:              "kebeng",
 		Since:             &timestamppb.Timestamp{Seconds: now.Unix()},
 		Until:             &timestamppb.Timestamp{Seconds: now.Add(24 * time.Hour).Unix()},
 	}
