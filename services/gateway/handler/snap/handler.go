@@ -116,9 +116,9 @@ func (h *Handler) refreshSnapDownload(action *model.Action, el *cerror.ErrorList
 		},
 		Version:     &latestRevision.Version,
 		Revision:    &latestRevision.SequenceNumber,
-		Confinement: snapEntry.Confinement,
-		Type:        snapEntry.Type,
-		Base:        snapEntry.Base,
+		Confinement: &snapEntry.Confinement,
+		Type:        &snapEntry.Type,
+		Base:        &snapEntry.Base,
 	}
 	return &res, nil
 }
@@ -181,7 +181,7 @@ func (h *Handler) RegisterSnapName(c *gin.Context) {
 
 	dryRun := c.Query("dry_run") == "1"
 
-	resp := h.StoreClient.RegisterSnapName(req.SnapName, req.IsPrivate, req.Store, dryRun, accountUUID)
+	resp := h.StoreClient.RegisterSnapName(req.SnapName, "", "", "", req.IsPrivate, "", 0.0, req.Store, "", dryRun, accountUUID) // TODO: fill in empty fields once we know where to get the information from
 	if len(resp.Errors) > 0 {
 		el.ExtendProtoError(resp.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
@@ -286,7 +286,7 @@ func (h *Handler) SnapPush(c *gin.Context) {
 	}
 
 	// Dry run to check if the snap name is registered
-	entry := h.StoreClient.RegisterSnapName(req.Name, false, "", true, accountUUID)
+	entry := h.StoreClient.RegisterSnapName(req.Name, "", "", "", false, "", 0.0, "", "", true, accountUUID)
 	if len(entry.Errors) > 0 {
 		el.ExtendProtoError(entry.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
