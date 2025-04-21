@@ -45,8 +45,8 @@ func (m *MockAssertionClient) AddSnapRevisionAssertion(snapSha3_384 string, deve
 	return nil
 }
 
-func (m *MockAssertionClient) GetAccountKeyAssertionByName(name string) *proto.AccountKeyAssertionResponse {
-	args := m.Called(name)
+func (m *MockAssertionClient) GetAccountKeyAssertionByPublicKeySha(publicKeySha3_384 string) *proto.AccountKeyAssertionResponse {
+	args := m.Called(publicKeySha3_384)
 	if resp, ok := args.Get(0).(*proto.AccountKeyAssertionResponse); ok {
 		return resp
 	}

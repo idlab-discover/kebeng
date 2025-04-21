@@ -64,8 +64,8 @@ func (m *MockAssertionRepository) AddAccountAssertion(el *cerror.ErrorList, auth
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
-// GetAccountKeyAssertionByName mocks GetAccountKeyAssertionByName method.
-func (m *MockAssertionRepository) GetAccountKeyAssertionByName(el *cerror.ErrorList, name string) (*model.AccountKeyAssertion, *cerror.CustomError) {
+// GetAccountKeyAssertionByPublicKeySha mocks GetAccountKeyAssertionByPublicKeySha method.
+func (m *MockAssertionRepository) GetAccountKeyAssertionByPublicKeySha(el *cerror.ErrorList, name string) (*model.AccountKeyAssertion, *cerror.CustomError) {
 	args := m.Called(el, name)
 	if args.Get(0) != nil {
 		return args.Get(0).(*model.AccountKeyAssertion), nil

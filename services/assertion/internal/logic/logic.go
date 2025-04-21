@@ -422,13 +422,13 @@ func (s *AssertionService) GetSnapRevisionAssertionBySHA3_384(ctx context.Contex
 	}, nil
 }
 
-func (s *AssertionService) GetAccountKeyAssertionByName(ctx context.Context, req *proto.GetAccountKeyAssertionByNameRequest) (*proto.AccountKeyAssertionResponse, error) {
+func (s *AssertionService) GetAccountKeyAssertionByPublicKeySha(ctx context.Context, req *proto.GetAccountKeyAssertionByPublicKeyShaRequest) (*proto.AccountKeyAssertionResponse, error) {
 	el := cerror.NewErrorList()
-	if req.GetName() == "" {
+	if req.GetPublicKeySha3_384() == "" {
 		el.Add(cerror.Invalid, "name is required")
 		return nil, fmt.Errorf("name is required")
 	}
-	accountKeyAssertion, cerr := s.repo.GetAccountKeyAssertionByName(el, req.GetName())
+	accountKeyAssertion, cerr := s.repo.GetAccountKeyAssertionByPublicKeySha(el, req.GetPublicKeySha3_384())
 	if cerr != nil {
 		// should have been logged and added to error list in repo function
 		return nil, fmt.Errorf("failed to get account key assertion: %v", cerr)

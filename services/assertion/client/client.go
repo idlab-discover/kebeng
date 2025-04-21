@@ -26,7 +26,7 @@ type AssertionClientInterface interface {
 	AddSnapDeclarationAssertion(snapID, snapName, publisherID string, series uint32, timestamp time.Time, refreshControl []string, aliases []model.Alias, plugs model.PlugMap, slots model.SlotMap) *proto.SnapDeclarationAssertionResponse
 	AddAccountAssertion(accountId, displayName, username, validation string, timestamp time.Time) *proto.AccountAssertionResponse
 
-	GetAccountKeyAssertionByName(name string) *proto.AccountKeyAssertionResponse
+	GetAccountKeyAssertionByPublicKeySha(publicKeySha3_384 string) *proto.AccountKeyAssertionResponse
 	GetSnapRevisionAssertionBySHA3_384(snapSha3_384 string) *proto.SnapRevisionAssertionResponse
 	GetSnapDeclarationAssertionBySnapID(snapId string) *proto.SnapDeclarationAssertionResponse
 	GetAccountAssertionByAccountID(accountId string) *proto.AccountAssertionResponse
@@ -306,11 +306,11 @@ func (c *AssertionClient) AddAccountAssertion(accountId, displayName, username, 
 	return resp
 }
 
-func (c *AssertionClient) GetAccountKeyAssertionByName(name string) *proto.AccountKeyAssertionResponse {
+func (c *AssertionClient) GetAccountKeyAssertionByPublicKeySha(publicKeySha3_384 string) *proto.AccountKeyAssertionResponse {
 	el := cerror.NewErrorList()
 
 	// check input
-	if name == "" {
+	if publicKeySha3_384 == "" {
 		el.Add(cerror.InvalidField, "name is required")
 	}
 	if el.HasError() {
@@ -319,11 +319,11 @@ func (c *AssertionClient) GetAccountKeyAssertionByName(name string) *proto.Accou
 		}
 	}
 
-	req := &proto.GetAccountKeyAssertionByNameRequest{
-		Name: name,
+	req := &proto.GetAccountKeyAssertionByPublicKeyShaRequest{
+		PublicKeySha3_384: publicKeySha3_384,
 	}
 
-	resp, err := c.client.GetAccountKeyAssertionByName(context.Background(), req)
+	resp, err := c.client.GetAccountKeyAssertionByPublicKeySha(context.Background(), req)
 	if err != nil {
 		el.Add(cerror.InternalServerError, err.Error())
 		resp = &proto.AccountKeyAssertionResponse{
