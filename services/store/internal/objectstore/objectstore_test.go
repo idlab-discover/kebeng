@@ -216,14 +216,14 @@ func TestGetObjectCustomMetadata(t *testing.T) {
 
 	mockObjectInfo := minio.ObjectInfo{
 		UserMetadata: map[string]string{
-			"sha3_384": "",
+			"Sha3-384-encoded": "",
 		},
 	}
 
-	sha3_384 := mockObjectInfo.UserMetadata["sha3_384"]
+	sha3_384_encoded := mockObjectInfo.UserMetadata["Sha3-384-encoded"]
 
 	expectedMetadata := &models.Metadata{
-		Sha3_384: &sha3_384,
+		SHA3_384_Encoded: sha3_384_encoded,
 	}
 
 	mockMinio.On("StatObject", mock.Anything, bucket, object, mock.Anything).

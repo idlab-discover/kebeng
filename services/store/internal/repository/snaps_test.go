@@ -248,7 +248,7 @@ func TestAddRevision(t *testing.T) {
 		size              uint64
 		sequenceNumber    uint32
 		architectures     []string
-		sha3384           string
+		sha3_384_encoded           string
 		minioFilePath     string
 		el                *cerror.ErrorList
 		expectError       bool
@@ -263,7 +263,7 @@ func TestAddRevision(t *testing.T) {
 			size:           123456,
 			sequenceNumber: 1,
 			architectures:  []string{"x86_64", "arm64"},
-			sha3384:        "mock-sha3-384",
+			sha3_384_encoded:        "mock-sha3-384",
 			minioFilePath:  "some/path/mock-snap.snap",
 			el:             cerror.NewErrorList(),
 			expectError:    false,
@@ -277,7 +277,7 @@ func TestAddRevision(t *testing.T) {
 			size:              123456,
 			sequenceNumber:    1,
 			architectures:     []string{"x86_64", "arm64"},
-			sha3384:           "mock-sha3-384",
+			sha3_384_encoded:           "mock-sha3-384",
 			minioFilePath:     "some/path/mock-snap.snap",
 			el:                cerror.NewErrorList(),
 			expectError:       true,
@@ -292,7 +292,7 @@ func TestAddRevision(t *testing.T) {
 			size:              123456,
 			sequenceNumber:    1,
 			architectures:     []string{"x86_64", "arm64"},
-			sha3384:           "mock-sha3-384",
+			sha3_384_encoded:           "mock-sha3-384",
 			minioFilePath:     "some/path/mock-snap.snap",
 			el:                cerror.NewErrorList(),
 			expectError:       true,
@@ -307,7 +307,7 @@ func TestAddRevision(t *testing.T) {
 			size:              123456,
 			sequenceNumber:    1,
 			architectures:     []string{"x86_64", "arm64"},
-			sha3384:           "mock-sha3-384",
+			sha3_384_encoded:           "mock-sha3-384",
 			minioFilePath:     "some/path/mock-snap.snap",
 			el:                cerror.NewErrorList(),
 			expectError:       true,
@@ -316,7 +316,7 @@ func TestAddRevision(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			revision, err := globalRepo.AddRevision(tt.entryId, tt.trackId, tt.channelId, tt.snapName, tt.size, tt.sequenceNumber, tt.architectures, tt.sha3384, tt.minioFilePath, tt.el)
+			revision, err := globalRepo.AddRevision(tt.entryId, tt.trackId, tt.channelId, tt.snapName, tt.size, tt.sequenceNumber, tt.architectures, tt.sha3_384_encoded, tt.minioFilePath, tt.el)
 			if tt.expectError {
 				assert.NotNil(t, err)
 				if err != nil {
@@ -334,8 +334,14 @@ func TestRegisterSnap(t *testing.T) {
 	tests := []struct {
 		name              string
 		entryName         string
+		entryType         string
+		confinement       string
+		base              string
 		entryPrivate      bool
+		status            string
+		price             float64
 		storeName         string
+		iconURL           string
 		accountId         uuid.UUID
 		el                *cerror.ErrorList
 		expectError       bool
@@ -344,8 +350,14 @@ func TestRegisterSnap(t *testing.T) {
 		{
 			name:              "Success adding snap",
 			entryName:         "test-1",
+			entryType:         "application",
+			confinement:       "strict",
+			base:              "core20",
 			entryPrivate:      false,
+			status:            "active",
+			price:             0.0,
 			storeName:         "test-store",
+			iconURL:           "http://mock-icon-url.com",
 			accountId:         mockUUID,
 			el:                cerror.NewErrorList(),
 			expectError:       false,
@@ -354,8 +366,14 @@ func TestRegisterSnap(t *testing.T) {
 		{
 			name:              "Fail adding snap",
 			entryName:         "mock-snap",
+			entryType:         "application",
+			confinement:       "strict",
+			base:              "core20",
 			entryPrivate:      false,
+			status:            "active",
+			price:             0.0,
 			storeName:         "test-store",
+			iconURL:           "http://mock-icon-url.com",
 			accountId:         mockUUID,
 			el:                cerror.NewErrorList(),
 			expectError:       true,
@@ -365,7 +383,7 @@ func TestRegisterSnap(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			entry, err := globalRepo.RegisterSnap(tt.entryName, tt.entryPrivate, tt.storeName, tt.accountId, tt.el)
+			entry, err := globalRepo.RegisterSnap(tt.entryName, tt.entryType, tt.confinement, tt.base, tt.entryPrivate, tt.status, tt.price, tt.storeName, tt.iconURL, tt.accountId, tt.el)
 			if tt.expectError {
 				assert.NotNil(t, err)
 				if err != nil {
@@ -890,6 +908,7 @@ func TestAddUpload(t *testing.T) {
 		accountId         uuid.UUID
 		status            string
 		unscannedFileName string
+		revision          uint32
 		el                *cerror.ErrorList
 		expectError       bool
 		expectedErrorCode string
@@ -901,6 +920,7 @@ func TestAddUpload(t *testing.T) {
 			accountId:         mockUUID,
 			status:            "pending",
 			unscannedFileName: "mock-file",
+			revision:          1,
 			el:                cerror.NewErrorList(),
 			expectError:       false,
 		},
@@ -908,7 +928,7 @@ func TestAddUpload(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			upload, err := globalRepo.AddUpload(tt.snapName, tt.entryId, tt.status, tt.accountId, tt.unscannedFileName, tt.el)
+			upload, err := globalRepo.AddUpload(tt.entryId, tt.accountId, tt.snapName, tt.status, tt.unscannedFileName, tt.revision, tt.el)
 			if tt.expectError {
 				assert.NotNil(t, err)
 				if err != nil {
@@ -1290,13 +1310,13 @@ func TestGetChannelById(t *testing.T) {
 
 // Helper function to insert mock data
 func mockData(db *sqlx.DB) {
-	// Mock snap entry
+	// Mock snap entry with all parameters
 	_, err := db.Exec(`
-		INSERT INTO public.entry (id, private, name, type, confinement, status, price, store, icon_url, account_id)
-		VALUES ($1, false, 'mock-snap', 'application', 'strict', 'active', 0.0, 'mock-store', 'http://mock-icon-url.com', $2);
+		INSERT INTO public.entry (id, private, name, type, confinement, base, status, price, store, icon_url, account_id)
+		VALUES ($1, true, 'mock-snap', 'application', 'strict', 'core20', 'active', 9.99, 'mock-store-full', 'http://mock-icon-url-full.com', $2);
 	`, mockUUID, mockUUID)
 	if err != nil {
-		logrus.Fatalf("failed to insert mock data for snap entry: %v", err)
+		logrus.Fatalf("failed to insert mock data for snap entry with all parameters: %v", err)
 	}
 
 	// Mock snap track

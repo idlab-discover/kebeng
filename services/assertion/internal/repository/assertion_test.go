@@ -298,7 +298,7 @@ func TestGetAccountKeyAssertionByPublicKeySha(t *testing.T) {
 
 				// verify fields
 				assert.Equal(t, "canonical", rec.AuthorityID)
-				assert.Equal(t, tt.publicKeySha, rec.PublicKeySHA3_384)
+				assert.Equal(t, tt.publicKeySha, rec.PublicKeySha3_384Encoded)
 				assert.Equal(t, tt.assertionName, rec.Name)
 				assert.Equal(t, uint32(2), rec.RevisionSequenceNumber)
 				// and so on...
