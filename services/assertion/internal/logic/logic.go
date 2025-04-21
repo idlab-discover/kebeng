@@ -93,6 +93,7 @@ func (s *AssertionService) AddSnapRevisionAssertion(ctx context.Context, req *pr
 		// should have been logged and added to error list in repo function
 		return nil, fmt.Errorf("failed to add snap revision assertion: %v", cerr)
 	}
+	snapRevisionAssertion.Type = asserts.SnapRevisionType.Name
 
 	return &proto.SnapRevisionAssertionResponse{
 		Id:                         snapRevisionAssertion.ID.String(),
@@ -208,6 +209,7 @@ func (s *AssertionService) AddAccountKeyAssertion(ctx context.Context, req *prot
 			Errors: el.ConvertToProtoErrorList(),
 		}, nil
 	}
+	accountKeyAssertion.Type = asserts.AccountKeyType.Name
 
 	return &proto.AccountKeyAssertionResponse{
 		Id:                     accountKeyAssertion.ID.String(),
@@ -287,6 +289,7 @@ func (s *AssertionService) AddSnapDeclarationAssertion(ctx context.Context, req 
 			Errors: el.ConvertToProtoErrorList(),
 		}, nil
 	}
+	snapDeclarationAssertion.Type = asserts.SnapDeclarationType.Name
 	// convert pq.StringArray to []string
 	refreshControl := []string(snapDeclarationAssertion.RefreshControl)
 
@@ -310,6 +313,83 @@ func (s *AssertionService) AddSnapDeclarationAssertion(ctx context.Context, req 
 	}, nil
 }
 
+func (s *AssertionService) AddAccountAssertion(ctx context.Context, req *proto.AddAccountAssertionRequest) (*proto.AccountAssertionResponse, error) {
+	el := cerror.NewErrorList()
+	parsedAccountId, err := uuid.Parse(req.GetAccountId())
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.Invalid, fmt.Sprintf("failed to parse account id: %s", err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.AccountAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}, nil
+	}
+
+	var sequenceNumber uint32
+	latestSnapDeclarationAssertion, cerr := s.repo.GetLatestAccountAssertionByAccountID(el, parsedAccountId)
+	if cerr != nil && cerr.GetCode() != cerror.ResourceNotFound {
+		// should have been logged and added to error list in repo function
+		return &proto.AccountAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}, nil
+	} else if cerr.GetCode() == cerror.ResourceNotFound {
+		// remove ResourceNotFound since its not a real error in this case
+		el.RemoveErrorWithCode(cerror.ResourceNotFound)
+		sequenceNumber = 1
+	} else {
+		sequenceNumber = latestSnapDeclarationAssertion.Revision + 1
+	}
+
+	headers := map[string]any{
+		"authority-id": s.cfg.AuthorityID,
+		"account-id":   req.GetAccountId(),
+		"display-name": req.GetDisplayName(),
+		"timestamp":    req.GetTimestamp().AsTime().Format(time.RFC3339),
+		"revision":     fmt.Sprintf("%d", sequenceNumber),
+		"validation":   req.GetValidation(),
+		// The 'sign-key-sha3-384' header is generated during signing.
+	}
+	signedAssertion, err := s.assertionDB.Sign(asserts.AccountType, headers, nil, s.cfg.RootKey.PublicKey().ID())
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.Invalid, fmt.Sprintf("failed to sign account assertion: %s", err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.AccountAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}, nil
+	}
+	signature := string(asserts.Encode(signedAssertion))
+	accountAssertion, cerr := s.repo.AddAccountAssertion(
+		el,
+		s.cfg.AuthorityID,
+		req.GetDisplayName(),
+		req.GetUsername(),
+		req.GetValidation(),
+		parsedAccountId,
+		sequenceNumber,
+		req.GetTimestamp().AsTime(),
+		s.cfg.RootKey.PublicKey().ID(), // this is the sign_key_SHA3_384
+		signature,
+	)
+	if cerr != nil {
+		// should have been logged and added to error list in repo function
+		return &proto.AccountAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}, nil
+	}
+	accountAssertion.Type = asserts.AccountType.Name
+	return &proto.AccountAssertionResponse{
+		Id:              accountAssertion.ID.String(),
+		AuthorityId:     accountAssertion.AuthorityID,
+		SignKeySha3_384: accountAssertion.SignKeySHA3_384,
+		AccountId:       accountAssertion.AccountID.String(),
+		Timestamp:       timestamppb.New(accountAssertion.Timestamp),
+		Type:            accountAssertion.Type,
+		Signature:       signature,
+		Errors:          el.ConvertToProtoErrorList(),
+	}, nil
+}
+
 // ################### GETTERS #####################
 
 func (s *AssertionService) GetSnapRevisionAssertionBySHA3_384(ctx context.Context, req *proto.GetSnapRevisionAssertionBySHA3_384Request) (*proto.SnapRevisionAssertionResponse, error) {
@@ -324,6 +404,7 @@ func (s *AssertionService) GetSnapRevisionAssertionBySHA3_384(ctx context.Contex
 		// should have been logged and added to error list in repo function
 		return nil, fmt.Errorf("failed to get snap revision assertion: %v", cerr)
 	}
+	snapRevisionAssertion.Type = asserts.SnapRevisionType.Name
 
 	return &proto.SnapRevisionAssertionResponse{
 		Id:                         snapRevisionAssertion.ID.String(),
@@ -352,6 +433,7 @@ func (s *AssertionService) GetAccountKeyAssertionByName(ctx context.Context, req
 		// should have been logged and added to error list in repo function
 		return nil, fmt.Errorf("failed to get account key assertion: %v", cerr)
 	}
+	accountKeyAssertion.Type = asserts.AccountKeyType.Name
 
 	return &proto.AccountKeyAssertionResponse{
 		Id:                     accountKeyAssertion.ID.String(),
@@ -387,6 +469,7 @@ func (s *AssertionService) GetSnapDeclarationAssertionBySnapID(ctx context.Conte
 			Errors: el.ConvertToProtoErrorList(),
 		}, nil
 	}
+	snapDeclarationAssertion.Type = asserts.SnapDeclarationType.Name
 	refreshControl := []string(snapDeclarationAssertion.RefreshControl)
 	return &proto.SnapDeclarationAssertionResponse{
 		Id:              snapDeclarationAssertion.ID.String(),
@@ -404,6 +487,49 @@ func (s *AssertionService) GetSnapDeclarationAssertionBySnapID(ctx context.Conte
 		Slots:           modelSlotToProtoSlot(snapDeclarationAssertion.Slots),
 		Signature:       snapDeclarationAssertion.Signature,
 		Type:            snapDeclarationAssertion.Type,
+		Errors:          el.ConvertToProtoErrorList(),
+	}, nil
+}
+
+func (s *AssertionService) GetAccountAssertionByAccountID(ctx context.Context, req *proto.GetAccountAssertionByAccountIDRequest) (*proto.AccountAssertionResponse, error) {
+	el := cerror.NewErrorList()
+	if req.GetAccountId() == "" {
+		cerr := cerror.NewCustomError(cerror.Invalid, "account id is required")
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.AccountAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}, nil
+	}
+	parsedAccountId, err := uuid.Parse(req.GetAccountId())
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.Invalid, fmt.Sprintf("failed to parse account id: %s", err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.AccountAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}, nil
+	}
+	accountAssertion, cerr := s.repo.GetAccountAssertionByAccountID(el, parsedAccountId)
+	if cerr != nil {
+		// should have been logged and added to error list in repo function
+		return &proto.AccountAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}, nil
+	}
+	accountAssertion.Type = asserts.AccountType.Name
+	return &proto.AccountAssertionResponse{
+		Id:              accountAssertion.ID.String(),
+		AuthorityId:     accountAssertion.AuthorityID,
+		SignKeySha3_384: accountAssertion.SignKeySHA3_384,
+		AccountId:       accountAssertion.AccountID.String(),
+		Timestamp:       timestamppb.New(accountAssertion.Timestamp),
+		Type:            accountAssertion.Type,
+		Signature:       accountAssertion.Signature,
+		DisplayName:     accountAssertion.DisplayName,
+		Username:        accountAssertion.Username,
+		Validation:      accountAssertion.Validation,
+		Revision:        accountAssertion.Revision,
 		Errors:          el.ConvertToProtoErrorList(),
 	}, nil
 }
