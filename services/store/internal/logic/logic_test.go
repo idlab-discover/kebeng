@@ -209,7 +209,7 @@ func TestRegisterSnapName(t *testing.T) {
 					case "GetEntryByName":
 						mockRepo.On(function, tt.req.SnapName, mock.Anything, mock.Anything).Return(nil, mockReturn).Once()
 					case "RegisterSnap":
-						mockRepo.On(function, tt.req.SnapName, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, mockReturn).Once()
+						mockRepo.On(function, tt.req.SnapName, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, mockReturn).Once()
 					case "AddTrack":
 						mockRepo.On(function, mock.Anything, mock.Anything, mock.Anything).Return(nil, mockReturn).Once()
 					case "AddDefaultChannels":
@@ -222,7 +222,7 @@ func TestRegisterSnapName(t *testing.T) {
 					case "GetEntryByName":
 						mockRepo.On(function, tt.req.SnapName, mock.Anything, mock.Anything).Return(mockReturn, nil).Once()
 					case "RegisterSnap":
-						mockRepo.On(function, tt.req.SnapName, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(mockReturn, nil).Once()
+						mockRepo.On(function, tt.req.SnapName, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(mockReturn, nil).Once()
 					default:
 						t.Fatalf("invalid mock return function for SnapEntry")
 					}
