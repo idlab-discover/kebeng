@@ -53,6 +53,14 @@ func (m *MockAssertionClient) GetAccountKeyAssertionByName(name string) *proto.A
 	return nil
 }
 
+func (m *MockAssertionClient) AddAccountAssertion(accountId, displayName, username, validation string, timestamp time.Time) *proto.AccountAssertionResponse {
+	args := m.Called(accountId, displayName, username, validation, timestamp)
+	if resp, ok := args.Get(0).(*proto.AccountAssertionResponse); ok {
+		return resp
+	}
+	return nil
+}
+
 func (m *MockAssertionClient) GetLatestAccountKeyAssertion(accountId string) *proto.AccountKeyAssertionResponse {
 	args := m.Called(accountId)
 	if resp, ok := args.Get(0).(*proto.AccountKeyAssertionResponse); ok {
@@ -80,6 +88,14 @@ func (m *MockAssertionClient) AddSnapDeclarationAssertion(snapID, snapName, publ
 func (m *MockAssertionClient) GetSnapDeclarationAssertionBySnapID(snapId string) *proto.SnapDeclarationAssertionResponse {
 	args := m.Called(snapId)
 	if resp, ok := args.Get(0).(*proto.SnapDeclarationAssertionResponse); ok {
+		return resp
+	}
+	return nil
+}
+
+func (m *MockAssertionClient) GetAccountAssertionByAccountID(accountId string) *proto.AccountAssertionResponse {
+	args := m.Called(accountId)
+	if resp, ok := args.Get(0).(*proto.AccountAssertionResponse); ok {
 		return resp
 	}
 	return nil
