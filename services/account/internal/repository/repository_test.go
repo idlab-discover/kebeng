@@ -167,8 +167,8 @@ func TestCreateAccount(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			createdAt := time.Now()
 			updatedAt := time.Now()
-			tt.account.CreatedAt = &createdAt
-			tt.account.UpdatedAt = &updatedAt
+			tt.account.CreatedAt = createdAt
+			tt.account.UpdatedAt = updatedAt
 
 			createdAccount, err := globalRepo.AddAccount(context.Background(), tt.account)
 
@@ -185,8 +185,8 @@ func TestCreateAccount(t *testing.T) {
 				assert.NotEqual(t, "00000000-0000-0000-0000-000000000000", createdAccount.ID.String(), "ID should be valid")
 
 				// Compare timestamps within an acceptable range
-				assert.WithinDuration(t, *tt.account.CreatedAt, *createdAccount.CreatedAt, time.Second)
-				assert.WithinDuration(t, *tt.account.UpdatedAt, *createdAccount.UpdatedAt, time.Second)
+				assert.WithinDuration(t, tt.account.CreatedAt, createdAccount.CreatedAt, time.Second)
+				assert.WithinDuration(t, tt.account.UpdatedAt, createdAccount.UpdatedAt, time.Second)
 			}
 		})
 	}
@@ -206,8 +206,8 @@ func TestUpdateAccount(t *testing.T) {
 		Username:     "Ben123",
 		Email:        "Ben@example.com",
 		PasswordHash: "BenHash1",
-		CreatedAt:    &createdAt,
-		UpdatedAt:    &updatedAt,
+		CreatedAt:    createdAt,
+		UpdatedAt:    updatedAt,
 	}
 
 	insertQuery := `
@@ -243,7 +243,7 @@ func TestUpdateAccount(t *testing.T) {
 				Email:        "alice_updated@example.com",
 				PasswordHash: "hash_updated",
 				Validation:   &validation,
-				UpdatedAt:    ptrTime(time.Now()),
+				UpdatedAt:    time.Now(),
 			},
 			expectError: false,
 		},
@@ -256,7 +256,7 @@ func TestUpdateAccount(t *testing.T) {
 				Email:        "noone@example.com",
 				PasswordHash: "hash",
 				Validation:   &validation,
-				UpdatedAt:    ptrTime(time.Now()),
+				UpdatedAt:    time.Now(),
 			},
 			expectError:       true,
 			expectedErrorCode: cerror.ResourceNotFound, // should not be found
@@ -280,7 +280,7 @@ func TestUpdateAccount(t *testing.T) {
 				assert.Equal(t, tt.updateAccount.Validation, updated.Validation)
 
 				// Compare UpdatedAt within a reasonable range
-				assert.WithinDuration(t, *tt.updateAccount.UpdatedAt, *updated.UpdatedAt, time.Second)
+				assert.WithinDuration(t, tt.updateAccount.UpdatedAt, updated.UpdatedAt, time.Second)
 			}
 		})
 	}
@@ -296,8 +296,8 @@ func TestDeleteAccount(t *testing.T) {
 		Username:     "charlie123",
 		Email:        "charlie@example.com",
 		PasswordHash: "charlieHash1",
-		CreatedAt:    &createdAt,
-		UpdatedAt:    &updatedAt,
+		CreatedAt:    createdAt,
+		UpdatedAt:    updatedAt,
 	}
 
 	insertQuery := `
@@ -345,8 +345,8 @@ func TestGetAccountByEmail(t *testing.T) {
 		Username:     "duncan123",
 		Email:        "duncan@example.com",
 		PasswordHash: "duncanHash1",
-		CreatedAt:    &createdAt,
-		UpdatedAt:    &updatedAt,
+		CreatedAt:    createdAt,
+		UpdatedAt:    updatedAt,
 	}
 
 	insertQuery := `
@@ -437,8 +437,8 @@ func TestGetAccountByID(t *testing.T) {
 		Username:     "testuser",
 		Email:        "testuser@example.com",
 		PasswordHash: "hash1",
-		CreatedAt:    &createdAt,
-		UpdatedAt:    &updatedAt,
+		CreatedAt:    createdAt,
+		UpdatedAt:    updatedAt,
 	}
 
 	insertQuery := `
@@ -520,8 +520,8 @@ func TestGetAccountByUsername(t *testing.T) {
 		Username:     "uniqueuser1",
 		Email:        "uniqueuser1@example.com",
 		PasswordHash: "uniqueHash1",
-		CreatedAt:    &createdAt,
-		UpdatedAt:    &updatedAt,
+		CreatedAt:    createdAt,
+		UpdatedAt:    updatedAt,
 	}
 
 	insertQuery := `
@@ -599,8 +599,8 @@ func TestAddKeyToAccountByEmail(t *testing.T) {
 		Username:     "testuser_unique",
 		Email:        "testuser_unique@example.com",
 		PasswordHash: "uniqueHash1",
-		CreatedAt:    &createdAt,
-		UpdatedAt:    &updatedAt,
+		CreatedAt:    createdAt,
+		UpdatedAt:    updatedAt,
 	}
 
 	insertAccountQuery := `
@@ -666,8 +666,8 @@ func TestGetKeyBySHA3384(t *testing.T) {
 		Username:     "keytestuser",
 		Email:        "keytestuser@example.com",
 		PasswordHash: "someHashValue",
-		CreatedAt:    &createdAt,
-		UpdatedAt:    &updatedAt,
+		CreatedAt:    createdAt,
+		UpdatedAt:    updatedAt,
 	}
 
 	insertAccountQuery := `
@@ -708,8 +708,8 @@ func TestGetKeyBySHA3384(t *testing.T) {
 		encodedPublicKey,
 		account.ID,
 		&until,
-		&createdAtKey,
-		&updatedAtKey,
+		createdAtKey,
+		updatedAtKey,
 	)
 	if err != nil {
 		t.Fatalf("failed to insert SSH key: %v", err)
@@ -748,8 +748,8 @@ func TestGetKeysByAccountID(t *testing.T) {
 		Username:     "testkeysuser",
 		Email:        "testkeysuser@example.com",
 		PasswordHash: "testhash",
-		CreatedAt:    &createdAt,
-		UpdatedAt:    &updatedAt,
+		CreatedAt:    createdAt,
+		UpdatedAt:    updatedAt,
 	}
 
 	insertAccountQuery := `
@@ -851,8 +851,8 @@ func TestFilterKeys(t *testing.T) {
 		Username:     "filter_test",
 		Email:        "filter_test@example.com",
 		PasswordHash: "filterHash",
-		CreatedAt:    &accCreatedAt,
-		UpdatedAt:    &accUpdatedAt,
+		CreatedAt:    accCreatedAt,
+		UpdatedAt:    accUpdatedAt,
 	}
 	insertAccountQuery := `
 		INSERT INTO account (id, display_name, username, email, password_hash, created_at, updated_at)
@@ -1061,8 +1061,8 @@ func TestFilterAccounts(t *testing.T) {
 		Username:     "uniquetestuser",
 		Email:        "uniquetest@example.com",
 		PasswordHash: "securehash456",
-		CreatedAt:    &createdAt,
-		UpdatedAt:    &updatedAt,
+		CreatedAt:    createdAt,
+		UpdatedAt:    updatedAt,
 		Validation:   &validation,
 	}
 	insertQuery := `
@@ -1092,8 +1092,8 @@ func TestFilterAccounts(t *testing.T) {
 		Username:     "deleteduser",
 		Email:        "deleted@example.com",
 		PasswordHash: "securehash789",
-		CreatedAt:    &createdAt,
-		UpdatedAt:    &updatedAt,
+		CreatedAt:    createdAt,
+		UpdatedAt:    updatedAt,
 		DeletedAt:    &deletedAt,
 		Validation:   &validation,
 	}
