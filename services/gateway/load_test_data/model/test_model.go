@@ -27,9 +27,15 @@ type TestAccount struct {
 // ############# STORE SERVICE #############
 
 type TestSnapEntry struct {
-	ID        string `json:"id" db:"id"`
-	Name      string `json:"name" db:"name"`
-	Private   bool   `json:"private,omitempty" db:"private"`
-	AccountID string `json:"account_id" db:"account_id"`
-	Store     string `json:"store" db:"store"`
+	ID          string  `json:"id" db:"id"`
+	Name        string  `json:"name" db:"name"`
+	Type        string  `json:"type" db:"type"`
+	Confinement string  `json:"confinement" db:"confinement"`
+	Base        string  `json:"base" db:"base"`
+	Private     bool    `json:"private,omitempty" db:"private"`
+	Status      string  `json:"status" db:"status"`
+	Price       float64 `json:"price" db:"price"`
+	Store       string  `json:"store" db:"store"`
+	IconURL     string  `json:"icon_url" db:"icon_url"`
+	AccountID   string  `json:"account_id" db:"account_id"`
 }
