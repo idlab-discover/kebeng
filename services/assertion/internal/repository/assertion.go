@@ -17,13 +17,15 @@ type IAssertionRepository interface {
 	AddAssertion(snapEntryId uuid.UUID, assertionString string) (*model.Assertion, *cerror.CustomError)
 	AddAccountKeyAssertion(el *cerror.ErrorList, authority_id, public_key_SHA3_384, sign_key_SHA3_384, name string, revision uint32, account_id uuid.UUID, since time.Time, until time.Time, body []byte, body_length uint64, signature string) (*model.AccountKeyAssertion, *cerror.CustomError)
 	AddSnapRevisionAssertion(el *cerror.ErrorList, authority_id, snap_sha3_384, sign_key_SHA3_384 string, developer_id, snap_entry_id uuid.UUID, snap_revision_sequence_number uint32, snap_size uint64, timestamp time.Time, signature string) (*model.SnapRevisionAssertion, *cerror.CustomError)
-	AddSnapDeclarationAssertion(el *cerror.ErrorList, authorityID, signKey, snapID, snapName, publisherID string, revision, series uint32, timestamp time.Time, refreshControl []string, aliases []model.Alias, plugs map[string]*model.Plug, slots map[string]*model.Slot, signature string) (*model.SnapDeclarationAssertion, *cerror.CustomError)
+	AddSnapDeclarationAssertion(el *cerror.ErrorList, authorityID, sign_key_SHA3_384, snapID, snapName, publisherID string, revision, series uint32, timestamp time.Time, refreshControl []string, aliases []model.Alias, plugs map[string]*model.Plug, slots map[string]*model.Slot, signature string) (*model.SnapDeclarationAssertion, *cerror.CustomError)
+	AddAccountAssertion(el *cerror.ErrorList, authority_id, displayName, username, validation string, accountID uuid.UUID, revision uint32, timestamp time.Time, sign_key_SHA3_384, signature string) (*model.AccountAssertion, *cerror.CustomError)
 
 	GetAccountKeyAssertionByName(el *cerror.ErrorList, name string) (*model.AccountKeyAssertion, *cerror.CustomError)
 	GetLatestAccountKeyAssertion(el *cerror.ErrorList, account_id uuid.UUID) (*model.AccountKeyAssertion, *cerror.CustomError)
 	GetSnapRevisionAssertionBySHA3_384(el *cerror.ErrorList, snap_sha3_384 string) (*model.SnapRevisionAssertion, *cerror.CustomError)
 	GetSnapDeclarationAssertionBySnapID(el *cerror.ErrorList, snapID string) (*model.SnapDeclarationAssertion, *cerror.CustomError)
 	GetLatestSnapDeclarationAssertion(el *cerror.ErrorList, snapID string) (*model.SnapDeclarationAssertion, *cerror.CustomError)
+	GetAccountAssertionByAccountID(el *cerror.ErrorList, accountID uuid.UUID) (*model.AccountAssertion, *cerror.CustomError)
 }
 
 type AssertionRepository struct {
@@ -84,7 +86,6 @@ func (r *AssertionRepository) AddSnapRevisionAssertion(el *cerror.ErrorList, aut
 	return assertion, nil
 }
 
-// TODO: implement this correctly and decide how to store in db
 func (r *AssertionRepository) AddSnapDeclarationAssertion(el *cerror.ErrorList, authorityID, signKey, snapID, snapName, publisherID string, revision, series uint32, timestamp time.Time, refreshControl []string, aliases []model.Alias, plugs map[string]*model.Plug, slots map[string]*model.Slot, signature string) (*model.SnapDeclarationAssertion, *cerror.CustomError) {
 	// start transaction
 	tx, err := r.db.Beginx()
@@ -173,6 +174,24 @@ func (r *AssertionRepository) AddSnapDeclarationAssertion(el *cerror.ErrorList, 
 	parent.Slots = slots
 
 	return parent, nil
+}
+
+func (r *AssertionRepository) AddAccountAssertion(el *cerror.ErrorList, authority_id, displayName, username, validation string, accountID uuid.UUID, revision uint32, timestamp time.Time, sign_key_SHA3_384, signature string) (*model.AccountAssertion, *cerror.CustomError) {
+	query := `
+		INSERT INTO account_assertion (authority_id, display_name, username, validation, account_id, revision, timestamp, sign_key_SHA3_384, signature)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+	  RETURNING id, authority_id, display_name, username, validation, account_id,
+		revision, timestamp, sign_key_sha3_384, signature
+	`
+	assertion := &model.AccountAssertion{}
+	err := r.db.Get(assertion, query, authority_id, displayName, username, validation, accountID, revision, timestamp, sign_key_SHA3_384, signature)
+	if err != nil {
+		cerr := cerror.ConvertError(err, fmt.Sprintf("failed to save account assertion in database: %v", err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return nil, cerr
+	}
+	return assertion, nil
 }
 
 func (r *AssertionRepository) GetAccountKeyAssertionByName(el *cerror.ErrorList, name string) (*model.AccountKeyAssertion, *cerror.CustomError) {
@@ -279,6 +298,24 @@ func (r *AssertionRepository) GetLatestSnapDeclarationAssertion(el *cerror.Error
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
 		return nil, cerror.ConvertError(err, fmt.Sprintf("failed to get latest snap declaration assertion by snap id: %s, err: %v", snapID, err))
+	}
+
+	return assertion, nil
+}
+
+func (r *AssertionRepository) GetAccountAssertionByAccountID(el *cerror.ErrorList, accountID uuid.UUID) (*model.AccountAssertion, *cerror.CustomError) {
+	query := `
+		SELECT id, authority_id, display_name, username, validation, account_id, revision, timestamp, sign_key_SHA3_384, signature 
+		FROM account_assertion 
+		WHERE account_id = $1
+	`
+	assertion := &model.AccountAssertion{}
+
+	err := r.db.Get(assertion, query, accountID)
+	if err != nil {
+		logrus.Errorf("failed to get account assertion by account id: %s, err: %v", accountID.String(), err)
+		el.AddCustomError(cerror.ConvertError(err, fmt.Sprintf("failed to get account assertion by account id: %s, err: %v", accountID.String(), err)))
+		return nil, cerror.ConvertError(err, fmt.Sprintf("failed to get account assertion by account id: %s, err: %v", accountID.String(), err))
 	}
 
 	return assertion, nil
