@@ -133,6 +133,13 @@ func (h *testHandler) loadInAccountDataInDB(_ context.Context, accountTestData *
 		}
 		// Store the account ID in the map
 		h.saveID(accountIDMap, account.ID, accountResp.Id)
+
+		// Create the account assertion
+		now := time.Now()
+		accountAssertResp := h.AssertionClient.AddAccountAssertion(accountResp.Id, account.DisplayName, account.Username, accountResp.GetValidation(), now)
+		if len(accountAssertResp.Errors) > 0 {
+			return fmt.Errorf("failed to create account assertion: %v", accountAssertResp.Errors)
+		}
 	}
 
 	// Create the keys
