@@ -18,9 +18,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func ptrBool(b bool) *bool {
-	return &b
-}
 func ptrString(s string) *string {
 	return &s
 }
