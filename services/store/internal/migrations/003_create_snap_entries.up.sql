@@ -16,16 +16,16 @@ CREATE TABLE IF NOT EXISTS public.entry
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now(),
     deleted_at timestamp with time zone,
-    private BOOLEAN,
     name text UNIQUE COLLATE pg_catalog."default",
     type text COLLATE pg_catalog."default",
     confinement text COLLATE pg_catalog."default",
     base text COLLATE pg_catalog."default",
-    account_id uuid,
+    private BOOLEAN,
     status text COLLATE pg_catalog."default",
     price numeric,
     store text COLLATE pg_catalog."default",
     icon_url text COLLATE pg_catalog."default",
+    account_id uuid,
     CONSTRAINT entry_pkey PRIMARY KEY (id)
 )
 

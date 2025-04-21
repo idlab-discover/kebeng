@@ -53,7 +53,7 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 				return
 			}
 			result := "download"
-			res.Result = &result
+			res.Result = result
 			resp.Responses = append(resp.Responses, res)
 		case "install": // same as download just different result value, for now
 			res, cerr := h.refreshSnapDownload(action, el)
@@ -62,7 +62,7 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 				return
 			}
 			result := "install"
-			res.Result = &result
+			res.Result = result
 			resp.Responses = append(resp.Responses, res)
 		default:
 			el.Add(cerror.NotImplemented, "Action not implemented")
@@ -85,7 +85,7 @@ func (h *Handler) refreshSnapDownload(action *model.Action, el *cerror.ErrorList
 	publisher := h.AccountClient.GetAccountByID(snapEntry.PublisherId)
 	if len(publisher.Errors) > 0 {
 		el.ExtendProtoError(publisher.Errors)
-		res.Result = nil
+		res.Result = "error"
 		return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("account error: %v", publisher.Errors))
 	}
 
@@ -98,13 +98,13 @@ func (h *Handler) refreshSnapDownload(action *model.Action, el *cerror.ErrorList
 
 	hexSum := hex.EncodeToString(raw)
 
-	res.InstanceKey = &action.InstanceKey
-	res.SnapId = &snapEntry.Id
-	res.Name = &snapEntry.SnapName
+	res.InstanceKey = action.InstanceKey
+	res.SnapId = snapEntry.Id
+	res.Name = snapEntry.SnapName
 	res.Snap = &model.RefreshSnap{
-		Architectures: &latestRevision.Architectures,
-		SnapId:        &snapEntry.Id,
-		Name:          &snapEntry.SnapName,
+		Architectures: latestRevision.Architectures,
+		SnapId:        snapEntry.Id,
+		Name:          snapEntry.SnapName,
 		Publisher: &model.Publisher{
 			Username: publisher.Username,
 			ID:       publisher.Id,
@@ -114,8 +114,8 @@ func (h *Handler) refreshSnapDownload(action *model.Action, el *cerror.ErrorList
 			Sha3_384: &hexSum,
 			Size:     &latestRevision.Size,
 		},
-		Version:     &latestRevision.Version,
-		Revision:    &latestRevision.SequenceNumber,
+		Version:     latestRevision.Version,
+		Revision:    latestRevision.SequenceNumber,
 		Confinement: snapEntry.Confinement,
 		Type:        snapEntry.Type,
 		Base:        snapEntry.Base,
@@ -181,7 +181,7 @@ func (h *Handler) RegisterSnapName(c *gin.Context) {
 
 	dryRun := c.Query("dry_run") == "1"
 
-	resp := h.StoreClient.RegisterSnapName(req.SnapName, req.IsPrivate, req.Store, dryRun, accountUUID)
+	resp := h.StoreClient.RegisterSnapName(req.SnapName, "", "", "", req.IsPrivate, "", 0.0, req.Store, "", dryRun, accountUUID) // TODO: fill in empty fields once we know where to get the information from
 	if len(resp.Errors) > 0 {
 		el.ExtendProtoError(resp.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
@@ -286,7 +286,7 @@ func (h *Handler) SnapPush(c *gin.Context) {
 	}
 
 	// Dry run to check if the snap name is registered
-	entry := h.StoreClient.RegisterSnapName(req.Name, false, "", true, accountUUID)
+	entry := h.StoreClient.RegisterSnapName(req.Name, "", "", "", false, "", 0.0, "", "", true, accountUUID)
 	if len(entry.Errors) > 0 {
 		el.ExtendProtoError(entry.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
@@ -327,8 +327,8 @@ func (h *Handler) SnapPush(c *gin.Context) {
 	// Get the file name of the unscanned upload from the request body
 	logrus.Debugf("Temp file name: %s", req.UnscannedFileName)
 
-	// Create a new snap upload with status "pending"
-	upload := h.StoreClient.AddUpload(entry.SnapName, parsedEntryUUID, "pending", accountUUID, req.UnscannedFileName)
+	// Create a new snap upload with status "pending" and revision 0
+	upload := h.StoreClient.AddUpload(parsedEntryUUID, accountUUID, entry.SnapName, "pending", req.UnscannedFileName, 0)
 	if len(upload.Errors) > 0 {
 		el.ExtendProtoError(upload.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
@@ -343,7 +343,7 @@ func (h *Handler) SnapPush(c *gin.Context) {
 	})
 
 	// After the status details URL is returned, we can proceed with creating a new revision
-	// We need the sha3_384 hash of the snap package
+	// We need the sha3_384_encoded hash of the snap package
 	metadata := h.StoreClient.GetObjectCustomMetadata("unscanned", req.UnscannedFileName)
 	if len(metadata.Errors) > 0 {
 		el.ExtendProtoError(metadata.Errors)
@@ -353,7 +353,7 @@ func (h *Handler) SnapPush(c *gin.Context) {
 	logrus.Debugf("Metadata: %v", metadata)
 
 	// Create a new revision for the snap upload
-	revision := h.StoreClient.AddRevision(entry.SnapName, metadata.Sha3_384, uint64(req.BinaryFileSize), []string{"amd64"}, req.Channels, req.UnscannedFileName) // FIX: architectures should be passed from the request
+	revision := h.StoreClient.AddRevision(entry.SnapName, metadata.GetSha3_384Encoded(), uint64(req.BinaryFileSize), []string{"amd64"}, req.Channels, req.UnscannedFileName) // FIX: architectures should be passed from the request
 	if len(revision.Errors) > 0 {
 		el.ExtendProtoError(revision.Errors)
 	}

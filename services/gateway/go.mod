@@ -8,7 +8,7 @@ require (
 	github.com/idlab-discover/kebeng v0.0.0-20250417102054-28cdb3ec3408
 	github.com/idlab-discover/kebeng/services/account v0.0.0-20250418170613-1ffa298c9376
 	github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250420172454-40ee5be74eb5
-	github.com/idlab-discover/kebeng/services/store v0.0.0-20250420184629-b14ae8720e6b
+	github.com/idlab-discover/kebeng/services/store v0.0.0-20250421125137-bff2c698b0ee
 	github.com/sirupsen/logrus v1.9.3
 	github.com/snapcore/snapd v0.0.0-20250228185938-4d4437a35a6b
 	github.com/spf13/viper v1.19.0
