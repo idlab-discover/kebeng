@@ -134,7 +134,7 @@ type Snap struct {
 	SnapID          string         `json:"snap-id"`
 	Store           string         `json:"store"`
 	Private         bool           `json:"private"`
-	IconURL         *string        `json:"icon_url,omitempty"`
+	IconURL         string         `json:"icon_url,omitempty" default:""`
 	Publisher       Publisher      `json:"publisher"`
 	LatestComments  []SnapComment  `json:"latest_comments"`
 	LatestRevisions []SnapRevision `json:"latest_revisions"`
