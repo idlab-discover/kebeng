@@ -1308,13 +1308,13 @@ func TestGetChannelById(t *testing.T) {
 
 // Helper function to insert mock data
 func mockData(db *sqlx.DB) {
-	// Mock snap entry
+	// Mock snap entry with all parameters
 	_, err := db.Exec(`
-		INSERT INTO public.entry (id, private, name, type, confinement, status, price, store, icon_url, account_id)
-		VALUES ($1, false, 'mock-snap', 'application', 'strict', 'active', 0.0, 'mock-store', 'http://mock-icon-url.com', $2);
+		INSERT INTO public.entry (id, private, name, type, confinement, base, status, price, store, icon_url, account_id)
+		VALUES ($1, true, 'mock-snap', 'application', 'strict', 'core20', 'active', 9.99, 'mock-store-full', 'http://mock-icon-url-full.com', $2);
 	`, mockUUID, mockUUID)
 	if err != nil {
-		logrus.Fatalf("failed to insert mock data for snap entry: %v", err)
+		logrus.Fatalf("failed to insert mock data for snap entry with all parameters: %v", err)
 	}
 
 	// Mock snap track
