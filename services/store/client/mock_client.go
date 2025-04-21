@@ -45,8 +45,8 @@ func (m *MockStoreClient) Close() {
 }
 
 // RegisterSnapName mocks the RegisterSnapName function.
-func (m *MockStoreClient) RegisterSnapName(snapName string, isPrivate bool, storeName string, dryRun bool, accountId uuid.UUID) *proto.RegisterSnapNameResponse {
-	args := m.Called(snapName, isPrivate, storeName, dryRun, accountId)
+func (m *MockStoreClient) RegisterSnapName(snapName string, snapType string, confinement string, base string, isPrivate bool, status string, price float64, storeName string, iconUrl string, dryRun bool, accountId uuid.UUID) *proto.RegisterSnapNameResponse {
+	args := m.Called(snapName, snapType, confinement, base, isPrivate, status, price, storeName, iconUrl, dryRun, accountId)
 	if resp, ok := args.Get(0).(*proto.RegisterSnapNameResponse); ok {
 		return resp
 	}
@@ -117,8 +117,8 @@ func (m *MockStoreClient) UnscannedUpload(ctx context.Context, snapFile io.Reade
 }
 
 // AddUpload mocks the AddUpload function.
-func (m *MockStoreClient) AddUpload(snapName string, entryId uuid.UUID, status string, accountId uuid.UUID, unscannedFileName string) *proto.AddUploadResponse {
-	args := m.Called(snapName, entryId, status, accountId)
+func (m *MockStoreClient) AddUpload(entryId, accountId uuid.UUID, snapName, status, unscannedFileName string, revision uint32) *proto.AddUploadResponse {
+	args := m.Called(entryId, accountId, snapName, status, unscannedFileName, revision)
 	if resp, ok := args.Get(0).(*proto.AddUploadResponse); ok {
 		return resp
 	}

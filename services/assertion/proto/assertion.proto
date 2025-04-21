@@ -65,7 +65,7 @@ message SnapRevisionAssertionResponse {
 
 message AddAccountKeyAssertionRequest {
   string encoded_public_key = 1;
-  string public_key_sha3_384 = 2;
+  string public_key_sha3_384_encoded = 2;
   string account_id = 3;
   string name = 4;
   google.protobuf.Timestamp since = 5;
@@ -76,7 +76,7 @@ message AccountKeyAssertionResponse {
   string type = 1;
   string authority_id = 2;
   uint32 revision_sequence_number = 3;
-  string public_key_sha3_384 = 4;
+  string public_key_sha3_384_encoded = 4;
   string account_id = 5;
   string name = 6;
   google.protobuf.Timestamp since = 7;
@@ -97,7 +97,7 @@ message GetSnapRevisionAssertionBySHA3_384Request {
 }
 
 message GetAccountKeyAssertionByPublicKeyShaRequest {
-  string public_key_sha3_384 = 1;
+  string public_key_sha3_384_encoded = 1;
 }
 
 message AddSnapDeclarationAssertionRequest {

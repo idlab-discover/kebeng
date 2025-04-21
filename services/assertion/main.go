@@ -71,7 +71,7 @@ func main() {
 		Since:             &timestamppb.Timestamp{Seconds: now.Unix()},
 		Until:             &timestamppb.Timestamp{Seconds: now.Add(24 * time.Hour).Unix()},
 	}
-	accountKeyAssertion, err := assertionLogic.AddAccountKeyAssertion(ctx, req)
+	accountKeyAssertion, _ := assertionLogic.AddAccountKeyAssertion(ctx, req)
 	if len(accountKeyAssertion.Errors) != 0 {
 		logrus.Fatalf("Failed to create account key assertion: %v", accountKeyAssertion.Errors)
 	}

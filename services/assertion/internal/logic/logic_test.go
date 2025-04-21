@@ -261,30 +261,30 @@ func TestAddAccountKeyAssertion(t *testing.T) {
 		{
 			name: "Valid no previous record",
 			req: &proto.AddAccountKeyAssertionRequest{
-				AccountId:         validUUID,
-				PublicKeySha3_384: accountKey.PublicKey().ID(),
-				EncodedPublicKey:  accountPubBase64,
-				Name:              "my-key",
-				Since:             timestamppb.New(now),
+				AccountId:                validUUID,
+				PublicKeySha3_384Encoded: accountKey.PublicKey().ID(),
+				EncodedPublicKey:         accountPubBase64,
+				Name:                     "my-key",
+				Since:                    timestamppb.New(now),
 			},
 			mockReturn: map[string]any{
 				"GetLatestAccountKeyAssertion": cerror.NewCustomError(cerror.ResourceNotFound, "no previous record found"),
 				"AddAccountKeyAssertion": &model.AccountKeyAssertion{
-					ID:                     uuid.New(),
-					CreatedAt:              now,
-					DeletedAt:              nil,
-					Type:                   "account-key",
-					AuthorityID:            cfg.AuthorityID,
-					RevisionSequenceNumber: 1,
-					PublicKeySHA3_384:      accountKey.PublicKey().ID(),
-					AccountID:              parsedUUID,
-					Name:                   "my-key",
-					Since:                  now,
-					Until:                  now.Add(365 * 24 * time.Hour),
-					BodyLength:             uint64(len("body")),
-					Body:                   []byte("body"),           // may be updated per actual usage
-					SignKeySHA3_384:        privKey.PublicKey().ID(), // store's signature key ID
-					Signature:              "signature",
+					ID:                       uuid.New(),
+					CreatedAt:                now,
+					DeletedAt:                nil,
+					Type:                     "account-key",
+					AuthorityID:              cfg.AuthorityID,
+					RevisionSequenceNumber:   1,
+					PublicKeySha3_384Encoded: accountKey.PublicKey().ID(),
+					AccountID:                parsedUUID,
+					Name:                     "my-key",
+					Since:                    now,
+					Until:                    now.Add(365 * 24 * time.Hour),
+					BodyLength:               uint64(len("body")),
+					Body:                     []byte("body"),           // may be updated per actual usage
+					SignKeySHA3_384:          privKey.PublicKey().ID(), // store's signature key ID
+					Signature:                "signature",
 				},
 			},
 			expectedError:    false,
@@ -302,12 +302,12 @@ func TestAddAccountKeyAssertion(t *testing.T) {
 		{
 			name: "Repo GetLatest unexpected error",
 			req: &proto.AddAccountKeyAssertionRequest{
-				AccountId:         validUUID,
-				PublicKeySha3_384: accountKey.PublicKey().ID(),
-				EncodedPublicKey:  pubB64,
-				Name:              "foo",
-				Since:             timestamppb.New(now),
-				Until:             timestamppb.New(now.Add(365 * 24 * time.Hour)),
+				AccountId:                validUUID,
+				PublicKeySha3_384Encoded: accountKey.PublicKey().ID(),
+				EncodedPublicKey:         pubB64,
+				Name:                     "foo",
+				Since:                    timestamppb.New(now),
+				Until:                    timestamppb.New(now.Add(365 * 24 * time.Hour)),
 			},
 			mockReturn: map[string]any{
 				"GetLatestAccountKeyAssertion": cerror.NewCustomError(cerror.DatabaseError, "db down"),
@@ -318,12 +318,12 @@ func TestAddAccountKeyAssertion(t *testing.T) {
 		{
 			name: "Invalid base64 in EncodedPublicKey",
 			req: &proto.AddAccountKeyAssertionRequest{
-				AccountId:         validUUID,
-				PublicKeySha3_384: accountKey.PublicKey().ID(),
-				EncodedPublicKey:  badB64,
-				Name:              "foo",
-				Since:             timestamppb.New(now),
-				Until:             timestamppb.New(now.Add(365 * 24 * time.Hour)),
+				AccountId:                validUUID,
+				PublicKeySha3_384Encoded: accountKey.PublicKey().ID(),
+				EncodedPublicKey:         badB64,
+				Name:                     "foo",
+				Since:                    timestamppb.New(now),
+				Until:                    timestamppb.New(now.Add(365 * 24 * time.Hour)),
 			},
 			mockReturn: map[string]any{
 				"GetLatestAccountKeyAssertion": cerror.NewCustomError(cerror.ResourceNotFound, "none"),
@@ -334,12 +334,12 @@ func TestAddAccountKeyAssertion(t *testing.T) {
 		{
 			name: "DecodePublicKey packet error",
 			req: &proto.AddAccountKeyAssertionRequest{
-				AccountId:         validUUID,
-				PublicKeySha3_384: accountKey.PublicKey().ID(),
-				EncodedPublicKey:  decodeButInvalid,
-				Name:              "foo",
-				Since:             timestamppb.New(now),
-				Until:             timestamppb.New(now.Add(365 * 24 * time.Hour)),
+				AccountId:                validUUID,
+				PublicKeySha3_384Encoded: accountKey.PublicKey().ID(),
+				EncodedPublicKey:         decodeButInvalid,
+				Name:                     "foo",
+				Since:                    timestamppb.New(now),
+				Until:                    timestamppb.New(now.Add(365 * 24 * time.Hour)),
 			},
 			mockReturn: map[string]any{
 				"GetLatestAccountKeyAssertion": cerror.NewCustomError(cerror.ResourceNotFound, "none"),
@@ -350,12 +350,12 @@ func TestAddAccountKeyAssertion(t *testing.T) {
 		{
 			name: "Repo AddAccountKeyAssertion error",
 			req: &proto.AddAccountKeyAssertionRequest{
-				AccountId:         validUUID,
-				PublicKeySha3_384: accountKey.PublicKey().ID(),
-				EncodedPublicKey:  pubB64,
-				Name:              "foo",
-				Since:             timestamppb.New(now),
-				Until:             timestamppb.New(now.Add(365 * 24 * time.Hour)),
+				AccountId:                validUUID,
+				PublicKeySha3_384Encoded: accountKey.PublicKey().ID(),
+				EncodedPublicKey:         pubB64,
+				Name:                     "foo",
+				Since:                    timestamppb.New(now),
+				Until:                    timestamppb.New(now.Add(365 * 24 * time.Hour)),
 			},
 			mockReturn: map[string]any{
 				"GetLatestAccountKeyAssertion": cerror.NewCustomError(cerror.ResourceNotFound, "none"),
@@ -367,31 +367,31 @@ func TestAddAccountKeyAssertion(t *testing.T) {
 		{
 			name: "Successful path",
 			req: &proto.AddAccountKeyAssertionRequest{
-				AccountId:         validUUID,
-				PublicKeySha3_384: accountKey.PublicKey().ID(),
-				EncodedPublicKey:  pubB64,
-				Name:              "my-key",
-				Since:             timestamppb.New(now),
-				Until:             timestamppb.New(now.Add(365 * 24 * time.Hour)),
+				AccountId:                validUUID,
+				PublicKeySha3_384Encoded: accountKey.PublicKey().ID(),
+				EncodedPublicKey:         pubB64,
+				Name:                     "my-key",
+				Since:                    timestamppb.New(now),
+				Until:                    timestamppb.New(now.Add(365 * 24 * time.Hour)),
 			},
 			mockReturn: map[string]any{
 				"GetLatestAccountKeyAssertion": cerror.NewCustomError(cerror.ResourceNotFound, "none"),
 				"AddAccountKeyAssertion": &model.AccountKeyAssertion{
-					ID:                     uuid.New(),
-					CreatedAt:              now,
-					DeletedAt:              nil,
-					Type:                   "account-key",
-					AuthorityID:            cfg.AuthorityID,
-					RevisionSequenceNumber: 1,
-					PublicKeySHA3_384:      accountKey.PublicKey().ID(),
-					AccountID:              parsedUUID,
-					Name:                   "my-key",
-					Since:                  now,
-					Until:                  now.Add(365 * 24 * time.Hour),
-					BodyLength:             uint64(len(pubRaw)),
-					Body:                   pubRaw,
-					SignKeySHA3_384:        privKey.PublicKey().ID(),
-					Signature:              "signature",
+					ID:                       uuid.New(),
+					CreatedAt:                now,
+					DeletedAt:                nil,
+					Type:                     "account-key",
+					AuthorityID:              cfg.AuthorityID,
+					RevisionSequenceNumber:   1,
+					PublicKeySha3_384Encoded: accountKey.PublicKey().ID(),
+					AccountID:                parsedUUID,
+					Name:                     "my-key",
+					Since:                    now,
+					Until:                    now.Add(365 * 24 * time.Hour),
+					BodyLength:               uint64(len(pubRaw)),
+					Body:                     pubRaw,
+					SignKeySHA3_384:          privKey.PublicKey().ID(),
+					Signature:                "signature",
 				},
 			},
 			expectedError:    false,
@@ -454,7 +454,7 @@ func TestAddAccountKeyAssertion(t *testing.T) {
 				assert.Equal(t, tc.expectedRevision, resp.RevisionSequenceNumber)
 				assert.Equal(t, tc.req.Name, resp.Name)
 				assert.Equal(t, tc.req.AccountId, resp.AccountId)
-				assert.Equal(t, tc.req.PublicKeySha3_384, resp.PublicKeySha3_384)
+				assert.Equal(t, tc.req.PublicKeySha3_384Encoded, resp.PublicKeySha3_384Encoded)
 				assert.NotEmpty(t, resp.Signature)
 			}
 
