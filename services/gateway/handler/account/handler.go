@@ -145,8 +145,8 @@ func (h *Handler) GetAccount(c *gin.Context) {
 	}
 
 	for _, e := range entries.Entries {
-		series := util.GetString(e.Base) // Example: "16" //TODO: check if this is series normally but i think its the same as base?
-		snapName := e.SnapName           // Example: "hello-published"
+		series := e.Base       // Example: "16" //TODO: check if this is series normally but i think its the same as base?
+		snapName := e.SnapName // Example: "hello-published"
 
 		// Ensure series exists in the map
 		if snaps[series] == nil {
@@ -170,11 +170,11 @@ func (h *Handler) GetAccount(c *gin.Context) {
 
 		// TODO: fix this
 		snap := model.Snap{
-			Status:          util.GetString(e.Status),
-			Price:           util.GetFloat64(e.Price),
+			Status:          e.Status,
+			Price:           e.Price,
 			Since:           e.Since.AsTime(),
 			SnapID:          e.Id,
-			Private:         util.GetBool(e.Private), // this isn't the best yet but don't know what to do if its a nil value set to true or false?
+			Private:         e.Private, // this isn't the best yet but don't know what to do if its a nil value set to true or false?
 			IconURL:         e.IconUrl,
 			Publisher:       *publisher,
 			LatestComments:  []model.SnapComment{}, // No comments available yet

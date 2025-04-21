@@ -18,9 +18,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func ptrBool(b bool) *bool {
-	return &b
-}
 func ptrString(s string) *string {
 	return &s
 }
@@ -35,8 +32,14 @@ func TestStoreClient_RegisterSnapName(t *testing.T) {
 	tests := []struct {
 		name               string
 		snapName           string
+		snapType           string
+		confinement        string
+		base               string
 		isPrivate          bool
+		status             string
+		price              float64
 		storeName          string
+		iconUrl            string
 		dryRun             bool
 		accountId          uuid.UUID
 		expectedResp       *proto.RegisterSnapNameResponse
@@ -44,12 +47,18 @@ func TestStoreClient_RegisterSnapName(t *testing.T) {
 		expectedProtoError bool
 	}{
 		{
-			name:      "Successful proto call",
-			snapName:  "test_snap",
-			isPrivate: false,
-			storeName: "test_store",
-			dryRun:    false,
-			accountId: uuid.New(),
+			name:        "Successful proto call",
+			snapName:    "test_snap",
+			snapType:    "app",
+			confinement: "strict",
+			base:        "core24",
+			isPrivate:   false,
+			status:      "active",
+			price:       9.99,
+			storeName:   "test_store",
+			iconUrl:     "http://example.com/icon.png",
+			dryRun:      false,
+			accountId:   uuid.New(),
 			expectedResp: &proto.RegisterSnapNameResponse{
 				Id:       mockID.String(),
 				SnapName: "test_snap",
@@ -60,19 +69,31 @@ func TestStoreClient_RegisterSnapName(t *testing.T) {
 		{
 			name:               "proto call returns error",
 			snapName:           "test_snap",
+			snapType:           "app",
+			confinement:        "strict",
+			base:               "core24",
 			isPrivate:          false,
+			status:             "active",
+			price:              9.99,
 			storeName:          "test_store",
+			iconUrl:            "http://example.com/icon.png",
 			dryRun:             false,
 			accountId:          uuid.New(),
 			expectedResp:       nil,
 			expectedProtoError: true,
 		},
 		{
-			name:      "response contains errors",
-			snapName:  "test_snap",
-			isPrivate: false,
-			storeName: "test_store",
-			dryRun:    false,
+			name:        "response contains errors",
+			snapName:    "test_snap",
+			snapType:    "app",
+			confinement: "strict",
+			base:        "core24",
+			isPrivate:   false,
+			status:      "active",
+			price:       9.99,
+			storeName:   "test_store",
+			iconUrl:     "http://example.com/icon.png",
+			dryRun:      false,
 			expectedResp: &proto.RegisterSnapNameResponse{
 				Errors: []*cerrorpb.Error{{
 					Code:    cerror.InternalServerError,
@@ -92,7 +113,7 @@ func TestStoreClient_RegisterSnapName(t *testing.T) {
 				mockProtoClient.On("RegisterSnapName", mock.Anything, mock.Anything).Return(tc.expectedResp, nil).Once()
 			}
 
-			resp := storeClient.RegisterSnapName(tc.snapName, tc.isPrivate, tc.storeName, tc.dryRun, tc.accountId)
+			resp := storeClient.RegisterSnapName(tc.snapName, tc.snapType, tc.confinement, tc.base, tc.isPrivate, tc.status, tc.price, tc.storeName, tc.iconUrl, tc.dryRun, tc.accountId)
 			if !tc.expectedErrors && !tc.expectedProtoError {
 				assert.Equal(t, tc.expectedResp, resp)
 				assert.Empty(t, resp.Errors)
@@ -137,9 +158,9 @@ func TestStoreClient_GetEntries(t *testing.T) {
 					{
 						Id:          "test_id",
 						SnapName:    "test_name",
-						Confinement: ptrString("strict"),
-						Base:        ptrString("core24"),
-						Private:     ptrBool(false),
+						Confinement: "strict",
+						Base:        "core24",
+						Private:     false,
 						// Other fields...
 						Errors: []*cerrorpb.Error{},
 					},
@@ -180,9 +201,9 @@ func TestStoreClient_GetEntries(t *testing.T) {
 					{
 						Id:          "test_id",
 						SnapName:    "test_name",
-						Confinement: ptrString("strict"),
-						Base:        ptrString("core24"),
-						Private:     ptrBool(false),
+						Confinement: "strict",
+						Base:        "core24",
+						Private:     false,
 						// Other fields...
 						Errors: []*cerrorpb.Error{{
 							Code:    cerror.InternalServerError,
@@ -357,9 +378,9 @@ func TestStoreClient_GetEntriesByAccountID(t *testing.T) {
 					{
 						Id:          "test_id",
 						SnapName:    "test_name",
-						Confinement: ptrString("strict"),
-						Base:        ptrString("core24"),
-						Private:     ptrBool(false),
+						Confinement: "strict",
+						Base:        "core24",
+						Private:     false,
 						// Other fields...
 						Errors: []*cerrorpb.Error{},
 					},
@@ -384,9 +405,9 @@ func TestStoreClient_GetEntriesByAccountID(t *testing.T) {
 					{
 						Id:          "test_id",
 						SnapName:    "test_name",
-						Confinement: ptrString("strict"),
-						Base:        ptrString("core24"),
-						Private:     ptrBool(false),
+						Confinement: "strict",
+						Base:        "core24",
+						Private:     false,
 						// Other fields...
 						Errors: []*cerrorpb.Error{{
 							Code:    cerror.InternalServerError,
@@ -824,22 +845,24 @@ func TestStoreClient_AddUpload(t *testing.T) {
 
 	tests := []struct {
 		name               string
-		snapName           string
 		entryId            uuid.UUID
-		status             string
 		accountId          uuid.UUID
+		snapName           string
+		status             string
 		unscannedFileName  string
+		revision           uint32
 		expectedResp       *proto.AddUploadResponse
 		expectedErrors     bool
 		expectedProtoError bool
 	}{
 		{
 			name:              "Successful proto call",
-			snapName:          "test_snap",
 			entryId:           mockID,
-			status:            "pending",
 			accountId:         uuid.New(),
+			snapName:          "test_snap",
+			status:            "pending",
 			unscannedFileName: "test_file",
+			revision:          1,
 			expectedResp: &proto.AddUploadResponse{
 				Id:       mockID.String(),
 				SnapName: "test_snap",
@@ -850,20 +873,24 @@ func TestStoreClient_AddUpload(t *testing.T) {
 			expectedProtoError: false,
 		},
 		{
-			name:               "proto call returns error",
-			snapName:           "test_snap",
-			entryId:            uuid.New(),
-			status:             "pending",
-			accountId:          uuid.New(),
-			unscannedFileName:  "test_file",
-			expectedResp:       nil,
+			name:              "proto call returns error",
+			entryId:           uuid.New(),
+			accountId:         uuid.New(),
+			snapName:          "test_snap",
+			status:            "pending",
+			unscannedFileName: "test_file",
+			revision:          1,
+			expectedResp:      nil,
 			expectedProtoError: true,
 		},
 		{
 			name:              "response contains errors",
-			snapName:          "test_snap",
 			entryId:           uuid.New(),
+			accountId:         uuid.New(),
+			snapName:          "test_snap",
+			status:            "pending",
 			unscannedFileName: "test_file",
+			revision:          1,
 			expectedResp: &proto.AddUploadResponse{
 				Errors: []*cerrorpb.Error{{
 					Code:    cerror.InternalServerError,
@@ -883,7 +910,7 @@ func TestStoreClient_AddUpload(t *testing.T) {
 				mockProtoClient.On("AddUpload", mock.Anything, mock.Anything).Return(tc.expectedResp, nil).Once()
 			}
 
-			resp := storeClient.AddUpload(tc.snapName, tc.entryId, tc.status, tc.accountId, tc.unscannedFileName)
+			resp := storeClient.AddUpload(tc.entryId, tc.accountId, tc.snapName, tc.status, tc.unscannedFileName, tc.revision)
 			if !tc.expectedErrors && !tc.expectedProtoError {
 				assert.Equal(t, tc.expectedResp, resp)
 				assert.Empty(t, resp.Errors)

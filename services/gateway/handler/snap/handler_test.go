@@ -101,9 +101,9 @@ func TestRefreshSnapHandler_DownloadAction(t *testing.T) {
 		Id:          "entry1",
 		SnapName:    "snap1",
 		PublisherId: "pub1",
-		Confinement: &strict,
-		Type:        &types,
-		Base:        &base,
+		Confinement: strict,
+		Type:        types,
+		Base:        base,
 	}
 	// Dummy latest revision.
 	dummyRev := &storepb.GetRevisionResponse{
@@ -184,9 +184,9 @@ func TestRefreshSnapHandler_DownloadAction_NoLatestRevision(t *testing.T) {
 		Id:          "entry1",
 		SnapName:    "snap1",
 		PublisherId: "pub1",
-		Confinement: &strict,
-		Type:        &types,
-		Base:        &base,
+		Confinement: strict,
+		Type:        types,
+		Base:        base,
 	}
 	dummyRev := &storepb.GetRevisionResponse{
 		Errors: []*cerrorpb.Error{
@@ -338,7 +338,7 @@ func TestRegisterSnapNameHandler_Success(t *testing.T) {
 		Errors:   nil,
 	}
 	mockStoreClient.
-		On("RegisterSnapName", "test-snap", false, "default", false, mock.AnythingOfType("uuid.UUID")).
+		On("RegisterSnapName", "test-snap", mock.Anything, mock.Anything, mock.Anything, false, mock.Anything, mock.Anything, mock.Anything, mock.Anything, false, mock.AnythingOfType("uuid.UUID")).
 		Return(regResp).
 		Once()
 
@@ -492,7 +492,7 @@ func TestSnapPushHandler_DryRunSuccess(t *testing.T) {
 		Errors:   nil,
 	}
 	mockStoreClient.
-		On("RegisterSnapName", "snap1", false, "", true, mock.Anything).
+		On("RegisterSnapName", "snap1", mock.Anything, mock.Anything, mock.Anything, false, mock.Anything, mock.Anything, mock.Anything, mock.Anything, true, mock.AnythingOfType("uuid.UUID")).
 		Return(regResp).
 		Once()
 

@@ -20,8 +20,8 @@ type ISnapsRepository interface {
 	AddDefaultChannels(snapEntryId uuid.UUID, snapTrackId uuid.UUID, errorList *cerror.ErrorList) *cerror.CustomError
 	AddRevision(entryId uuid.UUID, trackId uuid.UUID, channelId uuid.UUID, snapName string, size uint64, sequenceNumber uint32, architectures []string, sha3_384_encoded string, minioFilePath string, errorList *cerror.ErrorList) (*models.SnapRevision, *cerror.CustomError)
 	AddTrack(entryId uuid.UUID, trackName string, errorList *cerror.ErrorList) (*models.SnapTrack, *cerror.CustomError)
-	AddUpload(snapName string, entryId uuid.UUID, status string, accountId uuid.UUID, unscannedFileName string, errorList *cerror.ErrorList) (*models.SnapUpload, *cerror.CustomError)
-	RegisterSnap(snapName string, isPrivate bool, store string, accountId uuid.UUID, errorList *cerror.ErrorList) (*models.SnapEntry, *cerror.CustomError)
+	AddUpload(entryId uuid.UUID, accountId uuid.UUID, snapName string, status string, unscannedFileName string, revision uint32, errorList *cerror.ErrorList) (*models.SnapUpload, *cerror.CustomError)
+	RegisterSnap(snapName string, snapType string, confinement string, base string, isPrivate bool, status string, price float64, storeName string, iconURL string, accountId uuid.UUID, errorList *cerror.ErrorList) (*models.SnapEntry, *cerror.CustomError)
 
 	// READ
 	GetAllSnapEntries(errorList *cerror.ErrorList) (*[]models.SnapEntry, *cerror.CustomError)
@@ -148,20 +148,21 @@ func (sp *SnapsRepository) AddTrack(entryId uuid.UUID, trackName string, el *cer
 
 }
 
-func (sp *SnapsRepository) AddUpload(snapName string, entryId uuid.UUID, status string, accountId uuid.UUID, unscannedFileName string, el *cerror.ErrorList) (*models.SnapUpload, *cerror.CustomError) {
+func (sp *SnapsRepository) AddUpload(entryId uuid.UUID, accountId uuid.UUID, snapName, status, unscannedFileName string, revision uint32, el *cerror.ErrorList) (*models.SnapUpload, *cerror.CustomError) {
 	upload := models.SnapUpload{
-		SnapName:          snapName,
 		EntryID:           entryId,
-		Status:            status,
 		AccountID:         accountId,
 		UnscannedFileName: unscannedFileName,
+		SnapName:          snapName,
+		Status:            status,
+		Revision:          revision,
 	}
 	query := `
-		INSERT INTO upload (snap_name, entry_id, status, account_id, unscanned_file_name)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO upload (snap_name, entry_id, status, account_id, unscanned_file_name, revision)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id
 	`
-	err := sp.db.Get(&upload, query, upload.SnapName, upload.EntryID, upload.Status, upload.AccountID, upload.UnscannedFileName)
+	err := sp.db.Get(&upload, query, upload.SnapName, upload.EntryID, upload.Status, upload.AccountID, upload.UnscannedFileName, upload.Revision)
 	if err != nil {
 		cerr := cerror.ConvertError(err, fmt.Sprintf("error adding upload for snap with id = '%s'", entryId.String()))
 		logrus.Error(cerr)
@@ -174,20 +175,26 @@ func (sp *SnapsRepository) AddUpload(snapName string, entryId uuid.UUID, status 
 
 // QUESTION: maybe we can just internaly call this AddEntry -> clearer name?
 // QUESTION: right now an snap entry is bound to an account. Wouldn't it be better to bound snap revisions to an account?
-func (sp *SnapsRepository) RegisterSnap(snapName string, isPrivate bool, storeName string, accountId uuid.UUID, el *cerror.ErrorList) (*models.SnapEntry, *cerror.CustomError) {
+func (sp *SnapsRepository) RegisterSnap(snapName string, snapType string, confinement string, base string, isPrivate bool, status string, price float64, storeName string, iconURL string, accountId uuid.UUID, el *cerror.ErrorList) (*models.SnapEntry, *cerror.CustomError) {
 	snapEntry := models.SnapEntry{
-		Name:      snapName,
-		Private:   &isPrivate,
-		Store:     &storeName,
-		AccountID: accountId,
+		Name:        snapName,
+		Type:        snapType,
+		Confinement: confinement,
+		Base:        base,
+		Private:     isPrivate,
+		Status:      status,
+		Price:       price,
+		Store:       storeName,
+		IconURL:     iconURL,
+		AccountID:   accountId,
 	}
 
 	query := `
-		INSERT INTO entry (name, private, store, account_id)
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO entry (name, type, confinement, base, private, status, price, store, icon_url, account_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		RETURNING id
 	`
-	err := sp.db.Get(&snapEntry.ID, query, snapName, isPrivate, storeName, accountId)
+	err := sp.db.Get(&snapEntry.ID, query, snapEntry.Name, snapEntry.Type, snapEntry.Confinement, snapEntry.Base, snapEntry.Private, snapEntry.Status, snapEntry.Price, snapEntry.Store, snapEntry.IconURL, snapEntry.AccountID)
 	if err != nil {
 		cerr := cerror.ConvertError(err, fmt.Sprintf("error adding snap entry with name = '%s'", snapName))
 		logrus.Error(cerr)
