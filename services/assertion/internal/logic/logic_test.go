@@ -653,3 +653,155 @@ func TestAddSnapDeclarationAssertion(t *testing.T) {
 
 // helper to get a *bool
 func boolPtr(b bool) *bool { return &b }
+
+func TestAddAccountAssertion(t *testing.T) {
+	// set up signing DB and root key
+	rootKey, err := asserts.GenerateKey()
+	assert.NoError(t, err)
+	assertionDB, err := asserts.OpenDatabase(&asserts.DatabaseConfig{})
+	assert.NoError(t, err)
+	assert.NoError(t, assertionDB.ImportKey(rootKey))
+
+	cfg := &config.Config{
+		AuthorityID: "test-auth",
+		RootKey:     rootKey,
+	}
+
+	mockRepo := new(repository.MockAssertionRepository)
+	svc := &AssertionService{
+		cfg:         cfg,
+		assertionDB: assertionDB,
+		repo:        mockRepo,
+	}
+
+	now := time.Now().UTC().Truncate(time.Second)
+	validAccountID := uuid.New()
+
+	// a “golden” model for the happy‑path
+	goldenModel := &model.AccountAssertion{
+		ID:              uuid.New(),
+		AuthorityID:     cfg.AuthorityID,
+		AccountID:       validAccountID,
+		Revision:        1,
+		Timestamp:       now,
+		SignKeySHA3_384: rootKey.PublicKey().ID(),
+		Type:            asserts.AccountType.Name,
+		Signature:       "ignored-in-test",
+	}
+
+	notFoundErr := cerror.NewCustomError(cerror.ResourceNotFound, "none")
+	dbErr := cerror.NewCustomError(cerror.DatabaseError, "store failure")
+
+	tests := []struct {
+		name             string
+		req              *proto.AddAccountAssertionRequest
+		mockGetLatest    any // *model.AccountAssertion or *cerror.CustomError
+		mockAdd          any // *model.AccountAssertion or *cerror.CustomError
+		wantProtoErr     bool
+		wantProtoErrCode string
+	}{
+		{
+			name: "invalid-uuid",
+			req:  &proto.AddAccountAssertionRequest{AccountId: "not-a-uuid", DisplayName: "dn", Username: "un", Validation: "v", Timestamp: timestamppb.New(now)},
+			// no repo calls at all
+			wantProtoErr:     true,
+			wantProtoErrCode: cerror.Invalid,
+		},
+		{
+			name:          "happy-path",
+			req:           &proto.AddAccountAssertionRequest{AccountId: validAccountID.String(), DisplayName: "dn", Username: "un", Validation: "v", Timestamp: timestamppb.New(now)},
+			mockGetLatest: notFoundErr,
+			mockAdd:       goldenModel,
+			wantProtoErr:  false,
+		},
+		{
+			name:             "get-latest-error",
+			req:              &proto.AddAccountAssertionRequest{AccountId: validAccountID.String(), DisplayName: "dn", Username: "un", Validation: "v", Timestamp: timestamppb.New(now)},
+			mockGetLatest:    dbErr,
+			wantProtoErr:     true,
+			wantProtoErrCode: cerror.DatabaseError,
+		},
+		{
+			name:             "add-error",
+			req:              &proto.AddAccountAssertionRequest{AccountId: validAccountID.String(), DisplayName: "dn", Username: "un", Validation: "v", Timestamp: timestamppb.New(now)},
+			mockGetLatest:    notFoundErr,
+			mockAdd:          dbErr,
+			wantProtoErr:     true,
+			wantProtoErrCode: cerror.DatabaseError,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// --- mock GetLatestAccountAssertionByAccountID ---
+			if tc.mockGetLatest != nil {
+				switch ret := tc.mockGetLatest.(type) {
+				case *model.AccountAssertion:
+					mockRepo.
+						On("GetLatestAccountAssertionByAccountID", mock.Anything, validAccountID).
+						Return(ret, nil).
+						Once()
+				case *cerror.CustomError:
+					mockRepo.
+						On("GetLatestAccountAssertionByAccountID", mock.Anything, validAccountID).
+						Return(nil, ret).
+						Once()
+				default:
+					// for invalid-uuid case we don't expect a call
+				}
+			}
+
+			// --- mock AddAccountAssertion if needed ---
+			if tc.mockAdd != nil {
+				switch ret := tc.mockAdd.(type) {
+				case *model.AccountAssertion:
+					mockRepo.
+						On("AddAccountAssertion",
+							mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+							mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+						).
+						Return(ret, nil).
+						Once()
+				case *cerror.CustomError:
+					mockRepo.
+						On("AddAccountAssertion",
+							mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+							mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+						).
+						Return(nil, ret).
+						Once()
+				}
+			}
+
+			// --- call under test ---
+			resp, err := svc.AddAccountAssertion(context.Background(), tc.req)
+			assert.NoError(t, err, "service returns nil error always")
+
+			if tc.wantProtoErr {
+				assert.NotNil(t, resp)
+				assert.NotEmpty(t, resp.Errors, "expected non‑empty Errors")
+				found := false
+				for _, e := range resp.Errors {
+					if e.Code == tc.wantProtoErrCode {
+						found = true
+						break
+					}
+				}
+				assert.Truef(t, found, "expected error code %q in response", tc.wantProtoErrCode)
+			} else {
+				assert.Empty(t, resp.Errors, "expected no errors")
+				// check happy‑path fields
+				assert.Equal(t, goldenModel.ID.String(), resp.Id)
+				assert.Equal(t, goldenModel.SignKeySHA3_384, resp.SignKeySha3_384)
+				assert.Equal(t, goldenModel.AccountID.String(), resp.AccountId)
+				assert.Equal(t, asserts.AccountType.Name, resp.Type)
+				// timestamp matches truncated second
+				gotTs := resp.Timestamp.AsTime().UTC().Truncate(time.Second)
+				assert.WithinDuration(t, now, gotTs, time.Second)
+				assert.NotEmpty(t, resp.Signature)
+			}
+
+			mockRepo.AssertExpectations(t)
+		})
+	}
+}
