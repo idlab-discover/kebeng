@@ -27,19 +27,19 @@ type SnapEntry struct {
 	UpdatedAt      time.Time       `json:"updated_at" db:"updated_at"`
 	DeletedAt      *time.Time      `json:"deleted_at,omitempty" db:"deleted_at"`
 	Name           string          `json:"name" db:"name"`
+	Type           string         `json:"type,omitempty" db:"type"`
+	Confinement    string         `json:"confinement,omitempty" db:"confinement"`
+	Base           string         `json:"base,omitempty" db:"base"`
+	Private        bool           `json:"private,omitempty" db:"private"`
+	Status         string         `json:"status,omitempty" db:"status"`
+	Price          float64        `json:"price,omitempty" db:"price"`
+	Store          string         `json:"store,omitempty" db:"store"`
+	IconURL        string         `json:"icon_url,omitempty" db:"icon_url"`
+	AccountID      uuid.UUID       `json:"account_id" db:"account_id"`
 	Revisions      []*SnapRevision `json:"revisions,omitempty"`
 	Tracks         []*SnapTrack    `json:"tracks,omitempty"`
 	Channels       []*SnapChannel  `json:"channels,omitempty"`
 	Branches       []*SnapBranch   `json:"branches,omitempty"`
-	Type           *string         `json:"type,omitempty" db:"type"`
-	Confinement    *string         `json:"confinement,omitempty" db:"confinement"`
-	Base           *string         `json:"base,omitempty" db:"base"`
-	Private        *bool           `json:"private,omitempty" db:"private"`
-	AccountID      uuid.UUID       `json:"account_id" db:"account_id"`
-	Status         *string         `json:"status,omitempty" db:"status"`
-	Price          *float64        `json:"price,omitempty" db:"price"`
-	Store          *string         `json:"store,omitempty" db:"store"`
-	IconURL        *string         `json:"icon_url,omitempty" db:"icon_url"`
 	LatestComments []*SnapComment  `json:"latest_comments,omitempty"`
 }
 
