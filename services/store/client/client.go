@@ -28,9 +28,9 @@ type StoreClientInterface interface {
 	UnscannedUpload(ctx context.Context, snapFile io.Reader) *proto.UnscannedUploadCompleteResponse
 	AddUpload(snapName string, entryId uuid.UUID, status string, accountId uuid.UUID, unscannedFileName string) *proto.AddUploadResponse
 	GetUploadStatus(uploadId string) *proto.GetUploadStatusResponse
-	AddRevision(snapName string, sha3384 string, size uint64, architectures []string, tracksAndChannels []string, unscannedFileName string) *proto.AddRevisionResponse
+	AddRevision(snapName string, sha3_384_encoded string, size uint64, architectures []string, tracksAndChannels []string, unscannedFileName string) *proto.AddRevisionResponse
 	GetObjectCustomMetadata(bucket string, objectKey string) *proto.GetObjectCustomMetadataResponse
-	UpdateUploadStatus(uploadId string, status string, revision uint64, el *cerror.ErrorList) *proto.UpdateUploadStatusResponse
+	UpdateUploadStatus(uploadId string, status string, revision uint32, el *cerror.ErrorList) *proto.UpdateUploadStatusResponse
 }
 
 var _ StoreClientInterface = (*StoreClient)(nil)
@@ -339,7 +339,7 @@ func (c *StoreClient) GetUploadStatus(uploadId string) *proto.GetUploadStatusRes
 // UpdateUploadStatus updates the status of an upload
 // It takes the upload ID, status, revision number, and a list of errors
 // Errors are stored in the database and are retrieved later by Snapcraft to check if any errors occurred during the upload
-func (c *StoreClient) UpdateUploadStatus(uploadId string, status string, revision uint64, el *cerror.ErrorList) *proto.UpdateUploadStatusResponse {
+func (c *StoreClient) UpdateUploadStatus(uploadId string, status string, revision uint32, el *cerror.ErrorList) *proto.UpdateUploadStatusResponse {
 	req := &proto.UpdateUploadStatusRequest{
 		UploadId: uploadId,
 		Status:   status,
@@ -359,10 +359,10 @@ func (c *StoreClient) UpdateUploadStatus(uploadId string, status string, revisio
 	return resp
 }
 
-func (c *StoreClient) AddRevision(snapName string, sha3384 string, size uint64, architectures []string, tracksAndChannels []string, unscannedFileName string) *proto.AddRevisionResponse {
+func (c *StoreClient) AddRevision(snapName string, sha3_384_encoded string, size uint64, architectures []string, tracksAndChannels []string, unscannedFileName string) *proto.AddRevisionResponse {
 	req := &proto.AddRevisionRequest{
 		SnapName:          snapName,
-		Sha3_384:          sha3384,
+		Sha3_384Encoded:   sha3_384_encoded,
 		Size:              size,
 		Architectures:     architectures,
 		TracksAndChannels: tracksAndChannels,

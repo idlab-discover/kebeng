@@ -47,7 +47,6 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 	for _, action := range req.Actions {
 		switch action.Action {
 		case "download":
-			logrus.Infof("%v", action)
 			res, cerr := h.refreshSnapDownload(action, el)
 			if cerr != nil {
 				c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
@@ -57,7 +56,6 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 			res.Result = &result
 			resp.Responses = append(resp.Responses, res)
 		case "install": // same as download just different result value, for now
-			logrus.Infof("%v", action)
 			res, cerr := h.refreshSnapDownload(action, el)
 			if cerr != nil {
 				c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
@@ -93,7 +91,7 @@ func (h *Handler) refreshSnapDownload(action *model.Action, el *cerror.ErrorList
 
 	downloadUrl := fmt.Sprintf("%s/download/%s", h.Config.StoreUrl, latestRevision.Id)
 
-	raw, err := base64.RawURLEncoding.DecodeString(latestRevision.Sha3_384)
+	raw, err := base64.RawURLEncoding.DecodeString(latestRevision.Sha3_384Encoded)
 	if err != nil {
 		el.Add(cerror.InternalServerError, fmt.Sprintf("error decoding sha3_384: %s", err.Error()))
 	}

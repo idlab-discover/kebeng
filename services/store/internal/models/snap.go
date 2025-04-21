@@ -81,14 +81,13 @@ type SnapRevision struct {
 	CreatedAt              time.Time      `json:"created_at" db:"created_at"`
 	UpdatedAt              time.Time      `json:"updated_at" db:"updated_at"`
 	DeletedAt              *time.Time     `json:"deleted_at,omitempty" db:"deleted_at"`
-	SnapName               *string        `json:"snap_name" db:"snap_name"`
-	BuildAssertionFileName *string        `json:"build_assertion_filename,omitempty" db:"build_assertion_filename"`
-	SHA3_384               *string        `json:"sha3_384,omitempty" db:"sha3_384"`
-	SHA3_384_Encoded       *string        `json:"sha3_384_encoded,omitempty" db:"sha3_384_encoded"`
-	Size                   *uint64        `json:"size,omitempty" db:"size"`
-	SequenceNumber         *uint          `json:"sequence_number,omitempty" db:"sequence_number"`
+	SnapName               string         `json:"snap_name" db:"snap_name"`
+	BuildAssertionFileName string         `json:"build_assertion_filename,omitempty" db:"build_assertion_filename"`
+	SHA3_384_Encoded       string         `json:"sha3_384_encoded,omitempty" db:"sha3_384_encoded"`
+	Size                   uint64         `json:"size,omitempty" db:"size"`
+	SequenceNumber         uint32         `json:"sequence_number,omitempty" db:"sequence_number"`
 	Architectures          pq.StringArray `json:"architectures,omitempty" db:"architectures"`
-	MinioFilePath          *string        `json:"minio_file_path,omitempty" db:"minio_file_path"`
+	MinioFilePath          string         `json:"minio_file_path,omitempty" db:"minio_file_path"`
 	SnapEntryID            uuid.UUID      `json:"snap_entry_id" db:"entry_id"`
 	SnapTrackID            uuid.UUID      `json:"snap_track_id" db:"snap_track_id"`
 	SnapChannelID          uuid.UUID      `json:"snap_channel_id" db:"snap_channel_id"`
@@ -125,5 +124,5 @@ type SnapUpload struct {
 
 type Metadata struct {
 	*minio.UploadInfo `json:"upload_info" db:"upload_info"`
-	Sha3_384   *string           `json:"sha3_384" db:"sha3_384"`
+	Sha3_384          *string `json:"sha3_384" db:"sha3_384"`
 }
