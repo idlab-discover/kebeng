@@ -176,18 +176,24 @@ func (sp *SnapsRepository) AddUpload(snapName string, entryId uuid.UUID, status 
 // QUESTION: right now an snap entry is bound to an account. Wouldn't it be better to bound snap revisions to an account?
 func (sp *SnapsRepository) RegisterSnap(snapName string, isPrivate bool, storeName string, accountId uuid.UUID, el *cerror.ErrorList) (*models.SnapEntry, *cerror.CustomError) {
 	snapEntry := models.SnapEntry{
-		Name:      snapName,
-		Private:   &isPrivate,
-		Store:     &storeName,
-		AccountID: accountId,
+		Name:        snapName,
+		Type:        "", // TODO: add as parameter
+		Confinement: "", // TODO: add as parameter
+		Base:        "", // TODO: add as parameter
+		Private:     isPrivate,
+		Status:      "", // TODO: add as parameter
+		Price:       0,  // TODO: add as parameter
+		Store:       storeName,
+		IconURL:     "", // TODO: add as parameter
+		AccountID:   accountId,
 	}
 
 	query := `
-		INSERT INTO entry (name, private, store, account_id)
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO entry (name, type, confinement, base, private, status, price, store, icon_url, account_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		RETURNING id
 	`
-	err := sp.db.Get(&snapEntry.ID, query, snapName, isPrivate, storeName, accountId)
+	err := sp.db.Get(&snapEntry.ID, query, snapEntry.Name, snapEntry.Type, snapEntry.Confinement, snapEntry.Base, snapEntry.Private, snapEntry.Status, snapEntry.Price, snapEntry.Store, snapEntry.IconURL, snapEntry.AccountID)
 	if err != nil {
 		cerr := cerror.ConvertError(err, fmt.Sprintf("error adding snap entry with name = '%s'", snapName))
 		logrus.Error(cerr)
