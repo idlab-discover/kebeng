@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/x509"
+	"encoding/base64"
 	"fmt"
 	"net"
 	"time"
@@ -55,8 +57,13 @@ func main() {
 	// TODO: somehow fix that root account is created and matches the accountId here
 	// for now just random uuid that doesn't match real account
 	now := time.Now()
+	der, err := x509.MarshalPKIXPublicKey(cfg.RootKey.PublicKey())
+	if err != nil {
+		logrus.Fatalf("failed to DER‑encode public key: %v", err)
+	}
+	b64pub := base64.StdEncoding.EncodeToString(der)
 	req := &proto.AddAccountKeyAssertionRequest{
-		EncodedPublicKey:  fmt.Sprintf("%s", cfg.RootKey.PublicKey()),
+		EncodedPublicKey:  b64pub,
 		PublicKeySha3_384: cfg.RootKey.PublicKey().ID(),
 		AccountId:         "0b12c7e6-81cf-4095-938e-68a75dcb00b1",
 		Name:              "root",
