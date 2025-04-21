@@ -126,7 +126,7 @@ func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_38
 
 	uploadInfo, err := obs.MinioClient.FPutObject(ctx, bucket, base, filePath, minio.PutObjectOptions{
 		UserMetadata: map[string]string{
-			"Sha3-384-encoded": sha3_384_encoded,
+			"Sha3-384-Encoded": sha3_384_encoded,
 		},
 	})
 	if err != nil {
@@ -150,7 +150,7 @@ func (obs *ObjectStore) GetObjectCustomMetadata(bucket string, objectName string
 		return nil, err
 	}
 
-	sha3_384_encoded := objectInfo.UserMetadata["Sha3-384-encoded"]
+	sha3_384_encoded := objectInfo.UserMetadata["Sha3-384-Encoded"]
 
 	metadata := &models.Metadata{
 		SHA3_384_Encoded: sha3_384_encoded,
