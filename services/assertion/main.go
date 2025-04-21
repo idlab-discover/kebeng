@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net"
+	"time"
 
 	"github.com/idlab-discover/kebeng/services/assertion/internal/config"
 	"github.com/idlab-discover/kebeng/services/assertion/internal/database"
@@ -12,9 +14,11 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/snapcore/snapd/asserts"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func main() {
+	ctx := context.Background()
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		logrus.Fatalf("Failed to load configuration: %v", err)
@@ -46,6 +50,24 @@ func main() {
 	if cfg.TestMode {
 		logrus.Infof("Running in test mode")
 	}
+
+	// after creating the rootkey, a account key assertion has to be made this will be used by snapd to verify by who the other assertions were signed
+	// TODO: somehow fix that root account is created and matches the accountId here
+	// for now just random uuid that doesn't match real account
+	now := time.Now()
+	req := &proto.AddAccountKeyAssertionRequest{
+		EncodedPublicKey:  fmt.Sprintf("%s", cfg.RootKey.PublicKey()),
+		PublicKeySha3_384: cfg.RootKey.PublicKey().ID(),
+		AccountId:         "0b12c7e6-81cf-4095-938e-68a75dcb00b1",
+		Name:              "root",
+		Since:             &timestamppb.Timestamp{Seconds: now.Unix()},
+		Until:             &timestamppb.Timestamp{Seconds: now.Add(24 * time.Hour).Unix()},
+	}
+	accountKeyAssertion, err := assertionLogic.AddAccountKeyAssertion(ctx, req)
+	if len(accountKeyAssertion.Errors) != 0 {
+		logrus.Fatalf("Failed to create account key assertion: %v", accountKeyAssertion.Errors)
+	}
+
 	// start grpc server
 	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", cfg.GRPCHost, cfg.GRPCPort))
 	if err != nil {
