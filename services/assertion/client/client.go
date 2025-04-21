@@ -86,7 +86,7 @@ func (c *AssertionClient) AddAccountKeyAssertion(encoded_public_key, publicKeySh
 		el.Add(cerror.InvalidField, "encoded public key is required")
 	}
 	if publicKeySha3_384Encoded == "" {
-		el.Add(cerror.InvalidField, "public key sha3_384 is required")
+		el.Add(cerror.InvalidField, "public key sha3_384 encoded is required")
 	}
 	if accountId == "" {
 		el.Add(cerror.InvalidField, "account id is required")
@@ -311,7 +311,7 @@ func (c *AssertionClient) GetAccountKeyAssertionByPublicKeySha(publicKeySha3_384
 
 	// check input
 	if publicKeySha3_384Encoded == "" {
-		el.Add(cerror.InvalidField, "name is required")
+		el.Add(cerror.InvalidField, "publicKeySha3_384Encoded is required")
 	}
 	if el.HasError() {
 		return &proto.AccountKeyAssertionResponse{
