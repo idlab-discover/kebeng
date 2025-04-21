@@ -24,10 +24,12 @@ type AssertionClientInterface interface {
 	AddAccountKeyAssertion(encoded_public_key, publicKeySha3_384, accountId, name string, since time.Time, until time.Time) *proto.AccountKeyAssertionResponse
 	AddSnapRevisionAssertion(snapSha3_384 string, developerId string, snapEntryId string, snapRevisionSequenceNumber uint32, snapSize uint64, timestamp time.Time) *proto.SnapRevisionAssertionResponse
 	AddSnapDeclarationAssertion(snapID, snapName, publisherID string, series uint32, timestamp time.Time, refreshControl []string, aliases []model.Alias, plugs model.PlugMap, slots model.SlotMap) *proto.SnapDeclarationAssertionResponse
+	AddAccountAssertion(accountId, displayName, username, validation string, timestamp time.Time) *proto.AccountAssertionResponse
 
 	GetAccountKeyAssertionByName(name string) *proto.AccountKeyAssertionResponse
 	GetSnapRevisionAssertionBySHA3_384(snapSha3_384 string) *proto.SnapRevisionAssertionResponse
 	GetSnapDeclarationAssertionBySnapID(snapId string) *proto.SnapDeclarationAssertionResponse
+	GetAccountAssertionByAccountID(accountId string) *proto.AccountAssertionResponse
 
 	Close()
 }
@@ -261,6 +263,49 @@ func (c *AssertionClient) AddSnapDeclarationAssertion(snapID, snapName, publishe
 	return resp
 }
 
+func (c *AssertionClient) AddAccountAssertion(accountId, displayName, username, validation string, timestamp time.Time) *proto.AccountAssertionResponse {
+	el := cerror.NewErrorList()
+	// check input
+	if accountId == "" {
+		el.Add(cerror.InvalidField, "account id is required")
+	}
+	if _, err := uuid.Parse(accountId); accountId != "" && err != nil {
+		el.Add(cerror.InvalidField, "account id is not a valid uuid")
+	}
+	if displayName == "" {
+		el.Add(cerror.InvalidField, "display name is required")
+	}
+	if username == "" {
+		el.Add(cerror.InvalidField, "username is required")
+	}
+	if validation == "" {
+		el.Add(cerror.InvalidField, "validation is required")
+	}
+	if timestamp.IsZero() {
+		el.Add(cerror.InvalidField, "timestamp is required")
+	}
+	if el.HasError() {
+		return &proto.AccountAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}
+	}
+	req := &proto.AddAccountAssertionRequest{
+		AccountId:   accountId,
+		DisplayName: displayName,
+		Username:    username,
+		Validation:  validation,
+		Timestamp:   timestamppb.New(timestamp),
+	}
+	resp, err := c.client.AddAccountAssertion(context.Background(), req)
+	if err != nil {
+		el.Add(cerror.InternalServerError, err.Error())
+		resp = &proto.AccountAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}
+	}
+	return resp
+}
+
 func (c *AssertionClient) GetAccountKeyAssertionByName(name string) *proto.AccountKeyAssertionResponse {
 	el := cerror.NewErrorList()
 
@@ -336,6 +381,36 @@ func (c *AssertionClient) GetSnapDeclarationAssertionBySnapID(snapId string) *pr
 	if err != nil {
 		el.Add(cerror.InternalServerError, err.Error())
 		resp = &proto.SnapDeclarationAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}
+	}
+	return resp
+}
+
+func (c *AssertionClient) GetAccountAssertionByAccountID(accountId string) *proto.AccountAssertionResponse {
+	el := cerror.NewErrorList()
+
+	// check input
+	if accountId == "" {
+		el.Add(cerror.InvalidField, "account id is required")
+	}
+	if _, err := uuid.Parse(accountId); accountId != "" && err != nil {
+		el.Add(cerror.InvalidField, "account id is not a valid uuid")
+	}
+	if el.HasError() {
+		return &proto.AccountAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}
+	}
+
+	req := &proto.GetAccountAssertionByAccountIDRequest{
+		AccountId: accountId,
+	}
+
+	resp, err := c.client.GetAccountAssertionByAccountID(context.Background(), req)
+	if err != nil {
+		el.Add(cerror.InternalServerError, err.Error())
+		resp = &proto.AccountAssertionResponse{
 			Errors: el.ConvertToProtoErrorList(),
 		}
 	}
