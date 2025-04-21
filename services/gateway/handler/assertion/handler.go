@@ -99,7 +99,7 @@ func (h *Handler) GetAccountAssertion(c *gin.Context) {
 	}
 
 	// TODO: figure out what to do with the series maybe check specifically for the series
-	maxFormat := c.Param("max-format")
+	maxFormat := c.Query("max-format")
 	if maxFormat == "" {
 		el.Add(cerror.BadRequest, "missing max-format")
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
