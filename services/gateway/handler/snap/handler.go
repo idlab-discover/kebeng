@@ -53,7 +53,7 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 				return
 			}
 			result := "download"
-			res.Result = &result
+			res.Result = result
 			resp.Responses = append(resp.Responses, res)
 		case "install": // same as download just different result value, for now
 			res, cerr := h.refreshSnapDownload(action, el)
@@ -62,7 +62,7 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 				return
 			}
 			result := "install"
-			res.Result = &result
+			res.Result = result
 			resp.Responses = append(resp.Responses, res)
 		default:
 			el.Add(cerror.NotImplemented, "Action not implemented")
@@ -85,7 +85,7 @@ func (h *Handler) refreshSnapDownload(action *model.Action, el *cerror.ErrorList
 	publisher := h.AccountClient.GetAccountByID(snapEntry.PublisherId)
 	if len(publisher.Errors) > 0 {
 		el.ExtendProtoError(publisher.Errors)
-		res.Result = nil
+		res.Result = "error"
 		return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("account error: %v", publisher.Errors))
 	}
 
@@ -98,13 +98,13 @@ func (h *Handler) refreshSnapDownload(action *model.Action, el *cerror.ErrorList
 
 	hexSum := hex.EncodeToString(raw)
 
-	res.InstanceKey = &action.InstanceKey
-	res.SnapId = &snapEntry.Id
-	res.Name = &snapEntry.SnapName
+	res.InstanceKey = action.InstanceKey
+	res.SnapId = snapEntry.Id
+	res.Name = snapEntry.SnapName
 	res.Snap = &model.RefreshSnap{
-		Architectures: &latestRevision.Architectures,
-		SnapId:        &snapEntry.Id,
-		Name:          &snapEntry.SnapName,
+		Architectures: latestRevision.Architectures,
+		SnapId:        snapEntry.Id,
+		Name:          snapEntry.SnapName,
 		Publisher: &model.Publisher{
 			Username: publisher.Username,
 			ID:       publisher.Id,
@@ -114,11 +114,11 @@ func (h *Handler) refreshSnapDownload(action *model.Action, el *cerror.ErrorList
 			Sha3_384: &hexSum,
 			Size:     &latestRevision.Size,
 		},
-		Version:     &latestRevision.Version,
-		Revision:    &latestRevision.SequenceNumber,
-		Confinement: &snapEntry.Confinement,
-		Type:        &snapEntry.Type,
-		Base:        &snapEntry.Base,
+		Version:     latestRevision.Version,
+		Revision:    latestRevision.SequenceNumber,
+		Confinement: snapEntry.Confinement,
+		Type:        snapEntry.Type,
+		Base:        snapEntry.Base,
 	}
 	return &res, nil
 }
