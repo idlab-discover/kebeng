@@ -99,3 +99,19 @@ type Slot struct {
 }
 
 type SlotMap map[string]*Slot
+
+type AccountAssertion struct {
+	ID              uuid.UUID  `json:"id" db:"id"`
+	CreatedAt       time.Time  `json:"created_at" db:"created_at"`
+	DeletedAt       *time.Time `json:"deleted_at,omitempty" db:"deleted_at"`
+	Type            string     `json:"type" db:"type"`
+	AuthorityID     string     `json:"authority_id" db:"authority_id"`
+	Revision        uint32     `json:"revision" db:"revision"`
+	AccountID       uuid.UUID  `json:"account_id" db:"account_id"`
+	DisplayName     string     `json:"display_name" db:"display_name"`
+	Username        string     `json:"username" db:"username"`
+	Validation      string     `json:"validation" db:"validation"`
+	Timestamp       time.Time  `json:"timestamp" db:"timestamp"`
+	SignKeySHA3_384 string     `json:"sign_key_sha3_384" db:"sign_key_sha3_384"`
+	Signature       string     `json:"signature" db:"signature"`
+}
