@@ -169,7 +169,7 @@ func (s *AssertionService) AddAccountKeyAssertion(ctx context.Context, req *prot
 	headers := map[string]any{
 		"authority-id":        s.cfg.AuthorityID,
 		"revision":            fmt.Sprintf("%d", sequenceNumber),
-		"public-key-sha3-384": req.GetPublicKeySha3_384(),
+		"public-key-sha3-384": req.GetPublicKeySha3_384Encoded(),
 		"account-id":          req.GetAccountId(),
 		"name":                req.GetName(),
 		"since":               req.GetSince().AsTime().Format(time.RFC3339),
@@ -192,7 +192,7 @@ func (s *AssertionService) AddAccountKeyAssertion(ctx context.Context, req *prot
 	accountKeyAssertion, cerr := s.repo.AddAccountKeyAssertion(
 		el,
 		s.cfg.AuthorityID,
-		req.GetPublicKeySha3_384(),
+		req.GetPublicKeySha3_384Encoded(),
 		s.cfg.RootKey.PublicKey().ID(), // this is the sign_key_SHA3_384
 		req.GetName(),
 		sequenceNumber,
@@ -212,20 +212,20 @@ func (s *AssertionService) AddAccountKeyAssertion(ctx context.Context, req *prot
 	accountKeyAssertion.Type = asserts.AccountKeyType.Name
 
 	return &proto.AccountKeyAssertionResponse{
-		Id:                     accountKeyAssertion.ID.String(),
-		AuthorityId:            accountKeyAssertion.AuthorityID,
-		PublicKeySha3_384:      accountKeyAssertion.PublicKeySHA3_384,
-		SignKeySha3_384:        accountKeyAssertion.SignKeySHA3_384,
-		AccountId:              accountKeyAssertion.AccountID.String(),
-		Name:                   accountKeyAssertion.Name,
-		RevisionSequenceNumber: accountKeyAssertion.RevisionSequenceNumber,
-		Since:                  timestamppb.New(accountKeyAssertion.Since),
-		Until:                  timestamppb.New(accountKeyAssertion.Since.Add(time.Duration(365 * 24 * time.Hour))), // a key is valid for 1 year
-		Body:                   accountKeyAssertion.Body,
-		BodyLength:             accountKeyAssertion.BodyLength,
-		Signature:              signature,
-		Type:                   accountKeyAssertion.Type,
-		Errors:                 el.ConvertToProtoErrorList(),
+		Id:                       accountKeyAssertion.ID.String(),
+		AuthorityId:              accountKeyAssertion.AuthorityID,
+		PublicKeySha3_384Encoded: accountKeyAssertion.PublicKeySha3_384Encoded,
+		SignKeySha3_384:          accountKeyAssertion.SignKeySHA3_384,
+		AccountId:                accountKeyAssertion.AccountID.String(),
+		Name:                     accountKeyAssertion.Name,
+		RevisionSequenceNumber:   accountKeyAssertion.RevisionSequenceNumber,
+		Since:                    timestamppb.New(accountKeyAssertion.Since),
+		Until:                    timestamppb.New(accountKeyAssertion.Since.Add(time.Duration(365 * 24 * time.Hour))), // a key is valid for 1 year
+		Body:                     accountKeyAssertion.Body,
+		BodyLength:               accountKeyAssertion.BodyLength,
+		Signature:                signature,
+		Type:                     accountKeyAssertion.Type,
+		Errors:                   el.ConvertToProtoErrorList(),
 	}, nil
 }
 
@@ -424,11 +424,11 @@ func (s *AssertionService) GetSnapRevisionAssertionBySHA3_384(ctx context.Contex
 
 func (s *AssertionService) GetAccountKeyAssertionByPublicKeySha(ctx context.Context, req *proto.GetAccountKeyAssertionByPublicKeyShaRequest) (*proto.AccountKeyAssertionResponse, error) {
 	el := cerror.NewErrorList()
-	if req.GetPublicKeySha3_384() == "" {
+	if req.GetPublicKeySha3_384Encoded() == "" {
 		el.Add(cerror.Invalid, "name is required")
 		return nil, fmt.Errorf("name is required")
 	}
-	accountKeyAssertion, cerr := s.repo.GetAccountKeyAssertionByPublicKeySha(el, req.GetPublicKeySha3_384())
+	accountKeyAssertion, cerr := s.repo.GetAccountKeyAssertionByPublicKeySha(el, req.GetPublicKeySha3_384Encoded())
 	if cerr != nil {
 		// should have been logged and added to error list in repo function
 		return nil, fmt.Errorf("failed to get account key assertion: %v", cerr)

@@ -29,8 +29,8 @@ func (m *MockAssertionClient) ProcessSnapBuildAssertion(assertion []byte) *proto
 	return nil
 }
 
-func (m *MockAssertionClient) AddAccountKeyAssertion(encoded_public_key, publicKeySha3_384 string, accountId string, name string, since time.Time, until time.Time) *proto.AccountKeyAssertionResponse {
-	args := m.Called(publicKeySha3_384, accountId, name, since, until)
+func (m *MockAssertionClient) AddAccountKeyAssertion(encoded_public_key, publicKeySha3_384Encoded string, accountId string, name string, since time.Time, until time.Time) *proto.AccountKeyAssertionResponse {
+	args := m.Called(publicKeySha3_384Encoded, accountId, name, since, until)
 	if resp, ok := args.Get(0).(*proto.AccountKeyAssertionResponse); ok {
 		return resp
 	}
@@ -45,8 +45,8 @@ func (m *MockAssertionClient) AddSnapRevisionAssertion(snapSha3_384 string, deve
 	return nil
 }
 
-func (m *MockAssertionClient) GetAccountKeyAssertionByPublicKeySha(publicKeySha3_384 string) *proto.AccountKeyAssertionResponse {
-	args := m.Called(publicKeySha3_384)
+func (m *MockAssertionClient) GetAccountKeyAssertionByPublicKeySha(publicKeySha3_384Encoded string) *proto.AccountKeyAssertionResponse {
+	args := m.Called(publicKeySha3_384Encoded)
 	if resp, ok := args.Get(0).(*proto.AccountKeyAssertionResponse); ok {
 		return resp
 	}

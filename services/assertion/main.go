@@ -64,12 +64,12 @@ func main() {
 	b64pub := base64.StdEncoding.EncodeToString(serializedPub)
 
 	req := &proto.AddAccountKeyAssertionRequest{
-		EncodedPublicKey:  b64pub,
-		PublicKeySha3_384: cfg.RootKey.PublicKey().ID(),
-		AccountId:         "0b12c7e6-81cf-4095-938e-68a75dcb00b1",
-		Name:              "root",
-		Since:             &timestamppb.Timestamp{Seconds: now.Unix()},
-		Until:             &timestamppb.Timestamp{Seconds: now.Add(24 * time.Hour).Unix()},
+		EncodedPublicKey:         b64pub,
+		PublicKeySha3_384Encoded: cfg.RootKey.PublicKey().ID(),
+		AccountId:                "0b12c7e6-81cf-4095-938e-68a75dcb00b1",
+		Name:                     "root",
+		Since:                    &timestamppb.Timestamp{Seconds: now.Unix()},
+		Until:                    &timestamppb.Timestamp{Seconds: now.Add(24 * time.Hour).Unix()},
 	}
 	accountKeyAssertion, _ := assertionLogic.AddAccountKeyAssertion(ctx, req)
 	if len(accountKeyAssertion.Errors) != 0 {

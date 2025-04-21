@@ -21,12 +21,12 @@ import (
 type AssertionClientInterface interface {
 	ProcessSnapBuildAssertion(assertion []byte) *proto.SnapBuildAssertionResponse
 
-	AddAccountKeyAssertion(encoded_public_key, publicKeySha3_384, accountId, name string, since time.Time, until time.Time) *proto.AccountKeyAssertionResponse
+	AddAccountKeyAssertion(encoded_public_key, publicKeySha3_384Encoded, accountId, name string, since time.Time, until time.Time) *proto.AccountKeyAssertionResponse
 	AddSnapRevisionAssertion(snapSha3_384 string, developerId string, snapEntryId string, snapRevisionSequenceNumber uint32, snapSize uint64, timestamp time.Time) *proto.SnapRevisionAssertionResponse
 	AddSnapDeclarationAssertion(snapID, snapName, publisherID string, series uint32, timestamp time.Time, refreshControl []string, aliases []model.Alias, plugs model.PlugMap, slots model.SlotMap) *proto.SnapDeclarationAssertionResponse
 	AddAccountAssertion(accountId, displayName, username, validation string, timestamp time.Time) *proto.AccountAssertionResponse
 
-	GetAccountKeyAssertionByPublicKeySha(publicKeySha3_384 string) *proto.AccountKeyAssertionResponse
+	GetAccountKeyAssertionByPublicKeySha(publicKeySha3_384Encoded string) *proto.AccountKeyAssertionResponse
 	GetSnapRevisionAssertionBySHA3_384(snapSha3_384 string) *proto.SnapRevisionAssertionResponse
 	GetSnapDeclarationAssertionBySnapID(snapId string) *proto.SnapDeclarationAssertionResponse
 	GetAccountAssertionByAccountID(accountId string) *proto.AccountAssertionResponse
@@ -78,14 +78,14 @@ func (c *AssertionClient) ProcessSnapBuildAssertion(assertion []byte) *proto.Sna
 	return resp
 }
 
-func (c *AssertionClient) AddAccountKeyAssertion(encoded_public_key, publicKeySha3_384, accountId, name string, since time.Time, until time.Time) *proto.AccountKeyAssertionResponse {
+func (c *AssertionClient) AddAccountKeyAssertion(encoded_public_key, publicKeySha3_384Encoded, accountId, name string, since time.Time, until time.Time) *proto.AccountKeyAssertionResponse {
 	el := cerror.NewErrorList()
 
 	// check input
 	if encoded_public_key == "" {
 		el.Add(cerror.InvalidField, "encoded public key is required")
 	}
-	if publicKeySha3_384 == "" {
+	if publicKeySha3_384Encoded == "" {
 		el.Add(cerror.InvalidField, "public key sha3_384 is required")
 	}
 	if accountId == "" {
@@ -120,12 +120,12 @@ func (c *AssertionClient) AddAccountKeyAssertion(encoded_public_key, publicKeySh
 	}
 
 	req := &proto.AddAccountKeyAssertionRequest{
-		EncodedPublicKey:  encoded_public_key,
-		PublicKeySha3_384: publicKeySha3_384,
-		AccountId:         accountId,
-		Name:              name,
-		Since:             timestamppb.New(since),
-		Until:             timestamppb.New(until),
+		EncodedPublicKey:         encoded_public_key,
+		PublicKeySha3_384Encoded: publicKeySha3_384Encoded,
+		AccountId:                accountId,
+		Name:                     name,
+		Since:                    timestamppb.New(since),
+		Until:                    timestamppb.New(until),
 	}
 
 	resp, err := c.client.AddAccountKeyAssertion(context.Background(), req)
@@ -306,11 +306,11 @@ func (c *AssertionClient) AddAccountAssertion(accountId, displayName, username, 
 	return resp
 }
 
-func (c *AssertionClient) GetAccountKeyAssertionByPublicKeySha(publicKeySha3_384 string) *proto.AccountKeyAssertionResponse {
+func (c *AssertionClient) GetAccountKeyAssertionByPublicKeySha(publicKeySha3_384Encoded string) *proto.AccountKeyAssertionResponse {
 	el := cerror.NewErrorList()
 
 	// check input
-	if publicKeySha3_384 == "" {
+	if publicKeySha3_384Encoded == "" {
 		el.Add(cerror.InvalidField, "name is required")
 	}
 	if el.HasError() {
@@ -320,7 +320,7 @@ func (c *AssertionClient) GetAccountKeyAssertionByPublicKeySha(publicKeySha3_384
 	}
 
 	req := &proto.GetAccountKeyAssertionByPublicKeyShaRequest{
-		PublicKeySha3_384: publicKeySha3_384,
+		PublicKeySha3_384Encoded: publicKeySha3_384Encoded,
 	}
 
 	resp, err := c.client.GetAccountKeyAssertionByPublicKeySha(context.Background(), req)
