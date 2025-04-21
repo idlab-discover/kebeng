@@ -225,19 +225,19 @@ func (h *testHandler) loadInStoreDataInDB(ctx context.Context, storeTestData *Te
 			return fmt.Errorf("failed to add upload: %v", addUploadResp.Errors)
 		}
 
-		// to get SHA3_384 of uploaded file
+		// to get SHA3_384_encoded of uploaded file
 		metadata := h.StoreClient.GetObjectCustomMetadata("unscanned", uploadResp.GetTempFileName())
 		if len(metadata.Errors) > 0 {
 			return fmt.Errorf("failed to get object metadata: %v", metadata.Errors)
 		}
 
 		// creates revision
-		revisionResp := h.StoreClient.AddRevision(entry.Name, metadata.GetSha3_384(), uint64(fileInfo.Size()), []string{"amd64"}, []string{"latest/stable"}, uploadResp.GetTempFileName())
+		revisionResp := h.StoreClient.AddRevision(entry.Name, metadata.GetSha3_384Encoded(), uint64(fileInfo.Size()), []string{"amd64"}, []string{"latest/stable"}, uploadResp.GetTempFileName())
 		if len(revisionResp.Errors) > 0 {
 			return fmt.Errorf("failed to add revision: %v", revisionResp.Errors)
 		}
 		now := time.Now()
-		revisionAssertionRespo := h.AssertionClient.AddSnapRevisionAssertion(metadata.GetSha3_384(), accID.String(), snapEntryId.String(), uint32(revisionResp.Revision), uint64(fileInfo.Size()), now)
+		revisionAssertionRespo := h.AssertionClient.AddSnapRevisionAssertion(metadata.GetSha3_384Encoded(), accID.String(), snapEntryId.String(), uint32(revisionResp.Revision), uint64(fileInfo.Size()), now)
 		if len(revisionAssertionRespo.Errors) > 0 {
 			return fmt.Errorf("failed to add revision assertion: %v", revisionAssertionRespo.Errors)
 		}
