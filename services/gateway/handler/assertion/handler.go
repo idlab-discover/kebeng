@@ -98,30 +98,62 @@ func (h *Handler) GetAccountAssertion(c *gin.Context) {
 		return
 	}
 
-	// TODO: figure out what to do with the series maybe check specifically for the series
 	maxFormat := c.Query("max-format")
 	if maxFormat == "" {
 		el.Add(cerror.BadRequest, "missing max-format")
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
-	/*
-		resp := h.AssertionClient.GetAccountAssertionByAccountID(accountID)
-		if len(resp.Errors) > 0 {
-			logrus.Errorf("GetSnapDeclarationAssertion error: %v", resp.Errors)
-			c.JSON(http.StatusInternalServerError, gin.H{"error_list": resp.Errors})
-			return
-		}
-	*/
+	resp := h.AssertionClient.GetAccountAssertionByAccountID(accountID)
+	if len(resp.Errors) > 0 {
+		logrus.Errorf("GetSnapDeclarationAssertion error: %v", resp.Errors)
+		c.JSON(http.StatusInternalServerError, gin.H{"error_list": resp.Errors})
+		return
+	}
 	c.Writer.Header().Set("Content-Type", "application/x.ubuntu.assertion")
 	c.Writer.Header().Set("Content-Disposition",
 		fmt.Sprintf(`attachment; filename="%s.assert"`, accountID),
 	)
 	c.Writer.WriteHeader(http.StatusOK)
-	// _, err := io.WriteString(c.Writer, resp.Signature)
-	// if err != nil {
-	// 	logrus.Errorf("Error writing response: %v", err)
-	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to write response"})
-	// 	return
-	// }
+	_, err := io.WriteString(c.Writer, resp.Signature)
+	if err != nil {
+		logrus.Errorf("Error writing response: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to write response"})
+		return
+	}
+}
+
+func (h *Handler) GetAccountKeyAssertion(c *gin.Context) {
+	el := cerror.NewErrorList()
+
+	publicKeySha := c.Param("public_key_sha3_384")
+	if publicKeySha == "" {
+		el.Add(cerror.BadRequest, "missing publicKeySha")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
+
+	maxFormat := c.Query("max-format")
+	if maxFormat == "" {
+		el.Add(cerror.BadRequest, "missing max-format")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
+	resp := h.AssertionClient.GetAccountKeyAssertionByPublicKeySha(publicKeySha)
+	if len(resp.Errors) > 0 {
+		logrus.Errorf("GetSnapDeclarationAssertion error: %v", resp.Errors)
+		c.JSON(http.StatusInternalServerError, gin.H{"error_list": resp.Errors})
+		return
+	}
+	c.Writer.Header().Set("Content-Type", "application/x.ubuntu.assertion")
+	c.Writer.Header().Set("Content-Disposition",
+		fmt.Sprintf(`attachment; filename="%s.assert"`, publicKeySha),
+	)
+	c.Writer.WriteHeader(http.StatusOK)
+	_, err := io.WriteString(c.Writer, resp.Signature)
+	if err != nil {
+		logrus.Errorf("Error writing response: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to write response"})
+		return
+	}
 }

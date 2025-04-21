@@ -6,8 +6,8 @@ require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/google/uuid v1.6.0
 	github.com/idlab-discover/kebeng v0.0.0-20250417102054-28cdb3ec3408
-	github.com/idlab-discover/kebeng/services/account v0.0.0-20250418170613-1ffa298c9376
-	github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250420172454-40ee5be74eb5
+	github.com/idlab-discover/kebeng/services/account v0.0.0-20250421135037-0b175f147d92
+	github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250421153252-4354409a95ba
 	github.com/idlab-discover/kebeng/services/store v0.0.0-20250420184629-b14ae8720e6b
 	github.com/sirupsen/logrus v1.9.3
 	github.com/snapcore/snapd v0.0.0-20250228185938-4d4437a35a6b
@@ -30,7 +30,11 @@ require (
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.20.0 // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
+	github.com/golang-migrate/migrate/v4 v4.18.2 // indirect
+	github.com/hashicorp/errwrap v1.1.0 // indirect
+	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
+	github.com/jmoiron/sqlx v1.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.9 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
