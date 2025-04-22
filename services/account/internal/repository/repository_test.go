@@ -238,7 +238,7 @@ func TestUpdateAccount(t *testing.T) {
 				Username:     "alice_updated",
 				Email:        "alice_updated@example.com",
 				PasswordHash: "hash_updated",
-				Validation:   &validation,
+				Validation:   validation,
 				UpdatedAt:    time.Now(),
 			},
 			expectError: false,
@@ -251,7 +251,7 @@ func TestUpdateAccount(t *testing.T) {
 				Username:     "noone",
 				Email:        "noone@example.com",
 				PasswordHash: "hash",
-				Validation:   &validation,
+				Validation:   validation,
 				UpdatedAt:    time.Now(),
 			},
 			expectError:       true,
@@ -1059,7 +1059,7 @@ func TestFilterAccounts(t *testing.T) {
 		PasswordHash: "securehash456",
 		CreatedAt:    createdAt,
 		UpdatedAt:    updatedAt,
-		Validation:   &validation,
+		Validation:   validation,
 	}
 	insertQuery := `
 		INSERT INTO account (id, display_name, username, email, password_hash, created_at, updated_at, validation)
@@ -1091,7 +1091,7 @@ func TestFilterAccounts(t *testing.T) {
 		CreatedAt:    createdAt,
 		UpdatedAt:    updatedAt,
 		DeletedAt:    &deletedAt,
-		Validation:   &validation,
+		Validation:   validation,
 	}
 	insertQuery = `
 		INSERT INTO account (id, display_name, username, email, password_hash, created_at, updated_at, deleted_at, validation)

@@ -323,7 +323,7 @@ func (a *AccountRepository) FilterAccounts(ctx context.Context, filter *models.A
 		query += " AND deleted_at = :deleted_at"
 		params["deleted_at"] = filter.DeletedAt
 	}
-	if filter.Validation != nil {
+	if filter.Validation != "" {
 		query += " AND validation = :validation"
 		params["validation"] = filter.Validation
 	}
