@@ -6,7 +6,7 @@ require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/google/uuid v1.6.0
 	github.com/idlab-discover/kebeng v0.0.0-20250417102054-28cdb3ec3408
-	github.com/idlab-discover/kebeng/services/account v0.0.0-20250421135037-0b175f147d92
+	github.com/idlab-discover/kebeng/services/account v0.0.0-20250422082347-f3caaf9917cb
 	github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250421153252-4354409a95ba
 	github.com/idlab-discover/kebeng/services/store v0.0.0-20250421153503-a833570ee8fd
 	github.com/sirupsen/logrus v1.9.3

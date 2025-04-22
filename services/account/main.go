@@ -1,12 +1,16 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/idlab-discover/kebeng/services/account/internal/config"
 	"github.com/idlab-discover/kebeng/services/account/internal/database"
 	"github.com/idlab-discover/kebeng/services/account/internal/logic"
+	"github.com/idlab-discover/kebeng/services/account/internal/models"
 	"github.com/idlab-discover/kebeng/services/account/internal/repository"
 	proto "github.com/idlab-discover/kebeng/services/account/proto"
 	"github.com/sirupsen/logrus"
@@ -14,6 +18,7 @@ import (
 )
 
 func main() {
+	ctx := context.Background()
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		logrus.Fatalf("Failed to load configuration: %v", err)
@@ -34,6 +39,31 @@ func main() {
 	// if in test mode, load test data
 	if cfg.TestMode {
 		logrus.Infof("Test mode enabled")
+	}
+
+	// create root account
+	parsedRootAccountID, err := uuid.Parse(cfg.RootAccountID)
+	if err != nil {
+		logrus.Fatalf("Failed to parse root account ID: %v", err)
+	}
+
+	validation := "certified"
+	// idk what these values should be maybe best in config but hardcoded for now
+	rootAccount := &models.Account{
+		ID:           parsedRootAccountID,
+		DisplayName:  "kebeng",
+		Username:     "kebeng",
+		Email:        "kebeng@gmail.com",
+		PasswordHash: "password",
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
+		DeletedAt:    nil,
+		Validation:   validation,
+	}
+
+	_, cerr := repo.AddAccount(ctx, rootAccount)
+	if cerr != nil {
+		logrus.Fatalf("failed to create root account: %v", cerr)
 	}
 
 	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", cfg.GRPCHost, cfg.GRPCPort))
