@@ -12,6 +12,7 @@ import (
 	"github.com/idlab-discover/kebeng/services/account/internal/logic"
 	"github.com/idlab-discover/kebeng/services/account/internal/models"
 	"github.com/idlab-discover/kebeng/services/account/internal/repository"
+	"github.com/idlab-discover/kebeng/services/account/monitoring"
 	proto "github.com/idlab-discover/kebeng/services/account/proto"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -64,6 +65,12 @@ func main() {
 	_, cerr := repo.AddAccount(ctx, rootAccount)
 	if cerr != nil {
 		logrus.Fatalf("failed to create root account: %v", cerr)
+	}
+
+	// create metrics endpoint
+	if cfg.Monitoring {
+		logrus.Infof("Monitoring enabled")
+		monitoring.CreateMetricsEndpoint()
 	}
 
 	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", cfg.GRPCHost, cfg.GRPCPort))

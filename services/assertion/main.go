@@ -11,6 +11,7 @@ import (
 	"github.com/idlab-discover/kebeng/services/assertion/internal/database"
 	"github.com/idlab-discover/kebeng/services/assertion/internal/logic"
 	"github.com/idlab-discover/kebeng/services/assertion/internal/repository"
+	"github.com/idlab-discover/kebeng/services/assertion/monitoring"
 	proto "github.com/idlab-discover/kebeng/services/assertion/proto"
 	"github.com/sirupsen/logrus"
 	"github.com/snapcore/snapd/asserts"
@@ -87,6 +88,12 @@ func main() {
 	accountAssertion, _ := assertionLogic.AddAccountAssertion(ctx, req2)
 	if len(accountAssertion.Errors) != 0 {
 		logrus.Fatalf("Failed to create account assertion: %v", accountAssertion.Errors)
+	}
+
+	// create metrics endpoint
+	if cfg.Monitoring {
+		logrus.Infof("Creating metrics endpoint")
+		monitoring.CreateMetricsEndpoint()
 	}
 
 	// start grpc server
