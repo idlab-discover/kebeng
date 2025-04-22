@@ -125,7 +125,7 @@ func (h *Handler) GetAccount(c *gin.Context) {
 			ID:          p.Id,
 			DisplayName: p.DisplayName,
 			Username:    p.Username,
-			Validation:  util.GetString(p.Validation),
+			Validation:  p.Validation,
 		}
 	}
 
