@@ -11,6 +11,7 @@ import (
 
 type Config struct {
 	StoreUrl string `mapstructure:"store_url" yaml:"store_url"`
+	Macaroon string `mapstructure:"macaroon" yaml:"macaroon"`
 }
 
 func LoadConfig() (*Config, error) {
@@ -47,6 +48,10 @@ func (c *Config) checkConfig() error {
 	// Check DB config.
 	if c.StoreUrl == "" {
 		errs = append(errs, "store_url is required")
+	}
+
+	if c.Macaroon == "" {
+		errs = append(errs, "macaroon is required")
 	}
 
 	if len(errs) > 0 {

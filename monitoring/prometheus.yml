@@ -24,3 +24,8 @@ scrape_configs:
     metrics_path: /metrics
     static_configs:
       - targets: ['cadvisor:3031']
+  
+  - job_name: 'monitoring'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['monitoring:9100']

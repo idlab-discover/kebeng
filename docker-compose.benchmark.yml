@@ -19,7 +19,7 @@ services:
       context: ./services/monitoring
       dockerfile: Dockerfile.monitoring
     ports:
-      - "3030:3030"
+      - "3030:8080"
     depends_on:
       - prometheus
     volumes:
