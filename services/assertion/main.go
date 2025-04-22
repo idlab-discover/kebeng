@@ -64,12 +64,12 @@ func main() {
 	b64pub := base64.StdEncoding.EncodeToString(serializedPub)
 
 	req := &proto.AddAccountKeyAssertionRequest{
-		EncodedPublicKey:  b64pub,
-		PublicKeySha3_384: cfg.RootKey.PublicKey().ID(),
-		AccountId:         cfg.RootAccountID.String(),
-		Name:              "kebeng",
-		Since:             &timestamppb.Timestamp{Seconds: now.Unix()},
-		Until:             &timestamppb.Timestamp{Seconds: now.Add(24 * time.Hour).Unix()},
+		EncodedPublicKey:         b64pub,
+		PublicKeySha3_384Encoded: cfg.RootKey.PublicKey().ID(),
+		AccountId:                cfg.RootAccountID.String(),
+		Name:                     "kebeng",
+		Since:                    &timestamppb.Timestamp{Seconds: now.Unix()},
+		Until:                    &timestamppb.Timestamp{Seconds: now.Add(24 * time.Hour).Unix()},
 	}
 	accountKeyAssertion, _ := assertionLogic.AddAccountKeyAssertion(ctx, req)
 	if len(accountKeyAssertion.Errors) != 0 {
@@ -84,7 +84,7 @@ func main() {
 		Validation:  "certified",
 		Timestamp:   &timestamppb.Timestamp{Seconds: now.Unix()},
 	}
-	accountAssertion, err := assertionLogic.AddAccountAssertion(ctx, req2)
+	accountAssertion, _ := assertionLogic.AddAccountAssertion(ctx, req2)
 	if len(accountAssertion.Errors) != 0 {
 		logrus.Fatalf("Failed to create account assertion: %v", accountAssertion.Errors)
 	}
