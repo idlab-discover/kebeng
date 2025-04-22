@@ -33,6 +33,9 @@ services:
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
     container_name: cadvisor
+    command:
+      - --docker_only=true          # <— skip all raw cgroup/overlayfs probing
+      - --housekeeping_interval=30s
     ports:
     - 3031:8080
     volumes:
@@ -43,7 +46,6 @@ services:
     restart: always
     networks:
       - kebeng-backend
-
 
   gateway:
     build: 
