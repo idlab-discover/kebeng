@@ -343,11 +343,12 @@ func TestGetAccountByEmail(t *testing.T) {
 		PasswordHash: "duncanHash1",
 		CreatedAt:    createdAt,
 		UpdatedAt:    updatedAt,
+		Validation:   "certified",
 	}
 
 	insertQuery := `
-		INSERT INTO account (id, display_name, username, email, password_hash, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO account (id, display_name, username, email, password_hash, created_at, updated_at, validation)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 	`
 	_, err := globalDB.ExecContext(context.Background(), insertQuery,
 		original.ID,
@@ -357,6 +358,7 @@ func TestGetAccountByEmail(t *testing.T) {
 		original.PasswordHash,
 		original.CreatedAt,
 		original.UpdatedAt,
+		original.Validation,
 	)
 	if err != nil {
 		t.Fatalf("failed to insert initial account: %v", err)
@@ -435,11 +437,12 @@ func TestGetAccountByID(t *testing.T) {
 		PasswordHash: "hash1",
 		CreatedAt:    createdAt,
 		UpdatedAt:    updatedAt,
+		Validation:   "certified",
 	}
 
 	insertQuery := `
-		INSERT INTO account (id, display_name, username, email, password_hash, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO account (id, display_name, username, email, password_hash, created_at, updated_at, validation)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 	`
 	_, err := globalDB.ExecContext(context.Background(), insertQuery,
 		original.ID,
@@ -449,6 +452,7 @@ func TestGetAccountByID(t *testing.T) {
 		original.PasswordHash,
 		original.CreatedAt,
 		original.UpdatedAt,
+		original.Validation,
 	)
 	if err != nil {
 		t.Fatalf("failed to insert initial account: %v", err)
@@ -518,11 +522,12 @@ func TestGetAccountByUsername(t *testing.T) {
 		PasswordHash: "uniqueHash1",
 		CreatedAt:    createdAt,
 		UpdatedAt:    updatedAt,
+		Validation:   "certified",
 	}
 
 	insertQuery := `
-		INSERT INTO account (id, display_name, username, email, password_hash, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO account (id, display_name, username, email, password_hash, created_at, updated_at, validation)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 	`
 	_, err := globalDB.ExecContext(context.Background(), insertQuery,
 		original.ID,
@@ -532,6 +537,7 @@ func TestGetAccountByUsername(t *testing.T) {
 		original.PasswordHash,
 		original.CreatedAt,
 		original.UpdatedAt,
+		original.Validation,
 	)
 	if err != nil {
 		t.Fatalf("failed to insert initial account: %v", err)
@@ -597,11 +603,12 @@ func TestAddKeyToAccountByEmail(t *testing.T) {
 		PasswordHash: "uniqueHash1",
 		CreatedAt:    createdAt,
 		UpdatedAt:    updatedAt,
+		Validation:   "certified",
 	}
 
 	insertAccountQuery := `
-		INSERT INTO account (id, display_name, username, email, password_hash, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO account (id, display_name, username, email, password_hash, created_at, updated_at, validation)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 	`
 	_, err := globalDB.ExecContext(context.Background(), insertAccountQuery,
 		account.ID,
@@ -611,6 +618,7 @@ func TestAddKeyToAccountByEmail(t *testing.T) {
 		account.PasswordHash,
 		account.CreatedAt,
 		account.UpdatedAt,
+		account.Validation,
 	)
 	if err != nil {
 		t.Fatalf("failed to insert initial account: %v", err)
@@ -664,11 +672,12 @@ func TestGetKeyBySHA3384(t *testing.T) {
 		PasswordHash: "someHashValue",
 		CreatedAt:    createdAt,
 		UpdatedAt:    updatedAt,
+		Validation:   "certified",
 	}
 
 	insertAccountQuery := `
-		INSERT INTO account (id, display_name, username, email, password_hash, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO account (id, display_name, username, email, password_hash, created_at, updated_at, validation)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 	`
 	_, err := globalDB.ExecContext(context.Background(), insertAccountQuery,
 		account.ID,
@@ -678,6 +687,7 @@ func TestGetKeyBySHA3384(t *testing.T) {
 		account.PasswordHash,
 		account.CreatedAt,
 		account.UpdatedAt,
+		account.Validation,
 	)
 	if err != nil {
 		t.Fatalf("failed to insert account: %v", err)
@@ -746,11 +756,12 @@ func TestGetKeysByAccountID(t *testing.T) {
 		PasswordHash: "testhash",
 		CreatedAt:    createdAt,
 		UpdatedAt:    updatedAt,
+		Validation:   "certified",
 	}
 
 	insertAccountQuery := `
-		INSERT INTO account (id, display_name, username, email, password_hash, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO account (id, display_name, username, email, password_hash, created_at, updated_at, validation)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 	`
 	_, err := globalDB.ExecContext(context.Background(), insertAccountQuery,
 		account.ID,
@@ -760,6 +771,7 @@ func TestGetKeysByAccountID(t *testing.T) {
 		account.PasswordHash,
 		account.CreatedAt,
 		account.UpdatedAt,
+		account.Validation,
 	)
 	if err != nil {
 		t.Fatalf("failed to insert account: %v", err)
@@ -849,10 +861,11 @@ func TestFilterKeys(t *testing.T) {
 		PasswordHash: "filterHash",
 		CreatedAt:    accCreatedAt,
 		UpdatedAt:    accUpdatedAt,
+		Validation:   "certified",
 	}
 	insertAccountQuery := `
-		INSERT INTO account (id, display_name, username, email, password_hash, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO account (id, display_name, username, email, password_hash, created_at, updated_at, validation)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 	`
 	_, err := globalDB.ExecContext(context.Background(), insertAccountQuery,
 		account.ID,
@@ -862,6 +875,7 @@ func TestFilterKeys(t *testing.T) {
 		account.PasswordHash,
 		account.CreatedAt,
 		account.UpdatedAt,
+		account.Validation,
 	)
 	if err != nil {
 		t.Fatalf("failed to insert account: %v", err)
