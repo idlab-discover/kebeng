@@ -1,12 +1,21 @@
 package main
 
 import (
+	"monitoring/internal"
+	"monitoring/internal/config"
+
 	"github.com/gin-gonic/gin"
-	"github.com/idlab-discover/kebeng/services/monitoring/internal"
 	"github.com/sirupsen/logrus"
 )
 
 func main() {
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		logrus.Fatalf("Error loading config: %v", err)
+	}
+
+	logrus.Infof("Loaded config: %+v", cfg)
+
 	r := gin.Default()
 	internal.SetupEndpoints(r)
 
@@ -14,7 +23,7 @@ func main() {
 		c.JSON(404, gin.H{"message": "endpoint does not exist"})
 	})
 
-	err := r.Run()
+	err = r.Run()
 	if err != nil {
 		logrus.Fatalf("Failed to start server: %v", err)
 	}

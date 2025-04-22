@@ -24,6 +24,8 @@ services:
       - prometheus
     volumes:
       - ./services/monitoring/config.yaml:/app/config.yaml
+    environment:
+      - CONFIG_FILE_PATH=/app/config.yaml
     restart: always
     networks:
       - kebeng-backend
