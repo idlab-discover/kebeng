@@ -61,7 +61,7 @@ func main() {
 		Validation:   &validation,
 	}
 
-	rootAccount, cerr := repo.AddAccount(ctx, rootAccount)
+	_, cerr := repo.AddAccount(ctx, rootAccount)
 	if cerr != nil {
 		logrus.Fatalf("failed to create root account: %v", cerr)
 	}
