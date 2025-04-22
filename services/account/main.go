@@ -58,7 +58,7 @@ func main() {
 		CreatedAt:    time.Now(),
 		UpdatedAt:    time.Now(),
 		DeletedAt:    nil,
-		Validation:   &validation,
+		Validation:   validation,
 	}
 
 	_, cerr := repo.AddAccount(ctx, rootAccount)

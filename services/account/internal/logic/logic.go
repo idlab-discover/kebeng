@@ -47,7 +47,7 @@ func (a *AccountService) AddAccount(ctx context.Context, req *proto.AddAccountRe
 		Username:     req.Username,
 		Email:        req.Email,
 		PasswordHash: req.HashedPassword,
-		Validation:   &validation,
+		Validation:   validation,
 	}
 
 	createdAccount, err := a.repo.AddAccount(ctx, account)
