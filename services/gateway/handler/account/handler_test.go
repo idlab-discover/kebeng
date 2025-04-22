@@ -499,7 +499,7 @@ func TestGetAccountHandler(t *testing.T) {
 						Id:          "pub-1",
 						DisplayName: "Publisher",
 						Username:    "publisher",
-						Validation:  &Validation,
+						Validation:  Validation,
 					},
 				},
 				Errors: []*cerrorpb.Error{},
