@@ -66,6 +66,7 @@ func (h *Handler) SetupEndpoints(r *gin.Engine) {
 	r.GET("v2/assertions/snap-revision/:rev_sha3_384", h.assertionHandler.GetSnapRevisionAssertion)
 	r.GET("v2/assertions/snap-declaration/:series/:snap_id", h.assertionHandler.GetSnapDeclarationAssertion)
 	r.GET("/v2/assertions/account/:account_id", h.assertionHandler.GetAccountAssertion)
+	r.GET("/v2/assertions/account-key/:public_key_sha3_384", h.assertionHandler.GetAccountKeyAssertion)
 
 	// ********** AUTH **********
 

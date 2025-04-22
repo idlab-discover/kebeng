@@ -29,8 +29,8 @@ func (m *MockAssertionClient) ProcessSnapBuildAssertion(assertion []byte) *proto
 	return nil
 }
 
-func (m *MockAssertionClient) AddAccountKeyAssertion(encoded_public_key, publicKeySha3_384 string, accountId string, name string, since time.Time, until time.Time) *proto.AccountKeyAssertionResponse {
-	args := m.Called(publicKeySha3_384, accountId, name, since, until)
+func (m *MockAssertionClient) AddAccountKeyAssertion(encoded_public_key, publicKeySha3_384Encoded string, accountId string, name string, since time.Time, until time.Time) *proto.AccountKeyAssertionResponse {
+	args := m.Called(publicKeySha3_384Encoded, accountId, name, since, until)
 	if resp, ok := args.Get(0).(*proto.AccountKeyAssertionResponse); ok {
 		return resp
 	}
@@ -45,9 +45,17 @@ func (m *MockAssertionClient) AddSnapRevisionAssertion(snapSha3_384 string, deve
 	return nil
 }
 
-func (m *MockAssertionClient) GetAccountKeyAssertionByName(name string) *proto.AccountKeyAssertionResponse {
-	args := m.Called(name)
+func (m *MockAssertionClient) GetAccountKeyAssertionByPublicKeySha(publicKeySha3_384Encoded string) *proto.AccountKeyAssertionResponse {
+	args := m.Called(publicKeySha3_384Encoded)
 	if resp, ok := args.Get(0).(*proto.AccountKeyAssertionResponse); ok {
+		return resp
+	}
+	return nil
+}
+
+func (m *MockAssertionClient) AddAccountAssertion(accountId, displayName, username, validation string, timestamp time.Time) *proto.AccountAssertionResponse {
+	args := m.Called(accountId, displayName, username, validation, timestamp)
+	if resp, ok := args.Get(0).(*proto.AccountAssertionResponse); ok {
 		return resp
 	}
 	return nil
@@ -80,6 +88,14 @@ func (m *MockAssertionClient) AddSnapDeclarationAssertion(snapID, snapName, publ
 func (m *MockAssertionClient) GetSnapDeclarationAssertionBySnapID(snapId string) *proto.SnapDeclarationAssertionResponse {
 	args := m.Called(snapId)
 	if resp, ok := args.Get(0).(*proto.SnapDeclarationAssertionResponse); ok {
+		return resp
+	}
+	return nil
+}
+
+func (m *MockAssertionClient) GetAccountAssertionByAccountID(accountId string) *proto.AccountAssertionResponse {
+	args := m.Called(accountId)
+	if resp, ok := args.Get(0).(*proto.AccountAssertionResponse); ok {
 		return resp
 	}
 	return nil

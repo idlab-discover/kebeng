@@ -11,9 +11,12 @@ service AssertionService {
     rpc AddSnapRevisionAssertion(AddSnapRevisionAssertionRequest) returns (SnapRevisionAssertionResponse);
     rpc AddAccountKeyAssertion(AddAccountKeyAssertionRequest) returns (AccountKeyAssertionResponse);
     rpc AddSnapDeclarationAssertion(AddSnapDeclarationAssertionRequest) returns (SnapDeclarationAssertionResponse);
+    rpc AddAccountAssertion(AddAccountAssertionRequest) returns (AccountAssertionResponse);
     rpc GetSnapRevisionAssertionBySHA3_384(GetSnapRevisionAssertionBySHA3_384Request) returns (SnapRevisionAssertionResponse);
-    rpc GetAccountKeyAssertionByName(GetAccountKeyAssertionByNameRequest) returns (AccountKeyAssertionResponse);
+    rpc GetAccountKeyAssertionByPublicKeySha(GetAccountKeyAssertionByPublicKeyShaRequest) returns (AccountKeyAssertionResponse);
     rpc GetSnapDeclarationAssertionBySnapID(GetSnapDeclarationAssertionBySnapIDRequest) returns (SnapDeclarationAssertionResponse);
+    rpc GetAccountAssertionByAccountID(GetAccountAssertionByAccountIDRequest) returns (AccountAssertionResponse);
+    
 }
 
 message SnapBuildAssertionRequest {
@@ -62,7 +65,7 @@ message SnapRevisionAssertionResponse {
 
 message AddAccountKeyAssertionRequest {
   string encoded_public_key = 1;
-  string public_key_sha3_384 = 2;
+  string public_key_sha3_384_encoded = 2;
   string account_id = 3;
   string name = 4;
   google.protobuf.Timestamp since = 5;
@@ -73,7 +76,7 @@ message AccountKeyAssertionResponse {
   string type = 1;
   string authority_id = 2;
   uint32 revision_sequence_number = 3;
-  string public_key_sha3_384 = 4;
+  string public_key_sha3_384_encoded = 4;
   string account_id = 5;
   string name = 6;
   google.protobuf.Timestamp since = 7;
@@ -93,8 +96,8 @@ message GetSnapRevisionAssertionBySHA3_384Request {
   string snap_sha3_384 = 1;
 }
 
-message GetAccountKeyAssertionByNameRequest {
-  string name = 1;
+message GetAccountKeyAssertionByPublicKeyShaRequest {
+  string public_key_sha3_384_encoded = 1;
 }
 
 message AddSnapDeclarationAssertionRequest {
@@ -154,5 +157,33 @@ message Alias {
 message GetSnapDeclarationAssertionBySnapIDRequest {
   string snap_id = 1;
   uint32 revision = 2;
+}
+
+message AddAccountAssertionRequest {
+  string account_id = 1;
+  string display_name = 2;
+  string username = 3;
+  string validation = 4;
+  google.protobuf.Timestamp timestamp = 5;
+}
+
+message AccountAssertionResponse {
+  string id = 1;
+  string type = 2;
+  string authority_id = 3;
+  uint32 revision = 4;
+  string account_id = 5;
+  string display_name = 6;
+  string username = 7;
+  string validation = 8;
+  google.protobuf.Timestamp timestamp = 9;
+  string sign_key_sha3_384 = 10;
+  string signature = 11;
+
+  repeated proto.Error errors = 12;
+}
+
+message GetAccountAssertionByAccountIDRequest {
+  string account_id = 1;
 }
 
