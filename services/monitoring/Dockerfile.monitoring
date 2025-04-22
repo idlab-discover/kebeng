@@ -1,0 +1,14 @@
+# Build stage
+FROM golang:1.22 AS builder
+WORKDIR /app
+COPY . .
+RUN ls -al /app
+RUN go mod download
+RUN go build -o /bin/monitoring-service ./main.go
+
+# Final stage
+FROM golang:1.22
+WORKDIR /app
+COPY --from=builder /bin/monitoring-service /app/monitoring-service
+
+CMD ["/app/monitoring-service"]
