@@ -31,19 +31,19 @@ services:
       - kebeng-backend
 
   cadvisor:
-    image: gcr.io/google-containers/cadvisor:latest
+    image: gcr.io/cadvisor/cadvisor:latest
     container_name: cadvisor
     ports:
-      - "3031:8080"
+    - 3031:8080
     volumes:
-      - /:/rootfs:ro                    # host root filesystem
-      - /var/run:/var/run:ro           # Docker socket
-      - /sys:/sys:ro                   # system metrics
-      - /var/lib/docker/:/var/lib/docker:ro
-      - /dev/disk/:/dev/disk:ro        # disk stats
+    - /:/rootfs:ro
+    - /var/run:/var/run:rw
+    - /sys:/sys:ro
+    - /var/lib/docker/:/var/lib/docker:ro
     restart: always
     networks:
       - kebeng-backend
+
 
   gateway:
     build: 
