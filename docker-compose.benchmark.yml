@@ -22,6 +22,8 @@ services:
       - "3030:3030"
     depends_on:
       - prometheus
+    volumes:
+      - ./services/monitoring/config.yaml:/app/config.yaml
     restart: always
     networks:
       - kebeng-backend
