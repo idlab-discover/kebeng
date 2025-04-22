@@ -55,8 +55,17 @@ func (m *MockAssertionRepository) AddSnapDeclarationAssertion(el *cerror.ErrorLi
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
-// GetAccountKeyAssertionByName mocks GetAccountKeyAssertionByName method.
-func (m *MockAssertionRepository) GetAccountKeyAssertionByName(el *cerror.ErrorList, name string) (*model.AccountKeyAssertion, *cerror.CustomError) {
+func (m *MockAssertionRepository) AddAccountAssertion(el *cerror.ErrorList, authority_id, displayName, username, validation string, accountID uuid.UUID, revision uint32, timestamp time.Time, sign_key_SHA3_384, signature string) (*model.AccountAssertion, *cerror.CustomError) {
+	args := m.Called(el, authority_id, displayName, username, validation, accountID, revision, timestamp, sign_key_SHA3_384, signature)
+	if args.Get(0) != nil {
+		return args.Get(0).(*model.AccountAssertion), nil
+	}
+	el.AddCustomError(args.Get(1).(*cerror.CustomError))
+	return nil, args.Get(1).(*cerror.CustomError)
+}
+
+// GetAccountKeyAssertionByPublicKeySha mocks GetAccountKeyAssertionByPublicKeySha method.
+func (m *MockAssertionRepository) GetAccountKeyAssertionByPublicKeySha(el *cerror.ErrorList, name string) (*model.AccountKeyAssertion, *cerror.CustomError) {
 	args := m.Called(el, name)
 	if args.Get(0) != nil {
 		return args.Get(0).(*model.AccountKeyAssertion), nil
@@ -98,6 +107,24 @@ func (m *MockAssertionRepository) GetLatestSnapDeclarationAssertion(el *cerror.E
 	args := m.Called(el, snapID)
 	if args.Get(0) != nil {
 		return args.Get(0).(*model.SnapDeclarationAssertion), nil
+	}
+	el.AddCustomError(args.Get(1).(*cerror.CustomError))
+	return nil, args.Get(1).(*cerror.CustomError)
+}
+
+func (m *MockAssertionRepository) GetAccountAssertionByAccountID(el *cerror.ErrorList, accountID uuid.UUID) (*model.AccountAssertion, *cerror.CustomError) {
+	args := m.Called(el, accountID)
+	if args.Get(0) != nil {
+		return args.Get(0).(*model.AccountAssertion), nil
+	}
+	el.AddCustomError(args.Get(1).(*cerror.CustomError))
+	return nil, args.Get(1).(*cerror.CustomError)
+}
+
+func (m *MockAssertionRepository) GetLatestAccountAssertionByAccountID(el *cerror.ErrorList, accountID uuid.UUID) (*model.AccountAssertion, *cerror.CustomError) {
+	args := m.Called(el, accountID)
+	if args.Get(0) != nil {
+		return args.Get(0).(*model.AccountAssertion), nil
 	}
 	el.AddCustomError(args.Get(1).(*cerror.CustomError))
 	return nil, args.Get(1).(*cerror.CustomError)
