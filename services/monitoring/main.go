@@ -3,6 +3,9 @@ package main
 import (
 	"monitoring/handler"
 	"monitoring/internal/config"
+	"monitoring/internal/logic"
+	"net/http"
+
 	"monitoring/monitoring"
 
 	"github.com/gin-gonic/gin"
@@ -18,7 +21,10 @@ func main() {
 	logrus.Infof("Loaded config: %+v", cfg)
 
 	r := gin.Default()
-	h := handler.NewHandler(cfg)
+	client := &http.Client{}
+	l := logic.NewLogic(cfg, client)
+
+	h := handler.NewHandler(l)
 
 	h.SetupEndpoints(r)
 
