@@ -192,10 +192,6 @@ func TestCreateAccount(t *testing.T) {
 	}
 }
 
-func ptrTime(t time.Time) *time.Time {
-	return &t
-}
-
 func TestUpdateAccount(t *testing.T) {
 	// Insert an initial account
 	createdAt := time.Now()
