@@ -1,7 +1,7 @@
 package main
 
 import (
-	"monitoring/internal"
+	"monitoring/handler"
 	"monitoring/internal/config"
 
 	"github.com/gin-gonic/gin"
@@ -17,7 +17,7 @@ func main() {
 	logrus.Infof("Loaded config: %+v", cfg)
 
 	r := gin.Default()
-	internal.SetupEndpoints(r)
+	handler.SetupEndpoints(r)
 
 	r.NoRoute(func(c *gin.Context) {
 		c.JSON(404, gin.H{"message": "endpoint does not exist"})
