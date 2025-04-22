@@ -10,6 +10,7 @@ import (
 	logic "github.com/idlab-discover/kebeng/services/store/internal/logic"
 	"github.com/idlab-discover/kebeng/services/store/internal/objectstore"
 	repositories "github.com/idlab-discover/kebeng/services/store/internal/repository"
+	"github.com/idlab-discover/kebeng/services/store/monitoring"
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
 	"github.com/minio/minio-go/v7"
 	"github.com/sirupsen/logrus"
@@ -71,6 +72,11 @@ func main() {
 
 	if cfg.TestMode {
 		logrus.Infof("Running in test mode")
+	}
+
+	if cfg.Monitoring {
+		logrus.Infof("Starting metrics endpoint on port 9100")
+		monitoring.CreateMetricsEndpoint()
 	}
 
 	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", cfg.GRPCHost, cfg.GRPCPort))

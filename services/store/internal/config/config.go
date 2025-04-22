@@ -25,6 +25,8 @@ type Config struct {
 	MinioHost      string `mapstructure:"minio_host" yaml:"minio_host"`
 	MinioSecure    bool   `mapstructure:"minio_secure" yaml:"minio_secure"`
 
+	Monitoring bool `mapstructure:"monitoring" yaml:"monitoring"`
+
 	TestMode bool
 }
 
