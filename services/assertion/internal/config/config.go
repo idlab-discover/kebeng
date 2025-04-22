@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/idlab-discover/kebeng/common/crypto"
 	"github.com/sirupsen/logrus"
 	"github.com/snapcore/snapd/asserts"
@@ -21,8 +22,10 @@ type Config struct {
 	GRPCPort      int    `mapstructure:"grpc_port" yaml:"grpc_port"`
 	MigrationPath string `mapstructure:"migration_path" yaml:"migration_path"`
 
-	RootKey        asserts.PrivateKey
-	RootKeyPath    string `mapstructure:"root_key_path" yaml:"root_key_path"`
+	RootKey             asserts.PrivateKey
+	RootKeyPath         string `mapstructure:"root_key_path" yaml:"root_key_path"`
+	RootAccountIDString string `mapstructure:"root_account_id" yaml:"root_account_id"`
+	RootAccountID       uuid.UUID
 
 	AuthorityID string `mapstructure:"authority_id" yaml:"authority_id"`
 	StoreName   string `mapstructure:"store_name" yaml:"store_name"`
@@ -68,6 +71,13 @@ func LoadConfig() (*Config, error) {
 		return nil, fmt.Errorf("failed to load root key from %s", cfg.RootKeyPath)
 	}
 	cfg.RootKey = rootKey
+
+	// Parse the root account ID from string to UUID.
+	rootAccountID, err := uuid.Parse(cfg.RootAccountIDString)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse root account ID %s: %v", cfg.RootAccountIDString, err)
+	}
+	cfg.RootAccountID = rootAccountID
 
 	logrus.Infof("loaded config: %+v", cfg)
 
@@ -127,6 +137,12 @@ func (c *Config) checkConfig() error {
 	}
 	if c.StoreName == "" {
 		errs = append(errs, "StoreName is required")
+	}
+	if c.RootAccountIDString == "" {
+		errs = append(errs, "RootAccountID is required")
+	}
+	if _, err := uuid.Parse(c.RootAccountIDString); err != nil {
+		errs = append(errs, "RootAccountID must be a valid UUID")
 	}
 
 	if len(errs) > 0 {

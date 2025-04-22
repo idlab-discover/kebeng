@@ -25,7 +25,7 @@ message AccountResponse {
     string display_name = 2;
     string username = 3;
     string email = 4;
-    optional string validation = 5;
+    string validation = 5;
     repeated proto.Error errors = 6;
 }
 

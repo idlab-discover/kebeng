@@ -311,11 +311,11 @@ func (a *AccountRepository) FilterAccounts(ctx context.Context, filter *models.A
 		query += " AND email = :email"
 		params["email"] = filter.Email
 	}
-	if filter.CreatedAt != nil && !filter.CreatedAt.IsZero() {
+	if filter.CreatedAt.IsZero() && !filter.CreatedAt.IsZero() {
 		query += " AND created_at = :created_at"
 		params["created_at"] = filter.CreatedAt
 	}
-	if filter.UpdatedAt != nil && !filter.UpdatedAt.IsZero() {
+	if filter.UpdatedAt.IsZero() && !filter.UpdatedAt.IsZero() {
 		query += " AND updated_at = :updated_at"
 		params["updated_at"] = filter.UpdatedAt
 	}
@@ -323,7 +323,7 @@ func (a *AccountRepository) FilterAccounts(ctx context.Context, filter *models.A
 		query += " AND deleted_at = :deleted_at"
 		params["deleted_at"] = filter.DeletedAt
 	}
-	if filter.Validation != nil {
+	if filter.Validation != "" {
 		query += " AND validation = :validation"
 		params["validation"] = filter.Validation
 	}

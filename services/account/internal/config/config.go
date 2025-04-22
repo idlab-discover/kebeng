@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -17,7 +18,10 @@ type Config struct {
 	GRPCHost      string `mapstructure:"grpc_host" yaml:"grpc_host"`
 	GRPCPort      int    `mapstructure:"grpc_port" yaml:"grpc_port"`
 	MigrationPath string `mapstructure:"migration_path" yaml:"migration_path"`
-	TestMode      bool
+
+	RootAccountID string `mapstructure:"root_account_id" yaml:"root_account_id"`
+
+	TestMode bool
 }
 
 func LoadConfig() (*Config, error) {
@@ -45,8 +49,8 @@ func LoadConfig() (*Config, error) {
 		cfg.TestMode = true
 	}
 
-	if err := cfg.checkConfig(); err != nil {
-		return nil, fmt.Errorf("configuration validation failed: %v", err)
+	if errs := cfg.checkConfig(); len(errs) > 0 {
+		return nil, fmt.Errorf("configuration validation failed: %v", errs)
 	}
 
 	logrus.Infof("loaded config: %+v", cfg)
@@ -63,31 +67,40 @@ func GetAccountServiceAddress(host string, port int) string {
 	return fmt.Sprintf("%s:%d", host, port)
 }
 
-func (cfg *Config) checkConfig() error {
+func (cfg *Config) checkConfig() []string {
+	var errs []string
+
 	if cfg.DBHost == "" {
-		return fmt.Errorf("db_host is required")
+		errs = append(errs, "db_host is required")
 	}
 	if cfg.DBPort == 0 {
-		return fmt.Errorf("db_port is required")
+		errs = append(errs, "db_port is required")
 	}
 	if cfg.DBUser == "" {
-		return fmt.Errorf("db_user is required")
+		errs = append(errs, "db_user is required")
 	}
 	if cfg.DBPassword == "" {
-		return fmt.Errorf("db_password is required")
+		errs = append(errs, "db_password is required")
 	}
 	if cfg.DBName == "" {
-		return fmt.Errorf("db_name is required")
+		errs = append(errs, "db_name is required")
 	}
 	if cfg.GRPCHost == "" {
-		return fmt.Errorf("grpc_host is required")
+		errs = append(errs, "grpc_host is required")
 	}
 	if cfg.GRPCPort == 0 {
-		return fmt.Errorf("grpc_port is required")
+		errs = append(errs, "grpc_port is required")
 	}
 	if cfg.MigrationPath == "" {
-		return fmt.Errorf("migration_path is required")
+		errs = append(errs, "migration_path is required")
 	}
 
-	return nil
+	if cfg.RootAccountID == "" {
+		errs = append(errs, "root_account_id is required")
+	}
+	if _, err := uuid.Parse(cfg.RootAccountID); err != nil {
+		errs = append(errs, "root_account_id must be a valid UUID")
+	}
+
+	return errs
 }
