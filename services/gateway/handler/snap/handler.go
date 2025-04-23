@@ -181,7 +181,12 @@ func (h *Handler) RegisterSnapName(c *gin.Context) {
 
 	dryRun := c.Query("dry_run") == "1"
 
-	resp := h.StoreClient.RegisterSnapName(req.SnapName, "", "", "", req.IsPrivate, "", 0.0, req.Store, "", dryRun, accountUUID) // TODO: fill in empty fields once we know where to get the information from
+	// if store name is empty, use the default store name
+	if req.Store == "" {
+		req.Store = h.Config.StoreName
+	}
+
+	resp := h.StoreClient.RegisterSnapName(req.SnapName, "app", "", "", req.IsPrivate, "active", 0.0, req.Store, "", dryRun, accountUUID)
 	if len(resp.Errors) > 0 {
 		el.ExtendProtoError(resp.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})

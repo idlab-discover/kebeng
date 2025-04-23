@@ -411,7 +411,6 @@ func (c *StoreClient) UpdateSnapEntryWithMetadata(snapEntryId uuid.UUID, metadat
 	req := &proto.UpdateSnapEntryWithMetadataRequest{
 		EntryId:       snapEntryId.String(),
 		Name:          metadata.Name,
-		Type:          metadata.Type,
 		Confinement:   metadata.Confinement,
 		Base:          metadata.Base,
 		Architectures: metadata.Architectures,

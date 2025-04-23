@@ -1312,7 +1312,6 @@ func TestUpdateSnapEntryWithMetadata(t *testing.T) {
 	tests := []struct {
 		name              string
 		entryId           uuid.UUID
-		snapType          string
 		confinement       string
 		base              string
 		summary           string
@@ -1326,7 +1325,6 @@ func TestUpdateSnapEntryWithMetadata(t *testing.T) {
 		{
 			name:              "Success updating snap entry with metadata",
 			entryId:           mockUUID,
-			snapType:          "application",
 			confinement:       "strict",
 			base:              "core20",
 			summary:           "mock summary",
@@ -1342,7 +1340,6 @@ func TestUpdateSnapEntryWithMetadata(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var metadata models.SnapMeta = models.SnapMeta{
-				Type:          tt.snapType,
 				Confinement:   tt.confinement,
 				Base:          tt.base,
 				Summary:       tt.summary,

@@ -654,11 +654,11 @@ func (sp *SnapsRepository) UpdateSnapEntryWithMetadata(entryId uuid.UUID, metada
 	var snapEntry models.SnapEntry
 	query := `
 		UPDATE entry
-		SET type = $1, confinement = $2, base = $3, summary = $4, description = $5, architectures = $6, version = $7, grade = $8, updated_at = now()
-		WHERE id = $9
+		SET confinement = $1, base = $2, summary = $3, description = $4, architectures = $5, version = $6, grade = $7, updated_at = now()
+		WHERE id = $8
 		RETURNING *
 	`
-	err := sp.db.Get(&snapEntry, query, metadata.Type, metadata.Confinement, metadata.Base, metadata.Summary, metadata.Description, metadata.Architectures, metadata.Version, metadata.Grade, entryId)
+	err := sp.db.Get(&snapEntry, query, metadata.Confinement, metadata.Base, metadata.Summary, metadata.Description, metadata.Architectures, metadata.Version, metadata.Grade, entryId)
 	if err != nil {
 		cerr := cerror.ConvertError(err, fmt.Sprintf("error updating snap entry with id = '%s'", entryId.String()))
 		logrus.Error(cerr)
