@@ -52,7 +52,7 @@ func NewStoreClientWithClient(client proto.StoreServiceClient) *StoreClient {
 	return &StoreClient{client: client}
 }
 
-func NewStoreClient(storeHost string, storePort int) (*StoreClient, error) {
+func NewStoreClient(storeHost string, storePort int) (*StoreClient, *cerror.CustomError) {
 	logrus.Infof("Connecting to store service at %s:%d", storeHost, storePort)
 	addr := config.GetStoreServiceAddress(storeHost, storePort)
 
@@ -77,7 +77,7 @@ func NewStoreClient(storeHost string, storePort int) (*StoreClient, error) {
 		}
 		time.Sleep(dialRetryDelay)
 	}
-	return nil, fmt.Errorf("failed to connect to store service after %d attempts", maxDialAttempts)
+	return nil, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to connect to store service after %d attempts", maxDialAttempts))
 }
 
 func (c *StoreClient) Close() {
