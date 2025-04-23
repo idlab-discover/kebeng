@@ -728,15 +728,13 @@ func (s *StoreLogic) UnscannedUpload(stream proto.StoreService_UnscannedUploadSe
 
 	logrus.Infof("snap metadata yaml: %v", metadataYaml)
 
-	metadataMinio, err := s.obs.SaveFileToBucket("unscanned", tmpPath, sha3_384HashEncoded, metadataYaml.Name ,metadataYaml.Version, metadataYaml.Type, metadataYaml.Summary, metadataYaml.Description, metadataYaml.Confinement, metadataYaml.Base, metadataYaml.Architectures)
+	metadataMinio, err := s.obs.SaveFileToBucket("unscanned", tmpPath, sha3_384HashEncoded, metadataYaml.Name, metadataYaml.Version, metadataYaml.Type, metadataYaml.Summary, metadataYaml.Description, metadataYaml.Confinement, metadataYaml.Base, metadataYaml.Grade, metadataYaml.Architectures)
 	if err != nil {
 		cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to save file to object store: %v", err))
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
 		return fmt.Errorf("failed to save file to object store: %v", cerr)
 	}
-
-	
 
 	err = stream.SendAndClose(&proto.UnscannedUploadCompleteResponse{
 		TempFileName: metadataMinio.Key,
@@ -971,8 +969,65 @@ func (s *StoreLogic) GetObjectCustomMetadata(ctx context.Context, req *proto.Get
 		Description:     metadata.Description,
 		Confinement:     metadata.Confinement,
 		Base:            metadata.Base,
+		Grade:           metadata.Grade,
 		Architectures:   metadata.Architectures,
 	}, nil
+}
+
+func (s *StoreLogic) UpdateSnapEntryWithMetadata(ctx context.Context, req *proto.UpdateSnapEntryWithMetadataRequest) (*proto.UpdateEntryResponse, error) {
+	el := cerror.NewErrorList()
+	if req.EntryId == "" {
+		cerr := cerror.NewCustomError(cerror.MissingField, "entry id is required")
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.UpdateEntryResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	parsedID, err := uuid.Parse(req.EntryId)
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.InvalidField, fmt.Sprintf("invalid UUID format: %s", req.EntryId))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.UpdateEntryResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	meta := &models.SnapMeta{
+		Name:          req.Name,
+		Version:       req.Version,
+		Type:          req.Type,
+		Summary:       req.Summary,
+		Description:   req.Description,
+		Confinement:   req.Confinement,
+		Base:          req.Base,
+		Grade:         req.Grade,
+		Architectures: req.Architectures,
+	}
+
+	entry, cerr := s.repo.UpdateSnapEntryWithMetadata(parsedID, meta, el)
+	if cerr != nil {
+		// Already logged in UpdateSnapEntryWithMetadata (repository)
+		return &proto.UpdateEntryResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	return &proto.UpdateEntryResponse{
+		EntryId:       entry.ID.String(),
+		Name:          entry.Name,
+		Summary:       entry.Summary,
+		Description:   entry.Description,
+		Type:          entry.Type,
+		Confinement:   entry.Confinement,
+		Base:          entry.Base,
+		Private:       entry.Private,
+		AccountId:     entry.AccountID.String(),
+		Price:         entry.Price,
+		Status:        entry.Status,
+		Architectures: entry.Architectures,
+		Grade:         entry.Grade,
+		Version:       entry.Version,
+		IconUrl:       entry.IconURL,
+		Errors:        el.ConvertToProtoErrorList(),
+	}, nil
+
 }
 
 // ################# HELPERS #################

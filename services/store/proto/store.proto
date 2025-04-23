@@ -20,6 +20,7 @@ service StoreService {
     rpc AddRevision(AddRevisionRequest) returns (AddRevisionResponse);
     rpc GetObjectCustomMetadata(GetObjectCustomMetadataRequest) returns (GetObjectCustomMetadataResponse);
     rpc UpdateUploadStatus(UpdateUploadStatusRequest) returns (UpdateUploadStatusResponse);
+    rpc UpdateSnapEntryWithMetadata(UpdateSnapEntryWithMetadataRequest) returns (UpdateEntryResponse);
 }
 
 message RegisterSnapNameRequest {
@@ -269,8 +270,9 @@ message GetObjectCustomMetadataResponse {
     string description = 6;
     string confinement = 7;
     string base = 8;
-    repeated string architectures = 9;
-    repeated proto.Error errors = 10;
+    string grade = 9;
+    repeated string architectures = 10;
+    repeated proto.Error errors = 11;
 }
 
 message UpdateUploadStatusRequest {
@@ -286,7 +288,7 @@ message UpdateUploadStatusResponse {
     repeated proto.Error errors = 3;
 }
 
-message UpdateEntryWithMetadataRequest {
+message UpdateSnapEntryWithMetadataRequest {
     string entry_id = 1;
     string name = 2;
     string type = 3;
@@ -298,4 +300,27 @@ message UpdateEntryWithMetadataRequest {
     string summary = 9;
     string description = 10;
     repeated proto.Error errors = 11;
+}
+
+message UpdateEntryResponse {
+    string entry_id = 1;
+    string name = 2;
+    string type = 3;
+    string confinement = 4;
+    string base = 5;
+    repeated string architectures = 6;
+    string grade = 7;
+    string version = 8;
+    string summary = 9;
+    string description = 10;
+    bool private = 11;
+    string status = 12;
+    double price = 13;
+    string store = 14;
+    string icon_url = 15;
+    string account_id = 16;
+    google.protobuf.Timestamp created_at = 17;
+    google.protobuf.Timestamp updated_at = 18;
+    optional google.protobuf.Timestamp deleted_at = 19;
+    repeated proto.Error errors = 20;
 }

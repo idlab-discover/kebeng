@@ -1350,14 +1350,15 @@ func TestUpdateSnapEntryWithMetadata(t *testing.T) {
 				Architectures: tt.architectures,
 				Grade:         tt.grade,
 			}
-			err := globalRepo.UpdateSnapEntryWithMetadata(tt.entryId, &metadata, tt.el)
+			entry, cerr := globalRepo.UpdateSnapEntryWithMetadata(tt.entryId, &metadata, tt.el)
 			if tt.expectError {
-				assert.NotNil(t, err)
-				if err != nil {
-					assert.Equal(t, tt.expectedErrorCode, err.GetCode())
+				assert.NotNil(t, cerr)
+				if cerr != nil {
+					assert.Equal(t, tt.expectedErrorCode, cerr.GetCode())
 				}
 			} else {
-				assert.Nil(t, err)
+				assert.Nil(t, cerr)
+				assert.NotNil(t, entry)
 			}
 		})
 	}

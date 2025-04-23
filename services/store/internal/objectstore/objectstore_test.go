@@ -43,6 +43,7 @@ func TestSaveFileToBucket(t *testing.T) {
 		"Test Description",
 		"strict",
 		"core18",
+		"test-grade",
 		[]string{"amd64", "arm64"},
 	)
 	assert.NoError(t, err)
@@ -55,6 +56,7 @@ func TestSaveFileToBucket(t *testing.T) {
 	assert.Equal(t, "Test Description", metadata.Description)
 	assert.Equal(t, "strict", metadata.Confinement)
 	assert.Equal(t, "core18", metadata.Base)
+	assert.Equal(t, "test-grade", metadata.Grade)
 	assert.ElementsMatch(t, []string{"amd64", "arm64"}, metadata.Architectures)
 
 	mockMinio.AssertExpectations(t)
