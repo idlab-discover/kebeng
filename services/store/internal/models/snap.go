@@ -137,6 +137,7 @@ type Metadata struct {
 	Description       string         `json:"description" db:"description"`
 	Confinement       string         `json:"confinement" db:"confinement"`
 	Base              string         `json:"base" db:"base"`
+	Grade             string         `json:"grade" db:"grade"`
 	Architectures     pq.StringArray `json:"architectures" db:"architectures"`
 }
 

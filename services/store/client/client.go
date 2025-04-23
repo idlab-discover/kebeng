@@ -405,3 +405,30 @@ func (c *StoreClient) GetObjectCustomMetadata(bucket string, objectKey string) *
 	}
 	return resp
 }
+
+func (c *StoreClient) UpdateSnapEntryWithMetadata(snapEntryId uuid.UUID, metadata *proto.GetObjectCustomMetadataResponse) *proto.UpdateEntryResponse {
+	req := &proto.UpdateSnapEntryWithMetadataRequest{
+		EntryId:       snapEntryId.String(),
+		Name:          metadata.Name,
+		Type:          metadata.Type,
+		Confinement:   metadata.Confinement,
+		Base:          metadata.Base,
+		Architectures: metadata.Architectures,
+		Grade:         metadata.Grade,
+		Version:       metadata.Version,
+		Summary:       metadata.Summary,
+		Description:   metadata.Description,
+		Errors:        metadata.Errors,
+	}
+
+	resp, err := c.client.UpdateSnapEntryWithMetadata(context.Background(), req)
+	if err != nil {
+		return &proto.UpdateEntryResponse{
+			Errors: []*cerrorpb.Error{{
+				Code:    cerror.InternalServerError,
+				Message: err.Error()},
+			},
+		}
+	}
+	return resp
+}

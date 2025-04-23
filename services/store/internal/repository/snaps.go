@@ -46,7 +46,7 @@ type ISnapsRepository interface {
 
 	// UPDATE
 	UpdateUploadStatus(uploadId uuid.UUID, status string, revision uint32, errorList *cerror.ErrorList) *cerror.CustomError
-	UpdateSnapEntryWithMetadata(entryId uuid.UUID, metadata *models.SnapMeta, errorList *cerror.ErrorList) *cerror.CustomError
+	UpdateSnapEntryWithMetadata(entryId uuid.UUID, metadata *models.SnapMeta, errorList *cerror.ErrorList) (*models.SnapEntry, *cerror.CustomError)
 }
 
 type SnapsRepository struct {
@@ -650,7 +650,7 @@ func (sp *SnapsRepository) UpdateUploadStatus(uploadId uuid.UUID, status string,
 	return nil
 }
 
-func (sp *SnapsRepository) UpdateSnapEntryWithMetadata(entryId uuid.UUID, metadata *models.SnapMeta, el *cerror.ErrorList) *cerror.CustomError {
+func (sp *SnapsRepository) UpdateSnapEntryWithMetadata(entryId uuid.UUID, metadata *models.SnapMeta, el *cerror.ErrorList) (*models.SnapEntry, *cerror.CustomError) {
 	var snapEntry models.SnapEntry
 	query := `
 		UPDATE entry
@@ -663,9 +663,9 @@ func (sp *SnapsRepository) UpdateSnapEntryWithMetadata(entryId uuid.UUID, metada
 		cerr := cerror.ConvertError(err, fmt.Sprintf("error updating snap entry with id = '%s'", entryId.String()))
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
-		return cerr
+		return nil, cerr
 	}
-	return nil
+	return &snapEntry, nil
 }
 
 // ============ HELPER ==============

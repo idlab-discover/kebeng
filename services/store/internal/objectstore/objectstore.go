@@ -32,7 +32,7 @@ type IMinioClient interface {
 }
 
 type IObjectStore interface {
-	SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string, name string, version string, fileType string, summary string, description string, confinement string, base string, architectures []string) (*models.Metadata, error)
+	SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string, name string, version string, fileType string, summary string, description string, confinement string, base string, grade string, architectures []string) (*models.Metadata, error)
 	GetSnapFileReader(ctx context.Context, filePath string) (io.ReadCloser, error)
 	MakeBucketAndAddKey(bucketName string, keyPath string, keyName string)
 	Move(sourceBucket, destinationBucket, objectName string, newObjectName string) error
@@ -110,7 +110,7 @@ func (obs *ObjectStore) Move(sourceBucket, destinationBucket, objectName, newObj
 	return errors.New("source or destination bucket does not exist")
 }
 
-func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string, name string, version string, fileType string, summary string, description string, confinement string, base string, architectures []string) (*models.Metadata, error) {
+func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string, name string, version string, fileType string, summary string, description string, confinement string, base string, grade string, architectures []string) (*models.Metadata, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -134,6 +134,7 @@ func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_38
 		"Description":      description,
 		"Confinement":      confinement,
 		"Base":             base,
+		"Grade":            grade,
 		"Architectures":    strings.Join(architectures, ","),
 	}
 
@@ -154,6 +155,7 @@ func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_38
 		Description:      description,
 		Confinement:      confinement,
 		Base:             base,
+		Grade:            grade,
 		Architectures:    architectures,
 	}
 
@@ -179,6 +181,7 @@ func (obs *ObjectStore) GetObjectCustomMetadata(bucket string, objectName string
 		Description:      objectInfo.UserMetadata["Description"],
 		Confinement:      objectInfo.UserMetadata["Confinement"],
 		Base:             objectInfo.UserMetadata["Base"],
+		Grade:            objectInfo.UserMetadata["Grade"],
 		Architectures:    strings.Split(objectInfo.UserMetadata["Architectures"], ","),
 	}
 
