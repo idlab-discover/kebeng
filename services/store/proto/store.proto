@@ -262,7 +262,15 @@ message GetObjectCustomMetadataRequest {
 
 message GetObjectCustomMetadataResponse {
     string sha3_384_encoded = 1;
-    repeated proto.Error errors = 2;
+    string name = 2;
+    string version = 3;
+    string type = 4;
+    string summary = 5;
+    string description = 6;
+    string confinement = 7;
+    string base = 8;
+    repeated string architectures = 9;
+    repeated proto.Error errors = 10;
 }
 
 message UpdateUploadStatusRequest {
