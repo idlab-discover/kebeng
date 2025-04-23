@@ -964,6 +964,14 @@ func (s *StoreLogic) GetObjectCustomMetadata(ctx context.Context, req *proto.Get
 
 	return &proto.GetObjectCustomMetadataResponse{
 		Sha3_384Encoded: metadata.SHA3_384_Encoded,
+		Name:            metadata.Name,
+		Version:         metadata.Version,
+		Type:            metadata.Type,
+		Summary:         metadata.Summary,
+		Description:     metadata.Description,
+		Confinement:     metadata.Confinement,
+		Base:            metadata.Base,
+		Architectures:   metadata.Architectures,
 	}, nil
 }
 
