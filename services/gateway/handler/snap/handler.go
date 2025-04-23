@@ -339,7 +339,7 @@ func (h *Handler) SnapPush(c *gin.Context) {
 		"success":            true,
 		"snap_name":          entry.SnapName,
 		"upload_id":          upload.Id,
-		"status_details_url": fmt.Sprintf("%s/dev/api/snaps/%s/status", h.Config.StoreUrl, upload.Id), // FIX: change ClientIP to value in config
+		"status_details_url": fmt.Sprintf("%s/dev/api/snaps/%s/status", h.Config.StoreUrl, upload.Id),
 	})
 
 	// After the status details URL is returned, we can proceed with creating a new revision
