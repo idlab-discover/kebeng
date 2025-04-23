@@ -56,12 +56,13 @@ func NewAccountClientWithClient(client proto.AccountServiceClient) *AccountClien
 func NewAccountClient(accountHost string, accountPort int) (*AccountClient, *cerror.CustomError) {
 	logrus.Infof("Connecting to account service at %s:%d", accountHost, accountPort)
 	addr := config.GetAccountServiceAddress(accountHost, accountPort)
-
+	var latestErr *cerror.CustomError
 	for attempt := 1; attempt <= maxDialAttempts; attempt++ {
 		logrus.Infof("Attempt %d/%d: dialing account service at %s", attempt, maxDialAttempts, addr)
 		conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
-			logrus.Warnf("Failed to create gRPC client: %v", err)
+			latestErr = cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to create gRPC client: %v", err))
+			logrus.Warnf("Failed to create gRPC client: %v", latestErr)
 			time.Sleep(dialRetryDelay)
 			continue
 		}
@@ -76,6 +77,7 @@ func NewAccountClient(accountHost string, accountPort int) (*AccountClient, *cer
 			logrus.Infof("Successfully connected to account service at %s", addr)
 			return &AccountClient{conn, proto.NewAccountServiceClient(conn)}, nil
 		}
+		logrus.Warnf("Health check failed: %v", err)
 		time.Sleep(dialRetryDelay)
 	}
 	return nil, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to connect to account service after %d attempts", maxDialAttempts))
