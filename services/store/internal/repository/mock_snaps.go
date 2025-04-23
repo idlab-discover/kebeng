@@ -251,3 +251,12 @@ func (m *MockSnapsRepository) UpdateUploadStatus(uploadId uuid.UUID, status stri
 	el.Add(cerror.InternalServerError, "")
 	return nil
 }
+
+func (m *MockSnapsRepository) UpdateSnapEntryWithMetadata(entryId uuid.UUID, metadata *models.SnapMeta, el *cerror.ErrorList) *cerror.CustomError {
+	args := m.Called(entryId, metadata, el)
+	if args.Get(0) != nil {
+		return args.Get(0).(*cerror.CustomError)
+	}
+	el.Add(cerror.InternalServerError, "")
+	return nil
+}

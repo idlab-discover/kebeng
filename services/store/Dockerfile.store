@@ -8,6 +8,10 @@ RUN go build -o /bin/store-service ./main.go
 # Final stage
 FROM golang:1.22
 WORKDIR /app
+
+# squashfs-tools moet hier worden geïnstalleerd
+RUN apt-get update && apt-get install -y squashfs-tools
+
 COPY --from=builder /bin/store-service /app/store-service
 COPY --from=builder /app/config.yaml /app/config.yaml
 COPY --from=builder /app/internal/migrations /app/migrations
