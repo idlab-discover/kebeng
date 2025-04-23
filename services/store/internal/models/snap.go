@@ -28,8 +28,13 @@ type SnapEntry struct {
 	DeletedAt      *time.Time      `json:"deleted_at,omitempty" db:"deleted_at"`
 	Name           string          `json:"name" db:"name"`
 	Type           string          `json:"type,omitempty" db:"type"`
+	Version        string          `yaml:"version"`
+	Summary        string          `yaml:"summary"`
+	Description    string          `yaml:"description"`
 	Confinement    string          `json:"confinement,omitempty" db:"confinement"`
 	Base           string          `json:"base,omitempty" db:"base"`
+	Grade          string          `json:"grade,omitempty" db:"grade"`
+	Architectures  pq.StringArray  `json:"architectures,omitempty" db:"architectures"`
 	Private        bool            `json:"private,omitempty" db:"private"`
 	Status         string          `json:"status,omitempty" db:"status"`
 	Price          float64         `json:"price,omitempty" db:"price"`
@@ -124,5 +129,25 @@ type SnapUpload struct {
 
 type Metadata struct {
 	*minio.UploadInfo `json:"upload_info" db:"upload_info"`
-	SHA3_384_Encoded  string `json:"sha3_384_encoded" db:"sha3_384_encoded"`
+	SHA3_384_Encoded  string         `json:"sha3_384_encoded" db:"sha3_384_encoded"`
+	Name              string         `json:"name" db:"name"`
+	Version           string         `json:"version" db:"version"`
+	Type              string         `json:"type" db:"type"`
+	Summary           string         `json:"summary" db:"summary"`
+	Description       string         `json:"description" db:"description"`
+	Confinement       string         `json:"confinement" db:"confinement"`
+	Base              string         `json:"base" db:"base"`
+	Architectures     pq.StringArray `json:"architectures" db:"architectures"`
+}
+
+type SnapMeta struct {
+	Name          string         `yaml:"name"`
+	Version       string         `yaml:"version"`
+	Summary       string         `yaml:"summary"`
+	Description   string         `yaml:"description"`
+	Type          string         `yaml:"type"`
+	Architectures pq.StringArray `yaml:"architectures"`
+	Confinement   string         `yaml:"confinement"`
+	Grade         string         `yaml:"grade"`
+	Base          string         `yaml:"base"`
 }

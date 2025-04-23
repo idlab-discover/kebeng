@@ -32,7 +32,7 @@ type IMinioClient interface {
 }
 
 type IObjectStore interface {
-	SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string) (*models.Metadata, error)
+	SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string, name string, version string, fileType string, summary string, description string, confinement string, base string, architectures []string) (*models.Metadata, error)
 	GetSnapFileReader(ctx context.Context, filePath string) (io.ReadCloser, error)
 	MakeBucketAndAddKey(bucketName string, keyPath string, keyName string)
 	Move(sourceBucket, destinationBucket, objectName string, newObjectName string) error
@@ -110,7 +110,7 @@ func (obs *ObjectStore) Move(sourceBucket, destinationBucket, objectName, newObj
 	return errors.New("source or destination bucket does not exist")
 }
 
-func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string) (*models.Metadata, error) {
+func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string, name string, version string, fileType string, summary string, description string, confinement string, base string, architectures []string) (*models.Metadata, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -122,19 +122,39 @@ func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_38
 		}
 	}
 
-	base := path.Base(filePath)
+	baseFileName := path.Base(filePath)
 
-	uploadInfo, err := obs.MinioClient.FPutObject(ctx, bucket, base, filePath, minio.PutObjectOptions{
-		UserMetadata: map[string]string{
-			"Sha3-384-Encoded": sha3_384_encoded,
-		},
+	// Prepare user metadata
+	userMetadata := map[string]string{
+		"Sha3-384-Encoded": sha3_384_encoded,
+		"Name":             name,
+		"Version":          version,
+		"Type":             fileType,
+		"Summary":          summary,
+		"Description":      description,
+		"Confinement":      confinement,
+		"Base":             base,
+		"Architectures":    strings.Join(architectures, ","),
+	}
+
+	uploadInfo, err := obs.MinioClient.FPutObject(ctx, bucket, baseFileName, filePath, minio.PutObjectOptions{
+		UserMetadata: userMetadata,
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	metadata := &models.Metadata{
-		UploadInfo: &uploadInfo,
+		UploadInfo:       &uploadInfo,
+		SHA3_384_Encoded: sha3_384_encoded,
+		Name:             name,
+		Version:          version,
+		Type:             fileType,
+		Summary:          summary,
+		Description:      description,
+		Confinement:      confinement,
+		Base:             base,
+		Architectures:    architectures,
 	}
 
 	return metadata, nil
@@ -150,10 +170,16 @@ func (obs *ObjectStore) GetObjectCustomMetadata(bucket string, objectName string
 		return nil, err
 	}
 
-	sha3_384_encoded := objectInfo.UserMetadata["Sha3-384-Encoded"]
-
 	metadata := &models.Metadata{
-		SHA3_384_Encoded: sha3_384_encoded,
+		SHA3_384_Encoded: objectInfo.UserMetadata["Sha3-384-Encoded"],
+		Name:             objectInfo.UserMetadata["Name"],
+		Version:          objectInfo.UserMetadata["Version"],
+		Type:             objectInfo.UserMetadata["Type"],
+		Summary:          objectInfo.UserMetadata["Summary"],
+		Description:      objectInfo.UserMetadata["Description"],
+		Confinement:      objectInfo.UserMetadata["Confinement"],
+		Base:             objectInfo.UserMetadata["Base"],
+		Architectures:    strings.Split(objectInfo.UserMetadata["Architectures"], ","),
 	}
 
 	return metadata, nil
