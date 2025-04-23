@@ -156,3 +156,11 @@ func (m *MockStoreClient) UpdateUploadStatus(uploadId string, status string, rev
 	}
 	return nil
 }
+
+func (m *MockStoreClient) UpdateSnapEntryWithMetadata(entryId uuid.UUID, metadata *proto.GetObjectCustomMetadataResponse) *proto.UpdateEntryResponse {
+	args := m.Called(entryId, metadata)
+	if resp, ok := args.Get(0).(*proto.UpdateEntryResponse); ok {
+		return resp
+	}
+	return nil
+}
