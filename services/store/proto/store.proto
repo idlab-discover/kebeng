@@ -285,3 +285,17 @@ message UpdateUploadStatusResponse {
     string status = 2;
     repeated proto.Error errors = 3;
 }
+
+message UpdateEntryWithMetadataRequest {
+    string entry_id = 1;
+    string name = 2;
+    string type = 3;
+    string confinement = 4;
+    string base = 5;
+    repeated string architectures = 6;
+    string grade = 7;
+    string version = 8;
+    string summary = 9;
+    string description = 10;
+    repeated proto.Error errors = 11;
+}
