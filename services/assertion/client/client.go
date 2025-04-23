@@ -15,7 +15,14 @@ import (
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/protobuf/types/known/timestamppb"
+)
+
+const (
+	maxDialAttempts = 5
+	dialRetryDelay  = 2 * time.Second
+	healthTimeout   = 2 * time.Second
 )
 
 type AssertionClientInterface interface {
@@ -41,15 +48,32 @@ type AssertionClient struct {
 	client proto.AssertionServiceClient
 }
 
-func NewAssertionClient(assertionHost string, assertionPort int) (*AssertionClient, error) {
-	logrus.Infof("Connecting to account service at %s:%d", assertionHost, assertionPort)
-	conn, err := grpc.NewClient(config.GetAssertionServiceAddress(assertionHost, assertionPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		return nil, fmt.Errorf("could not connect: %v", err)
-	}
+func NewAssertionClient(assertionHost string, assertionPort int) (*AssertionClient, *cerror.CustomError) {
+	logrus.Infof("Connecting to assertion service at %s:%d", assertionHost, assertionPort)
+	addr := config.GetAssertionServiceAddress(assertionHost, assertionPort)
 
-	client := proto.NewAssertionServiceClient(conn)
-	return &AssertionClient{conn, client}, nil
+	for attempt := 1; attempt <= maxDialAttempts; attempt++ {
+		logrus.Infof("Attempt %d/%d: dialing assertion service at %s", attempt, maxDialAttempts, addr)
+		conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			logrus.Warnf("Failed to create gRPC client: %v", err)
+			time.Sleep(dialRetryDelay)
+			continue
+		}
+
+		// run quick health check
+		hc := grpc_health_v1.NewHealthClient(conn)
+		ctx, cancel := context.WithTimeout(context.Background(), healthTimeout)
+		defer cancel()
+
+		resp, err := hc.Check(ctx, &grpc_health_v1.HealthCheckRequest{})
+		if err == nil && resp.Status == grpc_health_v1.HealthCheckResponse_SERVING {
+			logrus.Infof("Successfully connected to assertion service at %s", addr)
+			return &AssertionClient{conn, proto.NewAssertionServiceClient(conn)}, nil
+		}
+		time.Sleep(dialRetryDelay)
+	}
+	return nil, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to connect to assertion service after %d attempts", maxDialAttempts))
 }
 
 func (c *AssertionClient) Close() {
