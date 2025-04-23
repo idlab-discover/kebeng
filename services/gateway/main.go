@@ -28,18 +28,18 @@ func main() {
 	// need more connections? or how does grpc handle this
 	accountClient, err := accClient.NewAccountClient(cfg.AccountServiceHost, cfg.AccountServicePort)
 	if err != nil {
-		logrus.Errorf("could not create account client: %v", err)
+		logrus.Fatalf("could not create account client: %v", err)
 	}
 
 	storeClient, err := storeClient.NewStoreClient(cfg.StoreServiceHost, cfg.StoreServicePort)
 	if err != nil {
-		logrus.Errorf("could not create store client: %v", err)
+		logrus.Fatalf("could not create store client: %v", err)
 	}
 
 	// TODO: don't give pointer back here
 	assertionClient, err := assertionClient.NewAssertionClient(cfg.AssertionServiceHost, cfg.AssertionServicePort)
 	if err != nil {
-		logrus.Errorf("could not create assertion client: %v", err)
+		logrus.Fatalf("could not create assertion client: %v", err)
 	}
 
 	handler := handler.NewHandler(accountClient, storeClient, assertionClient, cfg)
