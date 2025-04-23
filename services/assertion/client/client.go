@@ -71,6 +71,7 @@ func NewAssertionClient(assertionHost string, assertionPort int) (*AssertionClie
 			logrus.Infof("Successfully connected to assertion service at %s", addr)
 			return &AssertionClient{conn, proto.NewAssertionServiceClient(conn)}, nil
 		}
+		logrus.Warnf("Health check failed: %v", err)
 		time.Sleep(dialRetryDelay)
 	}
 	return nil, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to connect to assertion service after %d attempts", maxDialAttempts))

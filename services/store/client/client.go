@@ -75,6 +75,7 @@ func NewStoreClient(storeHost string, storePort int) (*StoreClient, *cerror.Cust
 			logrus.Infof("Successfully connected to store service at %s", addr)
 			return &StoreClient{conn, proto.NewStoreServiceClient(conn)}, nil
 		}
+		logrus.Warnf("Health check failed: %v", err)
 		time.Sleep(dialRetryDelay)
 	}
 	return nil, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to connect to store service after %d attempts", maxDialAttempts))
