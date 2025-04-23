@@ -291,15 +291,14 @@ message UpdateUploadStatusResponse {
 message UpdateSnapEntryWithMetadataRequest {
     string entry_id = 1;
     string name = 2;
-    string type = 3;
-    string confinement = 4;
-    string base = 5;
-    repeated string architectures = 6;
-    string grade = 7;
-    string version = 8;
-    string summary = 9;
-    string description = 10;
-    repeated proto.Error errors = 11;
+    string confinement = 3;
+    string base = 4;
+    repeated string architectures = 5;
+    string grade = 6;
+    string version = 7;
+    string summary = 8;
+    string description = 9;
+    repeated proto.Error errors = 10;
 }
 
 message UpdateEntryResponse {

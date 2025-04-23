@@ -146,7 +146,6 @@ type SnapMeta struct {
 	Version       string         `yaml:"version"`
 	Summary       string         `yaml:"summary"`
 	Description   string         `yaml:"description"`
-	Type          string         `yaml:"type"`
 	Architectures pq.StringArray `yaml:"architectures"`
 	Confinement   string         `yaml:"confinement"`
 	Grade         string         `yaml:"grade"`

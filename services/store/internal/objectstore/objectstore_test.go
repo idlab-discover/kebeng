@@ -38,7 +38,6 @@ func TestSaveFileToBucket(t *testing.T) {
 		"sha3_384_hash",
 		"test-snap",
 		"1.0.0",
-		"app",
 		"Test Summary",
 		"Test Description",
 		"strict",
@@ -51,7 +50,6 @@ func TestSaveFileToBucket(t *testing.T) {
 	assert.Equal(t, int64(456), metadata.Size)
 	assert.Equal(t, "test-snap", metadata.Name)
 	assert.Equal(t, "1.0.0", metadata.Version)
-	assert.Equal(t, "app", metadata.Type)
 	assert.Equal(t, "Test Summary", metadata.Summary)
 	assert.Equal(t, "Test Description", metadata.Description)
 	assert.Equal(t, "strict", metadata.Confinement)
