@@ -31,6 +31,7 @@ type StoreServiceClient interface {
 	AddRevision(ctx context.Context, in *AddRevisionRequest, opts ...grpc.CallOption) (*AddRevisionResponse, error)
 	GetObjectCustomMetadata(ctx context.Context, in *GetObjectCustomMetadataRequest, opts ...grpc.CallOption) (*GetObjectCustomMetadataResponse, error)
 	UpdateUploadStatus(ctx context.Context, in *UpdateUploadStatusRequest, opts ...grpc.CallOption) (*UpdateUploadStatusResponse, error)
+	UpdateSnapEntryWithMetadata(ctx context.Context, in *UpdateSnapEntryWithMetadataRequest, opts ...grpc.CallOption) (*UpdateEntryResponse, error)
 }
 
 type storeServiceClient struct {
@@ -206,6 +207,15 @@ func (c *storeServiceClient) UpdateUploadStatus(ctx context.Context, in *UpdateU
 	return out, nil
 }
 
+func (c *storeServiceClient) UpdateSnapEntryWithMetadata(ctx context.Context, in *UpdateSnapEntryWithMetadataRequest, opts ...grpc.CallOption) (*UpdateEntryResponse, error) {
+	out := new(UpdateEntryResponse)
+	err := c.cc.Invoke(ctx, "/store.StoreService/UpdateSnapEntryWithMetadata", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // StoreServiceServer is the server API for StoreService service.
 // All implementations must embed UnimplementedStoreServiceServer
 // for forward compatibility
@@ -223,6 +233,7 @@ type StoreServiceServer interface {
 	AddRevision(context.Context, *AddRevisionRequest) (*AddRevisionResponse, error)
 	GetObjectCustomMetadata(context.Context, *GetObjectCustomMetadataRequest) (*GetObjectCustomMetadataResponse, error)
 	UpdateUploadStatus(context.Context, *UpdateUploadStatusRequest) (*UpdateUploadStatusResponse, error)
+	UpdateSnapEntryWithMetadata(context.Context, *UpdateSnapEntryWithMetadataRequest) (*UpdateEntryResponse, error)
 	mustEmbedUnimplementedStoreServiceServer()
 }
 
@@ -268,6 +279,9 @@ func (UnimplementedStoreServiceServer) GetObjectCustomMetadata(context.Context, 
 }
 func (UnimplementedStoreServiceServer) UpdateUploadStatus(context.Context, *UpdateUploadStatusRequest) (*UpdateUploadStatusResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateUploadStatus not implemented")
+}
+func (UnimplementedStoreServiceServer) UpdateSnapEntryWithMetadata(context.Context, *UpdateSnapEntryWithMetadataRequest) (*UpdateEntryResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateSnapEntryWithMetadata not implemented")
 }
 func (UnimplementedStoreServiceServer) mustEmbedUnimplementedStoreServiceServer() {}
 
@@ -527,6 +541,24 @@ func _StoreService_UpdateUploadStatus_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _StoreService_UpdateSnapEntryWithMetadata_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateSnapEntryWithMetadataRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StoreServiceServer).UpdateSnapEntryWithMetadata(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/store.StoreService/UpdateSnapEntryWithMetadata",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StoreServiceServer).UpdateSnapEntryWithMetadata(ctx, req.(*UpdateSnapEntryWithMetadataRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // StoreService_ServiceDesc is the grpc.ServiceDesc for StoreService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -577,6 +609,10 @@ var StoreService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateUploadStatus",
 			Handler:    _StoreService_UpdateUploadStatus_Handler,
+		},
+		{
+			MethodName: "UpdateSnapEntryWithMetadata",
+			Handler:    _StoreService_UpdateSnapEntryWithMetadata_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
