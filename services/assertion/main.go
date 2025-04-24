@@ -16,6 +16,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/snapcore/snapd/asserts"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -102,7 +104,12 @@ func main() {
 		logrus.Fatalf("Failed to listen: %v", err)
 	}
 	grpcServer := grpc.NewServer()
-	// this line will match the logic functionality to the proto interface
+	// register health check service
+	hs := health.NewServer()
+	hs.SetServingStatus("", healthpb.HealthCheckResponse_SERVING)
+
+	// register services
+	healthpb.RegisterHealthServer(grpcServer, hs)
 	proto.RegisterAssertionServiceServer(grpcServer, assertionLogic)
 
 	logrus.Infof("Starting gRPC server on %s:%d", cfg.GRPCHost, cfg.GRPCPort)

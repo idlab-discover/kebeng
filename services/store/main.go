@@ -15,6 +15,8 @@ import (
 	"github.com/minio/minio-go/v7"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 )
 
 func main() {
@@ -84,6 +86,12 @@ func main() {
 		logrus.Fatalf("Failed to listen: %v", err)
 	}
 	grpcServer := grpc.NewServer()
+	// register health check service
+	hs := health.NewServer()
+	hs.SetServingStatus("", healthpb.HealthCheckResponse_SERVING)
+
+	// register services
+	healthpb.RegisterHealthServer(grpcServer, hs)
 	// this line will match the service functionality to the proto interface
 	proto.RegisterStoreServiceServer(grpcServer, storeLogic)
 
