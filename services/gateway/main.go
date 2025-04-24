@@ -26,20 +26,20 @@ func main() {
 
 	//TODO: check how bigger load works and multiple requests
 	// need more connections? or how does grpc handle this
-	accountClient, err := accClient.NewAccountClient(cfg.AccountServiceHost, cfg.AccountServicePort)
-	if err != nil {
-		logrus.Errorf("could not create account client: %v", err)
+	accountClient, cerr := accClient.NewAccountClient(cfg.AccountServiceHost, cfg.AccountServicePort)
+	if cerr != nil {
+		logrus.Fatalf("could not create account client: %v", cerr)
 	}
 
-	storeClient, err := storeClient.NewStoreClient(cfg.StoreServiceHost, cfg.StoreServicePort)
-	if err != nil {
-		logrus.Errorf("could not create store client: %v", err)
+	storeClient, cerr := storeClient.NewStoreClient(cfg.StoreServiceHost, cfg.StoreServicePort)
+	if cerr != nil {
+		logrus.Fatalf("could not create store client: %v", cerr)
 	}
 
 	// TODO: don't give pointer back here
-	assertionClient, err := assertionClient.NewAssertionClient(cfg.AssertionServiceHost, cfg.AssertionServicePort)
-	if err != nil {
-		logrus.Errorf("could not create assertion client: %v", err)
+	assertionClient, cerr := assertionClient.NewAssertionClient(cfg.AssertionServiceHost, cfg.AssertionServicePort)
+	if cerr != nil {
+		logrus.Fatalf("could not create assertion client: %v", cerr)
 	}
 
 	handler := handler.NewHandler(accountClient, storeClient, assertionClient, cfg)
