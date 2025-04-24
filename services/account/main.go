@@ -15,6 +15,8 @@ import (
 	proto "github.com/idlab-discover/kebeng/services/account/proto"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 )
 
 func main() {
@@ -71,7 +73,12 @@ func main() {
 		logrus.Fatalf("Failed to listen: %v", err)
 	}
 	grpcServer := grpc.NewServer()
-	// this line will match the logic functionality to the proto interface
+	// register health check service
+	hs := health.NewServer()
+	hs.SetServingStatus("", healthpb.HealthCheckResponse_SERVING)
+
+	// register services
+	healthpb.RegisterHealthServer(grpcServer, hs)
 	proto.RegisterAccountServiceServer(grpcServer, accountService)
 
 	logrus.Infof("Starting gRPC server on %s:%d", cfg.GRPCHost, cfg.GRPCPort)
