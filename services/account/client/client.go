@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"time"
 
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	cerrorpb "github.com/idlab-discover/kebeng/common/cerror/proto"
@@ -11,6 +12,13 @@ import (
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/health/grpc_health_v1"
+)
+
+const (
+	maxDialAttempts = 5
+	dialRetryDelay  = 2 * time.Second
+	healthTimeout   = 2 * time.Second
 )
 
 // NOTE: in all the endpoints the cerror of the actual logic are included in the response and NOT returned as an error
@@ -45,15 +53,34 @@ func NewAccountClientWithClient(client proto.AccountServiceClient) *AccountClien
 }
 
 // hard to test with unit test
-func NewAccountClient(accountHost string, accountPort int) (*AccountClient, error) {
+func NewAccountClient(accountHost string, accountPort int) (*AccountClient, *cerror.CustomError) {
 	logrus.Infof("Connecting to account service at %s:%d", accountHost, accountPort)
-	conn, err := grpc.NewClient(config.GetAccountServiceAddress(accountHost, accountPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		return nil, fmt.Errorf("could not connect: %v", err)
-	}
+	addr := config.GetAccountServiceAddress(accountHost, accountPort)
+	var latestErr *cerror.CustomError
+	for attempt := 1; attempt <= maxDialAttempts; attempt++ {
+		logrus.Infof("Attempt %d/%d: dialing account service at %s", attempt, maxDialAttempts, addr)
+		conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			latestErr = cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to create gRPC client: %v", err))
+			logrus.Warnf("Failed to create gRPC client: %v", latestErr)
+			time.Sleep(dialRetryDelay)
+			continue
+		}
 
-	client := proto.NewAccountServiceClient(conn)
-	return &AccountClient{conn, client}, nil
+		// run quick health check
+		hc := grpc_health_v1.NewHealthClient(conn)
+		ctx, cancel := context.WithTimeout(context.Background(), healthTimeout)
+		defer cancel()
+
+		resp, err := hc.Check(ctx, &grpc_health_v1.HealthCheckRequest{})
+		if err == nil && resp.Status == grpc_health_v1.HealthCheckResponse_SERVING {
+			logrus.Infof("Successfully connected to account service at %s", addr)
+			return &AccountClient{conn, proto.NewAccountServiceClient(conn)}, nil
+		}
+		logrus.Warnf("Health check failed: %v", err)
+		time.Sleep(dialRetryDelay)
+	}
+	return nil, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to connect to account service after %d attempts", maxDialAttempts))
 }
 
 func (c *AccountClient) Close() {
