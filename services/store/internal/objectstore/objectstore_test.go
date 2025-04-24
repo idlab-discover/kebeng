@@ -32,10 +32,30 @@ func TestSaveFileToBucket(t *testing.T) {
 	mockMinio.On("FPutObject", mock.Anything, "test-bucket", "testfile.txt", "some/path/testfile.txt", mock.Anything).
 		Return(minio.UploadInfo{Size: 456}, nil)
 
-	metadata, err := testObjectStore.SaveFileToBucket("test-bucket", "some/path/testfile.txt", "sha3_384_hash")
+	metadata, err := testObjectStore.SaveFileToBucket(
+		"test-bucket",
+		"some/path/testfile.txt",
+		"sha3_384_hash",
+		"test-snap",
+		"1.0.0",
+		"Test Summary",
+		"Test Description",
+		"strict",
+		"core18",
+		"test-grade",
+		[]string{"amd64", "arm64"},
+	)
 	assert.NoError(t, err)
 	assert.NotNil(t, metadata)
 	assert.Equal(t, int64(456), metadata.Size)
+	assert.Equal(t, "test-snap", metadata.Name)
+	assert.Equal(t, "1.0.0", metadata.Version)
+	assert.Equal(t, "Test Summary", metadata.Summary)
+	assert.Equal(t, "Test Description", metadata.Description)
+	assert.Equal(t, "strict", metadata.Confinement)
+	assert.Equal(t, "core18", metadata.Base)
+	assert.Equal(t, "test-grade", metadata.Grade)
+	assert.ElementsMatch(t, []string{"amd64", "arm64"}, metadata.Architectures)
 
 	mockMinio.AssertExpectations(t)
 }
@@ -216,14 +236,38 @@ func TestGetObjectCustomMetadata(t *testing.T) {
 
 	mockObjectInfo := minio.ObjectInfo{
 		UserMetadata: map[string]string{
-			"Sha3-384-encoded": "",
+			"Sha3-384-encoded": "test-sha3-384",
+			"Name":             "test-name",
+			"Version":          "1.0.0",
+			"Type":             "app",
+			"Summary":          "Test Summary",
+			"Description":      "Test Description",
+			"Confinement":      "strict",
+			"Base":             "core18",
+			"Architectures":    "amd64,arm64",
 		},
 	}
 
-	sha3_384_encoded := mockObjectInfo.UserMetadata["Sha3-384-encoded"]
+	sha3_384_encoded := mockObjectInfo.UserMetadata["Sha3-384-Encoded"]
+	name := mockObjectInfo.UserMetadata["Name"]
+	version := mockObjectInfo.UserMetadata["Version"]
+	fileType := mockObjectInfo.UserMetadata["Type"]
+	summary := mockObjectInfo.UserMetadata["Summary"]
+	description := mockObjectInfo.UserMetadata["Description"]
+	confinement := mockObjectInfo.UserMetadata["Confinement"]
+	base := mockObjectInfo.UserMetadata["Base"]
+	architectures := []string{"amd64", "arm64"}
 
 	expectedMetadata := &models.Metadata{
 		SHA3_384_Encoded: sha3_384_encoded,
+		Name:             name,
+		Version:          version,
+		Type:             fileType,
+		Summary:          summary,
+		Description:      description,
+		Confinement:      confinement,
+		Base:             base,
+		Architectures:    architectures,
 	}
 
 	mockMinio.On("StatObject", mock.Anything, bucket, object, mock.Anything).

@@ -248,25 +248,25 @@ func TestAddRevision(t *testing.T) {
 		size              uint64
 		sequenceNumber    uint32
 		architectures     []string
-		sha3_384_encoded           string
+		sha3_384_encoded  string
 		minioFilePath     string
 		el                *cerror.ErrorList
 		expectError       bool
 		expectedErrorCode string
 	}{
 		{
-			name:           "Success adding revision",
-			entryId:        mockUUID,
-			trackId:        mockUUID,
-			channelId:      mockUUID,
-			snapName:       "mock-snap",
-			size:           123456,
-			sequenceNumber: 1,
-			architectures:  []string{"x86_64", "arm64"},
-			sha3_384_encoded:        "mock-sha3-384",
-			minioFilePath:  "some/path/mock-snap.snap",
-			el:             cerror.NewErrorList(),
-			expectError:    false,
+			name:             "Success adding revision",
+			entryId:          mockUUID,
+			trackId:          mockUUID,
+			channelId:        mockUUID,
+			snapName:         "mock-snap",
+			size:             123456,
+			sequenceNumber:   1,
+			architectures:    []string{"x86_64", "arm64"},
+			sha3_384_encoded: "mock-sha3-384",
+			minioFilePath:    "some/path/mock-snap.snap",
+			el:               cerror.NewErrorList(),
+			expectError:      false,
 		},
 		{
 			name:              "Fail adding revision for non-existing entry",
@@ -277,7 +277,7 @@ func TestAddRevision(t *testing.T) {
 			size:              123456,
 			sequenceNumber:    1,
 			architectures:     []string{"x86_64", "arm64"},
-			sha3_384_encoded:           "mock-sha3-384",
+			sha3_384_encoded:  "mock-sha3-384",
 			minioFilePath:     "some/path/mock-snap.snap",
 			el:                cerror.NewErrorList(),
 			expectError:       true,
@@ -292,7 +292,7 @@ func TestAddRevision(t *testing.T) {
 			size:              123456,
 			sequenceNumber:    1,
 			architectures:     []string{"x86_64", "arm64"},
-			sha3_384_encoded:           "mock-sha3-384",
+			sha3_384_encoded:  "mock-sha3-384",
 			minioFilePath:     "some/path/mock-snap.snap",
 			el:                cerror.NewErrorList(),
 			expectError:       true,
@@ -307,7 +307,7 @@ func TestAddRevision(t *testing.T) {
 			size:              123456,
 			sequenceNumber:    1,
 			architectures:     []string{"x86_64", "arm64"},
-			sha3_384_encoded:           "mock-sha3-384",
+			sha3_384_encoded:  "mock-sha3-384",
 			minioFilePath:     "some/path/mock-snap.snap",
 			el:                cerror.NewErrorList(),
 			expectError:       true,
@@ -1303,6 +1303,59 @@ func TestGetChannelById(t *testing.T) {
 				assert.Nil(t, cerr, "expected no error when retrieving channel")
 				assert.NotNil(t, channel, "expected channel to be not nil")
 				assert.Equal(t, tt.expectedName, channel.Name, "unexpected channel name")
+			}
+		})
+	}
+}
+
+func TestUpdateSnapEntryWithMetadata(t *testing.T) {
+	tests := []struct {
+		name              string
+		entryId           uuid.UUID
+		confinement       string
+		base              string
+		summary           string
+		description       string
+		architectures     []string
+		grade             string
+		el                *cerror.ErrorList
+		expectError       bool
+		expectedErrorCode string
+	}{
+		{
+			name:              "Success updating snap entry with metadata",
+			entryId:           mockUUID,
+			confinement:       "strict",
+			base:              "core20",
+			summary:           "mock summary",
+			description:       "mock description",
+			architectures:     []string{"x86_64", "arm64"},
+			grade:             "stable",
+			el:                cerror.NewErrorList(),
+			expectError:       false,
+			expectedErrorCode: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var metadata models.SnapMeta = models.SnapMeta{
+				Confinement:   tt.confinement,
+				Base:          tt.base,
+				Summary:       tt.summary,
+				Description:   tt.description,
+				Architectures: tt.architectures,
+				Grade:         tt.grade,
+			}
+			entry, cerr := globalRepo.UpdateSnapEntryWithMetadata(tt.entryId, &metadata, tt.el)
+			if tt.expectError {
+				assert.NotNil(t, cerr)
+				if cerr != nil {
+					assert.Equal(t, tt.expectedErrorCode, cerr.GetCode())
+				}
+			} else {
+				assert.Nil(t, cerr)
+				assert.NotNil(t, entry)
 			}
 		})
 	}
