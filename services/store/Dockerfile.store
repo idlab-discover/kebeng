@@ -9,7 +9,6 @@ RUN go build -o /bin/store-service ./main.go
 FROM golang:1.22
 WORKDIR /app
 
-# squashfs-tools moet hier worden geïnstalleerd
 RUN apt-get update && apt-get install -y squashfs-tools
 
 COPY --from=builder /bin/store-service /app/store-service
