@@ -6,16 +6,10 @@ require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/google/uuid v1.6.0
 	github.com/idlab-discover/kebeng v0.0.0-20250417102054-28cdb3ec3408
-<<<<<<< HEAD
-	github.com/idlab-discover/kebeng/services/account v0.0.0-20250422082347-f3caaf9917cb
-	github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250421153252-4354409a95ba
-	github.com/idlab-discover/kebeng/services/store v0.0.0-20250421153503-a833570ee8fd
-	github.com/prometheus/client_golang v1.22.0
-=======
 	github.com/idlab-discover/kebeng/services/account v0.0.0-20250423160216-bc71eecd8afa
 	github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250423160624-51fba8063205
 	github.com/idlab-discover/kebeng/services/store v0.0.0-20250423160624-51fba8063205
->>>>>>> origin/main
+	github.com/prometheus/client_golang v1.22.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/snapcore/snapd v0.0.0-20250228185938-4d4437a35a6b
 	github.com/spf13/viper v1.19.0
