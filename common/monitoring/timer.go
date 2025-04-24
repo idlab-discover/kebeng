@@ -10,7 +10,7 @@ var (
 	requestDuration = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Name:    "request_duration_seconds",
-			Help:    "Duration of HTTP requests in milliseconds",
+			Help:    "Duration of HTTP requests in seconds",
 			Buckets: []float64{.001, .005, .01, .025, .05, .1, .25, .5, 1, 2, 5},
 		},
 		[]string{"handlerFunction"},
@@ -25,6 +25,6 @@ func StartTimer(handler string) func() {
 	start := time.Now()
 	return func() {
 		requestDuration.WithLabelValues(handler).
-			Observe(float64(time.Since(start).Milliseconds()))
+			Observe(float64(time.Since(start).Seconds()))
 	}
 }
