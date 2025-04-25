@@ -32,7 +32,7 @@ type IMinioClient interface {
 
 type IObjectStore interface {
 	SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string, name string, version string, summary string, description string, confinement string, base string, grade string, architectures []string) (*models.Metadata, error)
-	GetSnapFileReader(ctx context.Context, filePath string) (*minio.Object, error)
+	GetSnapFileReader(ctx context.Context, filePath string) (io.ReadCloser, error)
 	MakeBucketAndAddKey(bucketName string, keyPath string, keyName string) *cerror.CustomError
 	Move(sourceBucket, destinationBucket, objectName string, newObjectName string) error
 	GetObjectCustomMetadata(bucket string, objectName string) (*models.Metadata, error)
@@ -52,7 +52,7 @@ func NewObjectStore(minio *minio.Client, cfg *config.Config) IObjectStore {
 }
 
 // don't forget to close the reader after use
-func (obs *ObjectStore) GetSnapFileReader(ctx context.Context, filePath string) (*minio.Object, error) {
+func (obs *ObjectStore) GetSnapFileReader(ctx context.Context, filePath string) (io.ReadCloser, error) {
 	logrus.Infof("Getting file reader for file path: %s", filePath)
 
 	objectPtr, err := obs.MinioClient.GetObject(ctx, "snaps", filePath, minio.GetObjectOptions{})

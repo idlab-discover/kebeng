@@ -18,10 +18,10 @@ type MockObjectStore struct {
 }
 
 // GetSnapFileReader implements IObjectStore.
-func (m *MockObjectStore) GetSnapFileReader(ctx context.Context, filePath string) (*minio.Object, error) {
+func (m *MockObjectStore) GetSnapFileReader(ctx context.Context, filePath string) (io.ReadCloser, error) {
 	args := m.Called(ctx, filePath)
 	if args.Get(0) != nil {
-		return args.Get(0).(*minio.Object), nil
+		return args.Get(0).(io.ReadCloser), nil
 	}
 	return nil, args.Get(1).(error)
 }
