@@ -483,6 +483,8 @@ func TestGetEntries(t *testing.T) {
 	}
 }
 
+func TestGetEntryById(t *testing.T) {}
+
 func TestAddUpload(t *testing.T) {
 	mockRepo := new(repository.MockSnapsRepository)
 	mockObj := new(objectstore.MockObjectStore)

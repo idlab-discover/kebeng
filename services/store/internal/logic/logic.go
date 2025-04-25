@@ -152,19 +152,7 @@ func (s *StoreLogic) GetEntries(ctx context.Context, req *proto.GetEntriesReques
 				continue
 			}
 
-			foundEntries = append(foundEntries, &proto.GetEntryResponse{
-				Id:          snapEntry.ID.String(),
-				SnapName:    snapEntry.Name,
-				Type:        snapEntry.Type,
-				Confinement: snapEntry.Confinement,
-				Base:        snapEntry.Base,
-				Private:     snapEntry.Private,
-				PublisherId: snapEntry.AccountID.String(),
-				Price:       snapEntry.Price,
-				Status:      snapEntry.Status,
-				Since:       timestamppb.New(snapEntry.CreatedAt),
-				IconUrl:     snapEntry.IconURL,
-			})
+			foundEntries = append(foundEntries, parseEntryToProto(snapEntry))
 
 		} else {
 			cerr := cerror.NewCustomError(cerror.MissingField, "id or name is required")
@@ -1173,4 +1161,20 @@ func checkValidName(name string) bool {
 		}
 	}
 	return hasLetter
+}
+
+func parseEntryToProto(entry *models.SnapEntry) *proto.GetEntryResponse {
+	return &proto.GetEntryResponse{
+		Id:          entry.ID.String(),
+		SnapName:    entry.Name,
+		Type:        entry.Type,
+		Confinement: entry.Confinement,
+		Base:        entry.Base,
+		Private:     entry.Private,
+		PublisherId: entry.AccountID.String(),
+		Price:       entry.Price,
+		Status:      entry.Status,
+		Since:       timestamppb.New(entry.CreatedAt),
+		IconUrl:     entry.IconURL,
+	}
 }
