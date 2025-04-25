@@ -20,10 +20,18 @@ var (
 		},
 		[]string{"handlerFunction"},
 	)
+
+	requestCount = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "request_total",
+			Help: "Total number of HTTP requests processed",
+		},
+		[]string{"handlerFunction"},
+	)
 )
 
 func init() {
-	prometheus.MustRegister(requestDuration)
+	prometheus.MustRegister(requestDuration, requestCount)
 }
 
 func StartTimer(handler string) func() {
