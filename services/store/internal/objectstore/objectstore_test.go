@@ -298,9 +298,6 @@ func TestMakeBucketAndAddKey_succes(t *testing.T) {
 	tmpFile := createTempPEMFile(t, dynamicKey)
 	defer os.Remove(tmpFile)
 
-	ch := make(chan minio.ObjectInfo)
-	close(ch)
-	mockMinio.On("ListObjects", mock.Anything, "my-bucket", mock.Anything).Return((<-chan minio.ObjectInfo)(ch))
 	mockMinio.On("MakeBucket", mock.Anything, "my-bucket", mock.Anything).Return(nil)
 	mockMinio.On("PutObject", mock.Anything, "my-bucket", "my-key.pem", mock.Anything, mock.AnythingOfType("int64"), mock.Anything).
 		Return(minio.UploadInfo{Size: 123}, nil)
@@ -308,6 +305,44 @@ func TestMakeBucketAndAddKey_succes(t *testing.T) {
 	store.MakeBucketAndAddKey("my-bucket", tmpFile, "my-key.pem")
 
 	// Assert
+	mockMinio.AssertExpectations(t)
+}
+
+func TestMakeBucketAndAddKey_ErrorMakeBucket(t *testing.T) {
+	mockMinio := new(objectstore.MockObjectStore)
+	cfg := &config.Config{}
+	store := &objectstore.ObjectStore{MinioClient: mockMinio, Cfg: cfg}
+
+	// Dynamic key generation
+	dynamicKey := generateTestRSAPEM()
+	tmpFile := createTempPEMFile(t, dynamicKey)
+	defer os.Remove(tmpFile)
+
+	mockMinio.On("MakeBucket", mock.Anything, "my-bucket", mock.Anything).Return(errors.New("bucket creation error"))
+
+	cerr := store.MakeBucketAndAddKey("my-bucket", tmpFile, "my-key.pem")
+	assert.NotNil(t, cerr)
+
+	mockMinio.AssertExpectations(t)
+}
+
+func TestMakeBucketAndAddKey_ErrorPutObject(t *testing.T) {
+	mockMinio := new(objectstore.MockObjectStore)
+	cfg := &config.Config{}
+	store := &objectstore.ObjectStore{MinioClient: mockMinio, Cfg: cfg}
+
+	// Dynamic key generation
+	dynamicKey := generateTestRSAPEM()
+	tmpFile := createTempPEMFile(t, dynamicKey)
+	defer os.Remove(tmpFile)
+
+	mockMinio.On("MakeBucket", mock.Anything, "my-bucket", mock.Anything).Return(nil)
+	mockMinio.On("PutObject", mock.Anything, "my-bucket", "my-key.pem", mock.Anything, mock.AnythingOfType("int64"), mock.Anything).
+		Return(minio.UploadInfo{}, errors.New("upload error"))
+
+	cerr := store.MakeBucketAndAddKey("my-bucket", tmpFile, "my-key.pem")
+	assert.NotNil(t, cerr)
+
 	mockMinio.AssertExpectations(t)
 }
 
@@ -452,4 +487,20 @@ func TestDeleteFileFromBucket_BucketDoesNotExist(t *testing.T) {
 	assert.Equal(t, cerr.GetMessage(), "bucket does not exist")
 
 	mockMinio.AssertExpectations(t)
+}
+
+func TestGetMinioClient(t *testing.T) {
+	cfg := &config.Config{
+		MinioHost:      "minio:9000",
+		MinioAccessKey: "minioadmin",
+		MinioSecretKey: "minioadmin",
+	}
+
+	client := objectstore.GetMinioClient(cfg)
+	assert.NotNil(t, client)
+
+	// Verify the endpoint URL and scheme
+	endpoint := client.EndpointURL()
+	assert.Equal(t, "http://minio:9000", endpoint.String())
+	assert.Equal(t, "http", endpoint.Scheme)
 }
