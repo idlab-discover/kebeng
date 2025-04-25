@@ -3,6 +3,7 @@ package logic
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
@@ -318,6 +319,170 @@ func TestRegisterSnapName(t *testing.T) {
 
 }
 
+func TestGetEntries(t *testing.T) {
+	mockRepo := new(repository.MockSnapsRepository)
+	mockObj := new(objectstore.MockObjectStore)
+	service := NewStoreLogic(mockRepo, &config.Config{}, mockObj)
+
+	mockUUID := uuid.New()
+
+	tests := []struct {
+		name          string
+		req           *proto.GetEntriesRequest
+		mockReturn    map[string]any // either *models.SnapEntry or cerror.CustomError
+		expectedError bool
+		expectedCount int
+	}{
+		{
+			name: "Successful retrieval by ID",
+			req: &proto.GetEntriesRequest{
+				Entries: []*proto.GetEntryRequest{
+					{Id: stringToPointer(mockUUID.String())},
+				},
+			},
+			mockReturn: map[string]any{
+				"GetEntryById": &models.SnapEntry{
+					ID:          mockUUID,
+					Name:        "test-snap",
+					Type:        "app",
+					Confinement: "strict",
+					Base:        "core20",
+					Private:     false,
+					AccountID:   mockUUID,
+					Price:       0,
+					Status:      "active",
+					CreatedAt:   time.Now(),
+					IconURL:     "http://example.com/icon.png",
+				},
+			},
+			expectedError: false,
+			expectedCount: 1,
+		},
+		{
+			name: "Invalid UUID format",
+			req: &proto.GetEntriesRequest{
+				Entries: []*proto.GetEntryRequest{
+					{Id: stringToPointer("invalid-uuid")},
+				},
+			},
+			mockReturn:    map[string]any{},
+			expectedError: true,
+			expectedCount: 0,
+		},
+		{
+			name: "Missing ID and Name",
+			req: &proto.GetEntriesRequest{
+				Entries: []*proto.GetEntryRequest{
+					{Id: nil, Name: nil},
+				},
+			},
+			mockReturn:    map[string]any{},
+			expectedError: true,
+			expectedCount: 0,
+		},
+		{
+			name: "Successful retrieval by Name",
+			req: &proto.GetEntriesRequest{
+				Entries: []*proto.GetEntryRequest{
+					{Name: stringToPointer("test-snap")},
+				},
+			},
+			mockReturn: map[string]any{
+				"GetEntryByName": &models.SnapEntry{
+					ID:          mockUUID,
+					Name:        "test-snap",
+					Type:        "app",
+					Confinement: "strict",
+					Base:        "core20",
+					Private:     false,
+					AccountID:   mockUUID,
+					Price:       0,
+					Status:      "active",
+					CreatedAt:   time.Now(),
+					IconURL:     "http://example.com/icon.png",
+				},
+			},
+			expectedError: false,
+			expectedCount: 1,
+		},
+		{
+			name: "error in GetEntryById",
+			req: &proto.GetEntriesRequest{
+				Entries: []*proto.GetEntryRequest{
+					{Id: stringToPointer(mockUUID.String())},
+				},
+			},
+			mockReturn: map[string]any{
+				"GetEntryById": &cerror.CustomError{
+					Code:    cerror.ResourceNotFound,
+					Message: "entry not found",
+				},
+			},
+			expectedError: true,
+			expectedCount: 0,
+		},
+		{
+			name: "error in GetEntryByName",
+			req: &proto.GetEntriesRequest{
+				Entries: []*proto.GetEntryRequest{
+					{Name: stringToPointer("test-snap")},
+				},
+			},
+			mockReturn: map[string]any{
+				"GetEntryByName": &cerror.CustomError{
+					Code:    cerror.ResourceNotFound,
+					Message: "entry not found",
+				},
+			},
+			expectedError: true,
+			expectedCount: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			for function, mockReturn := range tt.mockReturn {
+				switch mockReturn := mockReturn.(type) {
+				case *models.SnapEntry:
+					switch function {
+					case "GetEntryById":
+						mockRepo.On(function, mock.Anything, mock.Anything, mock.Anything).Return(mockReturn, nil).Once()
+					case "GetEntryByName":
+						mockRepo.On(function, mock.Anything, mock.Anything, mock.Anything).Return(mockReturn, nil).Once()
+					default:
+						t.Fatalf("invalid mock return function for SnapEntry")
+					}
+				case *cerror.CustomError:
+					switch function {
+					case "GetEntryById":
+						mockRepo.On(function, mock.Anything, mock.Anything, mock.Anything).Return(nil, mockReturn).Once()
+					case "GetEntryByName":
+						mockRepo.On(function, mock.Anything, mock.Anything, mock.Anything).Return(nil, mockReturn).Once()
+					default:
+						t.Fatalf("invalid mock return function for CustomError")
+					}
+				default:
+					t.Fatalf("invalid mock return type")
+				}
+			}
+
+			// Call the method under test
+			resp, _ := service.GetEntries(context.Background(), tt.req)
+
+			// Assertions
+			if tt.expectedError {
+				assert.NotNil(t, resp.Errors)
+				assert.Greater(t, len(resp.Errors), 0, "Expected errors in response")
+			} else {
+				assert.Nil(t, resp.Errors)
+				assert.Equal(t, tt.expectedCount, len(resp.Entries), "Expected entry count to match")
+			}
+
+			mockRepo.AssertExpectations(t)
+		})
+	}
+}
+
 func TestAddUpload(t *testing.T) {
 	mockRepo := new(repository.MockSnapsRepository)
 	mockObj := new(objectstore.MockObjectStore)
@@ -505,4 +670,12 @@ func TestAddUpload(t *testing.T) {
 			}
 		})
 	}
+}
+
+// ====== Helper functions ======
+func stringToPointer(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }
