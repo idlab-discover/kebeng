@@ -4,7 +4,9 @@ import (
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/idlab-discover/kebeng/services/store/internal/models"
+	proto "github.com/idlab-discover/kebeng/services/store/proto"
 	"github.com/stretchr/testify/mock"
+	"google.golang.org/grpc"
 )
 
 // MockSnapsRepository is a mock implementation of ISnapsRepository for testing.
@@ -259,4 +261,15 @@ func (m *MockSnapsRepository) UpdateSnapEntryWithMetadata(entryId uuid.UUID, met
 	}
 	el.Add(cerror.InternalServerError, "")
 	return nil, args.Get(1).(*cerror.CustomError)
+}
+
+// =========== Mock Stream ===========
+type MockSnapDownloadServer struct {
+	mock.Mock
+	grpc.ServerStream
+}
+
+func (m *MockSnapDownloadServer) Send(msg *proto.SnapDownloadResponse) error {
+	args := m.Called(msg)
+	return args.Error(0)
 }
