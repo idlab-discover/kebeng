@@ -197,19 +197,7 @@ func (s *StoreLogic) GetEntryById(ctx context.Context, req *proto.GetEntryReques
 		return &proto.GetEntryResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
 
-	return &proto.GetEntryResponse{
-		Id:          snapEntry.ID.String(),
-		SnapName:    snapEntry.Name,
-		Type:        snapEntry.Type,
-		Confinement: snapEntry.Confinement,
-		Base:        snapEntry.Base,
-		Private:     snapEntry.Private,
-		PublisherId: snapEntry.AccountID.String(),
-		Price:       snapEntry.Price,
-		Status:      snapEntry.Status,
-		Since:       timestamppb.New(snapEntry.CreatedAt),
-		IconUrl:     snapEntry.IconURL,
-	}, nil
+	return parseEntryToProto(snapEntry), nil
 }
 
 // GetEntryByName retrieves a single snap entry by its name.
