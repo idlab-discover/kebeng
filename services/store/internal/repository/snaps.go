@@ -520,7 +520,7 @@ func (sp *SnapsRepository) GetLatestRevisionByTrackAndChannel(snapName string, t
 		WHERE e.name = $1
 		  AND t.name = $2
 		  AND c.name = $3
-		ORDER BY r.updated_at DESC
+		ORDER BY r.sequence_number DESC
 		LIMIT 1;
 	`
 	err := sp.db.Get(&revision, query, snapName, track, channel)
