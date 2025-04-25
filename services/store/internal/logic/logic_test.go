@@ -2,6 +2,9 @@ package logic
 
 import (
 	"context"
+	"fmt"
+	"io"
+	"strings"
 	"testing"
 	"time"
 
@@ -1452,6 +1455,124 @@ func TestGetLatestRevisionByTrackAndChannel(t *testing.T) {
 			}
 
 			mockRepo.AssertExpectations(t)
+		})
+	}
+}
+
+func TestSnapDownload(t *testing.T) {
+	mockRepo := new(repository.MockSnapsRepository)
+	mockObj := new(objectstore.MockObjectStore)
+	service := NewStoreLogic(mockRepo, &config.Config{}, mockObj)
+	mockStream := new(repository.MockSnapDownloadServer)
+
+	mockUUID := uuid.New()
+
+	tests := []struct {
+		name          string
+		req           *proto.SnapDownloadRequest
+		mockReturn    map[string]any // either *models.SnapDownload or *cerror.CustomError
+		expectedError bool
+		errorCode     string
+	}{
+		{
+			name: "Successful download",
+			req: &proto.SnapDownloadRequest{
+				RevisionId: mockUUID.String(),
+			},
+			mockReturn: map[string]any{
+				"GetRevisionById": &models.SnapRevision{
+					ID:               mockUUID,
+					SnapName:         "test-snap",
+					SequenceNumber:   1,
+					Architectures:    []string{"amd64"},
+					SHA3_384_Encoded: "test-hash",
+					Size:             12345,
+					CreatedAt:        time.Now(),
+				},
+				"GetSnapFileReader": io.NopCloser(strings.NewReader("dummy snap content")),
+				"Send":              nil,
+			},
+			expectedError: false,
+		},
+		{
+			name: "Missing RevisionId",
+			req: &proto.SnapDownloadRequest{
+				RevisionId: "",
+			},
+			mockReturn:    map[string]any{},
+			expectedError: true,
+			errorCode:     cerror.MissingField,
+		},
+		{
+			name: "error getting objectStoreFilePath",
+			req: &proto.SnapDownloadRequest{
+				RevisionId: mockUUID.String(),
+			},
+			mockReturn: map[string]any{
+				"GetRevisionById": &cerror.CustomError{
+					Code:    cerror.InternalServerError,
+					Message: "error getting objectStoreFilePath",
+				},
+			},
+			expectedError: true,
+			errorCode:     cerror.InternalServerError,
+		},
+		{
+			name: "error getting file reader",
+			req: &proto.SnapDownloadRequest{
+				RevisionId: mockUUID.String(),
+			},
+			mockReturn: map[string]any{
+				"GetRevisionById": &models.SnapRevision{
+					ID:               mockUUID,
+					SnapName:         "test-snap",
+					SequenceNumber:   1,
+					Architectures:    []string{"amd64"},
+					SHA3_384_Encoded: "test-hash",
+					Size:             12345,
+					CreatedAt:        time.Now(),
+				},
+				"GetSnapFileReader": fmt.Errorf("error getting file reader"),
+				"Send":              nil,
+			},
+			expectedError: true,
+			errorCode:     cerror.InternalServerError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			for function, mockReturn := range tt.mockReturn {
+				switch v := mockReturn.(type) {
+				case *models.SnapRevision:
+					mockRepo.On(function, mock.Anything, mock.Anything).Return(v, nil).Maybe()
+				case io.ReadCloser:
+					mockObj.On(function, mock.Anything, mock.Anything).Return(v, nil).Maybe()
+				case *cerror.CustomError:
+					mockRepo.On(function, tt.req.RevisionId, mock.Anything).Return(nil, v).Maybe()
+				case error:
+					mockObj.On(function, mock.Anything, mock.Anything).Return(nil, v).Maybe()
+				case nil:
+					// Controleer de Send-aanroep via Run voor de fouten
+					mockStream.On("Send", mock.Anything).Return(nil).Run(func(args mock.Arguments) {
+						resp := args.Get(0).(*proto.SnapDownloadResponse)
+						if tt.expectedError {
+							assert.Len(t, resp.Errors, 1)
+							assert.Equal(t, tt.errorCode, resp.Errors[0].Code)
+						}
+					}).Maybe()
+				default:
+					t.Fatalf("invalid mock return type for %s: %T", function, v)
+				}
+			}
+
+			// Call the method under test
+			_ = service.SnapDownload(tt.req, mockStream)
+
+			if !tt.expectedError {
+				mockStream.AssertExpectations(t)
+			}
+			mockObj.AssertExpectations(t)
 		})
 	}
 }

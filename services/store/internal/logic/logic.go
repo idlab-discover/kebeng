@@ -471,12 +471,11 @@ func (s *StoreLogic) SnapDownload(req *proto.SnapDownloadRequest, stream proto.S
 		}
 		return fmt.Errorf("failed to get revision by id: %v", cerr)
 	}
-	defer func(snapfileReader io.Reader) {
-		err := snapFileReader.Close()
-		if err != nil {
+	defer func() {
+		if err := snapFileReader.Close(); err != nil {
 			logrus.Error("failed to close snap file reader: ", err)
 		}
-	}(snapFileReader)
+	}()
 
 	// define chunksize for reading the file
 	const chunkSize = 64 * 1024
