@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestSaveFileToBucket(t *testing.T) {
+func TestSaveFileToBucket_succes(t *testing.T) {
 	mockMinio := new(objectstore.MockObjectStore)
 	cfg := &config.Config{}
 
@@ -60,6 +60,69 @@ func TestSaveFileToBucket(t *testing.T) {
 	mockMinio.AssertExpectations(t)
 }
 
+func TestSaveFileToBucket_ErrorCreatingBucket(t *testing.T) {
+	mockMinio := new(objectstore.MockObjectStore)
+	cfg := &config.Config{}
+
+	testObjectStore := &objectstore.ObjectStore{
+		MinioClient: mockMinio,
+		Cfg:         cfg,
+	}
+
+	mockMinio.On("BucketExists", mock.Anything, "test-bucket").Return(false, nil)
+	mockMinio.On("MakeBucket", mock.Anything, "test-bucket", mock.Anything).Return(errors.New("bucket creation error"))
+
+	metadata, err := testObjectStore.SaveFileToBucket(
+		"test-bucket",
+		"some/path/testfile.txt",
+		"sha3_384_hash",
+		"test-snap",
+		"1.0.0",
+		"Test Summary",
+		"Test Description",
+		"strict",
+		"core18",
+		"test-grade",
+		[]string{"amd64", "arm64"},
+	)
+	assert.Error(t, err)
+	assert.Nil(t, metadata)
+
+	mockMinio.AssertExpectations(t)
+}
+
+func TestSaveFileToBucket_ErrorUploadingFile(t *testing.T) {
+	mockMinio := new(objectstore.MockObjectStore)
+	cfg := &config.Config{}
+
+	testObjectStore := &objectstore.ObjectStore{
+		MinioClient: mockMinio,
+		Cfg:         cfg,
+	}
+
+	mockMinio.On("BucketExists", mock.Anything, "test-bucket").Return(true, nil)
+	mockMinio.On("FPutObject", mock.Anything, "test-bucket", "testfile.txt", "some/path/testfile.txt", mock.Anything).
+		Return(minio.UploadInfo{}, errors.New("upload error"))
+
+	metadata, err := testObjectStore.SaveFileToBucket(
+		"test-bucket",
+		"some/path/testfile.txt",
+		"sha3_384_hash",
+		"test-snap",
+		"1.0.0",
+		"Test Summary",
+		"Test Description",
+		"strict",
+		"core18",
+		"test-grade",
+		[]string{"amd64", "arm64"},
+	)
+	assert.Error(t, err)
+	assert.Nil(t, metadata)
+
+	mockMinio.AssertExpectations(t)
+}
+
 // objectstore_test.go
 func TestMove_Success(t *testing.T) {
 	mockMinio := new(objectstore.MockObjectStore)
@@ -76,8 +139,6 @@ func TestMove_Success(t *testing.T) {
 	newObjectName := "newfile.snap"
 
 	// Expectations
-	mockMinio.On("BucketExists", mock.Anything, srcBucket).Return(true, nil)
-	mockMinio.On("BucketExists", mock.Anything, dstBucket).Return(true, nil)
 	mockMinio.On("CopyObject", mock.Anything,
 		mock.AnythingOfType("minio.CopyDestOptions"),
 		mock.AnythingOfType("minio.CopySrcOptions"),
@@ -96,12 +157,42 @@ func TestMove_BucketDoesNotExist(t *testing.T) {
 	mockMinio := new(objectstore.MockObjectStore)
 	store := &objectstore.ObjectStore{MinioClient: mockMinio}
 
-	mockMinio.On("BucketExists", mock.Anything, "source").Return(false, nil)
-	mockMinio.On("BucketExists", mock.Anything, "destination").Return(true, nil)
+	mockMinio.On("CopyObject", mock.Anything,
+		mock.AnythingOfType("minio.CopyDestOptions"),
+		mock.AnythingOfType("minio.CopySrcOptions"),
+	).Return(minio.UploadInfo{}, errors.New("source or destination bucket does not exist"))
 
 	err := store.Move("source", "destination", "file.snap", "newfile.snap")
 	assert.Error(t, err)
 	assert.EqualError(t, err, "source or destination bucket does not exist")
+
+	mockMinio.AssertExpectations(t)
+}
+
+func TestMove_RemoveObjectError(t *testing.T) {
+	mockMinio := new(objectstore.MockObjectStore)
+	cfg := &config.Config{}
+
+	store := &objectstore.ObjectStore{
+		Cfg:         cfg,
+		MinioClient: mockMinio,
+	}
+
+	srcBucket := "source"
+	dstBucket := "destination"
+	object := "file.snap"
+	newObjectName := "newfile.snap"
+
+	// Expectations
+	mockMinio.On("CopyObject", mock.Anything,
+		mock.AnythingOfType("minio.CopyDestOptions"),
+		mock.AnythingOfType("minio.CopySrcOptions"),
+	).Return(minio.UploadInfo{}, nil)
+	mockMinio.On("RemoveObject", mock.Anything, srcBucket, object, mock.Anything).Return(errors.New("failed to remove object"))
+
+	err := store.Move(srcBucket, dstBucket, object, newObjectName)
+	assert.Error(t, err)
+	assert.EqualError(t, err, "failed to remove object")
 
 	mockMinio.AssertExpectations(t)
 }
@@ -197,29 +288,23 @@ func generateTestRSAPEM() string {
 	return string(privPEM)
 }
 
-func TestMakeBucketAndAddKey(t *testing.T) {
+func TestMakeBucketAndAddKey_succes(t *testing.T) {
 	mockMinio := new(objectstore.MockObjectStore)
 	cfg := &config.Config{}
 	store := &objectstore.ObjectStore{MinioClient: mockMinio, Cfg: cfg}
 
-	// Dynamisch gegenereerde geldige RSA private key
+	// Dynamic key generation
 	dynamicKey := generateTestRSAPEM()
 	tmpFile := createTempPEMFile(t, dynamicKey)
 	defer os.Remove(tmpFile)
 
-	// Simuleer ListObjects
 	ch := make(chan minio.ObjectInfo)
 	close(ch)
 	mockMinio.On("ListObjects", mock.Anything, "my-bucket", mock.Anything).Return((<-chan minio.ObjectInfo)(ch))
-
-	// Simuleer MakeBucket
 	mockMinio.On("MakeBucket", mock.Anything, "my-bucket", mock.Anything).Return(nil)
-
-	// Simuleer PutObject
 	mockMinio.On("PutObject", mock.Anything, "my-bucket", "my-key.pem", mock.Anything, mock.AnythingOfType("int64"), mock.Anything).
 		Return(minio.UploadInfo{Size: 123}, nil)
 
-	// Act
 	store.MakeBucketAndAddKey("my-bucket", tmpFile, "my-key.pem")
 
 	// Assert

@@ -2,8 +2,6 @@ package objectstore
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"io"
 	"log"
 	"os"
@@ -68,42 +66,28 @@ func (obs *ObjectStore) GetSnapFileReader(ctx context.Context, filePath string) 
 func (obs *ObjectStore) Move(sourceBucket, destinationBucket, objectName, newObjectName string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-
-	sourceBucketExists, err := obs.MinioClient.BucketExists(ctx, sourceBucket)
+	// Copy object to destination with the new name
+	_, err := obs.MinioClient.CopyObject(ctx,
+		minio.CopyDestOptions{
+			Bucket: destinationBucket,
+			Object: newObjectName,
+		},
+		minio.CopySrcOptions{
+			Bucket: sourceBucket,
+			Object: objectName,
+		},
+	)
 	if err != nil {
 		return err
 	}
-	destinationBucketExists, err := obs.MinioClient.BucketExists(ctx, destinationBucket)
+
+	// Delete the original object after successful copy
+	err = obs.MinioClient.RemoveObject(ctx, sourceBucket, objectName, minio.RemoveObjectOptions{})
 	if err != nil {
 		return err
 	}
 
-	if sourceBucketExists && destinationBucketExists {
-		// Copy object to destination with the new name
-		_, err := obs.MinioClient.CopyObject(ctx,
-			minio.CopyDestOptions{
-				Bucket: destinationBucket,
-				Object: newObjectName,
-			},
-			minio.CopySrcOptions{
-				Bucket: sourceBucket,
-				Object: objectName,
-			},
-		)
-		if err != nil {
-			return err
-		}
-
-		// Delete the original object after successful copy
-		err = obs.MinioClient.RemoveObject(ctx, sourceBucket, objectName, minio.RemoveObjectOptions{})
-		if err != nil {
-			return err
-		}
-
-		return nil
-	}
-
-	return errors.New("source or destination bucket does not exist")
+	return nil
 }
 
 func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string, name string, version string, summary string, description string, confinement string, base string, grade string, architectures []string) (*models.Metadata, error) {
@@ -114,7 +98,8 @@ func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_38
 	if !exists {
 		err := obs.MinioClient.MakeBucket(ctx, bucket, minio.MakeBucketOptions{})
 		if err != nil {
-			logrus.Error(err)
+			logrus.Errorf("error creating bucket %s, err: %v", bucket, err)
+			return nil, err
 		}
 	}
 
@@ -137,6 +122,7 @@ func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_38
 		UserMetadata: userMetadata,
 	})
 	if err != nil {
+		logrus.Errorf("error uploading file to bucket %s, file path: %s, err: %v", bucket, filePath, err)
 		return nil, err
 	}
 
@@ -162,7 +148,7 @@ func (obs *ObjectStore) GetObjectCustomMetadata(bucket string, objectName string
 
 	objectInfo, err := obs.MinioClient.StatObject(ctx, bucket, objectName, minio.GetObjectOptions{})
 	if err != nil {
-		logrus.Error(err)
+		logrus.Errorf("error getting object info from bucket %s, object name: %s, err: %v", bucket, objectName, err)
 		return nil, err
 	}
 
@@ -187,7 +173,7 @@ func GetMinioClient(cfg *config.Config) *minio.Client {
 	secretKey := cfg.MinioSecretKey
 	minioHost := cfg.MinioHost
 
-	logrus.Infof("Minio host=%s, accessKey=%s, secretKey=%s", minioHost, accessKey, secretKey)
+	logrus.Debugf("Minio host=%s, accessKey=%s, secretKey=%s", minioHost, accessKey, secretKey)
 
 	// Initialize minio client object.
 	minioClient, err := minio.New(minioHost, &minio.Options{
@@ -204,7 +190,7 @@ func GetMinioClient(cfg *config.Config) *minio.Client {
 
 func (obs *ObjectStore) MakeBucketAndAddKey(bucketName string, keyPath string, keyName string) {
 	// Make root bucket
-	fmt.Printf("*************************************\nCreating bucket: %s\n, keyPath: %s\n *************************", bucketName, keyPath)
+	logrus.Debugf("Making bucket %s and adding key %s", bucketName, keyName)
 	ctx, cancel := context.WithCancel(context.Background())
 
 	defer cancel()
@@ -213,21 +199,21 @@ func (obs *ObjectStore) MakeBucketAndAddKey(bucketName string, keyPath string, k
 		Recursive: true,
 	})
 	for object := range objectCh {
-		logrus.Tracef("object: %s", object.Key)
+		logrus.Debugf("Object found: %s", object.Key)
 	}
 
 	err := obs.MinioClient.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{})
 	if err != nil {
-		logrus.Error(err)
+		logrus.Errorf("error creating bucket %s, err: %v", bucketName, err)
 	}
 
 	bytes, err := os.ReadFile(keyPath)
 	if err != nil {
-		logrus.Error(err)
+		logrus.Errorf("error reading file %s, err: %v", keyPath, err)
 	}
 	rootPrivateKey, cerr := crypto.ParseRSAPrivateKeyFromPEM(bytes)
 	if cerr != nil {
-		logrus.Error(cerr)
+		logrus.Errorf("error parsing private key from PEM, err: %v", cerr)
 	}
 	keyString := crypto.ExportRsaPrivateKeyAsPemStr(rootPrivateKey)
 
