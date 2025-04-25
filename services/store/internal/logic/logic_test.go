@@ -599,6 +599,121 @@ func TestGetEntryById(t *testing.T) {
 	}
 }
 
+func TestGetEntryByName(t *testing.T) {
+	mockRepo := new(repository.MockSnapsRepository)
+	mockObj := new(objectstore.MockObjectStore)
+	service := NewStoreLogic(mockRepo, &config.Config{}, mockObj)
+
+	mockUUID := uuid.New()
+
+	tests := []struct {
+		name          string
+		req           *proto.GetEntryRequest
+		mockReturn    any // either *models.SnapEntry or *cerror.CustomError
+		expectedError bool
+		errorCode     string
+		expectedEntry *proto.GetEntryResponse
+	}{
+		{
+			name: "Successful retrieval by Name",
+			req: &proto.GetEntryRequest{
+				Name: stringToPointer("test-snap"),
+			},
+			mockReturn: &models.SnapEntry{
+				ID:          mockUUID,
+				Name:        "test-snap",
+				Type:        "app",
+				Confinement: "strict",
+				Base:        "core20",
+				Private:     false,
+				AccountID:   mockUUID,
+				Price:       0,
+				Status:      "active",
+				CreatedAt:   time.Now(),
+				IconURL:     "http://example.com/icon.png",
+			},
+			expectedError: false,
+			expectedEntry: &proto.GetEntryResponse{
+				Id:          mockUUID.String(),
+				SnapName:    "test-snap",
+				Type:        "app",
+				Confinement: "strict",
+				Base:        "core20",
+				Private:     false,
+				PublisherId: mockUUID.String(),
+				Price:       0,
+				Status:      "active",
+				IconUrl:     "http://example.com/icon.png",
+			},
+		},
+		{
+			name: "missing name",
+			req: &proto.GetEntryRequest{
+				Name: nil,
+			},
+			mockReturn:    nil,
+			expectedError: true,
+			errorCode:     cerror.MissingField,
+		},
+		{
+			name: "empty name",
+			req: &proto.GetEntryRequest{
+				Name: stringToPointer(""),
+			},
+			mockReturn:    nil,
+			expectedError: true,
+			errorCode:     cerror.MissingField,
+		},
+		{
+			name: "database error in GetEntryByName",
+			req: &proto.GetEntryRequest{
+				Name: stringToPointer("test-snap"),
+			},
+			mockReturn: &cerror.CustomError{
+				Code:    cerror.InternalServerError, // In mock, we use InternalServerError for simplicity
+				Message: "entry not found",
+			},
+			expectedError: true,
+			errorCode:     cerror.InternalServerError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			switch mockReturn := tt.mockReturn.(type) {
+			case *models.SnapEntry:
+				mockRepo.On("GetEntryByName", mock.Anything, mock.Anything, mock.Anything).Return(mockReturn, nil).Once()
+			case *cerror.CustomError:
+				mockRepo.On("GetEntryByName", mock.Anything, mock.Anything, mock.Anything).Return(nil, mockReturn).Once()
+			default:
+				// no action needed
+			}
+
+			// Call the method under test
+			resp, _ := service.GetEntryByName(context.Background(), tt.req)
+
+			// Assertions
+			if tt.expectedError {
+				assert.NotNil(t, resp.Errors)
+				assert.Equal(t, tt.errorCode, resp.Errors[0].Code, "Expected error code to match")
+			} else {
+				assert.Nil(t, resp.Errors)
+				assert.Equal(t, tt.expectedEntry.Id, resp.Id, "Expected ID to match")
+				assert.Equal(t, tt.expectedEntry.SnapName, resp.SnapName, "Expected SnapName to match")
+				assert.Equal(t, tt.expectedEntry.Type, resp.Type, "Expected Type to match")
+				assert.Equal(t, tt.expectedEntry.Confinement, resp.Confinement, "Expected Confinement to match")
+				assert.Equal(t, tt.expectedEntry.Base, resp.Base, "Expected Base to match")
+				assert.Equal(t, tt.expectedEntry.Private, resp.Private, "Expected Private to match")
+				assert.Equal(t, tt.expectedEntry.PublisherId, resp.PublisherId, "Expected PublisherId to match")
+				assert.Equal(t, tt.expectedEntry.Price, resp.Price, "Expected Price to match")
+				assert.Equal(t, tt.expectedEntry.Status, resp.Status, "Expected Status to match")
+				assert.Equal(t, tt.expectedEntry.IconUrl, resp.IconUrl, "Expected IconUrl to match")
+			}
+			mockRepo.AssertExpectations(t)
+		})
+	}
+}
+
 func TestAddUpload(t *testing.T) {
 	mockRepo := new(repository.MockSnapsRepository)
 	mockObj := new(objectstore.MockObjectStore)
