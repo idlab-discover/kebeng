@@ -41,12 +41,11 @@ func NewStoreLogic(repo repository.ISnapsRepository, config *config.Config, obj 
 func (s *StoreLogic) RegisterSnapName(ctx context.Context, req *proto.RegisterSnapNameRequest) (*proto.RegisterSnapNameResponse, error) {
 	el := cerror.NewErrorList()
 
-	if req.SnapName == "" {
-		el.Add(cerror.MissingField, "snap name is required")
+	// check if snap name is valid (it should only have ASCII lowercase letters, numbers, and hyphens, and must have at least one letter)
+	if !checkValidName(req.SnapName) {
+		el.Add(cerror.InvalidField, "snap name is invalid, it should only have ASCII lowercase letters, numbers, and hyphens, and must have at least one letter")
 		return &proto.RegisterSnapNameResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
-
-	// TODO: check if snap name is valid (it should only have ASCII lowercase letters, numbers, and hyphens, and must have at least one letter)
 
 	// First check if the snap name is already registered
 	snapEntry, cerr := s.repo.GetEntryByName(req.SnapName, nil, el)
@@ -1154,4 +1153,24 @@ func getSnapMetaFromBytes(bytes []byte, workingDirectory string) (*models.SnapMe
 	}
 
 	return nil, err
+}
+
+func checkValidName(name string) bool {
+	if name == "" {
+		return false
+	}
+
+	hasLetter := false
+	for i := 0; i < len(name); i++ {
+		c := name[i]
+		switch {
+		case c >= 'a' && c <= 'z':
+			hasLetter = true
+		case c >= '0' && c <= '9', c == '-':
+			// allowed
+		default:
+			return false
+		}
+	}
+	return hasLetter
 }

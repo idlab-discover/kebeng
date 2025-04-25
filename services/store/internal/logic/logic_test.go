@@ -56,6 +56,42 @@ func TestRegisterSnapName(t *testing.T) {
 			expectedError: false,
 		},
 		{
+			name: "failed because invalid snap name",
+			req: &proto.RegisterSnapNameRequest{
+				SnapName:  "123_INVALID",
+				IsPrivate: false,
+				Store:     "global",
+				AccountId: mockUUID.String(),
+				DryRun:    false,
+			},
+			mockReturn: map[string]any{
+				"GetEntryByName": &cerror.CustomError{
+					Code:    cerror.InvalidField,
+					Message: "snap name is invalid, it should only have ASCII lowercase letters, numbers, and hyphens, and must have at least one letter",
+				},
+			},
+			expectedError: true,
+			errorCode:     cerror.InvalidField,
+		},
+		{
+			name: "failed because empty snap name",
+			req: &proto.RegisterSnapNameRequest{
+				SnapName:  "",
+				IsPrivate: false,
+				Store:     "global",
+				AccountId: mockUUID.String(),
+				DryRun:    false,
+			},
+			mockReturn: map[string]any{
+				"GetEntryByName": &cerror.CustomError{
+					Code:    cerror.InvalidField,
+					Message: "snap name is invalid, it should only have ASCII lowercase letters, numbers, and hyphens, and must have at least one letter",
+				},
+			},
+			expectedError: true,
+			errorCode:     cerror.InvalidField,
+		},
+		{
 			name: "failed because snap name already exists",
 			req: &proto.RegisterSnapNameRequest{
 				SnapName:  "test-snap-name",
@@ -72,6 +108,42 @@ func TestRegisterSnapName(t *testing.T) {
 			},
 			expectedError: true,
 			errorCode:     cerror.AlreadyRegistered,
+		},
+		{
+			name: "database error in GetEntryByName",
+			req: &proto.RegisterSnapNameRequest{
+				SnapName:  "test-snap-name",
+				IsPrivate: false,
+				Store:     "global",
+				AccountId: mockUUID.String(),
+				DryRun:    false,
+			},
+			mockReturn: map[string]any{
+				"GetEntryByName": &cerror.CustomError{
+					Code:    cerror.DatabaseError,
+					Message: "database error",
+				},
+			},
+			expectedError: true,
+			errorCode:     cerror.DatabaseError,
+		},
+		{
+			name: "failed parsing account id",
+			req: &proto.RegisterSnapNameRequest{
+				SnapName:  "test-snap-name",
+				IsPrivate: false,
+				Store:     "global",
+				AccountId: "invalid-uuid",
+				DryRun:    false,
+			},
+			mockReturn: map[string]any{
+				"GetEntryByName": &cerror.CustomError{
+					Code:    cerror.ResourceNotFound,
+					Message: "snap name not found",
+				},
+			},
+			expectedError: true,
+			errorCode:     cerror.InvalidField,
 		},
 		{
 			name: "database error in RegisterSnap",
@@ -184,19 +256,6 @@ func TestRegisterSnapName(t *testing.T) {
 				},
 			},
 			expectedError: false,
-		},
-		{
-			name: "fail to register snap name with empty name",
-			req: &proto.RegisterSnapNameRequest{
-				SnapName:  "",
-				IsPrivate: false,
-				Store:     "global",
-				AccountId: mockUUID.String(),
-				DryRun:    false,
-			},
-			mockReturn:    map[string]any{},
-			expectedError: true,
-			errorCode:     cerror.MissingField,
 		},
 	}
 
