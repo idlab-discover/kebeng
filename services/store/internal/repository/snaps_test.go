@@ -1426,6 +1426,19 @@ func TestUpdateSnapEntryWithMetadata(t *testing.T) {
 			expectError:       false,
 			expectedErrorCode: "",
 		},
+		{
+			name:              "Fail updating snap entry with metadata for non-existing entry",
+			entryId:           uuid.New(),
+			confinement:       "strict",
+			base:              "core20",
+			summary:           "mock summary",
+			description:       "mock description",
+			architectures:     []string{"x86_64", "arm64"},
+			grade:             "stable",
+			el:                cerror.NewErrorList(),
+			expectError:       true,
+			expectedErrorCode: cerror.ResourceNotFound,
+		},
 	}
 
 	for _, tt := range tests {
