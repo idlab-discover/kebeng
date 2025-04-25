@@ -33,7 +33,7 @@ type IMinioClient interface {
 
 type IObjectStore interface {
 	SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string, name string, version string, summary string, description string, confinement string, base string, grade string, architectures []string) (*models.Metadata, error)
-	GetSnapFileReader(ctx context.Context, filePath string) (io.ReadCloser, error)
+	GetSnapFileReader(ctx context.Context, filePath string) (*minio.Object, error)
 	MakeBucketAndAddKey(bucketName string, keyPath string, keyName string)
 	Move(sourceBucket, destinationBucket, objectName string, newObjectName string) error
 	GetObjectCustomMetadata(bucket string, objectName string) (*models.Metadata, error)
@@ -53,17 +53,13 @@ func NewObjectStore(minio *minio.Client, cfg *config.Config) IObjectStore {
 }
 
 // don't forget to close the reader after use
-func (obs *ObjectStore) GetSnapFileReader(ctx context.Context, filePath string) (io.ReadCloser, error) {
+func (obs *ObjectStore) GetSnapFileReader(ctx context.Context, filePath string) (*minio.Object, error) {
 	logrus.Infof("Getting file reader for file path: %s", filePath)
 
 	objectPtr, err := obs.MinioClient.GetObject(ctx, "snaps", filePath, minio.GetObjectOptions{})
 	if err != nil {
 		logrus.Errorf("error getting object from bucket 'snaps', file path: %s, err: %v", filePath, err)
 		return nil, err
-	}
-	if objectPtr == nil {
-		logrus.Errorf("error getting object from bucket 'snaps', file path: %s, err: %v", filePath, err)
-		return nil, errors.New("object not found")
 	}
 
 	return objectPtr, nil
