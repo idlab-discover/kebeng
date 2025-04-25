@@ -1017,6 +1017,146 @@ func TestGetRevisionByNameAndSequence(t *testing.T) {
 	}
 }
 
+func TestGetEntriesByAccountId(t *testing.T) {
+	mockRepo := new(repository.MockSnapsRepository)
+	mockObj := new(objectstore.MockObjectStore)
+	service := NewStoreLogic(mockRepo, &config.Config{}, mockObj)
+
+	mockUUID := uuid.New()
+
+	tests := []struct {
+		name           string
+		req            *proto.GetEntriesByAccountIdRequest
+		mockReturn     any // either []*models.SnapEntry or *cerror.CustomError
+		expectedError  bool
+		errorCode      string
+		expectedResult []*proto.GetEntryResponse
+	}{
+		{
+			name: "Successful retrieval by AccountId",
+			req: &proto.GetEntriesByAccountIdRequest{
+				AccountId: mockUUID.String(),
+			},
+			mockReturn: []*models.SnapEntry{
+				{
+					ID:          mockUUID,
+					Name:        "test-snap",
+					Type:        "app",
+					Confinement: "strict",
+					Base:        "core20",
+					Private:     false,
+					AccountID:   mockUUID,
+					Price:       0,
+					Status:      "active",
+					CreatedAt:   time.Now(),
+					IconURL:     "http://example.com/icon.png",
+				},
+			},
+			expectedError: false,
+			expectedResult: []*proto.GetEntryResponse{
+				{
+					Id:          mockUUID.String(),
+					SnapName:    "test-snap",
+					Type:        "app",
+					Confinement: "strict",
+					Base:        "core20",
+					Private:     false,
+					PublisherId: mockUUID.String(),
+					Price:       0,
+					Status:      "active",
+					IconUrl:     "http://example.com/icon.png",
+				},
+			},
+		},
+		{
+			name: "Invalid AccountId format",
+			req: &proto.GetEntriesByAccountIdRequest{
+				AccountId: "invalid-uuid",
+			},
+			mockReturn:    nil,
+			expectedError: true,
+			errorCode:     cerror.InvalidField,
+		},
+		{
+			name: "Missing AccountId",
+			req: &proto.GetEntriesByAccountIdRequest{
+				AccountId: "",
+			},
+			mockReturn:    nil,
+			expectedError: true,
+			errorCode:     cerror.MissingField,
+		},
+		{
+			name: "No entries found for AccountId",
+			req: &proto.GetEntriesByAccountIdRequest{
+				AccountId: mockUUID.String(),
+			},
+			mockReturn:     []*models.SnapEntry{},
+			expectedError:  false,
+			expectedResult: []*proto.GetEntryResponse{},
+		},
+		{
+			name: "Database error in GetEntriesByAccountId",
+			req: &proto.GetEntriesByAccountIdRequest{
+				AccountId: mockUUID.String(),
+			},
+			mockReturn: &cerror.CustomError{
+				Code:    cerror.InternalServerError,
+				Message: "database error",
+			},
+			expectedError: true,
+			errorCode:     cerror.InternalServerError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			switch mockReturn := tt.mockReturn.(type) {
+			case []*models.SnapEntry:
+				accountID, err := uuid.Parse(tt.req.AccountId)
+				if err != nil {
+					t.Fatalf("invalid UUID format for AccountId: %v", err)
+				}
+				mockRepo.On("GetEntriesByAccountId", accountID, mock.Anything, mock.Anything).Return(mockReturn, nil).Once()
+			case *cerror.CustomError:
+				accountID, err := uuid.Parse(tt.req.AccountId)
+				if err != nil {
+					t.Fatalf("invalid UUID format for AccountId: %v", err)
+				}
+				mockRepo.On("GetEntriesByAccountId", accountID, mock.Anything, mock.Anything).Return(nil, mockReturn).Once()
+			default:
+				// no action needed
+			}
+
+			// Call the method under test
+			resp, _ := service.GetEntriesByAccountId(context.Background(), tt.req)
+
+			// Assertions
+			if tt.expectedError {
+				assert.NotNil(t, resp.Errors)
+				assert.Equal(t, tt.errorCode, resp.Errors[0].Code, "Expected error code to match")
+			} else {
+				assert.Nil(t, resp.Errors)
+				assert.Equal(t, len(tt.expectedResult), len(resp.Entries), "Expected entry count to match")
+				for i, entry := range resp.Entries {
+					assert.Equal(t, tt.expectedResult[i].Id, entry.Id, "Expected ID to match")
+					assert.Equal(t, tt.expectedResult[i].SnapName, entry.SnapName, "Expected SnapName to match")
+					assert.Equal(t, tt.expectedResult[i].Type, entry.Type, "Expected Type to match")
+					assert.Equal(t, tt.expectedResult[i].Confinement, entry.Confinement, "Expected Confinement to match")
+					assert.Equal(t, tt.expectedResult[i].Base, entry.Base, "Expected Base to match")
+					assert.Equal(t, tt.expectedResult[i].Private, entry.Private, "Expected Private to match")
+					assert.Equal(t, tt.expectedResult[i].PublisherId, entry.PublisherId, "Expected PublisherId to match")
+					assert.Equal(t, tt.expectedResult[i].Price, entry.Price, "Expected Price to match")
+					assert.Equal(t, tt.expectedResult[i].Status, entry.Status, "Expected Status to match")
+					assert.Equal(t, tt.expectedResult[i].IconUrl, entry.IconUrl, "Expected IconUrl to match")
+				}
+			}
+
+			mockRepo.AssertExpectations(t)
+		})
+	}
+}
+
 func TestAddUpload(t *testing.T) {
 	mockRepo := new(repository.MockSnapsRepository)
 	mockObj := new(objectstore.MockObjectStore)
