@@ -526,37 +526,6 @@ func (s *StoreLogic) SnapDownload(req *proto.SnapDownloadRequest, stream proto.S
 	return nil
 }
 
-func saveFileToTemp(snapFile io.Reader, el *cerror.ErrorList) (string, *cerror.CustomError) {
-	// Generate random file name for the new uploaded file so it doesn't override an old file with same name
-	snapFileId := uuid.New().String()
-	newFileName := snapFileId + ".snap"
-
-	out, err := os.Create(path.Join("/tmp", newFileName))
-	if err != nil {
-		cerr := cerror.NewCustomError(cerror.InternalServerError, "Failed to create file")
-		logrus.Error(cerr)
-		el.AddCustomError(cerr)
-		return "", cerr
-	}
-	defer func(out *os.File) {
-		err := out.Close()
-		if err != nil {
-			logrus.Error("failed to close file: ", err)
-		}
-
-	}(out)
-
-	_, err = io.Copy(out, snapFile)
-	if err != nil {
-		cerr := cerror.NewCustomError(cerror.InternalServerError, "Failed to copy file")
-		logrus.Error(cerr)
-		el.AddCustomError(cerr)
-		return "", cerr
-	}
-
-	return newFileName, nil
-}
-
 func (s *StoreLogic) AddUpload(ctx context.Context, req *proto.AddUploadRequest) (*proto.AddUploadResponse, error) {
 	el := cerror.NewErrorList()
 
@@ -1152,4 +1121,35 @@ func parseEntryToProto(entry *models.SnapEntry) *proto.GetEntryResponse {
 		Since:       timestamppb.New(entry.CreatedAt),
 		IconUrl:     entry.IconURL,
 	}
+}
+
+func saveFileToTemp(snapFile io.Reader, el *cerror.ErrorList) (string, *cerror.CustomError) {
+	// Generate random file name for the new uploaded file so it doesn't override an old file with same name
+	snapFileId := uuid.New().String()
+	newFileName := snapFileId + ".snap"
+
+	out, err := os.Create(path.Join("/tmp", newFileName))
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.InternalServerError, "Failed to create file")
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return "", cerr
+	}
+	defer func(out *os.File) {
+		err := out.Close()
+		if err != nil {
+			logrus.Error("failed to close file: ", err)
+		}
+
+	}(out)
+
+	_, err = io.Copy(out, snapFile)
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.InternalServerError, "Failed to copy file")
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return "", cerr
+	}
+
+	return newFileName, nil
 }
