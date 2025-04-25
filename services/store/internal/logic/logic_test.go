@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
+	protoCommon "github.com/idlab-discover/kebeng/common/cerror/proto"
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
 	"github.com/idlab-discover/kebeng/services/store/internal/models"
 	"github.com/idlab-discover/kebeng/services/store/internal/objectstore"
@@ -1150,6 +1151,189 @@ func TestGetEntriesByAccountId(t *testing.T) {
 					assert.Equal(t, tt.expectedResult[i].Status, entry.Status, "Expected Status to match")
 					assert.Equal(t, tt.expectedResult[i].IconUrl, entry.IconUrl, "Expected IconUrl to match")
 				}
+			}
+
+			mockRepo.AssertExpectations(t)
+		})
+	}
+}
+
+func TestGetRevisionsByEntryIds(t *testing.T) {
+	mockRepo := new(repository.MockSnapsRepository)
+	mockObj := new(objectstore.MockObjectStore)
+	service := NewStoreLogic(mockRepo, &config.Config{}, mockObj)
+
+	mockUUID := uuid.New()
+
+	tests := []struct {
+		name           string
+		req            *proto.GetRevisionsByEntryIdRequests
+		mockReturn     map[string]any // either []*models.SnapRevision or *cerror.CustomError
+		expectedError  bool
+		expectedResult []*proto.GetRevisionsByEntryIdResponse
+	}{
+		{
+			name: "Successful retrieval of revisions by EntryId",
+			req: &proto.GetRevisionsByEntryIdRequests{
+				Requests: []*proto.GetRevisionsByEntryIdRequest{
+					{EntryId: mockUUID.String()},
+				},
+			},
+			mockReturn: map[string]any{
+				"GetRevisionsByEntryId": []*models.SnapRevision{
+					{
+						ID:               mockUUID,
+						SnapName:         "test-snap",
+						SequenceNumber:   1,
+						Architectures:    []string{"amd64"},
+						SHA3_384_Encoded: "test-hash",
+						Size:             12345,
+						CreatedAt:        time.Now(),
+					},
+				},
+			},
+			expectedError: false,
+			expectedResult: []*proto.GetRevisionsByEntryIdResponse{
+				{
+					EntryId: mockUUID.String(),
+					Revisions: []*proto.GetRevisionResponse{
+						{
+							Id:              mockUUID.String(),
+							SnapName:        "test-snap",
+							SequenceNumber:  1,
+							Architectures:   []string{"amd64"},
+							Sha3_384Encoded: "test-hash",
+							Size:            12345,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Invalid EntryId format",
+			req: &proto.GetRevisionsByEntryIdRequests{
+				Requests: []*proto.GetRevisionsByEntryIdRequest{
+					{EntryId: "invalid-uuid"},
+				},
+			},
+			mockReturn:    nil,
+			expectedError: true,
+			expectedResult: []*proto.GetRevisionsByEntryIdResponse{
+				{
+					EntryId: "",
+					Errors: []*protoCommon.Error{
+						{
+							Code:    cerror.InvalidField,
+							Message: "invalid UUID format: invalid-uuid",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Missing EntryId",
+			req: &proto.GetRevisionsByEntryIdRequests{
+				Requests: []*proto.GetRevisionsByEntryIdRequest{
+					{EntryId: ""},
+				},
+			},
+			mockReturn:    nil,
+			expectedError: true,
+			expectedResult: []*proto.GetRevisionsByEntryIdResponse{
+				{
+					EntryId: "",
+					Errors: []*protoCommon.Error{
+						{
+							Code:    cerror.MissingField,
+							Message: "entry id is required",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "No revisions found for EntryId",
+			req: &proto.GetRevisionsByEntryIdRequests{
+				Requests: []*proto.GetRevisionsByEntryIdRequest{
+					{EntryId: mockUUID.String()},
+				},
+			},
+			mockReturn: map[string]any{
+				"GetRevisionsByEntryId": []*models.SnapRevision{},
+			},
+			expectedError: false,
+			expectedResult: []*proto.GetRevisionsByEntryIdResponse{
+				{
+					EntryId:   mockUUID.String(),
+					Revisions: []*proto.GetRevisionResponse{},
+				},
+			},
+		},
+		{
+			name: "Database error in GetRevisionsByEntryId",
+			req: &proto.GetRevisionsByEntryIdRequests{
+				Requests: []*proto.GetRevisionsByEntryIdRequest{
+					{EntryId: mockUUID.String()},
+				},
+			},
+			mockReturn: map[string]any{
+				"GetRevisionsByEntryId": &cerror.CustomError{
+					Code:    cerror.InternalServerError, // In mock, we use InternalServerError for simplicity
+					Message: "database error",
+				},
+			},
+			expectedError: true,
+			expectedResult: []*proto.GetRevisionsByEntryIdResponse{
+				{
+					EntryId: mockUUID.String(),
+					Errors: []*protoCommon.Error{
+						{
+							Code:    cerror.InternalServerError,
+							Message: "database error",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			for function, mockReturn := range tt.mockReturn {
+				switch mockReturn := mockReturn.(type) {
+				case []*models.SnapRevision:
+					entryID, err := uuid.Parse(tt.req.Requests[0].EntryId)
+					if err != nil {
+						t.Fatalf("invalid UUID format for EntryId: %v", err)
+					}
+					mockRepo.On(function, entryID, mock.Anything).Return(mockReturn, nil).Once()
+				case *cerror.CustomError:
+					entryID, err := uuid.Parse(tt.req.Requests[0].EntryId)
+					if err != nil {
+						t.Fatalf("invalid UUID format for EntryId: %v", err)
+					}
+					mockRepo.On(function, entryID, mock.Anything).Return(nil, mockReturn).Once()
+				default:
+					// no action needed
+				}
+			}
+
+			// Call the method under test
+			resp, _ := service.GetRevisionsByEntryIds(context.Background(), tt.req)
+
+			// Assertions
+			if tt.expectedError {
+				assert.NotNil(t, resp.Responses)
+				for i, response := range resp.Responses {
+					assert.Equal(t, tt.expectedResult[i].EntryId, response.EntryId, "Expected EntryId to match")
+					assert.Equal(t, len(tt.expectedResult[i].Errors), len(response.Errors), "Expected error count to match")
+					for j, err := range response.Errors {
+						assert.Equal(t, tt.expectedResult[i].Errors[j].Code, err.Code, "Expected error code to match")
+					}
+				}
+			} else {
+				assert.Nil(t, resp.Responses[0].Errors)
+				assert.Equal(t, len(tt.expectedResult[0].Revisions), len(resp.Responses[0].Revisions), "Expected revision count to match")
 			}
 
 			mockRepo.AssertExpectations(t)
