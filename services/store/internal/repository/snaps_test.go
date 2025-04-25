@@ -924,6 +924,18 @@ func TestAddUpload(t *testing.T) {
 			el:                cerror.NewErrorList(),
 			expectError:       false,
 		},
+		{
+			name:              "Fail adding upload for non-existing entry",
+			snapName:          "mock-snap",
+			entryId:           uuid.New(),
+			accountId:         mockUUID,
+			status:            "pending",
+			unscannedFileName: "mock-file",
+			revision:          1,
+			el:                cerror.NewErrorList(),
+			expectError:       true,
+			expectedErrorCode: cerror.ResourceNotFound,
+		},
 	}
 
 	for _, tt := range tests {
