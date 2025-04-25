@@ -540,7 +540,7 @@ func (sp *SnapsRepository) GetLatestRevisionByEntryId(entryId uuid.UUID, el *cer
 		SELECT *
 		FROM revision
 		WHERE entry_id = $1
-		ORDER BY updated_at DESC
+		ORDER BY sequence_number DESC
 		LIMIT 1
 	`
 	err := sp.db.Get(&revision, query, entryId)
