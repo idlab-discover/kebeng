@@ -722,11 +722,11 @@ func TestGetRevisions(t *testing.T) {
 	mockUUID := uuid.New()
 
 	tests := []struct {
-		name           string
-		req            *proto.GetRevisionsRequest
-		mockReturn     map[string]any // either *models.SnapRevision or *cerror.CustomError
-		expectedError  bool
-		expectedCount  int
+		name          string
+		req           *proto.GetRevisionsRequest
+		mockReturn    map[string]any // either *models.SnapRevision or *cerror.CustomError
+		expectedError bool
+		expectedCount int
 	}{
 		{
 			name: "Successful retrieval by ID",
@@ -863,6 +863,153 @@ func TestGetRevisions(t *testing.T) {
 			} else {
 				assert.Nil(t, resp.Errors)
 				assert.Equal(t, tt.expectedCount, len(resp.Revisions), "Expected revision count to match")
+			}
+
+			mockRepo.AssertExpectations(t)
+		})
+	}
+}
+
+func TestGetRevisionByNameAndSequence(t *testing.T) {
+	mockRepo := new(repository.MockSnapsRepository)
+	mockObj := new(objectstore.MockObjectStore)
+	service := NewStoreLogic(mockRepo, &config.Config{}, mockObj)
+
+	mockUUID := uuid.New()
+
+	tests := []struct {
+		name           string
+		req            *proto.GetRevisionRequest
+		mockReturn     map[string]any // either *models.SnapRevision or *cerror.CustomError
+		expectedError  bool
+		errorCode      string
+		expectedResult *proto.GetRevisionResponse
+	}{
+		{
+			name: "Successful retrieval by SnapName and Sequence",
+			req: &proto.GetRevisionRequest{
+				SnapName: "test-snap",
+				Sequence: 1,
+			},
+			mockReturn: map[string]any{
+				"GetEntryByName": &models.SnapEntry{
+					ID:   mockUUID,
+					Name: "test-snap",
+				},
+				"GetRevisionByNameAndSequence": &models.SnapRevision{
+					ID:               mockUUID,
+					SnapName:         "test-snap",
+					SequenceNumber:   1,
+					Architectures:    []string{"amd64"},
+					SHA3_384_Encoded: "test-hash",
+					Size:             12345,
+					CreatedAt:        time.Now(),
+				},
+			},
+			expectedError: false,
+			expectedResult: &proto.GetRevisionResponse{
+				Id:              mockUUID.String(),
+				SnapName:        "test-snap",
+				SequenceNumber:  1,
+				Architectures:   []string{"amd64"},
+				Sha3_384Encoded: "test-hash",
+				Size:            12345,
+			},
+		},
+		{
+			name: "Missing SnapName",
+			req: &proto.GetRevisionRequest{
+				SnapName: "",
+				Sequence: 1,
+			},
+			mockReturn:    nil,
+			expectedError: true,
+			errorCode:     cerror.MissingField,
+		},
+		{
+			name: "Missing Sequence",
+			req: &proto.GetRevisionRequest{
+				SnapName: "test-snap",
+				Sequence: 0,
+			},
+			mockReturn:    nil,
+			expectedError: true,
+			errorCode:     cerror.MissingField,
+		},
+		{
+			name: "Entry not found",
+			req: &proto.GetRevisionRequest{
+				SnapName: "test-snap",
+				Sequence: 1,
+			},
+			mockReturn: map[string]any{
+				"GetEntryByName": &cerror.CustomError{
+					Code:    cerror.InternalServerError, // In mock, we use InternalServerError for simplicity
+					Message: "entry not found",
+				},
+			},
+			expectedError: true,
+			errorCode:     cerror.InternalServerError,
+		},
+		{
+			name: "Revision not found",
+			req: &proto.GetRevisionRequest{
+				SnapName: "test-snap",
+				Sequence: 1,
+			},
+			mockReturn: map[string]any{
+				"GetEntryByName": &models.SnapEntry{
+					ID:   mockUUID,
+					Name: "test-snap",
+				},
+				"GetRevisionByNameAndSequence": &cerror.CustomError{
+					Code:    cerror.InternalServerError, // In mock, we use InternalServerError for simplicity
+					Message: "revision not found",
+				},
+			},
+			expectedError: true,
+			errorCode:     cerror.InternalServerError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			for function, mockReturn := range tt.mockReturn {
+				switch mockReturn := mockReturn.(type) {
+				case *models.SnapEntry:
+					mockRepo.On("GetEntryByName", tt.req.SnapName, mock.Anything, mock.Anything).Return(mockReturn, nil).Once()
+				case *models.SnapRevision:
+					mockRepo.On("GetRevisionByNameAndSequence", tt.req.SnapName, tt.req.Sequence, mock.Anything).Return(mockReturn, nil).Once()
+				case *cerror.CustomError:
+					switch function {
+					case "GetEntryByName":
+						mockRepo.On("GetEntryByName", tt.req.SnapName, mock.Anything, mock.Anything).Return(nil, mockReturn).Once()
+					case "GetRevisionByNameAndSequence":
+						mockRepo.On("GetRevisionByNameAndSequence", tt.req.SnapName, tt.req.Sequence, mock.Anything).Return(nil, mockReturn).Once()
+					default:
+						t.Fatalf("invalid mock return function for CustomError")
+					}
+				default:
+					t.Fatalf("invalid mock return type")
+				}
+			}
+
+			// Call the method under test
+			resp, cerr := service.GetRevisionByNameAndSequence(context.Background(), tt.req)
+
+			// Assertions
+			if tt.expectedError {
+				assert.NotNil(t, resp.Errors)
+				assert.NotNil(t, cerr)
+				assert.Equal(t, tt.errorCode, resp.Errors[0].Code, "Expected error code to match")
+			} else {
+				assert.Nil(t, resp.Errors)
+				assert.Equal(t, tt.expectedResult.Id, resp.Id, "Expected ID to match")
+				assert.Equal(t, tt.expectedResult.SnapName, resp.SnapName, "Expected SnapName to match")
+				assert.Equal(t, tt.expectedResult.SequenceNumber, resp.SequenceNumber, "Expected SequenceNumber to match")
+				assert.Equal(t, tt.expectedResult.Architectures, resp.Architectures, "Expected Architectures to match")
+				assert.Equal(t, tt.expectedResult.Sha3_384Encoded, resp.Sha3_384Encoded, "Expected Sha3_384Encoded to match")
+				assert.Equal(t, tt.expectedResult.Size, resp.Size, "Expected Size to match")
 			}
 
 			mockRepo.AssertExpectations(t)
