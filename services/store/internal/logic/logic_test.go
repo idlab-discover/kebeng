@@ -1341,6 +1341,121 @@ func TestGetRevisionsByEntryIds(t *testing.T) {
 	}
 }
 
+func TestGetLatestRevisionByTrackAndChannel(t *testing.T) {
+	mockRepo := new(repository.MockSnapsRepository)
+	mockObj := new(objectstore.MockObjectStore)
+	service := NewStoreLogic(mockRepo, &config.Config{}, mockObj)
+
+	mockUUID := uuid.New()
+
+	tests := []struct {
+		name           string
+		req            *proto.GetLatestRevisionRequest
+		mockReturn     any // either *models.SnapRevision or *cerror.CustomError
+		expectedError  bool
+		errorCode      string
+		expectedResult *proto.GetRevisionResponse
+	}{
+		{
+			name: "Successful retrieval of latest revision",
+			req: &proto.GetLatestRevisionRequest{
+				SnapName: "test-snap",
+				Track:    "latest",
+				Channel:  "stable",
+			},
+			mockReturn: &models.SnapRevision{
+				ID:               mockUUID,
+				SnapName:         "test-snap",
+				SequenceNumber:   1,
+				Architectures:    []string{"amd64"},
+				SHA3_384_Encoded: "test-hash",
+				Size:             12345,
+				CreatedAt:        time.Now(),
+			},
+			expectedError: false,
+			expectedResult: &proto.GetRevisionResponse{
+				Id:              mockUUID.String(),
+				SnapName:        "test-snap",
+				SequenceNumber:  1,
+				Architectures:   []string{"amd64"},
+				Sha3_384Encoded: "test-hash",
+				Size:            12345,
+			},
+		},
+		{
+			name: "Missing SnapName",
+			req: &proto.GetLatestRevisionRequest{
+				SnapName: "",
+				Track:    "latest",
+				Channel:  "stable",
+			},
+			mockReturn:    nil,
+			expectedError: true,
+			errorCode:     cerror.MissingField,
+		},
+		{
+			name: "Revision not found",
+			req: &proto.GetLatestRevisionRequest{
+				SnapName: "test-snap",
+				Track:    "latest",
+				Channel:  "stable",
+			},
+			mockReturn: &cerror.CustomError{
+				Code:    cerror.InternalServerError, // In mock, we use InternalServerError for simplicity
+				Message: "revision not found",
+			},
+			expectedError: true,
+			errorCode:     cerror.InternalServerError,
+		},
+		{
+			name: "Database error in GetLatestRevisionByTrackAndChannel",
+			req: &proto.GetLatestRevisionRequest{
+				SnapName: "test-snap",
+				Track:    "latest",
+				Channel:  "stable",
+			},
+			mockReturn: &cerror.CustomError{
+				Code:    cerror.InternalServerError, // In mock, we use InternalServerError for simplicity
+				Message: "database error",
+			},
+			expectedError: true,
+			errorCode:     cerror.InternalServerError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			switch mockReturn := tt.mockReturn.(type) {
+			case *models.SnapRevision:
+				mockRepo.On("GetLatestRevisionByTrackAndChannel", tt.req.SnapName, tt.req.Track, tt.req.Channel, mock.Anything).Return(mockReturn, nil).Once()
+			case *cerror.CustomError:
+				mockRepo.On("GetLatestRevisionByTrackAndChannel", tt.req.SnapName, tt.req.Track, tt.req.Channel, mock.Anything).Return(nil, mockReturn).Once()
+			default:
+				// no action needed
+			}
+
+			// Call the method under test
+			resp, _ := service.GetLatestRevisionByTrackAndChannel(context.Background(), tt.req)
+
+			// Assertions
+			if tt.expectedError {
+				assert.NotNil(t, resp.Errors)
+				assert.Equal(t, tt.errorCode, resp.Errors[0].Code, "Expected error code to match")
+			} else {
+				assert.Nil(t, resp.Errors)
+				assert.Equal(t, tt.expectedResult.Id, resp.Id, "Expected ID to match")
+				assert.Equal(t, tt.expectedResult.SnapName, resp.SnapName, "Expected SnapName to match")
+				assert.Equal(t, tt.expectedResult.SequenceNumber, resp.SequenceNumber, "Expected SequenceNumber to match")
+				assert.Equal(t, tt.expectedResult.Architectures, resp.Architectures, "Expected Architectures to match")
+				assert.Equal(t, tt.expectedResult.Sha3_384Encoded, resp.Sha3_384Encoded, "Expected Sha3_384Encoded to match")
+				assert.Equal(t, tt.expectedResult.Size, resp.Size, "Expected Size to match")
+			}
+
+			mockRepo.AssertExpectations(t)
+		})
+	}
+}
+
 func TestAddUpload(t *testing.T) {
 	mockRepo := new(repository.MockSnapsRepository)
 	mockObj := new(objectstore.MockObjectStore)
