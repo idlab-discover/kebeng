@@ -714,6 +714,162 @@ func TestGetEntryByName(t *testing.T) {
 	}
 }
 
+func TestGetRevisions(t *testing.T) {
+	mockRepo := new(repository.MockSnapsRepository)
+	mockObj := new(objectstore.MockObjectStore)
+	service := NewStoreLogic(mockRepo, &config.Config{}, mockObj)
+
+	mockUUID := uuid.New()
+
+	tests := []struct {
+		name           string
+		req            *proto.GetRevisionsRequest
+		mockReturn     map[string]any // either *models.SnapRevision or *cerror.CustomError
+		expectedError  bool
+		expectedCount  int
+	}{
+		{
+			name: "Successful retrieval by ID",
+			req: &proto.GetRevisionsRequest{
+				Revisions: []*proto.GetRevisionRequest{
+					{Id: mockUUID.String()},
+				},
+			},
+			mockReturn: map[string]any{
+				"GetRevisionById": &models.SnapRevision{
+					ID:               mockUUID,
+					SnapName:         "test-snap",
+					SequenceNumber:   1,
+					Architectures:    []string{"amd64"},
+					SHA3_384_Encoded: "test-hash",
+					Size:             12345,
+					CreatedAt:        time.Now(),
+				},
+			},
+			expectedError: false,
+			expectedCount: 1,
+		},
+		{
+			name: "Invalid UUID format",
+			req: &proto.GetRevisionsRequest{
+				Revisions: []*proto.GetRevisionRequest{
+					{Id: "invalid-uuid"},
+				},
+			},
+			mockReturn:    map[string]any{},
+			expectedError: true,
+			expectedCount: 0,
+		},
+		{
+			name: "Missing ID and SnapName/Sequence",
+			req: &proto.GetRevisionsRequest{
+				Revisions: []*proto.GetRevisionRequest{
+					{Id: "", SnapName: "", Sequence: 0},
+				},
+			},
+			mockReturn:    map[string]any{},
+			expectedError: true,
+			expectedCount: 0,
+		},
+		{
+			name: "Successful retrieval by SnapName and Sequence",
+			req: &proto.GetRevisionsRequest{
+				Revisions: []*proto.GetRevisionRequest{
+					{SnapName: "test-snap", Sequence: 1},
+				},
+			},
+			mockReturn: map[string]any{
+				"GetRevisionByNameAndSequence": &models.SnapRevision{
+					ID:               mockUUID,
+					SnapName:         "test-snap",
+					SequenceNumber:   1,
+					Architectures:    []string{"amd64"},
+					SHA3_384_Encoded: "test-hash",
+					Size:             12345,
+					CreatedAt:        time.Now(),
+				},
+			},
+			expectedError: false,
+			expectedCount: 1,
+		},
+		{
+			name: "Revision not found by ID",
+			req: &proto.GetRevisionsRequest{
+				Revisions: []*proto.GetRevisionRequest{
+					{Id: mockUUID.String()},
+				},
+			},
+			mockReturn: map[string]any{
+				"GetRevisionById": &cerror.CustomError{
+					Code:    cerror.ResourceNotFound,
+					Message: "revision not found",
+				},
+			},
+			expectedError: true,
+			expectedCount: 0,
+		},
+		{
+			name: "Revision not found by SnapName and Sequence",
+			req: &proto.GetRevisionsRequest{
+				Revisions: []*proto.GetRevisionRequest{
+					{SnapName: "test-snap", Sequence: 1},
+				},
+			},
+			mockReturn: map[string]any{
+				"GetRevisionByNameAndSequence": &cerror.CustomError{
+					Code:    cerror.ResourceNotFound,
+					Message: "revision not found",
+				},
+			},
+			expectedError: true,
+			expectedCount: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			for function, mockReturn := range tt.mockReturn {
+				switch mockReturn := mockReturn.(type) {
+				case *models.SnapRevision:
+					switch function {
+					case "GetRevisionById":
+						mockRepo.On(function, mock.Anything, mock.Anything).Return(mockReturn, nil).Once()
+					case "GetRevisionByNameAndSequence":
+						mockRepo.On(function, mock.Anything, mock.Anything, mock.Anything).Return(mockReturn, nil).Once()
+					default:
+						t.Fatalf("invalid mock return function for SnapRevision")
+					}
+				case *cerror.CustomError:
+					switch function {
+					case "GetRevisionById":
+						mockRepo.On(function, mock.Anything, mock.Anything).Return(nil, mockReturn).Once()
+					case "GetRevisionByNameAndSequence":
+						mockRepo.On(function, mock.Anything, mock.Anything, mock.Anything).Return(nil, mockReturn).Once()
+					default:
+						t.Fatalf("invalid mock return function for CustomError")
+					}
+				default:
+					t.Fatalf("invalid mock return type")
+				}
+			}
+
+			// Call the method under test
+			resp, _ := service.GetRevisions(context.Background(), tt.req)
+
+			// Assertions
+			if tt.expectedError {
+				assert.NotNil(t, resp.Errors)
+				assert.Greater(t, len(resp.Errors), 0, "Expected errors in response")
+			} else {
+				assert.Nil(t, resp.Errors)
+				assert.Equal(t, tt.expectedCount, len(resp.Revisions), "Expected revision count to match")
+			}
+
+			mockRepo.AssertExpectations(t)
+		})
+	}
+}
+
 func TestAddUpload(t *testing.T) {
 	mockRepo := new(repository.MockSnapsRepository)
 	mockObj := new(objectstore.MockObjectStore)
