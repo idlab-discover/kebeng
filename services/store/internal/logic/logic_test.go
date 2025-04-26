@@ -16,6 +16,7 @@ import (
 	"github.com/idlab-discover/kebeng/services/store/internal/objectstore"
 	"github.com/idlab-discover/kebeng/services/store/internal/repository"
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -1872,6 +1873,128 @@ func TestGetUploadStatus(t *testing.T) {
 				assert.Equal(t, tt.expectedResp.UploadId, resp.UploadId, "Expected UploadId to match")
 				assert.Equal(t, tt.expectedResp.Processed, resp.Processed, "Expected Processed status to match")
 				assert.Equal(t, tt.expectedResp.Revision, resp.Revision, "Expected Revision to match")
+			}
+
+			mockRepo.AssertExpectations(t)
+		})
+	}
+}
+
+func TestUpdateUploadStatus(t *testing.T) {
+	mockRepo := new(repository.MockSnapsRepository)
+	mockObj := new(objectstore.MockObjectStore)
+	service := NewStoreLogic(mockRepo, &config.Config{}, mockObj)
+
+	mockUUID := uuid.New()
+
+	tests := []struct {
+		name          string
+		req           *proto.UpdateUploadStatusRequest
+		mockReturn    *cerror.CustomError
+		expectedError bool
+		errorCode     string
+		expectedResp  *proto.UpdateUploadStatusResponse
+	}{
+		{
+			name: "Successful status update",
+			req: &proto.UpdateUploadStatusRequest{
+				UploadId: mockUUID.String(),
+				Status:   "processed",
+				Revision: 1,
+			},
+			mockReturn:    nil,
+			expectedError: false,
+			expectedResp: &proto.UpdateUploadStatusResponse{
+				Status: "processed",
+			},
+		},
+		{
+			name: "Missing UploadId",
+			req: &proto.UpdateUploadStatusRequest{
+				UploadId: "",
+				Status:   "processed",
+				Revision: 1,
+			},
+			mockReturn:    nil,
+			expectedError: true,
+			errorCode:     cerror.MissingField,
+		},
+		{
+			name: "Invalid UploadId format",
+			req: &proto.UpdateUploadStatusRequest{
+				UploadId: "invalid-uuid",
+				Status:   "processed",
+				Revision: 1,
+			},
+			mockReturn:    nil,
+			expectedError: true,
+			errorCode:     cerror.InvalidField,
+		},
+		{
+			name: "Database error during status update",
+			req: &proto.UpdateUploadStatusRequest{
+				UploadId: mockUUID.String(),
+				Status:   "processed",
+				Revision: 1,
+			},
+			mockReturn: &cerror.CustomError{
+				Code:    cerror.InternalServerError, // In mock, we use InternalServerError for simplicity
+				Message: "database error",
+			},
+			expectedError: true,
+			errorCode:     cerror.InternalServerError,
+		},
+		{
+			name: "errors in request",
+			req: &proto.UpdateUploadStatusRequest{
+				UploadId: mockUUID.String(),
+				Status:   "processed",
+				Revision: 1,
+				Errors: []*protoCommon.Error{
+					{
+						Code:    cerror.InternalServerError,
+						Message: "internal server error",
+					},
+				},
+			},
+			mockReturn:    nil,
+			expectedError: true,
+			expectedResp: &proto.UpdateUploadStatusResponse{
+				Status: "processed",
+				Errors: []*protoCommon.Error{
+					{
+						Code:    cerror.InternalServerError,
+						Message: "internal server error",
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.req.UploadId != "" && tt.req.UploadId != "invalid-uuid" {
+				parsedUUID, err := uuid.Parse(tt.req.UploadId)
+				if err != nil {
+					t.Fatalf("failed to parse UploadId: %v", err)
+				}
+				if tt.mockReturn == nil {
+					mockRepo.On("UpdateUploadStatus", parsedUUID, tt.req.Status, tt.req.Revision, mock.Anything).Return(nil).Once()
+				} else {
+					mockRepo.On("UpdateUploadStatus", parsedUUID, tt.req.Status, tt.req.Revision, mock.Anything).Return(tt.mockReturn).Once()
+				}
+			}
+
+			// Call the method under test
+			resp, _ := service.UpdateUploadStatus(context.Background(), tt.req)
+
+			// Assertions
+			if tt.expectedError {
+				assert.NotNil(t, resp.Errors)
+			} else {
+				logrus.Infof("Response: %+v", resp)
+				assert.Nil(t, resp.Errors)
+				assert.Equal(t, tt.expectedResp.Status, resp.Status, "Expected status to match")
 			}
 
 			mockRepo.AssertExpectations(t)
