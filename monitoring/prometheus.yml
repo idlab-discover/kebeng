@@ -3,36 +3,62 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
-  # Scrape each of your Go services on its /metrics endpoint
-  - job_name: 'gateway'
+  # 1) Your Go services
+  - job_name: gateway
     static_configs:
       - targets: ['gateway:9100']
+    # Copy the job_name into a generic "service" label
+    relabel_configs:
+      - source_labels: [__job__]
+        target_label: service
 
-  - job_name: 'store_service'
+  - job_name: store_service
     static_configs:
       - targets: ['store_service:9100']
+    relabel_configs:
+      - source_labels: [__job__]
+        target_label: service
 
-  - job_name: 'account_service'
+  - job_name: account_service
     static_configs:
       - targets: ['account_service:9100']
+    relabel_configs:
+      - source_labels: [__job__]
+        target_label: service
 
-  - job_name: 'assertion_service'
+  - job_name: assertion_service
     static_configs:
       - targets: ['assertion_service:9100']
+    relabel_configs:
+      - source_labels: [__job__]
+        target_label: service
 
-  - job_name: 'cadvisor'
+  # 2) cAdvisor (memory & CPU for all containers)
+  - job_name: cadvisor
     static_configs:
       - targets: ['cadvisor:8080']
     metric_relabel_configs:
-      # keep only the labels we truly need:
-      - action: labelkeep
-        regex: '__name__|instance|job|container_label_com_docker_compose_service|cpu|le'
-      # rename the compose label to "service"
+      # Keep only the metrics and labels we care about
+      - action: keep
+        regex: '^(container_memory_usage_bytes|cpu).*|__name__|instance|job|container_label_com_docker_compose_service|le$'
+        source_labels: [__name__]
+      # Rename the compose label to "service"
       - action: labelmap
         regex: 'container_label_com_docker_compose_service'
         replacement: 'service'
-  
-  - job_name: 'monitoring'
+
+  # 3) monitoring & Prometheus itself
+  - job_name: monitoring
     metrics_path: /metrics
     static_configs:
       - targets: ['monitoring:9100']
+    relabel_configs:
+      - source_labels: [__job__]
+        target_label: service
+
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']
+    relabel_configs:
+      - source_labels: [__job__]
+        target_label: service
