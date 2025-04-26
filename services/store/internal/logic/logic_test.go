@@ -1766,6 +1766,119 @@ func TestAddUpload(t *testing.T) {
 	}
 }
 
+func TestUnscannedUpload(t *testing.T) {} // TODO: Implement this test
+
+func TestGetUploadStatus(t *testing.T) {
+	mockRepo := new(repository.MockSnapsRepository)
+	mockObj := new(objectstore.MockObjectStore)
+	service := NewStoreLogic(mockRepo, &config.Config{}, mockObj)
+
+	mockUUID := uuid.New()
+
+	tests := []struct {
+		name          string
+		req           *proto.GetUploadStatusRequest
+		mockReturn    any // either *models.SnapUpload or *cerror.CustomError
+		expectedError bool
+		errorCode     string
+		expectedResp  *proto.GetUploadStatusResponse
+	}{
+		{
+			name: "Successful retrieval of upload status",
+			req: &proto.GetUploadStatusRequest{
+				UploadId: mockUUID.String(),
+			},
+			mockReturn: &models.SnapUpload{
+				ID:       mockUUID,
+				Status:   "processed",
+				Revision: 1,
+			},
+			expectedError: false,
+			expectedResp: &proto.GetUploadStatusResponse{
+				UploadId:  mockUUID.String(),
+				Processed: true,
+				Revision:  1,
+			},
+		},
+		{
+			name: "Upload not processed yet",
+			req: &proto.GetUploadStatusRequest{
+				UploadId: mockUUID.String(),
+			},
+			mockReturn: &models.SnapUpload{
+				ID:       mockUUID,
+				Status:   "pending",
+				Revision: 0,
+			},
+			expectedError: false,
+			expectedResp: &proto.GetUploadStatusResponse{
+				UploadId:  mockUUID.String(),
+				Processed: false,
+				Revision:  0,
+			},
+		},
+		{
+			name: "Missing UploadId",
+			req: &proto.GetUploadStatusRequest{
+				UploadId: "",
+			},
+			mockReturn:    nil,
+			expectedError: true,
+			errorCode:     cerror.MissingField,
+		},
+		{
+			name: "Invalid UploadId format",
+			req: &proto.GetUploadStatusRequest{
+				UploadId: "invalid-uuid",
+			},
+			mockReturn:    nil,
+			expectedError: true,
+			errorCode:     cerror.InvalidField,
+		},
+		{
+			name: "Upload not found",
+			req: &proto.GetUploadStatusRequest{
+				UploadId: mockUUID.String(),
+			},
+			mockReturn: &cerror.CustomError{
+				Code:    cerror.InternalServerError, // In mock, we use InternalServerError for simplicity
+				Message: "upload not found",
+			},
+			expectedError: true,
+			errorCode:     cerror.InternalServerError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			switch mockReturn := tt.mockReturn.(type) {
+			case *models.SnapUpload:
+				mockRepo.On("GetUploadById", mock.Anything, mock.Anything).Return(mockReturn, nil).Once()
+			case *cerror.CustomError:
+				mockRepo.On("GetUploadById", mock.Anything, mock.Anything).Return(nil, mockReturn).Once()
+			default:
+				// no action needed
+			}
+
+			// Call the method under test
+			resp, _ := service.GetUploadStatus(context.Background(), tt.req)
+
+			// Assertions
+			if tt.expectedError {
+				assert.NotNil(t, resp.Errors)
+				assert.Equal(t, tt.errorCode, resp.Errors[0].Code, "Expected error code to match")
+			} else {
+				assert.Nil(t, resp.Errors)
+				assert.Equal(t, tt.expectedResp.UploadId, resp.UploadId, "Expected UploadId to match")
+				assert.Equal(t, tt.expectedResp.Processed, resp.Processed, "Expected Processed status to match")
+				assert.Equal(t, tt.expectedResp.Revision, resp.Revision, "Expected Revision to match")
+			}
+
+			mockRepo.AssertExpectations(t)
+		})
+	}
+}
+
 // ====== Helper functions ======
 func stringToPointer(s string) *string {
 	if s == "" {
