@@ -23,8 +23,6 @@ func main() {
 
 	logrus.Infof("Loaded config: %+v", cfg)
 
-	// TODO: if can't connect to service or create client TRY AGAIN
-
 	//TODO: check how bigger load works and multiple requests
 	// need more connections? or how does grpc handle this
 	accountClient, cerr := accClient.NewAccountClient(cfg.AccountServiceHost, cfg.AccountServicePort)
@@ -58,11 +56,6 @@ func main() {
 		}
 	}
 
-	if cfg.Monitoring {
-		logrus.Info("Monitoring enabled")
-		monitoring.CreateMetricsEndpoint()
-	}
-
 	// Setup gin and routes
 	r := gin.Default()
 	if cfg.DebugMode {
@@ -77,7 +70,14 @@ func main() {
 		c.JSON(404, gin.H{"code": "KEBENG STORE: PAGE_NOT_FOUND", "message": "Page not found"})
 	})
 
-	handler.SetupEndpoints(r)
+	if cfg.Monitoring {
+		logrus.Info("Monitoring enabled")
+		monitoring.CreateMetricsEndpoint()
+		handler.SetupEndpointsWithMonitoring(r)
+
+	} else {
+		handler.SetupEndpoints(r)
+	}
 
 	err = r.Run()
 	if err != nil {

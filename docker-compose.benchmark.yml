@@ -13,6 +13,21 @@ services:
       - store_service
       - account_service
       - assertion_service
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    depends_on:
+      - prometheus
+    ports:
+      - "3000:3000"          
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin  # change this in prod!
+      - GF_LOG_LEVEL=warn
+    volumes:
+      - grafana_data:/var/lib/grafana    # persist dashboards
+    restart: always
+    networks:
+      - kebeng-backend
 
   monitoring:
     build:
@@ -187,6 +202,7 @@ volumes:
   minio_data:
   account_data:
   assertion_data:
+  grafana_data:
 
 networks:
   kebeng-backend:
