@@ -78,24 +78,24 @@ type RefreshSnapResponses struct {
 }
 
 type RefreshSnapResult struct {
-	Result      string      `json:"result,omitempty"`
-	InstanceKey string      `json:"instance-key,omitempty"`
-	SnapId      string      `json:"snap-id,omitempty"`
-	Name        string      `json:"name,omitempty"`
+	Result      string       `json:"result,omitempty"`
+	InstanceKey string       `json:"instance-key,omitempty"`
+	SnapId      string       `json:"snap-id,omitempty"`
+	Name        string       `json:"name,omitempty"`
 	Snap        *RefreshSnap `json:"snap,omitempty"`
 }
 
 type RefreshSnap struct {
-	Architectures []string  `json:"architectures,omitempty"`
-	SnapId        string    `json:"snap-id,omitempty"`
-	Name          string    `json:"name,omitempty"`
+	Architectures []string   `json:"architectures,omitempty"`
+	SnapId        string     `json:"snap-id,omitempty"`
+	Name          string     `json:"name,omitempty"`
 	Publisher     *Publisher `json:"publisher,omitempty"`
 	Download      *Download  `json:"download,omitempty"`
-	Version       string    `json:"version,omitempty"`
-	Confinement   string    `json:"confinement,omitempty"`
-	Revision      uint32    `json:"revision,omitempty"`
-	Type          string    `json:"type,omitempty"`
-	Base          string    `json:"base,omitempty"`
+	Version       string     `json:"version,omitempty"`
+	Confinement   string     `json:"confinement,omitempty"`
+	Revision      uint32     `json:"revision,omitempty"`
+	Type          string     `json:"type,omitempty"`
+	Base          string     `json:"base,omitempty"`
 }
 
 type Download struct {

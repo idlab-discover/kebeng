@@ -1,4 +1,4 @@
-module github.com/idlab-discover/kebeng/services/gateway
+module gateway
 
 go 1.22.2
 
@@ -9,7 +9,6 @@ require (
 	github.com/idlab-discover/kebeng/services/account v0.0.0-20250423160216-bc71eecd8afa
 	github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250423160624-51fba8063205
 	github.com/idlab-discover/kebeng/services/store v0.0.0-20250424141625-8d5966855801
-	github.com/prometheus/client_golang v1.22.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/snapcore/snapd v0.0.0-20250228185938-4d4437a35a6b
 	github.com/spf13/viper v1.19.0
@@ -46,6 +45,7 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.2 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
+	github.com/prometheus/client_golang v1.22.0 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.62.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect

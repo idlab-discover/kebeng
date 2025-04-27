@@ -9,11 +9,12 @@ import (
 	"path/filepath"
 	"time"
 
+	"gateway/internal/util"
+	"gateway/load_test_data/model"
+
 	"github.com/google/uuid"
 	"github.com/idlab-discover/kebeng/common/cerror"
 	acmodel "github.com/idlab-discover/kebeng/services/assertion/client/model"
-	"github.com/idlab-discover/kebeng/services/gateway/internal/util"
-	"github.com/idlab-discover/kebeng/services/gateway/load_test_data/model"
 	"github.com/sirupsen/logrus"
 	"github.com/snapcore/snapd/asserts"
 )

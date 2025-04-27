@@ -3,12 +3,13 @@ package account
 import (
 	"net/http"
 
+	"gateway/handler/auth"
+	"gateway/internal/model"
+	"gateway/internal/util"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/idlab-discover/kebeng/common/cerror"
-	"github.com/idlab-discover/kebeng/services/gateway/handler/auth"
-	"github.com/idlab-discover/kebeng/services/gateway/internal/model"
-	"github.com/idlab-discover/kebeng/services/gateway/internal/util"
 	storepb "github.com/idlab-discover/kebeng/services/store/proto"
 	"gopkg.in/macaroon.v2"
 )

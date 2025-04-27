@@ -7,11 +7,12 @@ import (
 	"net/http"
 	"slices"
 
+	"gateway/internal/model"
+	"gateway/internal/util"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
-	"github.com/idlab-discover/kebeng/services/gateway/internal/model"
-	"github.com/idlab-discover/kebeng/services/gateway/internal/util"
 	storepb "github.com/idlab-discover/kebeng/services/store/proto"
 	"github.com/sirupsen/logrus"
 )
