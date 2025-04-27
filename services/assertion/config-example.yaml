@@ -1,0 +1,16 @@
+db_host: "assertion_db"
+db_port: 5432
+db_user: "example_user"
+db_password: "example_password"
+db_name: "assertion_db"
+migration_path: "/app/migrations"
+grpc_host: "assertion_service"
+grpc_port: 8083
+
+root_key_path: "/app/keys/root_key.pem"
+root_account_id: "11111111-1111-1111-1111-111111111111"
+
+authority_id: "example_authority"
+store_name: "ExampleStore"
+
+monitoring: false
