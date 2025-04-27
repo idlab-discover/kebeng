@@ -20,6 +20,8 @@ import (
 )
 
 func main() {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	// set logrus to use text formatter
 	logrus.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp:   true,
@@ -43,31 +45,15 @@ func main() {
 	minioClient := objectstore.GetMinioClient(cfg)
 	objectstore := objectstore.NewObjectStore(minioClient, cfg)
 
-	exists, err := minioClient.BucketExists(context.Background(), "root")
+	err = minioClient.MakeBucket(ctx, "snaps", minio.MakeBucketOptions{})
 	if err != nil {
-		panic(err)
+		logrus.Fatalf("Failed to create snapsbucket: %v", err)
 	}
-	if exists {
-		logrus.Warnf("Bucket exists, please use destroy command if you are sure you want to start over.")
-	}
-
-	exists, err = minioClient.BucketExists(context.Background(), "generic")
+	err = minioClient.MakeBucket(ctx, "unscanned", minio.MakeBucketOptions{})
 	if err != nil {
-		panic(err)
+		logrus.Fatalf("Failed to create unscanned bucket: %v", err)
 	}
 
-	if exists {
-		logrus.Warnf("Bucket exists, please use destroy command if you are sure you want to start over.")
-	}
-
-	if !exists {
-		objectstore.MakeBucketAndAddKey("root", cfg.RootKeyPath, "private-key.pem")
-		objectstore.MakeBucketAndAddKey("generic", cfg.GenericKeyPath, "private-key.pem")
-		err := minioClient.MakeBucket(context.Background(), "snaps", minio.MakeBucketOptions{})
-		if err != nil {
-			logrus.Errorf("Failed to create bucket: %v", err)
-		}
-	}
 	// start grpc server
 	repo := repositories.NewSnapsRepository(db)
 	storeLogic := logic.NewStoreLogic(repo, cfg, objectstore)

@@ -3,15 +3,11 @@ package objectstore
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"log"
-	"os"
 	"path"
-	"strings"
 
 	"github.com/idlab-discover/kebeng/common/cerror"
-	"github.com/idlab-discover/kebeng/common/crypto"
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
 	"github.com/idlab-discover/kebeng/services/store/internal/models"
 	"github.com/minio/minio-go/v7"
@@ -34,7 +30,6 @@ type IMinioClient interface {
 type IObjectStore interface {
 	SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string) (*models.Metadata, error)
 	GetSnapFileReader(ctx context.Context, filePath string) (io.ReadCloser, error)
-	MakeBucketAndAddKey(bucketName string, keyPath string, keyName string)
 	Move(sourceBucket, destinationBucket, objectName string, newObjectName string) error
 	GetObjectCustomMetadata(bucket string, objectName string) (*models.Metadata, error)
 	DeleteFileFromBucket(bucket string, filePath string) *cerror.CustomError
@@ -177,41 +172,6 @@ func GetMinioClient(cfg *config.Config) *minio.Client {
 	}
 
 	return minioClient
-}
-
-func (obs *ObjectStore) MakeBucketAndAddKey(bucketName string, keyPath string, keyName string) {
-	// Make root bucket
-	fmt.Printf("*************************************\nCreating bucket: %s\n, keyPath: %s\n *************************", bucketName, keyPath)
-	ctx, cancel := context.WithCancel(context.Background())
-
-	defer cancel()
-
-	objectCh := obs.MinioClient.ListObjects(ctx, bucketName, minio.ListObjectsOptions{
-		Recursive: true,
-	})
-	for object := range objectCh {
-		logrus.Tracef("object: %s", object.Key)
-	}
-
-	err := obs.MinioClient.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{})
-	if err != nil {
-		logrus.Error(err)
-	}
-
-	bytes, err := os.ReadFile(keyPath)
-	if err != nil {
-		logrus.Error(err)
-	}
-	rootPrivateKey, cerr := crypto.ParseRSAPrivateKeyFromPEM(bytes)
-	if cerr != nil {
-		logrus.Error(cerr)
-	}
-	keyString := crypto.ExportRsaPrivateKeyAsPemStr(rootPrivateKey)
-
-	_, err = obs.MinioClient.PutObject(ctx, bucketName, keyName, strings.NewReader(keyString), int64(len(keyString)), minio.PutObjectOptions{})
-	if err != nil {
-		panic(err)
-	}
 }
 
 func (obs *ObjectStore) DeleteFileFromBucket(bucket string, filePath string) *cerror.CustomError {

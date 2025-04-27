@@ -177,35 +177,6 @@ func generateTestRSAPEM() string {
 	return string(privPEM)
 }
 
-func TestMakeBucketAndAddKey(t *testing.T) {
-	mockMinio := new(objectstore.MockObjectStore)
-	cfg := &config.Config{}
-	store := &objectstore.ObjectStore{MinioClient: mockMinio, Cfg: cfg}
-
-	// Dynamisch gegenereerde geldige RSA private key
-	dynamicKey := generateTestRSAPEM()
-	tmpFile := createTempPEMFile(t, dynamicKey)
-	defer os.Remove(tmpFile)
-
-	// Simuleer ListObjects
-	ch := make(chan minio.ObjectInfo)
-	close(ch)
-	mockMinio.On("ListObjects", mock.Anything, "my-bucket", mock.Anything).Return((<-chan minio.ObjectInfo)(ch))
-
-	// Simuleer MakeBucket
-	mockMinio.On("MakeBucket", mock.Anything, "my-bucket", mock.Anything).Return(nil)
-
-	// Simuleer PutObject
-	mockMinio.On("PutObject", mock.Anything, "my-bucket", "my-key.pem", mock.Anything, mock.AnythingOfType("int64"), mock.Anything).
-		Return(minio.UploadInfo{Size: 123}, nil)
-
-	// Act
-	store.MakeBucketAndAddKey("my-bucket", tmpFile, "my-key.pem")
-
-	// Assert
-	mockMinio.AssertExpectations(t)
-}
-
 func TestGetObjectCustomMetadata(t *testing.T) {
 	mockMinio := new(objectstore.MockObjectStore)
 	cfg := &config.Config{}
