@@ -1,13 +1,12 @@
 global:
-  scrape_interval: 15s
-  evaluation_interval: 15s
+  scrape_interval: 5s
+  evaluation_interval: 5s
 
 scrape_configs:
   # 1) Your Go services
   - job_name: gateway
     static_configs:
       - targets: ['gateway:9100']
-    # Copy the job_name into a generic "service" label
     relabel_configs:
       - source_labels: [__job__]
         target_label: service
@@ -33,19 +32,12 @@ scrape_configs:
       - source_labels: [__job__]
         target_label: service
 
-  # 2) cAdvisor (memory & CPU for all containers)
   - job_name: cadvisor
     static_configs:
       - targets: ['cadvisor:8080']
     metric_relabel_configs:
-      # Keep only the metrics and labels we care about
-      - action: keep
-        regex: '^(container_memory_usage_bytes|cpu).*|__name__|instance|job|container_label_com_docker_compose_service|le$'
-        source_labels: [__name__]
-      # Rename the compose label to "service"
-      - action: labelmap
-        regex: 'container_label_com_docker_compose_service'
-        replacement: 'service'
+      - source_labels: [container_label_com_docker_compose_service]
+        target_label: service
 
   # 3) monitoring & Prometheus itself
   - job_name: monitoring
