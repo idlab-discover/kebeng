@@ -7,12 +7,12 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/idlab-discover/kebeng/common/monitoring"
 	"github.com/idlab-discover/kebeng/services/account/internal/config"
 	"github.com/idlab-discover/kebeng/services/account/internal/database"
 	"github.com/idlab-discover/kebeng/services/account/internal/logic"
 	"github.com/idlab-discover/kebeng/services/account/internal/models"
 	"github.com/idlab-discover/kebeng/services/account/internal/repository"
-	"github.com/idlab-discover/kebeng/services/account/monitoring"
 	proto "github.com/idlab-discover/kebeng/services/account/proto"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"

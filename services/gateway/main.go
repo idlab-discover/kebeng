@@ -1,10 +1,10 @@
 package main
 
 import (
+	"github.com/idlab-discover/kebeng/common/monitoring"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/config"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/util"
 	loadtestdata "github.com/idlab-discover/kebeng/services/gateway/load_test_data"
-	"github.com/idlab-discover/kebeng/services/gateway/monitoring"
 	"github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"

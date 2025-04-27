@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/idlab-discover/kebeng/common/monitoring"
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
 	"github.com/idlab-discover/kebeng/services/store/internal/database"
 	logic "github.com/idlab-discover/kebeng/services/store/internal/logic"
 	"github.com/idlab-discover/kebeng/services/store/internal/objectstore"
 	repositories "github.com/idlab-discover/kebeng/services/store/internal/repository"
-	"github.com/idlab-discover/kebeng/services/store/monitoring"
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
 	"github.com/minio/minio-go/v7"
 	"github.com/sirupsen/logrus"

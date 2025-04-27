@@ -7,11 +7,11 @@ import (
 	"net"
 	"time"
 
+	"github.com/idlab-discover/kebeng/common/monitoring"
 	"github.com/idlab-discover/kebeng/services/assertion/internal/config"
 	"github.com/idlab-discover/kebeng/services/assertion/internal/database"
 	"github.com/idlab-discover/kebeng/services/assertion/internal/logic"
 	"github.com/idlab-discover/kebeng/services/assertion/internal/repository"
-	"github.com/idlab-discover/kebeng/services/assertion/monitoring"
 	proto "github.com/idlab-discover/kebeng/services/assertion/proto"
 	"github.com/sirupsen/logrus"
 	"github.com/snapcore/snapd/asserts"
