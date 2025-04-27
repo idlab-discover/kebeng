@@ -4,7 +4,7 @@ import "google/protobuf/timestamp.proto";
 import "common/cerror/proto/error.proto";
 
 package account;
-option go_package = "github.com/idlab-discover/kebeng/services/account/proto;account";
+option go_package = "account/proto;account";
 
 service AccountService {
     rpc AddAccount(AddAccountRequest) returns (AccountResponse);

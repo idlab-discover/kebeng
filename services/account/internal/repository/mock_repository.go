@@ -6,8 +6,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 
+	"account/internal/models"
+
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
-	"github.com/idlab-discover/kebeng/services/account/internal/models"
 )
 
 // MockAccountRepository is a mock implementation of IAccountRepository for testing.
