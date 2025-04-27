@@ -2,12 +2,7 @@ package objectstore_test
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/x509"
-	"encoding/pem"
 	"errors"
-	"os"
 	"testing"
 
 	"store/internal/config"
@@ -152,30 +147,6 @@ func TestGetSnapFileReader_InvalidBucket(t *testing.T) {
 	assert.EqualError(t, err, "bucket does not exist")
 
 	mockMinio.AssertExpectations(t)
-}
-
-func createTempPEMFile(t *testing.T, content string) string {
-	t.Helper()
-	tmpFile, err := os.CreateTemp("", "testkey*.pem")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := tmpFile.Write([]byte(content)); err != nil {
-		t.Fatal(err)
-	}
-	if err := tmpFile.Close(); err != nil {
-		t.Fatal(err)
-	}
-	return tmpFile.Name()
-}
-
-func generateTestRSAPEM() string {
-	priv, _ := rsa.GenerateKey(rand.Reader, 2048)
-	privPEM := pem.EncodeToMemory(&pem.Block{
-		Type:  "RSA PRIVATE KEY",
-		Bytes: x509.MarshalPKCS1PrivateKey(priv),
-	})
-	return string(privPEM)
 }
 
 func TestGetObjectCustomMetadata(t *testing.T) {
