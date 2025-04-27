@@ -77,6 +77,7 @@ func main() {
 		logrus.Infof("Monitoring enabled")
 
 		// can be used to see the heap allocation
+		// TODO:REMOVE THIS COMMENT
 		go func() {
 			logrus.Infof("Starting pprof endpoint on :6060")
 			if err := http.ListenAndServe(":6060", nil); err != nil {
