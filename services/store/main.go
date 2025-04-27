@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"net"
 
+	"net/http"
+	_ "net/http/pprof"
+
 	"github.com/idlab-discover/kebeng/common/monitoring"
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
 	"github.com/idlab-discover/kebeng/services/store/internal/database"
@@ -80,6 +83,14 @@ func main() {
 	healthpb.RegisterHealthServer(grpcServer, hs)
 	// this line will match the service functionality to the proto interface
 	proto.RegisterStoreServiceServer(grpcServer, storeLogic)
+
+	// also start pprof on :6060
+	go func() {
+		logrus.Infof("Starting pprof endpoint on :6060")
+		if err := http.ListenAndServe(":6060", nil); err != nil {
+			logrus.Fatalf("pprof ListenAndServe: %v", err)
+		}
+	}()
 
 	logrus.Infof("Starting gRPC server on %s:%d", cfg.GRPCHost, cfg.GRPCPort)
 	if err := grpcServer.Serve(lis); err != nil {

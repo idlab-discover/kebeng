@@ -1,6 +1,9 @@
 package main
 
 import (
+	"net/http"
+	_ "net/http/pprof"
+
 	"github.com/idlab-discover/kebeng/common/monitoring"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/config"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/util"
@@ -72,6 +75,14 @@ func main() {
 
 	if cfg.Monitoring {
 		logrus.Info("Monitoring enabled")
+		// can be used to see the heap allocation
+		go func() {
+			logrus.Infof("Starting pprof endpoint on :6060")
+			if err := http.ListenAndServe(":6060", nil); err != nil {
+				logrus.Fatalf("pprof ListenAndServe: %v", err)
+			}
+		}()
+
 		monitoring.CreateMetricsEndpoint()
 		handler.SetupEndpointsWithMonitoring(r)
 

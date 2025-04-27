@@ -53,6 +53,7 @@ services:
       dockerfile: Dockerfile.gateway
     ports:
       - "8080:8080"
+      - "6060:6060"  # for pprof
     depends_on:
       - store_service
       - account_service
@@ -75,6 +76,7 @@ services:
       dockerfile: Dockerfile.store
     ports:
       - "8081:8081"
+      - "6061:6060"  # for pprof
     depends_on:
       - store_db
       - minio
@@ -124,6 +126,7 @@ services:
       dockerfile: Dockerfile.account
     ports:
       - "8082:8082"
+      - "6062:6060"  # for pprof
     depends_on:
       - account_db
     volumes:
@@ -155,6 +158,7 @@ services:
       dockerfile: Dockerfile.assertion
     ports:
       - "8083:8083"
+      - "6063:6060"  # for pprof
     depends_on:
       - assertion_db
     volumes:
