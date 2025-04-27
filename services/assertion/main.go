@@ -10,12 +10,13 @@ import (
 
 	_ "net/http/pprof"
 
+	"assertion/internal/config"
+	"assertion/internal/database"
+	"assertion/internal/logic"
+	"assertion/internal/repository"
+	proto "assertion/proto"
+
 	"github.com/idlab-discover/kebeng/common/monitoring"
-	"github.com/idlab-discover/kebeng/services/assertion/internal/config"
-	"github.com/idlab-discover/kebeng/services/assertion/internal/database"
-	"github.com/idlab-discover/kebeng/services/assertion/internal/logic"
-	"github.com/idlab-discover/kebeng/services/assertion/internal/repository"
-	proto "github.com/idlab-discover/kebeng/services/assertion/proto"
 	"github.com/sirupsen/logrus"
 	"github.com/snapcore/snapd/asserts"
 	"google.golang.org/grpc"

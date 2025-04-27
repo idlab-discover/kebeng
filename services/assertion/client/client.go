@@ -6,12 +6,13 @@ import (
 	"strings"
 	"time"
 
+	"assertion/client/model"
+	"assertion/internal/config"
+	proto "assertion/proto"
+
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	cerrorpb "github.com/idlab-discover/kebeng/common/cerror/proto"
-	"github.com/idlab-discover/kebeng/services/assertion/client/model"
-	"github.com/idlab-discover/kebeng/services/assertion/internal/config"
-	proto "github.com/idlab-discover/kebeng/services/assertion/proto"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
