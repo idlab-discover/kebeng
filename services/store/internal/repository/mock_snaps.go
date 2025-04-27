@@ -1,9 +1,10 @@
 package repository
 
 import (
+	"store/internal/models"
+
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
-	"github.com/idlab-discover/kebeng/services/store/internal/models"
 	"github.com/stretchr/testify/mock"
 )
 

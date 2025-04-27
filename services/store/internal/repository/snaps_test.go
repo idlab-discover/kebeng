@@ -15,11 +15,12 @@ import (
 
 	_ "github.com/golang-migrate/migrate/v4/source/file" // needed for file source
 
+	"store/internal/config"
+	storeDB "store/internal/database"
+	"store/internal/models"
+	"store/internal/repository"
+
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
-	"github.com/idlab-discover/kebeng/services/store/internal/config"
-	storeDB "github.com/idlab-discover/kebeng/services/store/internal/database"
-	"github.com/idlab-discover/kebeng/services/store/internal/models"
-	"github.com/idlab-discover/kebeng/services/store/internal/repository"
 )
 
 var (
@@ -248,25 +249,25 @@ func TestAddRevision(t *testing.T) {
 		size              uint64
 		sequenceNumber    uint32
 		architectures     []string
-		sha3_384_encoded           string
+		sha3_384_encoded  string
 		minioFilePath     string
 		el                *cerror.ErrorList
 		expectError       bool
 		expectedErrorCode string
 	}{
 		{
-			name:           "Success adding revision",
-			entryId:        mockUUID,
-			trackId:        mockUUID,
-			channelId:      mockUUID,
-			snapName:       "mock-snap",
-			size:           123456,
-			sequenceNumber: 1,
-			architectures:  []string{"x86_64", "arm64"},
-			sha3_384_encoded:        "mock-sha3-384",
-			minioFilePath:  "some/path/mock-snap.snap",
-			el:             cerror.NewErrorList(),
-			expectError:    false,
+			name:             "Success adding revision",
+			entryId:          mockUUID,
+			trackId:          mockUUID,
+			channelId:        mockUUID,
+			snapName:         "mock-snap",
+			size:             123456,
+			sequenceNumber:   1,
+			architectures:    []string{"x86_64", "arm64"},
+			sha3_384_encoded: "mock-sha3-384",
+			minioFilePath:    "some/path/mock-snap.snap",
+			el:               cerror.NewErrorList(),
+			expectError:      false,
 		},
 		{
 			name:              "Fail adding revision for non-existing entry",
@@ -277,7 +278,7 @@ func TestAddRevision(t *testing.T) {
 			size:              123456,
 			sequenceNumber:    1,
 			architectures:     []string{"x86_64", "arm64"},
-			sha3_384_encoded:           "mock-sha3-384",
+			sha3_384_encoded:  "mock-sha3-384",
 			minioFilePath:     "some/path/mock-snap.snap",
 			el:                cerror.NewErrorList(),
 			expectError:       true,
@@ -292,7 +293,7 @@ func TestAddRevision(t *testing.T) {
 			size:              123456,
 			sequenceNumber:    1,
 			architectures:     []string{"x86_64", "arm64"},
-			sha3_384_encoded:           "mock-sha3-384",
+			sha3_384_encoded:  "mock-sha3-384",
 			minioFilePath:     "some/path/mock-snap.snap",
 			el:                cerror.NewErrorList(),
 			expectError:       true,
@@ -307,7 +308,7 @@ func TestAddRevision(t *testing.T) {
 			size:              123456,
 			sequenceNumber:    1,
 			architectures:     []string{"x86_64", "arm64"},
-			sha3_384_encoded:           "mock-sha3-384",
+			sha3_384_encoded:  "mock-sha3-384",
 			minioFilePath:     "some/path/mock-snap.snap",
 			el:                cerror.NewErrorList(),
 			expectError:       true,

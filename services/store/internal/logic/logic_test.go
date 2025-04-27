@@ -4,13 +4,14 @@ import (
 	"context"
 	"testing"
 
+	"store/internal/config"
+	"store/internal/models"
+	"store/internal/objectstore"
+	"store/internal/repository"
+	proto "store/proto"
+
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
-	"github.com/idlab-discover/kebeng/services/store/internal/config"
-	"github.com/idlab-discover/kebeng/services/store/internal/models"
-	"github.com/idlab-discover/kebeng/services/store/internal/objectstore"
-	"github.com/idlab-discover/kebeng/services/store/internal/repository"
-	proto "github.com/idlab-discover/kebeng/services/store/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )

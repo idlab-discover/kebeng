@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"time"
 
+	"store/internal/config"
+
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file" // needed for file source
-	"github.com/idlab-discover/kebeng/services/store/internal/config"
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
 )
