@@ -5,8 +5,12 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net"
+	"net/http"
 	"time"
 
+	_ "net/http/pprof"
+
+	"github.com/idlab-discover/kebeng/common/monitoring"
 	"github.com/idlab-discover/kebeng/services/assertion/internal/config"
 	"github.com/idlab-discover/kebeng/services/assertion/internal/database"
 	"github.com/idlab-discover/kebeng/services/assertion/internal/logic"
@@ -89,6 +93,20 @@ func main() {
 	accountAssertion, _ := assertionLogic.AddAccountAssertion(ctx, req2)
 	if len(accountAssertion.Errors) != 0 {
 		logrus.Fatalf("Failed to create account assertion: %v", accountAssertion.Errors)
+	}
+
+	// create metrics endpoint
+	if cfg.Monitoring {
+		logrus.Infof("Creating metrics endpoint")
+		// can be used to see the heap allocation
+		go func() {
+			logrus.Infof("Starting pprof endpoint on :6060")
+			if err := http.ListenAndServe(":6060", nil); err != nil {
+				logrus.Fatalf("pprof ListenAndServe: %v", err)
+			}
+		}()
+
+		monitoring.CreateMetricsEndpoint()
 	}
 
 	// start grpc server

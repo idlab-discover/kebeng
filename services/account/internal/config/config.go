@@ -22,6 +22,8 @@ type Config struct {
 	RootAccountID string `mapstructure:"root_account_id" yaml:"root_account_id"`
 
 	TestMode bool
+
+	Monitoring bool `mapstructure:"monitoring" yaml:"monitoring"`
 }
 
 func LoadConfig() (*Config, error) {

@@ -50,14 +50,6 @@ func (m *MockObjectStore) MakeBucket(ctx context.Context, bucket string, opts mi
 	return args.Error(0)
 }
 
-func (m *MockObjectStore) MakeBucketAndAddKey(bucketName string, keyPath string, keyName string) *cerror.CustomError {
-	args := m.Called(bucketName, keyPath, keyName)
-	if args.Get(0) != nil {
-		return args.Get(0).(*cerror.CustomError)
-	}
-	return nil
-}
-
 func (m *MockObjectStore) Move(sourceBucket, destinationBucket, objectName string, newObjectName string) error {
 	args := m.Called(sourceBucket, destinationBucket, objectName)
 	return args.Error(0)

@@ -31,6 +31,8 @@ type Config struct {
 	StoreName   string `mapstructure:"store_name" yaml:"store_name"`
 
 	TestMode bool
+
+	Monitoring bool `mapstructure:"monitoring" yaml:"monitoring"`
 }
 
 func LoadConfig() (*Config, error) {

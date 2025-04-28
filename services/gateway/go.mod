@@ -5,10 +5,11 @@ go 1.22.2
 require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/google/uuid v1.6.0
-	github.com/idlab-discover/kebeng v0.0.0-20250417102054-28cdb3ec3408
-	github.com/idlab-discover/kebeng/services/account v0.0.0-20250422082347-f3caaf9917cb
-	github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250421153252-4354409a95ba
-	github.com/idlab-discover/kebeng/services/store v0.0.0-20250423162717-0eba63325b94
+	github.com/idlab-discover/kebeng v0.0.0-20250427131232-98fd21e0a2e6
+	github.com/idlab-discover/kebeng/services/account v0.0.0-20250423160216-bc71eecd8afa
+	github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250423160624-51fba8063205
+	github.com/idlab-discover/kebeng/services/store v0.0.0-20250424141625-8d5966855801
+	github.com/prometheus/client_golang v1.22.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/snapcore/snapd v0.0.0-20250228185938-4d4437a35a6b
 	github.com/spf13/viper v1.19.0
@@ -18,8 +19,10 @@ require (
 )
 
 require (
+	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bytedance/sonic v1.11.6 // indirect
 	github.com/bytedance/sonic/loader v0.1.1 // indirect
+	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cloudwego/base64x v0.1.4 // indirect
 	github.com/cloudwego/iasm v0.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
@@ -40,8 +43,12 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
+	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.2 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
+	github.com/prometheus/client_model v0.6.1 // indirect
+	github.com/prometheus/common v0.62.0 // indirect
+	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
 	github.com/snapcore/go-gettext v0.0.0-20201130093759-38740d1bd3d2 // indirect

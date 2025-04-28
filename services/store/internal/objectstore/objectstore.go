@@ -3,14 +3,12 @@ package objectstore
 import (
 	"context"
 	"fmt"
+	"errors"
 	"io"
 	"log"
-	"os"
 	"path"
-	"strings"
 
 	"github.com/idlab-discover/kebeng/common/cerror"
-	"github.com/idlab-discover/kebeng/common/crypto"
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
 	"github.com/idlab-discover/kebeng/services/store/internal/models"
 	"github.com/minio/minio-go/v7"
@@ -33,7 +31,6 @@ type IMinioClient interface {
 type IObjectStore interface {
 	SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string, name string, version string, summary string, description string, confinement string, base string, grade string, architectures []string) (*models.Metadata, error)
 	GetSnapFileReader(ctx context.Context, filePath string) (io.ReadCloser, error)
-	MakeBucketAndAddKey(bucketName string, keyPath string, keyName string) *cerror.CustomError
 	Move(sourceBucket, destinationBucket, objectName string, newObjectName string) error
 	GetObjectCustomMetadata(bucket string, objectName string) (*models.Metadata, error)
 	DeleteFileFromBucket(bucket string, filePath string) *cerror.CustomError
@@ -187,44 +184,6 @@ func GetMinioClient(cfg *config.Config) *minio.Client {
 	}
 
 	return minioClient
-}
-
-func (obs *ObjectStore) MakeBucketAndAddKey(bucketName string, keyPath string, keyName string) *cerror.CustomError {
-	// Make root bucket
-	logrus.Debugf("Making bucket %s and adding key %s", bucketName, keyName)
-	ctx, cancel := context.WithCancel(context.Background())
-
-	defer cancel()
-
-	err := obs.MinioClient.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{})
-	if err != nil {
-		cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("error creating bucket %s, err: %v", bucketName, err))
-		logrus.Error(cerr)
-		return cerr
-	}
-
-	bytes, err := os.ReadFile(keyPath)
-	if err != nil {
-		cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("error reading file %s, err: %v", keyPath, err))
-		logrus.Error(cerr)
-		return cerr
-	}
-	rootPrivateKey, cerr := crypto.ParseRSAPrivateKeyFromPEM(bytes)
-	if cerr != nil {
-		cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("error parsing private key from file %s, err: %v", keyPath, cerr))
-		logrus.Error(cerr)
-		return cerr
-	}
-	keyString := crypto.ExportRsaPrivateKeyAsPemStr(rootPrivateKey)
-
-	_, err = obs.MinioClient.PutObject(ctx, bucketName, keyName, strings.NewReader(keyString), int64(len(keyString)), minio.PutObjectOptions{})
-	if err != nil {
-		cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("error uploading file %s to bucket %s, err: %v", keyPath, bucketName, err))
-		logrus.Error(cerr)
-		return cerr
-	}
-
-	return nil
 }
 
 func (obs *ObjectStore) DeleteFileFromBucket(bucket string, filePath string) *cerror.CustomError {

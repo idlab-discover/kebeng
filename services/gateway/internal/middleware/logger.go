@@ -44,7 +44,9 @@ func RequestLoggerMiddleware() gin.HandlerFunc {
 		}
 
 		// log headers
-		logrus.Infof("Request Headers: %v", c.Request.Header)
+		logHeader := c.Request.Header.Clone()
+		logHeader.Del("Authorization")
+		logrus.Infof("Request Headers: %v", logHeader)
 
 		// swap in a ResponseWriter that captures the body
 		blw := &bodyLogWriter{

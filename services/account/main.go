@@ -4,9 +4,13 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/http"
 	"time"
 
+	_ "net/http/pprof"
+
 	"github.com/google/uuid"
+	"github.com/idlab-discover/kebeng/common/monitoring"
 	"github.com/idlab-discover/kebeng/services/account/internal/config"
 	"github.com/idlab-discover/kebeng/services/account/internal/database"
 	"github.com/idlab-discover/kebeng/services/account/internal/logic"
@@ -66,6 +70,22 @@ func main() {
 	_, cerr := repo.AddAccount(ctx, rootAccount)
 	if cerr != nil {
 		logrus.Fatalf("failed to create root account: %v", cerr)
+	}
+
+	// create metrics endpoint
+	if cfg.Monitoring {
+		logrus.Infof("Monitoring enabled")
+
+		// can be used to see the heap allocation
+		// TODO:REMOVE THIS COMMENT
+		go func() {
+			logrus.Infof("Starting pprof endpoint on :6060")
+			if err := http.ListenAndServe(":6060", nil); err != nil {
+				logrus.Fatalf("pprof ListenAndServe: %v", err)
+			}
+		}()
+
+		monitoring.CreateMetricsEndpoint()
 	}
 
 	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", cfg.GRPCHost, cfg.GRPCPort))

@@ -5,6 +5,10 @@ import (
 	"fmt"
 	"net"
 
+	"net/http"
+	_ "net/http/pprof"
+
+	"github.com/idlab-discover/kebeng/common/monitoring"
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
 	"github.com/idlab-discover/kebeng/services/store/internal/database"
 	logic "github.com/idlab-discover/kebeng/services/store/internal/logic"
@@ -19,6 +23,8 @@ import (
 )
 
 func main() {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	// set logrus to use text formatter
 	logrus.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp:   true,
@@ -42,37 +48,26 @@ func main() {
 	minioClient := objectstore.GetMinioClient(cfg)
 	objectstore := objectstore.NewObjectStore(minioClient, cfg)
 
-	exists, err := minioClient.BucketExists(context.Background(), "root")
+	err = minioClient.MakeBucket(ctx, "snaps", minio.MakeBucketOptions{})
 	if err != nil {
-		panic(err)
+		logrus.Fatalf("Failed to create snapsbucket: %v", err)
 	}
-	if exists {
-		logrus.Warnf("Bucket exists, please use destroy command if you are sure you want to start over.")
-	}
-
-	exists, err = minioClient.BucketExists(context.Background(), "generic")
+	err = minioClient.MakeBucket(ctx, "unscanned", minio.MakeBucketOptions{})
 	if err != nil {
-		panic(err)
+		logrus.Fatalf("Failed to create unscanned bucket: %v", err)
 	}
 
-	if exists {
-		logrus.Warnf("Bucket exists, please use destroy command if you are sure you want to start over.")
-	}
-
-	if !exists {
-		objectstore.MakeBucketAndAddKey("root", cfg.RootKeyPath, "private-key.pem")
-		objectstore.MakeBucketAndAddKey("generic", cfg.GenericKeyPath, "private-key.pem")
-		err := minioClient.MakeBucket(context.Background(), "snaps", minio.MakeBucketOptions{})
-		if err != nil {
-			logrus.Errorf("Failed to create bucket: %v", err)
-		}
-	}
 	// start grpc server
 	repo := repositories.NewSnapsRepository(db)
 	storeLogic := logic.NewStoreLogic(repo, cfg, objectstore)
 
 	if cfg.TestMode {
 		logrus.Infof("Running in test mode")
+	}
+
+	if cfg.Monitoring {
+		logrus.Infof("Starting metrics endpoint on port 9100")
+		monitoring.CreateMetricsEndpoint()
 	}
 
 	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", cfg.GRPCHost, cfg.GRPCPort))
@@ -88,6 +83,14 @@ func main() {
 	healthpb.RegisterHealthServer(grpcServer, hs)
 	// this line will match the service functionality to the proto interface
 	proto.RegisterStoreServiceServer(grpcServer, storeLogic)
+
+	// also start pprof on :6060
+	go func() {
+		logrus.Infof("Starting pprof endpoint on :6060")
+		if err := http.ListenAndServe(":6060", nil); err != nil {
+			logrus.Fatalf("pprof ListenAndServe: %v", err)
+		}
+	}()
 
 	logrus.Infof("Starting gRPC server on %s:%d", cfg.GRPCHost, cfg.GRPCPort)
 	if err := grpcServer.Serve(lis); err != nil {

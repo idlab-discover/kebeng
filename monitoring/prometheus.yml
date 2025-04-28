@@ -1,0 +1,56 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  # 1) Your Go services
+  - job_name: gateway
+    static_configs:
+      - targets: ['gateway:9100']
+    relabel_configs:
+      - source_labels: [__job__]
+        target_label: service
+
+  - job_name: store_service
+    static_configs:
+      - targets: ['store_service:9100']
+    relabel_configs:
+      - source_labels: [__job__]
+        target_label: service
+
+  - job_name: account_service
+    static_configs:
+      - targets: ['account_service:9100']
+    relabel_configs:
+      - source_labels: [__job__]
+        target_label: service
+
+  - job_name: assertion_service
+    static_configs:
+      - targets: ['assertion_service:9100']
+    relabel_configs:
+      - source_labels: [__job__]
+        target_label: service
+
+  - job_name: cadvisor
+    static_configs:
+      - targets: ['cadvisor:8080']
+    metric_relabel_configs:
+      - source_labels: [container_label_com_docker_compose_service]
+        target_label: service
+
+  # 3) monitoring & Prometheus itself
+  - job_name: monitoring
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['monitoring:9100']
+    relabel_configs:
+      - source_labels: [__job__]
+        target_label: service
+
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']
+    relabel_configs:
+      - source_labels: [__job__]
+        target_label: service

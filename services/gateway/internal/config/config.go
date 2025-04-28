@@ -34,6 +34,8 @@ type Config struct {
 	StoreUrl  string `mapstructure:"store_url" yaml:"store_url"`
 	StoreName string `mapstructure:"store_name" yaml:"store_name"`
 
+	Monitoring bool `mapstructure:"monitoring" yaml:"monitoring"`
+
 	TestMode           bool   `mapstructure:"test_mode" yaml:"test_mode"`
 	TestDataFolderPath string `mapstructure:"test_data_folder_path" yaml:"test_data_folder_path"`
 }

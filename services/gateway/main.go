@@ -1,6 +1,10 @@
 package main
 
 import (
+	"net/http"
+	_ "net/http/pprof"
+
+	"github.com/idlab-discover/kebeng/common/monitoring"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/config"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/util"
 	loadtestdata "github.com/idlab-discover/kebeng/services/gateway/load_test_data"
@@ -21,8 +25,6 @@ func main() {
 	}
 
 	logrus.Infof("Loaded config: %+v", cfg)
-
-	// TODO: if can't connect to service or create client TRY AGAIN
 
 	//TODO: check how bigger load works and multiple requests
 	// need more connections? or how does grpc handle this
@@ -71,7 +73,22 @@ func main() {
 		c.JSON(404, gin.H{"code": "KEBENG STORE: PAGE_NOT_FOUND", "message": "Page not found"})
 	})
 
-	handler.SetupEndpoints(r)
+	if cfg.Monitoring {
+		logrus.Info("Monitoring enabled")
+		// can be used to see the heap allocation
+		go func() {
+			logrus.Infof("Starting pprof endpoint on :6060")
+			if err := http.ListenAndServe(":6060", nil); err != nil {
+				logrus.Fatalf("pprof ListenAndServe: %v", err)
+			}
+		}()
+
+		monitoring.CreateMetricsEndpoint()
+		handler.SetupEndpointsWithMonitoring(r)
+
+	} else {
+		handler.SetupEndpoints(r)
+	}
 
 	err = r.Run()
 	if err != nil {
