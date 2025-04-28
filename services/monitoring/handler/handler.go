@@ -40,6 +40,8 @@ func (h *Handler) RegisterName(c *gin.Context) {
 	})
 }
 
+// ================ Helper Functions ================
+
 func (h *Handler) performOperation(c *gin.Context, operationFactory func() SnapOperation) {
 	total, waitMs, concurrentParse := setupQueryParams(c)
 
@@ -87,8 +89,6 @@ func (h *Handler) performOperation(c *gin.Context, operationFactory func() SnapO
 		"max_concurrent": atomic.LoadInt64(&maxInFlight),
 	})
 }
-
-// ================ Helper Functions ================
 
 func setupQueryParams(c *gin.Context) (int, int, int) {
 	amount := c.Query("amount")

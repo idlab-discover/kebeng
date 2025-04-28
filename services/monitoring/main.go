@@ -6,7 +6,7 @@ import (
 	"monitoring/internal/logic"
 	"net/http"
 
-	"monitoring/monitoring"
+	"github.com/idlab-discover/kebeng/common/monitoring"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
