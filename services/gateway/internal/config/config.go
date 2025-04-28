@@ -31,7 +31,8 @@ type Config struct {
 
 	MacaroonConfig *MacaroonConfig `mapstructure:"macaroon" yaml:"macaroon"`
 
-	StoreUrl string `mapstructure:"store_url" yaml:"store_url"`
+	StoreUrl  string `mapstructure:"store_url" yaml:"store_url"`
+	StoreName string `mapstructure:"store_name" yaml:"store_name"`
 
 	Monitoring bool `mapstructure:"monitoring" yaml:"monitoring"`
 
@@ -125,6 +126,10 @@ func (c *Config) checkConfig() error {
 	// Store URL config
 	if c.StoreUrl == "" {
 		errs = append(errs, "store_url is required")
+	}
+
+	if c.StoreName == "" {
+		errs = append(errs, "store_name is required")
 	}
 
 	// Test mode settings

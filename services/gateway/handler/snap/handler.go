@@ -181,7 +181,12 @@ func (h *Handler) RegisterSnapName(c *gin.Context) {
 
 	dryRun := c.Query("dry_run") == "1"
 
-	resp := h.StoreClient.RegisterSnapName(req.SnapName, "", "", "", req.IsPrivate, "", 0.0, req.Store, "", dryRun, accountUUID) // TODO: fill in empty fields once we know where to get the information from
+	// if store name is empty, use the default store name
+	if req.Store == "" {
+		req.Store = h.Config.StoreName
+	}
+
+	resp := h.StoreClient.RegisterSnapName(req.SnapName, "app", "", "", req.IsPrivate, "active", 0.0, req.Store, "", dryRun, accountUUID)
 	if len(resp.Errors) > 0 {
 		el.ExtendProtoError(resp.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
@@ -339,21 +344,28 @@ func (h *Handler) SnapPush(c *gin.Context) {
 		"success":            true,
 		"snap_name":          entry.SnapName,
 		"upload_id":          upload.Id,
-		"status_details_url": fmt.Sprintf("%s/dev/api/snaps/%s/status", h.Config.StoreUrl, upload.Id), // FIX: change ClientIP to value in config
+		"status_details_url": fmt.Sprintf("%s/dev/api/snaps/%s/status", h.Config.StoreUrl, upload.Id),
 	})
 
 	// After the status details URL is returned, we can proceed with creating a new revision
-	// We need the sha3_384_encoded hash of the snap package
+	// We need the sha3_384_encoded hash of the snap package, and other metadata
 	metadata := h.StoreClient.GetObjectCustomMetadata("unscanned", req.UnscannedFileName)
 	if len(metadata.Errors) > 0 {
 		el.ExtendProtoError(metadata.Errors)
 		return
 	}
-
 	logrus.Debugf("Metadata: %v", metadata)
 
+	// Update the snapEntry with the metadata
+	updatedEntry := h.StoreClient.UpdateSnapEntryWithMetadata(parsedEntryUUID, metadata)
+	if len(updatedEntry.Errors) > 0 {
+		el.ExtendProtoError(updatedEntry.Errors)
+		return
+	}
+	logrus.Debugf("Updated entry: %v", updatedEntry)
+
 	// Create a new revision for the snap upload
-	revision := h.StoreClient.AddRevision(entry.SnapName, metadata.GetSha3_384Encoded(), uint64(req.BinaryFileSize), []string{"amd64"}, req.Channels, req.UnscannedFileName) // FIX: architectures should be passed from the request
+	revision := h.StoreClient.AddRevision(entry.SnapName, metadata.GetSha3_384Encoded(), uint64(req.BinaryFileSize), metadata.Architectures, req.Channels, req.UnscannedFileName) // FIX: architectures should be passed from the request
 	if len(revision.Errors) > 0 {
 		el.ExtendProtoError(revision.Errors)
 	}

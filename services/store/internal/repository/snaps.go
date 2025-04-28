@@ -46,6 +46,7 @@ type ISnapsRepository interface {
 
 	// UPDATE
 	UpdateUploadStatus(uploadId uuid.UUID, status string, revision uint32, errorList *cerror.ErrorList) *cerror.CustomError
+	UpdateSnapEntryWithMetadata(entryId uuid.UUID, metadata *models.SnapMeta, errorList *cerror.ErrorList) (*models.SnapEntry, *cerror.CustomError)
 }
 
 type SnapsRepository struct {
@@ -519,7 +520,7 @@ func (sp *SnapsRepository) GetLatestRevisionByTrackAndChannel(snapName string, t
 		WHERE e.name = $1
 		  AND t.name = $2
 		  AND c.name = $3
-		ORDER BY r.updated_at DESC
+		ORDER BY r.sequence_number DESC
 		LIMIT 1;
 	`
 	err := sp.db.Get(&revision, query, snapName, track, channel)
@@ -539,7 +540,7 @@ func (sp *SnapsRepository) GetLatestRevisionByEntryId(entryId uuid.UUID, el *cer
 		SELECT *
 		FROM revision
 		WHERE entry_id = $1
-		ORDER BY updated_at DESC
+		ORDER BY sequence_number DESC
 		LIMIT 1
 	`
 	err := sp.db.Get(&revision, query, entryId)
@@ -551,30 +552,6 @@ func (sp *SnapsRepository) GetLatestRevisionByEntryId(entryId uuid.UUID, el *cer
 	}
 
 	return &revision, nil
-}
-
-// ============ UPDATE =============
-
-func (sp *SnapsRepository) UpdateUploadStatus(uploadId uuid.UUID, status string, revision uint32, el *cerror.ErrorList) *cerror.CustomError {
-	upload := models.SnapUpload{
-		ID:     uploadId,
-		Errors: el,
-	}
-	query := `
-		UPDATE upload
-		SET status = $1, revision = $2, errors = $3
-		WHERE id = $4
-		RETURNING *
-	`
-	err := sp.db.Get(&upload, query, status, revision, upload.Errors, uploadId)
-	if err != nil {
-		cerr := cerror.ConvertError(err, fmt.Sprintf("error updating upload with id = '%s'", uploadId.String()))
-		logrus.Error(cerr)
-		el.AddCustomError(cerr)
-		return cerr
-	}
-
-	return nil
 }
 
 func (sp *SnapsRepository) GetTrackByEntryIdAndName(entryId uuid.UUID, trackName string, el *cerror.ErrorList) (*models.SnapTrack, *cerror.CustomError) {
@@ -647,6 +624,48 @@ func (sp *SnapsRepository) GetUploadById(id uuid.UUID, el *cerror.ErrorList) (*m
 	}
 
 	return &upload, nil
+}
+
+// ============ UPDATE =============
+
+func (sp *SnapsRepository) UpdateUploadStatus(uploadId uuid.UUID, status string, revision uint32, el *cerror.ErrorList) *cerror.CustomError {
+	upload := models.SnapUpload{
+		ID:     uploadId,
+		Errors: el,
+	}
+	query := `
+		UPDATE upload
+		SET status = $1, revision = $2, errors = $3
+		WHERE id = $4
+		RETURNING *
+	`
+	err := sp.db.Get(&upload, query, status, revision, upload.Errors, uploadId)
+	if err != nil {
+		cerr := cerror.ConvertError(err, fmt.Sprintf("error updating upload with id = '%s'", uploadId.String()))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return cerr
+	}
+
+	return nil
+}
+
+func (sp *SnapsRepository) UpdateSnapEntryWithMetadata(entryId uuid.UUID, metadata *models.SnapMeta, el *cerror.ErrorList) (*models.SnapEntry, *cerror.CustomError) {
+	var snapEntry models.SnapEntry
+	query := `
+		UPDATE entry
+		SET confinement = $1, base = $2, summary = $3, description = $4, architectures = $5, version = $6, grade = $7, updated_at = now()
+		WHERE id = $8
+		RETURNING *
+	`
+	err := sp.db.Get(&snapEntry, query, metadata.Confinement, metadata.Base, metadata.Summary, metadata.Description, metadata.Architectures, metadata.Version, metadata.Grade, entryId)
+	if err != nil {
+		cerr := cerror.ConvertError(err, fmt.Sprintf("error updating snap entry with id = '%s'", entryId.String()))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return nil, cerr
+	}
+	return &snapEntry, nil
 }
 
 // ============ HELPER ==============
