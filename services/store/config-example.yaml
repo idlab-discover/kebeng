@@ -1,0 +1,19 @@
+db_host: "store_db"
+db_port: 5432
+db_user: "example_user"
+db_password: "example_password"
+db_name: "store_db"
+grpc_host: "store_service"
+grpc_port: 8081
+migration_path: "/app/migrations"
+root_key_path: "/app/keys/root-private-key.pem"
+generic_key_path: "/app/keys/generic-private-key.pem"
+minio_host: "minio:9000"
+minio_secret_key: "example_secret_key"
+minio_access_key: "example_access_key"
+minio_secure: false
+
+test_data_file_path: "/app/test-data/data.json"
+test_data_minio_path: "/app/test-data/minio"
+
+monitoring: true

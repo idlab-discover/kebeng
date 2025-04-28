@@ -1,6 +1,5 @@
 .env
 env*
-config*.yaml
 .idea
 postgres_backup/
 .loginconfig
