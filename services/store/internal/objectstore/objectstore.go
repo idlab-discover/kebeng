@@ -2,11 +2,10 @@ package objectstore
 
 import (
 	"context"
-	"fmt"
-	"errors"
 	"io"
 	"log"
 	"path"
+	"strings"
 
 	"github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
