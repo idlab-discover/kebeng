@@ -39,6 +39,7 @@ type StoreClientInterface interface {
 	AddRevision(snapName string, sha3_384_encoded string, size uint64, architectures []string, tracksAndChannels []string, unscannedFileName string) *proto.AddRevisionResponse
 	GetObjectCustomMetadata(bucket string, objectKey string) *proto.GetObjectCustomMetadataResponse
 	UpdateUploadStatus(uploadId string, status string, revision uint32, el *cerror.ErrorList) *proto.UpdateUploadStatusResponse
+	UpdateSnapEntryWithMetadata(snapEntryId uuid.UUID, metadata *proto.GetObjectCustomMetadataResponse) *proto.UpdateEntryResponse
 }
 
 var _ StoreClientInterface = (*StoreClient)(nil)
@@ -423,6 +424,32 @@ func (c *StoreClient) GetObjectCustomMetadata(bucket string, objectKey string) *
 	resp, err := c.client.GetObjectCustomMetadata(context.Background(), req)
 	if err != nil {
 		return &proto.GetObjectCustomMetadataResponse{
+			Errors: []*cerrorpb.Error{{
+				Code:    cerror.InternalServerError,
+				Message: err.Error()},
+			},
+		}
+	}
+	return resp
+}
+
+func (c *StoreClient) UpdateSnapEntryWithMetadata(snapEntryId uuid.UUID, metadata *proto.GetObjectCustomMetadataResponse) *proto.UpdateEntryResponse {
+	req := &proto.UpdateSnapEntryWithMetadataRequest{
+		EntryId:       snapEntryId.String(),
+		Name:          metadata.Name,
+		Confinement:   metadata.Confinement,
+		Base:          metadata.Base,
+		Architectures: metadata.Architectures,
+		Grade:         metadata.Grade,
+		Version:       metadata.Version,
+		Summary:       metadata.Summary,
+		Description:   metadata.Description,
+		Errors:        metadata.Errors,
+	}
+
+	resp, err := c.client.UpdateSnapEntryWithMetadata(context.Background(), req)
+	if err != nil {
+		return &proto.UpdateEntryResponse{
 			Errors: []*cerrorpb.Error{{
 				Code:    cerror.InternalServerError,
 				Message: err.Error()},
