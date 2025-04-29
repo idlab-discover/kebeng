@@ -1055,7 +1055,7 @@ func getSnapMetaFromFile(snapFilePath string, workingDirectory string) (*models.
 func getSnapMetaFromPath(snapFilePath string, workingDirectory string) (*models.SnapMeta, error) {
 	err := os.Chdir(workingDirectory)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to change directory: %v", err)
 	}
 
 	cmd := exec.Command("unsquashfs", snapFilePath, "-e", "meta/snap.yaml")
@@ -1069,17 +1069,17 @@ func getSnapMetaFromPath(snapFilePath string, workingDirectory string) (*models.
 	}()
 
 	if err := cmd.Run(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to run unsquashfs: %v", err)
 	}
 
 	data, err := os.ReadFile(path.Join(workingDirectory, "squashfs-root", "meta", "snap.yaml"))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read snap.yaml: %v", err)
 	}
 
 	var snapMeta models.SnapMeta
 	if err := yaml.Unmarshal(data, &snapMeta); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to unmarshal snap.yaml: %v", err)
 	}
 
 	return &snapMeta, nil
