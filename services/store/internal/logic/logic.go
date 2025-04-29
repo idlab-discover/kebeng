@@ -1,7 +1,6 @@
 package logic
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"fmt"
@@ -594,8 +593,23 @@ func (s *StoreLogic) AddUpload(ctx context.Context, req *proto.AddUploadRequest)
 // After receiving all chunks, it saves the file to an object store bucket named "unscanned".
 func (s *StoreLogic) UnscannedUpload(stream proto.StoreService_UnscannedUploadServer) error {
 	el := cerror.NewErrorList()
-	var snapFileBuffer bytes.Buffer
 	sha := sha3.New384()
+
+	snapFileName := uuid.New().String() + ".snap"
+	tmpFilePath := path.Join(os.TempDir(), snapFileName)
+
+	outFile, err := os.Create(tmpFilePath)
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to create temp file: %v", err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return fmt.Errorf("failed to create temp file: %v", err)
+	}
+	defer func() {
+		if err := outFile.Close(); err != nil {
+			logrus.Error("failed to close temp file: ", err)
+		}
+	}()
 
 	for {
 		req, err := stream.Recv()
@@ -617,16 +631,14 @@ func (s *StoreLogic) UnscannedUpload(stream proto.StoreService_UnscannedUploadSe
 			return fmt.Errorf("received empty data chunk")
 		}
 
-		// Write chunk to buffer
-		_, err = snapFileBuffer.Write(dataChunk.Chunk)
+		_, err = outFile.Write(dataChunk.Chunk)
 		if err != nil {
-			cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to write chunk to buffer: %v", err))
+			cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to write chunk to file: %v", err))
 			logrus.Error(cerr)
 			el.AddCustomError(cerr)
-			return fmt.Errorf("failed to write chunk to buffer: %v", err)
+			return fmt.Errorf("failed to write chunk to file: %v", err)
 		}
 
-		// Update hash with the chunk
 		_, err = sha.Write(dataChunk.Chunk)
 		if err != nil {
 			cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to update hash: %v", err))
@@ -636,20 +648,10 @@ func (s *StoreLogic) UnscannedUpload(stream proto.StoreService_UnscannedUploadSe
 		}
 	}
 
-	snapFileName, cerr := saveFileToTemp(&snapFileBuffer, el)
-	if cerr != nil {
-		// Already logged in saveFileToTemp (repository)
-		return fmt.Errorf("failed to save file to temp storage: %v", cerr)
-	}
+	digest := sha.Sum(nil)
+	sha3_384HashEncoded := base64.RawURLEncoding.EncodeToString(digest[:])
 
-	// Calculate sha3_384 hash of the file
-	digest := sha.Sum(nil)                                                 // returns [48]byte
-	sha3_384HashEncoded := base64.RawURLEncoding.EncodeToString(digest[:]) // just raw hash
-
-	tmpPath := path.Join(os.TempDir(), snapFileName)
-
-	// Get metadata from snapcraft.yaml inside of the snap file
-	metadataYaml, err := getSnapMetaFromFile(tmpPath, os.TempDir())
+	metadataYaml, err := getSnapMetaFromFile(tmpFilePath, os.TempDir())
 	if err != nil {
 		cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to get snap metadata: %v", err))
 		logrus.Error(cerr)
@@ -659,12 +661,17 @@ func (s *StoreLogic) UnscannedUpload(stream proto.StoreService_UnscannedUploadSe
 
 	logrus.Infof("snap metadata yaml: %v", metadataYaml)
 
-	metadataMinio, err := s.obs.SaveFileToBucket("unscanned", tmpPath, sha3_384HashEncoded, metadataYaml.Name, metadataYaml.Version, metadataYaml.Summary, metadataYaml.Description, metadataYaml.Confinement, metadataYaml.Base, metadataYaml.Grade, metadataYaml.Architectures)
+	metadataMinio, err := s.obs.SaveFileToBucket("unscanned", tmpFilePath, sha3_384HashEncoded, metadataYaml.Name, metadataYaml.Version, metadataYaml.Summary, metadataYaml.Description, metadataYaml.Confinement, metadataYaml.Base, metadataYaml.Grade, metadataYaml.Architectures)
 	if err != nil {
 		cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to save file to object store: %v", err))
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
-		return fmt.Errorf("failed to save file to object store: %v", cerr)
+		return fmt.Errorf("failed to save file to object store: %v", err)
+	}
+
+	err = os.Remove(tmpFilePath)
+	if err != nil {
+		logrus.Warnf("failed to clean up temporary file: %v", err)
 	}
 
 	err = stream.SendAndClose(&proto.UnscannedUploadCompleteResponse{
@@ -676,7 +683,7 @@ func (s *StoreLogic) UnscannedUpload(stream proto.StoreService_UnscannedUploadSe
 		cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to send response: %v", err))
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
-		return fmt.Errorf("failed to send response: %v", cerr)
+		return fmt.Errorf("failed to send response: %v", err)
 	}
 
 	return nil
@@ -1042,49 +1049,40 @@ func parseTracksAndChannels(tracksAndChannels []string) map[string][]string {
 // GetSnapMetaFromFile will return SnapMeta from a byte array representing a snap file
 // This is an inefficient but expedient process
 func getSnapMetaFromFile(snapFilePath string, workingDirectory string) (*models.SnapMeta, error) {
-	bytes, err := os.ReadFile(snapFilePath)
-	if err == nil {
-		return getSnapMetaFromBytes(bytes, workingDirectory)
-	}
-
-	return nil, err
+	return getSnapMetaFromPath(snapFilePath, workingDirectory)
 }
 
-func getSnapMetaFromBytes(bytes []byte, workingDirectory string) (*models.SnapMeta, error) {
-	tmpFilePath := path.Join(workingDirectory, uuid.New().String()+".snap")
-	err := os.WriteFile(tmpFilePath, bytes, 0755)
-	if err == nil {
-		defer func(name string) {
-			errIn := os.Remove(name)
-			if errIn != nil {
-				logrus.Error(errIn)
-			}
-		}(tmpFilePath)
-		err = os.Chdir(workingDirectory)
-		if err == nil {
-			cmd := exec.Command("unsquashfs", tmpFilePath, "-e", "meta/snap.yaml")
-			defer func() {
-				errIn := os.RemoveAll(path.Join(workingDirectory, "squashfs-root"))
-				if errIn != nil {
-					logrus.Error(err)
-				}
-			}()
-			cmd.Stderr = os.Stderr
-			err = cmd.Run()
-			if err == nil {
-				bytes, err = os.ReadFile(path.Join(workingDirectory, "squashfs-root", "meta", "snap.yaml"))
-				if err == nil {
-					var snapMeta models.SnapMeta
-					err = yaml.Unmarshal(bytes, &snapMeta)
-					if err == nil {
-						return &snapMeta, nil
-					}
-				}
-			}
-		}
+func getSnapMetaFromPath(snapFilePath string, workingDirectory string) (*models.SnapMeta, error) {
+	err := os.Chdir(workingDirectory)
+	if err != nil {
+		return nil, err
 	}
 
-	return nil, err
+	cmd := exec.Command("unsquashfs", snapFilePath, "-e", "meta/snap.yaml")
+	cmd.Stderr = os.Stderr
+
+	defer func() {
+		errIn := os.RemoveAll(path.Join(workingDirectory, "squashfs-root"))
+		if errIn != nil {
+			logrus.Error(errIn)
+		}
+	}()
+
+	if err := cmd.Run(); err != nil {
+		return nil, err
+	}
+
+	data, err := os.ReadFile(path.Join(workingDirectory, "squashfs-root", "meta", "snap.yaml"))
+	if err != nil {
+		return nil, err
+	}
+
+	var snapMeta models.SnapMeta
+	if err := yaml.Unmarshal(data, &snapMeta); err != nil {
+		return nil, err
+	}
+
+	return &snapMeta, nil
 }
 
 func checkValidName(name string) bool {
@@ -1121,35 +1119,4 @@ func parseEntryToProto(entry *models.SnapEntry) *proto.GetEntryResponse {
 		Since:       timestamppb.New(entry.CreatedAt),
 		IconUrl:     entry.IconURL,
 	}
-}
-
-func saveFileToTemp(snapFile io.Reader, el *cerror.ErrorList) (string, *cerror.CustomError) {
-	// Generate random file name for the new uploaded file so it doesn't override an old file with same name
-	snapFileId := uuid.New().String()
-	newFileName := snapFileId + ".snap"
-
-	out, err := os.Create(path.Join("/tmp", newFileName))
-	if err != nil {
-		cerr := cerror.NewCustomError(cerror.InternalServerError, "Failed to create file")
-		logrus.Error(cerr)
-		el.AddCustomError(cerr)
-		return "", cerr
-	}
-	defer func(out *os.File) {
-		err := out.Close()
-		if err != nil {
-			logrus.Error("failed to close file: ", err)
-		}
-
-	}(out)
-
-	_, err = io.Copy(out, snapFile)
-	if err != nil {
-		cerr := cerror.NewCustomError(cerror.InternalServerError, "Failed to copy file")
-		logrus.Error(cerr)
-		el.AddCustomError(cerr)
-		return "", cerr
-	}
-
-	return newFileName, nil
 }
