@@ -109,7 +109,7 @@ func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_38
 		"Name":             name,
 		"Version":          version,
 		"Summary":          summary,
-		"Description":      description,
+		"Description":      "description", // TODO: use discription of snapcraft.yaml but make sure description is sanitized (no new lines, no special chars, no markdown etc)
 		"Confinement":      confinement,
 		"Base":             base,
 		"Grade":            grade,
