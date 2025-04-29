@@ -666,7 +666,7 @@ func (s *StoreLogic) UnscannedUpload(stream proto.StoreService_UnscannedUploadSe
 		cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to save file to object store: %v", err))
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
-		return fmt.Errorf("failed to save file to object store: %v", err)
+		return fmt.Errorf("failed to save file to object store: %v", cerr)
 	}
 
 	err = os.Remove(tmpFilePath)
@@ -683,7 +683,7 @@ func (s *StoreLogic) UnscannedUpload(stream proto.StoreService_UnscannedUploadSe
 		cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to send response: %v", err))
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
-		return fmt.Errorf("failed to send response: %v", err)
+		return fmt.Errorf("failed to send response: %v", cerr)
 	}
 
 	return nil
