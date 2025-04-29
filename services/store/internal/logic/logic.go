@@ -41,7 +41,6 @@ func NewStoreLogic(repo repository.ISnapsRepository, config *config.Config, obj 
 func (s *StoreLogic) RegisterSnapName(ctx context.Context, req *proto.RegisterSnapNameRequest) (*proto.RegisterSnapNameResponse, error) {
 	el := cerror.NewErrorList()
 
-	// check if snap name is valid (it should only have ASCII lowercase letters, numbers, and hyphens, and must have at least one letter)
 	if !checkValidName(req.SnapName) {
 		el.Add(cerror.InvalidField, "snap name is invalid, it should only have ASCII lowercase letters, numbers, and hyphens, and must have at least one letter")
 		return &proto.RegisterSnapNameResponse{Errors: el.ConvertToProtoErrorList()}, nil
