@@ -14,6 +14,7 @@ type Config struct {
 	Macaroon string `mapstructure:"macaroon" yaml:"macaroon"`
 
 	SnapDataPath string `mapstructure:"snap_data_path" yaml:"snap_data_path"`
+	DebugMode    bool   `mapstructure:"debug_mode" yaml:"debug_mode"`
 }
 
 func LoadConfig() (*Config, error) {
@@ -37,6 +38,10 @@ func LoadConfig() (*Config, error) {
 
 	if err := cfg.checkConfig(); err != nil {
 		return nil, fmt.Errorf("configuration validation failed: %v", err)
+	}
+
+	if cfg.DebugMode {
+		logrus.SetLevel(logrus.DebugLevel)
 	}
 
 	logrus.Infof("loaded config: %+v", cfg)

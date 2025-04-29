@@ -37,7 +37,7 @@ func (h *Handler) SetupEndpoints(r *gin.Engine) {
 
 func (h *Handler) RegisterName(c *gin.Context) {
 	h.performOperation(c, func() SnapOperation {
-		snapName := fmt.Sprintf("snap_%s", uuid.New().String())
+		snapName := fmt.Sprintf("snap%s", uuid.New().String())
 		return func() error {
 			return h.Logic.RegisterName(snapName)
 		}
@@ -57,6 +57,7 @@ func (h *Handler) SnapcraftUpload(c *gin.Context) {
 	h.performOperation(c, func() SnapOperation {
 		return func() error {
 			rc, snapName, err := util.RandomSnapReader(snaps, 30, h.Logic.Config.SnapDataPath)
+			logrus.Debugf("Random snap name: %s", snapName)
 			if err != nil {
 				return fmt.Errorf("failed to create multi-source reader: %w", err)
 			}
@@ -123,8 +124,13 @@ func (h *Handler) performOperation(c *gin.Context, operationFactory func() SnapO
 	var wg sync.WaitGroup
 	wg.Add(total)
 
-	var successCount, failureCount int64
-	var maxInFlight int64
+	var (
+		successCount  int64
+		failureCount  int64
+		maxInFlight   int64
+		latestErr     error
+		latestErrLock sync.Mutex
+	)
 
 	sem := make(chan struct{}, concurrentParse)
 
@@ -141,11 +147,17 @@ func (h *Handler) performOperation(c *gin.Context, operationFactory func() SnapO
 					break
 				}
 			}
+
 			err := op()
 			<-sem
+
 			if err != nil {
 				logrus.Errorf("operation failed: %v", err)
 				atomic.AddInt64(&failureCount, 1)
+
+				latestErrLock.Lock()
+				latestErr = err
+				latestErrLock.Unlock()
 			} else {
 				atomic.AddInt64(&successCount, 1)
 			}
@@ -158,11 +170,20 @@ func (h *Handler) performOperation(c *gin.Context, operationFactory func() SnapO
 
 	wg.Wait()
 
+	// read out latestErr under lock
+	latestErrLock.Lock()
+	errMsg := ""
+	if latestErr != nil {
+		errMsg = latestErr.Error()
+	}
+	latestErrLock.Unlock()
+
 	c.JSON(200, gin.H{
 		"requested":      total,
 		"succeeded":      atomic.LoadInt64(&successCount),
 		"failed":         atomic.LoadInt64(&failureCount),
 		"max_concurrent": atomic.LoadInt64(&maxInFlight),
+		"latest_error":   errMsg,
 	})
 }
 

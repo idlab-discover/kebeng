@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"net/http"
 	"slices"
 
@@ -385,45 +386,61 @@ func (h *Handler) SnapPush(c *gin.Context) {
 func (h *Handler) UnscannedUpload(c *gin.Context) {
 	el := cerror.NewErrorList()
 
-	binaryFile, err := c.FormFile("binary")
+	// Grab the multipart reader for the request
+	mr, err := c.Request.MultipartReader()
 	if err != nil {
-		el.Add(cerror.BadRequest, fmt.Sprintf("binary file not found: %s", err.Error()))
+		el.Add(cerror.BadRequest, "invalid multipart/form-data")
 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
 		return
 	}
 
-	file, err := binaryFile.Open()
-	if err != nil {
-		el.Add(cerror.InternalServerError, fmt.Sprintf("error opening file: %s", err.Error()))
-		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
-		return
-	}
-	defer func() {
-		if err := file.Close(); err != nil {
-			el.Add(cerror.InternalServerError, fmt.Sprintf("error closing file: %s", err.Error()))
-			c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+	var (
+		filePart io.Reader
+		filename string
+	)
+	// Iterate parts until we find the "binary" field
+	for {
+		part, err := mr.NextPart()
+		if err == io.EOF {
+			break
 		}
-	}()
+		if err != nil {
+			el.Add(cerror.InternalServerError, "error reading multipart")
+			c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+			return
+		}
+		if part.FormName() == "binary" {
+			filename = part.FileName()
+			filePart = part
+			break
+		}
+		part.Close() // skip unrelated parts
+	}
 
-	// Upload file to the unscanned bucket, waiting for revision to be created
-	resp := h.StoreClient.UnscannedUpload(c, file)
+	if filePart == nil {
+		el.Add(cerror.BadRequest, "binary part not found")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+
+	// Stream the file part directly to your StoreClient
+	resp := h.StoreClient.UnscannedUpload(c, filePart)
 	if len(resp.Errors) > 0 {
 		el.ExtendProtoError(resp.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
 		return
 	}
-
 	if resp.GetTempFileName() == "" {
-		el.Add(cerror.InternalServerError, "Upload failed: no ID returned")
+		el.Add(cerror.InternalServerError, "upload failed: no ID returned")
 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
 		return
 	}
 
-	// Return the upload ID and file information
+	// Respond with the upload info
 	c.JSON(http.StatusOK, gin.H{
 		"successful": true,
 		"upload_id":  resp.GetTempFileName(),
-		"filename":   binaryFile.Filename,
+		"filename":   filename,
 		"size":       resp.GetSize(),
 	})
 }

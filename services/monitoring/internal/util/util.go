@@ -18,6 +18,12 @@ type readCloser struct {
 	io.Closer
 }
 
+func stripExt(path string) string {
+	base := filepath.Base(path)          // e.g. "test.snap"
+	ext := filepath.Ext(base)            // e.g. ".snap"
+	return strings.TrimSuffix(base, ext) // "test"
+}
+
 func RandomSuffixReader(src io.ReadCloser, suffixLen int) io.ReadCloser {
 	// generate random suffix
 	rnd := make([]byte, suffixLen)
@@ -49,5 +55,5 @@ func RandomSnapReader(snaps []string, suffixLen int, dataDir string) (io.ReadClo
 	if err != nil {
 		return nil, snaps[idx], fmt.Errorf("failed to open %q: %w", fullPath, err)
 	}
-	return RandomSuffixReader(f, suffixLen), fmt.Sprintf("%s_%s", snaps[idx], uuid.New().String()), nil
+	return RandomSuffixReader(f, suffixLen), fmt.Sprintf("%s-%s", stripExt(snaps[idx]), uuid.New().String()), nil
 }
