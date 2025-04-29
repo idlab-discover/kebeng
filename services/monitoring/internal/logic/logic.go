@@ -91,29 +91,40 @@ func (l *Logic) SnapDownload(revisionID string) error {
 	return nil
 }
 
-func (l *Logic) SnapPush(req model.SnapPushRequest) error {
+func (l *Logic) SnapPush(req model.SnapPushRequest) (*model.SnapPushResponse, error) {
 	url := fmt.Sprintf("%s/dev/api/snap-push/", l.Config.StoreUrl)
 	b, _ := json.Marshal(req)
-	if _, err := l.doRequest("POST", url, "application/json", bytes.NewReader(b)); err != nil {
+	body, err := l.doRequest("POST", url, "application/json", bytes.NewReader(b))
+	if err != nil {
 		logrus.Error("SnapPush:", err)
-		return err
+		return nil, err
 	}
-	return nil
+	var out model.SnapPushResponse
+	if err := json.Unmarshal(body, &out); err != nil {
+		return nil, fmt.Errorf("unmarshal snap-push response: %w", err)
+	}
+	return &out, nil
 }
 
-func (l *Logic) UnscannedUpload(reader io.Reader) error {
+func (l *Logic) UnscannedUpload(reader io.Reader, entryName string) (*model.UnscannedUploadResponse, error) {
 	var buf bytes.Buffer
 	w := multipart.NewWriter(&buf)
-	p, _ := w.CreateFormFile("binary", fmt.Sprintf("%s", time.Now().Format(time.RFC3339)))
+	p, _ := w.CreateFormFile("binary", entryName)
 	io.Copy(p, reader)
 	w.Close()
 
 	url := fmt.Sprintf("%s/unscanned-upload/", l.Config.StoreUrl)
-	if _, err := l.doRequest("POST", url, w.FormDataContentType(), &buf); err != nil {
+	bodyBytes, err := l.doRequest("POST", url, w.FormDataContentType(), &buf)
+	if err != nil {
 		logrus.Error("UnscannedUpload:", err)
-		return err
+		return nil, err
 	}
-	return nil
+
+	var out model.UnscannedUploadResponse
+	if err := json.Unmarshal(bodyBytes, &out); err != nil {
+		return nil, fmt.Errorf("unmarshal unscanned-upload response: %w", err)
+	}
+	return &out, nil
 }
 
 func (l *Logic) GetUploadStatus(uploadID string) (*model.UploadStatusResponse, error) {
@@ -179,7 +190,7 @@ func (l *Logic) RegisterNameAndUnscannedUpload(snapName string, reader io.Reader
 	if err := l.RegisterName(snapName); err != nil {
 		return fmt.Errorf("registering name: %w", err)
 	}
-	if err := l.UnscannedUpload(reader); err != nil {
+	if _, err := l.UnscannedUpload(reader, snapName); err != nil {
 		return fmt.Errorf("unscanned upload: %w", err)
 	}
 	return nil

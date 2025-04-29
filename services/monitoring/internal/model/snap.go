@@ -148,24 +148,3 @@ type Store struct {
 	ID    uuid.UUID `json:"id"`
 	Roles []string  `json:"roles"`
 }
-
-type SnapPushRequest struct {
-	Name              string   `json:"name"`
-	DryRun            bool     `json:"dry_run"`
-	UnscannedFileName string   `json:"updown_id"`
-	Series            string   `json:"series"`
-	BinaryFileSize    int64    `json:"binary_filesize"`
-	SourceUploaded    bool     `json:"source_uploaded"`
-	Channels          []string `json:"channels"`
-}
-
-type UnscannedUploadRequest struct {
-	Data string `json:"data"`
-}
-
-type UploadStatusResponse struct {
-	Code      string           `json:"code"`
-	Processed bool             `json:"processed"`
-	Revision  int              `json:"revision"`
-	Errors    cerror.ErrorList `json:"errors"`
-}

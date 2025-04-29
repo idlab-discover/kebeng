@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -31,7 +32,7 @@ func NewHandler(logic *logic.Logic) *Handler {
 
 func (h *Handler) SetupEndpoints(r *gin.Engine) {
 	r.GET("/register-name", h.RegisterName)
-	r.GET("/register-name-and-unscanned-upload", h.RegisterNameAndUnscannedUpload)
+	r.GET("/snapcraft-upload", h.SnapcraftUpload)
 }
 
 func (h *Handler) RegisterName(c *gin.Context) {
@@ -43,10 +44,8 @@ func (h *Handler) RegisterName(c *gin.Context) {
 	})
 }
 
-// TODO: make this make sense idk what the correct workflow is let Bram look at it
-// goal is to eventually be able to simulate entire snap push process of snapcraft
-func (h *Handler) RegisterNameAndUnscannedUpload(c *gin.Context) {
-	var req model.RegisterAndUnscannedUploadRequest
+func (h *Handler) SnapcraftUpload(c *gin.Context) {
+	var req model.SnapcraftUploadRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logrus.Errorf("failed to bind JSON: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
@@ -67,11 +66,51 @@ func (h *Handler) RegisterNameAndUnscannedUpload(c *gin.Context) {
 			if err != nil {
 				return err
 			}
-			err = h.Logic.UnscannedUpload(rc)
+			logrus.Debugf("Registered snap name: %s", snapName)
+
+			pushRequest := model.SnapPushRequest{
+				Name:   snapName,
+				DryRun: true,
+			}
+			pushResp, err := h.Logic.SnapPush(pushRequest)
 			if err != nil {
 				return err
 			}
-			return nil
+			logrus.Debugf("Push response 1: %+v", pushResp)
+			resp, err := h.Logic.UnscannedUpload(rc, snapName)
+			if err != nil {
+				return err
+			}
+			logrus.Debugf("Unscanned upload: %+v", resp)
+			pushRequest = model.SnapPushRequest{
+				Name:              snapName,
+				UnscannedFileName: resp.UploadID,
+				BinaryFileSize:    resp.Size,
+			}
+			pushResp, err = h.Logic.SnapPush(pushRequest)
+			if err != nil {
+				return err
+			}
+			logrus.Debugf("Push response 2: %+v", pushResp)
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+			ticker := time.NewTicker(1 * time.Second)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ctx.Done():
+					return fmt.Errorf("timed out waiting for upload %s to process", pushResp.UploadID)
+				case <-ticker.C:
+					status, err := h.Logic.GetUploadStatus(pushResp.UploadID)
+					if err != nil {
+						return fmt.Errorf("failed to get upload status: %w", err)
+					}
+					logrus.Debugf("Upload status: %+v", status)
+					if status.Processed {
+						return nil
+					}
+				}
+			}
 		}
 	})
 }
