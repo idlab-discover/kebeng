@@ -9,11 +9,15 @@ import (
 	"time"
 
 	"monitoring/internal/logic"
+	"monitoring/internal/model"
+	"monitoring/internal/util"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
+
+type SnapOperation func() error
 
 type Handler struct {
 	Logic *logic.Logic
@@ -27,15 +31,47 @@ func NewHandler(logic *logic.Logic) *Handler {
 
 func (h *Handler) SetupEndpoints(r *gin.Engine) {
 	r.GET("/register-name", h.RegisterName)
+	r.GET("/register-name-and-unscanned-upload", h.RegisterNameAndUnscannedUpload)
 }
-
-type SnapOperation func() error
 
 func (h *Handler) RegisterName(c *gin.Context) {
 	h.performOperation(c, func() SnapOperation {
 		snapName := fmt.Sprintf("snap_%s", uuid.New().String())
 		return func() error {
 			return h.Logic.RegisterName(snapName)
+		}
+	})
+}
+
+// TODO: make this make sense idk what the correct workflow is let Bram look at it
+// goal is to eventually be able to simulate entire snap push process of snapcraft
+func (h *Handler) RegisterNameAndUnscannedUpload(c *gin.Context) {
+	var req model.RegisterAndUnscannedUploadRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		logrus.Errorf("failed to bind JSON: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+
+	snaps := req.SnapNames
+
+	h.performOperation(c, func() SnapOperation {
+		return func() error {
+			rc, snapName, err := util.RandomSnapReader(snaps, 30, h.Logic.Config.SnapDataPath)
+			if err != nil {
+				return fmt.Errorf("failed to create multi-source reader: %w", err)
+			}
+			defer rc.Close()
+
+			err = h.Logic.RegisterName(snapName)
+			if err != nil {
+				return err
+			}
+			err = h.Logic.UnscannedUpload(rc)
+			if err != nil {
+				return err
+			}
+			return nil
 		}
 	})
 }
@@ -53,7 +89,7 @@ func (h *Handler) performOperation(c *gin.Context, operationFactory func() SnapO
 
 	sem := make(chan struct{}, concurrentParse)
 
-	for i := 0; i < total; i++ {
+	for range total {
 		op := operationFactory()
 
 		go func(op SnapOperation) {
@@ -69,6 +105,7 @@ func (h *Handler) performOperation(c *gin.Context, operationFactory func() SnapO
 			err := op()
 			<-sem
 			if err != nil {
+				logrus.Errorf("operation failed: %v", err)
 				atomic.AddInt64(&failureCount, 1)
 			} else {
 				atomic.AddInt64(&successCount, 1)

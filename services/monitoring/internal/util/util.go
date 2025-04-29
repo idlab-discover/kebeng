@@ -5,41 +5,49 @@ import (
 	"fmt"
 	"io"
 	"math/big"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
 )
 
-// used to simulate different snap packages from 1 actual snap package
-func RandomSuffixReader(src io.Reader, suffixLen int) io.Reader {
-	// generate suffixLen random bytes
+type readCloser struct {
+	io.Reader
+	io.Closer
+}
+
+func RandomSuffixReader(src io.ReadCloser, suffixLen int) io.ReadCloser {
+	// generate random suffix
 	rnd := make([]byte, suffixLen)
 	if _, err := rand.Read(rnd); err != nil {
 		rnd = fmt.Appendf(rnd, "%d", time.Now().UnixNano())
 	}
-	// return a reader that streams src, then the suffix
-	return io.MultiReader(src, strings.NewReader(string(rnd)))
+	// wrap src+suffix in a MultiReader
+	mr := io.MultiReader(src, strings.NewReader(string(rnd)))
+	// return a ReadCloser that closes src
+	return &readCloser{Reader: mr, Closer: src}
 }
 
-// MultiSourceReader takes a slice of io.Reader factories and returns one at random,
-// wrapped in randomSuffixReader. Each factory should return a fresh io.Reader
-// (e.g. reopening the file).
-func MultiSourceReader(factories []func() (io.Reader, error), suffixLen int) (io.Reader, error) {
-	if len(factories) == 0 {
-		return nil, fmt.Errorf("no sources provided")
+// returns a random source from the list of snaps and a random snap name
+// caller has to close the reader by casting to io.Closer and calling Close
+func RandomSnapReader(snaps []string, suffixLen int, dataDir string) (io.ReadCloser, string, error) {
+	if len(snaps) == 0 {
+		return nil, "", fmt.Errorf("no sources provided")
 	}
-	// pick a random index
-	idxBig, err := rand.Int(rand.Reader, big.NewInt(int64(len(factories))))
+	idxBig, err := rand.Int(rand.Reader, big.NewInt(int64(len(snaps))))
 	if err != nil {
-		// fallback to time-based
-		idx := time.Now().UnixNano() % int64(len(factories))
+		// fallback to time-based random
+		idx := time.Now().UnixNano() % int64(len(snaps))
 		idxBig = big.NewInt(idx)
 	}
 	idx := int(idxBig.Int64())
 
-	src, err := factories[idx]()
+	fullPath := filepath.Join(dataDir, snaps[idx])
+	f, err := os.Open(fullPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open source #%d: %w", idx, err)
+		return nil, snaps[idx], fmt.Errorf("failed to open %q: %w", fullPath, err)
 	}
-
-	return RandomSuffixReader(src, suffixLen), nil
+	return RandomSuffixReader(f, suffixLen), fmt.Sprintf("%s_%s", snaps[idx], uuid.New().String()), nil
 }

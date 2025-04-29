@@ -24,36 +24,6 @@ func NewLogic(cfg *config.Config, client *http.Client) *Logic {
 	return &Logic{Config: cfg, Client: client}
 }
 
-// doRequest sends an HTTP request, checks for errors, and returns the response body.
-func (l *Logic) doRequest(method, url, contentType string, body io.Reader) ([]byte, error) {
-	req, err := http.NewRequest(method, url, body)
-	if err != nil {
-		return nil, fmt.Errorf("creating %s request to %s: %w", method, url, err)
-	}
-	if contentType != "" {
-		req.Header.Set("Content-Type", contentType)
-	}
-	req.Header.Set("Authorization", fmt.Sprintf(
-		"Macaroon root=%s, discharge=%s",
-		l.Config.Macaroon, l.Config.Macaroon,
-	))
-
-	resp, err := l.Client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("HTTP %s %s error: %w", method, url, err)
-	}
-	defer resp.Body.Close()
-
-	respBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("reading response from %s: %w", url, err)
-	}
-	if resp.StatusCode >= 400 {
-		return nil, fmt.Errorf("bad status %d from %s: %s", resp.StatusCode, url, respBytes)
-	}
-	return respBytes, nil
-}
-
 func (l *Logic) RegisterName(snapName string) error {
 	url := fmt.Sprintf("%s/dev/api/register-name/", l.Config.StoreUrl)
 	payload := map[string]string{"snap_name": snapName}
@@ -131,10 +101,10 @@ func (l *Logic) SnapPush(req model.SnapPushRequest) error {
 	return nil
 }
 
-func (l *Logic) UnscannedUpload(reader io.Reader, filename string) error {
+func (l *Logic) UnscannedUpload(reader io.Reader) error {
 	var buf bytes.Buffer
 	w := multipart.NewWriter(&buf)
-	p, _ := w.CreateFormFile("binary", filename)
+	p, _ := w.CreateFormFile("binary", fmt.Sprintf("%s", time.Now().Format(time.RFC3339)))
 	io.Copy(p, reader)
 	w.Close()
 
@@ -203,4 +173,46 @@ func (l *Logic) GetAccountKeyAssertion(pubKeySha, maxFormat string) (string, err
 		return "", err
 	}
 	return string(respBytes), nil
+}
+
+func (l *Logic) RegisterNameAndUnscannedUpload(snapName string, reader io.Reader) error {
+	if err := l.RegisterName(snapName); err != nil {
+		return fmt.Errorf("registering name: %w", err)
+	}
+	if err := l.UnscannedUpload(reader); err != nil {
+		return fmt.Errorf("unscanned upload: %w", err)
+	}
+	return nil
+}
+
+// ================ Helper Functions ================
+
+// doRequest sends an HTTP request, checks for errors, and returns the response body.
+func (l *Logic) doRequest(method, url, contentType string, body io.Reader) ([]byte, error) {
+	req, err := http.NewRequest(method, url, body)
+	if err != nil {
+		return nil, fmt.Errorf("creating %s request to %s: %w", method, url, err)
+	}
+	if contentType != "" {
+		req.Header.Set("Content-Type", contentType)
+	}
+	req.Header.Set("Authorization", fmt.Sprintf(
+		"Macaroon root=%s, discharge=%s",
+		l.Config.Macaroon, l.Config.Macaroon,
+	))
+
+	resp, err := l.Client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("HTTP %s %s error: %w", method, url, err)
+	}
+	defer resp.Body.Close()
+
+	respBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("reading response from %s: %w", url, err)
+	}
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("bad status %d from %s: %s", resp.StatusCode, url, respBytes)
+	}
+	return respBytes, nil
 }
