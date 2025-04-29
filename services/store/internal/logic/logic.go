@@ -1093,7 +1093,7 @@ func checkValidName(name string) bool {
 	}
 
 	hasLetter := false
-	for i := 0; i < len(name); i++ {
+	for i := range len(name) {
 		c := name[i]
 		switch {
 		case c >= 'a' && c <= 'z':

@@ -3,10 +3,10 @@ package repository
 import (
 	"store/internal/models"
 
+	proto "store/proto"
+
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
-	"github.com/idlab-discover/kebeng/services/store/internal/models"
-	proto "github.com/idlab-discover/kebeng/services/store/proto"
 	"github.com/stretchr/testify/mock"
 	"google.golang.org/grpc"
 )

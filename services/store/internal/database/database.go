@@ -25,7 +25,7 @@ func createDatabaseWithDSN(connectionString string, cfg *config.Config) (*sqlx.D
 	maxRetries := 10
 	retryInterval := 3 * time.Second
 
-	for try := 0; try < maxRetries; try++ {
+	for try := range maxRetries {
 		db, err = sqlx.Connect("postgres", connectionString)
 		if err == nil {
 			logrus.Info("Connected to database")
