@@ -20,6 +20,7 @@ service StoreService {
     rpc AddRevision(AddRevisionRequest) returns (AddRevisionResponse);
     rpc GetObjectCustomMetadata(GetObjectCustomMetadataRequest) returns (GetObjectCustomMetadataResponse);
     rpc UpdateUploadStatus(UpdateUploadStatusRequest) returns (UpdateUploadStatusResponse);
+    rpc UpdateSnapEntryWithMetadata(UpdateSnapEntryWithMetadataRequest) returns (UpdateEntryResponse);
 }
 
 message RegisterSnapNameRequest {
@@ -262,7 +263,16 @@ message GetObjectCustomMetadataRequest {
 
 message GetObjectCustomMetadataResponse {
     string sha3_384_encoded = 1;
-    repeated proto.Error errors = 2;
+    string name = 2;
+    string version = 3;
+    string type = 4;
+    string summary = 5;
+    string description = 6;
+    string confinement = 7;
+    string base = 8;
+    string grade = 9;
+    repeated string architectures = 10;
+    repeated proto.Error errors = 11;
 }
 
 message UpdateUploadStatusRequest {
@@ -276,4 +286,40 @@ message UpdateUploadStatusResponse {
     string upload_id = 1;
     string status = 2;
     repeated proto.Error errors = 3;
+}
+
+message UpdateSnapEntryWithMetadataRequest {
+    string entry_id = 1;
+    string name = 2;
+    string confinement = 3;
+    string base = 4;
+    repeated string architectures = 5;
+    string grade = 6;
+    string version = 7;
+    string summary = 8;
+    string description = 9;
+    repeated proto.Error errors = 10;
+}
+
+message UpdateEntryResponse {
+    string entry_id = 1;
+    string name = 2;
+    string type = 3;
+    string confinement = 4;
+    string base = 5;
+    repeated string architectures = 6;
+    string grade = 7;
+    string version = 8;
+    string summary = 9;
+    string description = 10;
+    bool private = 11;
+    string status = 12;
+    double price = 13;
+    string store = 14;
+    string icon_url = 15;
+    string account_id = 16;
+    google.protobuf.Timestamp created_at = 17;
+    google.protobuf.Timestamp updated_at = 18;
+    optional google.protobuf.Timestamp deleted_at = 19;
+    repeated proto.Error errors = 20;
 }

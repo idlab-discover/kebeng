@@ -191,3 +191,11 @@ func (m *MockStoreServiceClient) UpdateUploadStatus(ctx context.Context, in *pro
 	}
 	return args.Get(0).(*proto.UpdateUploadStatusResponse), nil
 }
+
+func (m *MockStoreServiceClient) UpdateSnapEntryWithMetadata(ctx context.Context, in *proto.UpdateSnapEntryWithMetadataRequest, opts ...grpc.CallOption) (*proto.UpdateEntryResponse, error) {
+	args := m.Called(ctx, in)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*proto.UpdateEntryResponse), nil
+}

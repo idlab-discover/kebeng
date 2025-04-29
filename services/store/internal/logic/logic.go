@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path"
 	"strings"
 	"time"
@@ -22,6 +23,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/sha3"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"gopkg.in/yaml.v2"
 )
 
 var _ proto.StoreServiceServer = (*StoreLogic)(nil)
@@ -40,12 +42,10 @@ func NewStoreLogic(repo repository.ISnapsRepository, config *config.Config, obj 
 func (s *StoreLogic) RegisterSnapName(ctx context.Context, req *proto.RegisterSnapNameRequest) (*proto.RegisterSnapNameResponse, error) {
 	el := cerror.NewErrorList()
 
-	if req.SnapName == "" {
-		el.Add(cerror.MissingField, "snap name is required")
+	if !checkValidName(req.SnapName) {
+		el.Add(cerror.InvalidField, "snap name is invalid, it should only have ASCII lowercase letters, numbers, and hyphens, and must have at least one letter")
 		return &proto.RegisterSnapNameResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
-
-	// TODO: check if snap name is valid (it should only have ASCII lowercase letters, numbers, and hyphens, and must have at least one letter)
 
 	// First check if the snap name is already registered
 	snapEntry, cerr := s.repo.GetEntryByName(req.SnapName, nil, el)
@@ -152,19 +152,7 @@ func (s *StoreLogic) GetEntries(ctx context.Context, req *proto.GetEntriesReques
 				continue
 			}
 
-			foundEntries = append(foundEntries, &proto.GetEntryResponse{
-				Id:          snapEntry.ID.String(),
-				SnapName:    snapEntry.Name,
-				Type:        snapEntry.Type,
-				Confinement: snapEntry.Confinement,
-				Base:        snapEntry.Base,
-				Private:     snapEntry.Private,
-				PublisherId: snapEntry.AccountID.String(),
-				Price:       snapEntry.Price,
-				Status:      snapEntry.Status,
-				Since:       timestamppb.New(snapEntry.CreatedAt),
-				IconUrl:     snapEntry.IconURL,
-			})
+			foundEntries = append(foundEntries, parseEntryToProto(snapEntry))
 
 		} else {
 			cerr := cerror.NewCustomError(cerror.MissingField, "id or name is required")
@@ -209,19 +197,7 @@ func (s *StoreLogic) GetEntryById(ctx context.Context, req *proto.GetEntryReques
 		return &proto.GetEntryResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
 
-	return &proto.GetEntryResponse{
-		Id:          snapEntry.ID.String(),
-		SnapName:    snapEntry.Name,
-		Type:        snapEntry.Type,
-		Confinement: snapEntry.Confinement,
-		Base:        snapEntry.Base,
-		Private:     snapEntry.Private,
-		PublisherId: snapEntry.AccountID.String(),
-		Price:       snapEntry.Price,
-		Status:      snapEntry.Status,
-		Since:       timestamppb.New(snapEntry.CreatedAt),
-		IconUrl:     snapEntry.IconURL,
-	}, nil
+	return parseEntryToProto(snapEntry), nil
 }
 
 // GetEntryByName retrieves a single snap entry by its name.
@@ -250,19 +226,7 @@ func (s *StoreLogic) GetEntryByName(ctx context.Context, req *proto.GetEntryRequ
 		return &proto.GetEntryResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
 
-	return &proto.GetEntryResponse{
-		Id:          snapEntry.ID.String(),
-		SnapName:    snapEntry.Name,
-		Type:        snapEntry.Type,
-		Confinement: snapEntry.Confinement,
-		Base:        snapEntry.Base,
-		Private:     snapEntry.Private,
-		PublisherId: snapEntry.AccountID.String(),
-		Price:       snapEntry.Price,
-		Status:      snapEntry.Status,
-		Since:       timestamppb.New(snapEntry.CreatedAt),
-		IconUrl:     snapEntry.IconURL,
-	}, nil
+	return parseEntryToProto(snapEntry), nil
 }
 
 // GetRevisions retrieves a list of revisions based on the provided request.
@@ -507,12 +471,11 @@ func (s *StoreLogic) SnapDownload(req *proto.SnapDownloadRequest, stream proto.S
 		}
 		return fmt.Errorf("failed to get revision by id: %v", cerr)
 	}
-	defer func(snapfileReader io.Reader) {
-		err := snapFileReader.Close()
-		if err != nil {
+	defer func() {
+		if err := snapFileReader.Close(); err != nil {
 			logrus.Error("failed to close snap file reader: ", err)
 		}
-	}(snapFileReader)
+	}()
 
 	// define chunksize for reading the file
 	const chunkSize = 64 * 1024
@@ -561,37 +524,6 @@ func (s *StoreLogic) SnapDownload(req *proto.SnapDownloadRequest, stream proto.S
 		}
 	}
 	return nil
-}
-
-func saveFileToTemp(snapFile io.Reader, el *cerror.ErrorList) (string, *cerror.CustomError) {
-	// Generate random file name for the new uploaded file so it doesn't override an old file with same name
-	snapFileId := uuid.New().String()
-	newFileName := snapFileId + ".snap"
-
-	out, err := os.Create(path.Join("/tmp", newFileName))
-	if err != nil {
-		cerr := cerror.NewCustomError(cerror.InternalServerError, "Failed to create file")
-		logrus.Error(cerr)
-		el.AddCustomError(cerr)
-		return "", cerr
-	}
-	defer func(out *os.File) {
-		err := out.Close()
-		if err != nil {
-			logrus.Error("failed to close file: ", err)
-		}
-
-	}(out)
-
-	_, err = io.Copy(out, snapFile)
-	if err != nil {
-		cerr := cerror.NewCustomError(cerror.InternalServerError, "Failed to copy file")
-		logrus.Error(cerr)
-		el.AddCustomError(cerr)
-		return "", cerr
-	}
-
-	return newFileName, nil
 }
 
 func (s *StoreLogic) AddUpload(ctx context.Context, req *proto.AddUploadRequest) (*proto.AddUploadResponse, error) {
@@ -716,7 +648,18 @@ func (s *StoreLogic) UnscannedUpload(stream proto.StoreService_UnscannedUploadSe
 
 	tmpPath := path.Join(os.TempDir(), snapFileName)
 
-	metadata, err := s.obs.SaveFileToBucket("unscanned", tmpPath, sha3_384HashEncoded)
+	// Get metadata from snapcraft.yaml inside of the snap file
+	metadataYaml, err := getSnapMetaFromFile(tmpPath, os.TempDir())
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to get snap metadata: %v", err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return fmt.Errorf("failed to get snap metadata: %v", cerr)
+	}
+
+	logrus.Infof("snap metadata yaml: %v", metadataYaml)
+
+	metadataMinio, err := s.obs.SaveFileToBucket("unscanned", tmpPath, sha3_384HashEncoded, metadataYaml.Name, metadataYaml.Version, metadataYaml.Summary, metadataYaml.Description, metadataYaml.Confinement, metadataYaml.Base, metadataYaml.Grade, metadataYaml.Architectures)
 	if err != nil {
 		cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to save file to object store: %v", err))
 		logrus.Error(cerr)
@@ -725,8 +668,8 @@ func (s *StoreLogic) UnscannedUpload(stream proto.StoreService_UnscannedUploadSe
 	}
 
 	err = stream.SendAndClose(&proto.UnscannedUploadCompleteResponse{
-		TempFileName: metadata.Key,
-		Size:         uint64(metadata.Size),
+		TempFileName: metadataMinio.Key,
+		Size:         uint64(metadataMinio.Size),
 		Errors:       el.ConvertToProtoErrorList(),
 	})
 	if err != nil {
@@ -950,7 +893,71 @@ func (s *StoreLogic) GetObjectCustomMetadata(ctx context.Context, req *proto.Get
 
 	return &proto.GetObjectCustomMetadataResponse{
 		Sha3_384Encoded: metadata.SHA3_384_Encoded,
+		Name:            metadata.Name,
+		Version:         metadata.Version,
+		Type:            metadata.Type,
+		Summary:         metadata.Summary,
+		Description:     metadata.Description,
+		Confinement:     metadata.Confinement,
+		Base:            metadata.Base,
+		Grade:           metadata.Grade,
+		Architectures:   metadata.Architectures,
 	}, nil
+}
+
+func (s *StoreLogic) UpdateSnapEntryWithMetadata(ctx context.Context, req *proto.UpdateSnapEntryWithMetadataRequest) (*proto.UpdateEntryResponse, error) {
+	el := cerror.NewErrorList()
+	if req.EntryId == "" {
+		cerr := cerror.NewCustomError(cerror.MissingField, "entry id is required")
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.UpdateEntryResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	parsedID, err := uuid.Parse(req.EntryId)
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.InvalidField, fmt.Sprintf("invalid UUID format: %s", req.EntryId))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.UpdateEntryResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	meta := &models.SnapMeta{
+		Name:          req.Name,
+		Version:       req.Version,
+		Summary:       req.Summary,
+		Description:   req.Description,
+		Confinement:   req.Confinement,
+		Base:          req.Base,
+		Grade:         req.Grade,
+		Architectures: req.Architectures,
+	}
+
+	entry, cerr := s.repo.UpdateSnapEntryWithMetadata(parsedID, meta, el)
+	if cerr != nil {
+		// Already logged in UpdateSnapEntryWithMetadata (repository)
+		return &proto.UpdateEntryResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	return &proto.UpdateEntryResponse{
+		EntryId:       entry.ID.String(),
+		Name:          entry.Name,
+		Summary:       entry.Summary,
+		Description:   entry.Description,
+		Type:          entry.Type,
+		Confinement:   entry.Confinement,
+		Base:          entry.Base,
+		Private:       entry.Private,
+		AccountId:     entry.AccountID.String(),
+		Price:         entry.Price,
+		Status:        entry.Status,
+		Architectures: entry.Architectures,
+		Grade:         entry.Grade,
+		Version:       entry.Version,
+		IconUrl:       entry.IconURL,
+		Errors:        el.ConvertToProtoErrorList(),
+	}, nil
+
 }
 
 // ################# HELPERS #################
@@ -1030,4 +1037,119 @@ func parseTracksAndChannels(tracksAndChannels []string) map[string][]string {
 	}
 
 	return parsed
+}
+
+// GetSnapMetaFromFile will return SnapMeta from a byte array representing a snap file
+// This is an inefficient but expedient process
+func getSnapMetaFromFile(snapFilePath string, workingDirectory string) (*models.SnapMeta, error) {
+	bytes, err := os.ReadFile(snapFilePath)
+	if err == nil {
+		return getSnapMetaFromBytes(bytes, workingDirectory)
+	}
+
+	return nil, err
+}
+
+func getSnapMetaFromBytes(bytes []byte, workingDirectory string) (*models.SnapMeta, error) {
+	tmpFilePath := path.Join(workingDirectory, uuid.New().String()+".snap")
+	err := os.WriteFile(tmpFilePath, bytes, 0755)
+	if err == nil {
+		defer func(name string) {
+			errIn := os.Remove(name)
+			if errIn != nil {
+				logrus.Error(errIn)
+			}
+		}(tmpFilePath)
+		err = os.Chdir(workingDirectory)
+		if err == nil {
+			cmd := exec.Command("unsquashfs", tmpFilePath, "-e", "meta/snap.yaml")
+			defer func() {
+				errIn := os.RemoveAll(path.Join(workingDirectory, "squashfs-root"))
+				if errIn != nil {
+					logrus.Error(err)
+				}
+			}()
+			cmd.Stderr = os.Stderr
+			err = cmd.Run()
+			if err == nil {
+				bytes, err = os.ReadFile(path.Join(workingDirectory, "squashfs-root", "meta", "snap.yaml"))
+				if err == nil {
+					var snapMeta models.SnapMeta
+					err = yaml.Unmarshal(bytes, &snapMeta)
+					if err == nil {
+						return &snapMeta, nil
+					}
+				}
+			}
+		}
+	}
+
+	return nil, err
+}
+
+func checkValidName(name string) bool {
+	if name == "" {
+		return false
+	}
+
+	hasLetter := false
+	for i := 0; i < len(name); i++ {
+		c := name[i]
+		switch {
+		case c >= 'a' && c <= 'z':
+			hasLetter = true
+		case c >= '0' && c <= '9', c == '-':
+			// allowed
+		default:
+			return false
+		}
+	}
+	return hasLetter
+}
+
+func parseEntryToProto(entry *models.SnapEntry) *proto.GetEntryResponse {
+	return &proto.GetEntryResponse{
+		Id:          entry.ID.String(),
+		SnapName:    entry.Name,
+		Type:        entry.Type,
+		Confinement: entry.Confinement,
+		Base:        entry.Base,
+		Private:     entry.Private,
+		PublisherId: entry.AccountID.String(),
+		Price:       entry.Price,
+		Status:      entry.Status,
+		Since:       timestamppb.New(entry.CreatedAt),
+		IconUrl:     entry.IconURL,
+	}
+}
+
+func saveFileToTemp(snapFile io.Reader, el *cerror.ErrorList) (string, *cerror.CustomError) {
+	// Generate random file name for the new uploaded file so it doesn't override an old file with same name
+	snapFileId := uuid.New().String()
+	newFileName := snapFileId + ".snap"
+
+	out, err := os.Create(path.Join("/tmp", newFileName))
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.InternalServerError, "Failed to create file")
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return "", cerr
+	}
+	defer func(out *os.File) {
+		err := out.Close()
+		if err != nil {
+			logrus.Error("failed to close file: ", err)
+		}
+
+	}(out)
+
+	_, err = io.Copy(out, snapFile)
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.InternalServerError, "Failed to copy file")
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return "", cerr
+	}
+
+	return newFileName, nil
 }
