@@ -5,8 +5,9 @@ import (
 	"context"
 	"io"
 
+	"store/internal/models"
+
 	"github.com/idlab-discover/kebeng/common/cerror"
-	"github.com/idlab-discover/kebeng/services/store/internal/models"
 	"github.com/minio/minio-go/v7"
 	"github.com/stretchr/testify/mock"
 )
@@ -27,8 +28,8 @@ func (m *MockObjectStore) GetSnapFileReader(ctx context.Context, filePath string
 }
 
 // SaveFileToBucket implements IObjectStore.
-func (m *MockObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string) (*models.Metadata, error) {
-	args := m.Called(bucket, filePath, sha3_384_encoded)
+func (m *MockObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string, name string, version string, summary string, description string, confinement string, base string, grade string, architectures []string) (*models.Metadata, error) {
+	args := m.Called(bucket, filePath, sha3_384_encoded, name, version, summary, description, confinement, base, grade, architectures)
 	if args.Get(0) != nil {
 		return args.Get(0).(*models.Metadata), nil
 	}

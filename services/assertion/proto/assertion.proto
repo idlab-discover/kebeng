@@ -4,7 +4,7 @@ import "common/cerror/proto/error.proto";
 import "google/protobuf/timestamp.proto";
 
 package assertion;
-option go_package = "github.com/idlab-discover/kebeng/services/assertion/proto;assertion";
+option go_package = "assertion/proto;assertion";
 
 service AssertionService {
     rpc ProcessSnapBuildAssertion(SnapBuildAssertionRequest) returns (SnapBuildAssertionResponse);

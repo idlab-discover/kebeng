@@ -178,6 +178,7 @@ macaroon:
   third_party_caveat_id: "some-third-party-caveat-id"
   third_party_location: "some-third-party-location"
 store_url: "https://store.example.com"
+store_name: "example-store"
 `
 	tmpFile := createTempConfigFile(t, content)
 	os.Setenv("CONFIG_FILE_PATH", tmpFile)
@@ -196,4 +197,5 @@ store_url: "https://store.example.com"
 	assert.Equal(t, "some-root-key", cfg.MacaroonConfig.RootKey)
 	assert.Equal(t, "some-discharge-key", cfg.MacaroonConfig.DischargeKey)
 	assert.Equal(t, "https://store.example.com", cfg.StoreUrl)
+	assert.Equal(t, "example-store", cfg.StoreName)
 }

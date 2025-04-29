@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"time"
 
+	"store/internal/config"
+
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file" // needed for file source
-	"github.com/idlab-discover/kebeng/services/store/internal/config"
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
 )
@@ -24,7 +25,7 @@ func createDatabaseWithDSN(connectionString string, cfg *config.Config) (*sqlx.D
 	maxRetries := 10
 	retryInterval := 3 * time.Second
 
-	for try := 0; try < maxRetries; try++ {
+	for try := range maxRetries {
 		db, err = sqlx.Connect("postgres", connectionString)
 		if err == nil {
 			logrus.Info("Connected to database")

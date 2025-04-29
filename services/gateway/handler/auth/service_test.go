@@ -8,10 +8,11 @@ import (
 	"testing"
 	"time"
 
+	"gateway/internal/config"
+	mc "gateway/internal/macaroon"
+	"gateway/internal/model"
+
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
-	"github.com/idlab-discover/kebeng/services/gateway/internal/config"
-	mc "github.com/idlab-discover/kebeng/services/gateway/internal/macaroon"
-	"github.com/idlab-discover/kebeng/services/gateway/internal/model"
 	"github.com/stretchr/testify/assert"
 	macaroon "gopkg.in/macaroon.v2"
 )

@@ -9,14 +9,15 @@ import (
 
 	_ "net/http/pprof"
 
+	"account/internal/config"
+	"account/internal/database"
+	"account/internal/logic"
+	"account/internal/models"
+	"account/internal/repository"
+	proto "account/proto"
+
 	"github.com/google/uuid"
 	"github.com/idlab-discover/kebeng/common/monitoring"
-	"github.com/idlab-discover/kebeng/services/account/internal/config"
-	"github.com/idlab-discover/kebeng/services/account/internal/database"
-	"github.com/idlab-discover/kebeng/services/account/internal/logic"
-	"github.com/idlab-discover/kebeng/services/account/internal/models"
-	"github.com/idlab-discover/kebeng/services/account/internal/repository"
-	proto "github.com/idlab-discover/kebeng/services/account/proto"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
@@ -77,7 +78,6 @@ func main() {
 		logrus.Infof("Monitoring enabled")
 
 		// can be used to see the heap allocation
-		// TODO:REMOVE THIS COMMENT
 		go func() {
 			logrus.Infof("Starting pprof endpoint on :6060")
 			if err := http.ListenAndServe(":6060", nil); err != nil {

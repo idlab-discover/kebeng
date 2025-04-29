@@ -1,10 +1,14 @@
 package repository
 
 import (
+	"store/internal/models"
+
+	proto "store/proto"
+
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
-	"github.com/idlab-discover/kebeng/services/store/internal/models"
 	"github.com/stretchr/testify/mock"
+	"google.golang.org/grpc"
 )
 
 // MockSnapsRepository is a mock implementation of ISnapsRepository for testing.
@@ -246,8 +250,28 @@ func (m *MockSnapsRepository) GetChannelByTrackIdAndName(trackId uuid.UUID, chan
 func (m *MockSnapsRepository) UpdateUploadStatus(uploadId uuid.UUID, status string, revision uint32, el *cerror.ErrorList) *cerror.CustomError {
 	args := m.Called(uploadId, status, revision, el)
 	if args.Get(0) != nil {
+		el.Add(cerror.InternalServerError, "")
 		return args.Get(0).(*cerror.CustomError)
 	}
-	el.Add(cerror.InternalServerError, "")
 	return nil
+}
+
+func (m *MockSnapsRepository) UpdateSnapEntryWithMetadata(entryId uuid.UUID, metadata *models.SnapMeta, el *cerror.ErrorList) (*models.SnapEntry, *cerror.CustomError) {
+	args := m.Called(entryId, metadata, el)
+	if args.Get(0) != nil {
+		return args.Get(0).(*models.SnapEntry), nil
+	}
+	el.Add(cerror.InternalServerError, "")
+	return nil, args.Get(1).(*cerror.CustomError)
+}
+
+// =========== Mock Stream ===========
+type MockSnapDownloadServer struct {
+	mock.Mock
+	grpc.ServerStream
+}
+
+func (m *MockSnapDownloadServer) Send(msg *proto.SnapDownloadResponse) error {
+	args := m.Called(msg)
+	return args.Error(0)
 }

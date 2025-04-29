@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"strings"
 
+	"gateway/handler/auth"
+	customMacaroon "gateway/internal/macaroon"
+
 	"github.com/gin-gonic/gin"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
-	"github.com/idlab-discover/kebeng/services/gateway/handler/auth"
-	customMacaroon "github.com/idlab-discover/kebeng/services/gateway/internal/macaroon"
 	"gopkg.in/macaroon.v2"
 )
 

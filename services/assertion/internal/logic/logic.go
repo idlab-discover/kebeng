@@ -7,13 +7,14 @@ import (
 	"strings"
 	"time"
 
+	"assertion/internal/config"
+	"assertion/internal/model"
+	"assertion/internal/repository"
+	proto "assertion/proto"
+
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	cerrorpb "github.com/idlab-discover/kebeng/common/cerror/proto"
-	"github.com/idlab-discover/kebeng/services/assertion/internal/config"
-	"github.com/idlab-discover/kebeng/services/assertion/internal/model"
-	"github.com/idlab-discover/kebeng/services/assertion/internal/repository"
-	proto "github.com/idlab-discover/kebeng/services/assertion/proto"
 	"github.com/sirupsen/logrus"
 	"github.com/snapcore/snapd/asserts"
 	"google.golang.org/protobuf/types/known/timestamppb"

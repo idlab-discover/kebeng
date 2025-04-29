@@ -4,9 +4,10 @@ import (
 	"context"
 	"io"
 
+	proto "store/proto"
+
 	"github.com/google/uuid"
 	"github.com/idlab-discover/kebeng/common/cerror"
-	proto "github.com/idlab-discover/kebeng/services/store/proto"
 	"github.com/stretchr/testify/mock"
 	"google.golang.org/grpc"
 )
@@ -152,6 +153,14 @@ func (m *MockStoreClient) GetObjectCustomMetadata(bucket string, objectKey strin
 func (m *MockStoreClient) UpdateUploadStatus(uploadId string, status string, revision uint32, el *cerror.ErrorList) *proto.UpdateUploadStatusResponse {
 	args := m.Called(uploadId, status, revision, el)
 	if resp, ok := args.Get(0).(*proto.UpdateUploadStatusResponse); ok {
+		return resp
+	}
+	return nil
+}
+
+func (m *MockStoreClient) UpdateSnapEntryWithMetadata(entryId uuid.UUID, metadata *proto.GetObjectCustomMetadataResponse) *proto.UpdateEntryResponse {
+	args := m.Called(entryId, metadata)
+	if resp, ok := args.Get(0).(*proto.UpdateEntryResponse); ok {
 		return resp
 	}
 	return nil

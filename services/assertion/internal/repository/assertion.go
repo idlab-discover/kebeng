@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"time"
 
+	"assertion/internal/model"
+
 	"github.com/google/uuid"
 	"github.com/idlab-discover/kebeng/common/cerror"
-	"github.com/idlab-discover/kebeng/services/assertion/internal/model"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	"github.com/sirupsen/logrus"
