@@ -4,13 +4,14 @@ import (
 	"context"
 	"time"
 
+	"account/internal/config"
+	"account/internal/models"
+	"account/internal/repository"
+	proto "account/proto"
+
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	cerrorpb "github.com/idlab-discover/kebeng/common/cerror/proto"
-	"github.com/idlab-discover/kebeng/services/account/internal/config"
-	"github.com/idlab-discover/kebeng/services/account/internal/models"
-	"github.com/idlab-discover/kebeng/services/account/internal/repository"
-	proto "github.com/idlab-discover/kebeng/services/account/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

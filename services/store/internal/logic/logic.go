@@ -12,13 +12,14 @@ import (
 	"strings"
 	"time"
 
+	"store/internal/config"
+	"store/internal/models"
+	"store/internal/objectstore"
+	"store/internal/repository"
+	proto "store/proto"
+
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
-	"github.com/idlab-discover/kebeng/services/store/internal/config"
-	"github.com/idlab-discover/kebeng/services/store/internal/models"
-	"github.com/idlab-discover/kebeng/services/store/internal/objectstore"
-	"github.com/idlab-discover/kebeng/services/store/internal/repository"
-	proto "github.com/idlab-discover/kebeng/services/store/proto"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/sha3"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -1092,7 +1093,7 @@ func checkValidName(name string) bool {
 	}
 
 	hasLetter := false
-	for i := 0; i < len(name); i++ {
+	for i := range len(name) {
 		c := name[i]
 		switch {
 		case c >= 'a' && c <= 'z':

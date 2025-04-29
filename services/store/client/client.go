@@ -7,11 +7,12 @@ import (
 	"io"
 	"time"
 
+	"store/internal/config"
+	proto "store/proto"
+
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	cerrorpb "github.com/idlab-discover/kebeng/common/cerror/proto"
-	"github.com/idlab-discover/kebeng/services/store/internal/config"
-	proto "github.com/idlab-discover/kebeng/services/store/proto"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"

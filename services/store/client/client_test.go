@@ -7,12 +7,13 @@ import (
 	"io"
 	"testing"
 
+	"store/client"
+	"store/internal/logic"
+	proto "store/proto"
+
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	cerrorpb "github.com/idlab-discover/kebeng/common/cerror/proto"
-	"github.com/idlab-discover/kebeng/services/store/client"
-	"github.com/idlab-discover/kebeng/services/store/internal/logic"
-	proto "github.com/idlab-discover/kebeng/services/store/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -873,14 +874,14 @@ func TestStoreClient_AddUpload(t *testing.T) {
 			expectedProtoError: false,
 		},
 		{
-			name:              "proto call returns error",
-			entryId:           uuid.New(),
-			accountId:         uuid.New(),
-			snapName:          "test_snap",
-			status:            "pending",
-			unscannedFileName: "test_file",
-			revision:          1,
-			expectedResp:      nil,
+			name:               "proto call returns error",
+			entryId:            uuid.New(),
+			accountId:          uuid.New(),
+			snapName:           "test_snap",
+			status:             "pending",
+			unscannedFileName:  "test_file",
+			revision:           1,
+			expectedResp:       nil,
 			expectedProtoError: true,
 		},
 		{

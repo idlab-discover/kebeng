@@ -8,12 +8,13 @@ import (
 	"testing"
 	"time"
 
+	"gateway/internal/util"
+
 	"github.com/gin-gonic/gin"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	cerrorpb "github.com/idlab-discover/kebeng/common/cerror/proto"
 	accClient "github.com/idlab-discover/kebeng/services/account/client"
 	proto "github.com/idlab-discover/kebeng/services/account/proto"
-	"github.com/idlab-discover/kebeng/services/gateway/internal/util"
 	storeClient "github.com/idlab-discover/kebeng/services/store/client"
 	storepb "github.com/idlab-discover/kebeng/services/store/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"

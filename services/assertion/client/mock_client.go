@@ -3,8 +3,9 @@ package client
 import (
 	"time"
 
-	"github.com/idlab-discover/kebeng/services/assertion/client/model"
-	proto "github.com/idlab-discover/kebeng/services/assertion/proto"
+	"assertion/client/model"
+	proto "assertion/proto"
+
 	"github.com/stretchr/testify/mock"
 )
 

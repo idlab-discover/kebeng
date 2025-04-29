@@ -6,11 +6,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"gateway/internal/config"
+	"gateway/internal/util"
+
 	"github.com/gin-gonic/gin"
 	"github.com/idlab-discover/kebeng/common/cerror"
 	cerrorpb "github.com/idlab-discover/kebeng/common/cerror/proto"
-	"github.com/idlab-discover/kebeng/services/gateway/internal/config"
-	"github.com/idlab-discover/kebeng/services/gateway/internal/util"
 	storepb "github.com/idlab-discover/kebeng/services/store/proto"
 
 	// Adjust the import path for your mock store client.

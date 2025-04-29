@@ -8,6 +8,9 @@ import (
 	"strings"
 	"testing"
 
+	"gateway/internal/config"
+	"gateway/internal/util"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/idlab-discover/kebeng/common/cerror"
@@ -16,8 +19,6 @@ import (
 	accountpb "github.com/idlab-discover/kebeng/services/account/proto"
 	assertionClient "github.com/idlab-discover/kebeng/services/assertion/client"
 	asspb "github.com/idlab-discover/kebeng/services/assertion/proto"
-	"github.com/idlab-discover/kebeng/services/gateway/internal/config"
-	"github.com/idlab-discover/kebeng/services/gateway/internal/util"
 	storeClient "github.com/idlab-discover/kebeng/services/store/client"
 	storepb "github.com/idlab-discover/kebeng/services/store/proto"
 	"github.com/stretchr/testify/assert"

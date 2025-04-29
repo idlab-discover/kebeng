@@ -1,4 +1,4 @@
-module github.com/idlab-discover/kebeng/services/gateway
+module gateway
 
 go 1.22.2
 
