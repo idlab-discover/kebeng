@@ -4,15 +4,15 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
-	"gateway/internal/config"
-	"gateway/internal/util"
-	loadtestdata "gateway/load_test_data"
+	"github.com/idlab-discover/kebeng/services/gateway/internal/config"
+	"github.com/idlab-discover/kebeng/services/gateway/internal/util"
+	loadtestdata "github.com/idlab-discover/kebeng/services/gateway/load_test_data"
 
 	"github.com/idlab-discover/kebeng/common/monitoring"
 	"github.com/sirupsen/logrus"
 
-	"gateway/handler"
-	"gateway/internal/middleware"
+	"github.com/idlab-discover/kebeng/services/gateway/handler"
+	"github.com/idlab-discover/kebeng/services/gateway/internal/middleware"
 
 	"github.com/gin-gonic/gin"
 	accClient "github.com/idlab-discover/kebeng/services/account/client"

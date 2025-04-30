@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"assertion/internal/config"
-	assertionDB "assertion/internal/database"
-	"assertion/internal/model"
-	"assertion/internal/repository"
+	"github.com/idlab-discover/kebeng/services/assertion/internal/config"
+	assertionDB "github.com/idlab-discover/kebeng/services/assertion/internal/database"
+	"github.com/idlab-discover/kebeng/services/assertion/internal/model"
+	"github.com/idlab-discover/kebeng/services/assertion/internal/repository"
 
 	embeddedpostgres "github.com/fergusstrange/embedded-postgres"
 	"github.com/google/uuid"

@@ -17,10 +17,10 @@ import (
 
 	_ "github.com/golang-migrate/migrate/v4/source/file" // needed for file source
 
-	"account/internal/config"
-	accountDB "account/internal/database"
-	"account/internal/models"
-	"account/internal/repository"
+	"github.com/idlab-discover/kebeng/services/account/internal/config"
+	accountDB "github.com/idlab-discover/kebeng/services/account/internal/database"
+	"github.com/idlab-discover/kebeng/services/account/internal/models"
+	"github.com/idlab-discover/kebeng/services/account/internal/repository"
 )
 
 var (

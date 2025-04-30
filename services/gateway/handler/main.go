@@ -1,13 +1,13 @@
 package handler
 
 import (
-	account "gateway/handler/account"
-	"gateway/handler/assertion"
-	auth "gateway/handler/auth"
-	snap "gateway/handler/snap"
-	"gateway/internal/config"
-	"gateway/internal/middleware"
-	"gateway/internal/util"
+	account "github.com/idlab-discover/kebeng/services/gateway/handler/account"
+	"github.com/idlab-discover/kebeng/services/gateway/handler/assertion"
+	auth "github.com/idlab-discover/kebeng/services/gateway/handler/auth"
+	snap "github.com/idlab-discover/kebeng/services/gateway/handler/snap"
+	"github.com/idlab-discover/kebeng/services/gateway/internal/config"
+	"github.com/idlab-discover/kebeng/services/gateway/internal/middleware"
+	"github.com/idlab-discover/kebeng/services/gateway/internal/util"
 
 	"github.com/gin-gonic/gin"
 	monitoring "github.com/idlab-discover/kebeng/common/monitoring"

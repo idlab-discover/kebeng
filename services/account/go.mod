@@ -1,4 +1,4 @@
-module account
+module github.com/idlab-discover/kebeng/services/account
 
 go 1.22.2
 

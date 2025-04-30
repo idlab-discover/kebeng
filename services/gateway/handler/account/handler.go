@@ -3,9 +3,9 @@ package account
 import (
 	"net/http"
 
-	"gateway/handler/auth"
-	"gateway/internal/model"
-	"gateway/internal/util"
+	"github.com/idlab-discover/kebeng/services/gateway/handler/auth"
+	"github.com/idlab-discover/kebeng/services/gateway/internal/model"
+	"github.com/idlab-discover/kebeng/services/gateway/internal/util"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"

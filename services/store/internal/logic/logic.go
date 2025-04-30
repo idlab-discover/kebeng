@@ -11,11 +11,11 @@ import (
 	"strings"
 	"time"
 
-	"store/internal/config"
-	"store/internal/models"
-	"store/internal/objectstore"
-	"store/internal/repository"
-	proto "store/proto"
+	"github.com/idlab-discover/kebeng/services/store/internal/config"
+	"github.com/idlab-discover/kebeng/services/store/internal/models"
+	"github.com/idlab-discover/kebeng/services/store/internal/objectstore"
+	"github.com/idlab-discover/kebeng/services/store/internal/repository"
+	proto "github.com/idlab-discover/kebeng/services/store/proto"
 
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
@@ -1050,7 +1050,7 @@ func getSnapMetaFromFile(snapFilePath string, workingDirectory string) (*models.
 func getSnapMetaFromPath(snapFilePath string, workingDirectory string) (*models.SnapMeta, error) {
 	err := os.Chdir(workingDirectory)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to change directory: %v", err)
 	}
 
 	cmd := exec.Command("unsquashfs", snapFilePath, "-e", "meta/snap.yaml")
@@ -1064,17 +1064,17 @@ func getSnapMetaFromPath(snapFilePath string, workingDirectory string) (*models.
 	}()
 
 	if err := cmd.Run(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to run unsquashfs: %v", err)
 	}
 
 	data, err := os.ReadFile(path.Join(workingDirectory, "squashfs-root", "meta", "snap.yaml"))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read snap.yaml: %v", err)
 	}
 
 	var snapMeta models.SnapMeta
 	if err := yaml.Unmarshal(data, &snapMeta); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to unmarshal snap.yaml: %v", err)
 	}
 
 	return &snapMeta, nil

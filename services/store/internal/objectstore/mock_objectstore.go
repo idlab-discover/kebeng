@@ -5,7 +5,7 @@ import (
 	"context"
 	"io"
 
-	"store/internal/models"
+	"github.com/idlab-discover/kebeng/services/store/internal/models"
 
 	"github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/minio/minio-go/v7"

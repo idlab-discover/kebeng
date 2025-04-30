@@ -10,8 +10,10 @@ import (
 )
 
 type Config struct {
-	StoreUrl string `mapstructure:"store_url" yaml:"store_url"`
-	Macaroon string `mapstructure:"macaroon" yaml:"macaroon"`
+	StoreUrl     string `mapstructure:"store_url" yaml:"store_url"`
+	Macaroon     string `mapstructure:"macaroon" yaml:"macaroon"`
+	SnapDataPath string `mapstructure:"snap_data_path" yaml:"snap_data_path"`
+	DebugMode    bool   `mapstructure:"debug_mode" yaml:"debug_mode"`
 }
 
 func LoadConfig() (*Config, error) {
@@ -37,6 +39,10 @@ func LoadConfig() (*Config, error) {
 		return nil, fmt.Errorf("configuration validation failed: %v", err)
 	}
 
+	if cfg.DebugMode {
+		logrus.SetLevel(logrus.DebugLevel)
+	}
+
 	logrus.Infof("loaded config: %+v", cfg)
 
 	return cfg, nil
@@ -52,6 +58,9 @@ func (c *Config) checkConfig() error {
 
 	if c.Macaroon == "" {
 		errs = append(errs, "macaroon is required")
+	}
+	if c.SnapDataPath == "" {
+		errs = append(errs, "snap_data_path is required")
 	}
 
 	if len(errs) > 0 {

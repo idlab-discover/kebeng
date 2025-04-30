@@ -24,6 +24,7 @@ services:
       - prometheus
     volumes:
       - ./services/monitoring/config.yaml:/app/config.yaml
+      - ./test-data/minio:/app/test-data
     environment:
       - CONFIG_FILE_PATH=/app/config.yaml
     restart: always

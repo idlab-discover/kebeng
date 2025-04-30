@@ -1,4 +1,4 @@
-module assertion
+module github.com/idlab-discover/kebeng/services/assertion
 
 go 1.22.2
 

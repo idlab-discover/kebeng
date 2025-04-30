@@ -1,9 +1,9 @@
 package repository
 
 import (
-	"store/internal/models"
+	"github.com/idlab-discover/kebeng/services/store/internal/models"
 
-	proto "store/proto"
+	proto "github.com/idlab-discover/kebeng/services/store/proto"
 
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"

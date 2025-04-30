@@ -1,7 +1,7 @@
 package client
 
 import (
-	proto "account/proto"
+	proto "github.com/idlab-discover/kebeng/services/account/proto"
 
 	"github.com/stretchr/testify/mock"
 )

@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"store/internal/models"
+	"github.com/idlab-discover/kebeng/services/store/internal/models"
 
 	"github.com/jmoiron/sqlx"
 

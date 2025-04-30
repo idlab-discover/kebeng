@@ -9,12 +9,12 @@ import (
 
 	_ "net/http/pprof"
 
-	"account/internal/config"
-	"account/internal/database"
-	"account/internal/logic"
-	"account/internal/models"
-	"account/internal/repository"
-	proto "account/proto"
+	"github.com/idlab-discover/kebeng/services/account/internal/config"
+	"github.com/idlab-discover/kebeng/services/account/internal/database"
+	"github.com/idlab-discover/kebeng/services/account/internal/logic"
+	"github.com/idlab-discover/kebeng/services/account/internal/models"
+	"github.com/idlab-discover/kebeng/services/account/internal/repository"
+	proto "github.com/idlab-discover/kebeng/services/account/proto"
 
 	"github.com/google/uuid"
 	"github.com/idlab-discover/kebeng/common/monitoring"

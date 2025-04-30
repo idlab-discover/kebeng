@@ -1,7 +1,7 @@
 package util
 
 import (
-	"gateway/internal/config"
+	"github.com/idlab-discover/kebeng/services/gateway/internal/config"
 
 	accClient "github.com/idlab-discover/kebeng/services/account/client"
 	assertionClient "github.com/idlab-discover/kebeng/services/assertion/client"

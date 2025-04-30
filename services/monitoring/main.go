@@ -1,12 +1,12 @@
 package main
 
 import (
-	"monitoring/handler"
-	"monitoring/internal/config"
-	"monitoring/internal/logic"
+	"github.com/idlab-discover/kebeng/services/monitoring/handler"
+	"github.com/idlab-discover/kebeng/services/monitoring/internal/config"
+	"github.com/idlab-discover/kebeng/services/monitoring/internal/logic"
 	"net/http"
 
-	"monitoring/monitoring"
+	"github.com/idlab-discover/kebeng/common/monitoring"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"

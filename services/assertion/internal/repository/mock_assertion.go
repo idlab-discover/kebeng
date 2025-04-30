@@ -3,7 +3,7 @@ package repository
 import (
 	"time"
 
-	"assertion/internal/model"
+	"github.com/idlab-discover/kebeng/services/assertion/internal/model"
 
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"

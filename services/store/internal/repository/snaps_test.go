@@ -14,10 +14,10 @@ import (
 
 	_ "github.com/golang-migrate/migrate/v4/source/file" // needed for file source
 
-	"store/internal/config"
-	storeDB "store/internal/database"
-	"store/internal/models"
-	"store/internal/repository"
+	"github.com/idlab-discover/kebeng/services/store/internal/config"
+	storeDB "github.com/idlab-discover/kebeng/services/store/internal/database"
+	"github.com/idlab-discover/kebeng/services/store/internal/models"
+	"github.com/idlab-discover/kebeng/services/store/internal/repository"
 
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
 )
