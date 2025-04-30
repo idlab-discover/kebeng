@@ -110,7 +110,12 @@ func (l *Logic) UnscannedUpload(reader io.Reader, entryName string) (*model.Unsc
 	var buf bytes.Buffer
 	w := multipart.NewWriter(&buf)
 	p, _ := w.CreateFormFile("binary", entryName)
-	io.Copy(p, reader)
+	_, err := io.Copy(p, reader)
+	if err != nil {
+		logrus.Error("UnscannedUpload:", err)
+		return nil, err
+	}
+
 	w.Close()
 
 	url := fmt.Sprintf("%s/unscanned-upload/", l.Config.StoreUrl)
