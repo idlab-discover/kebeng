@@ -4,7 +4,7 @@ import "google/protobuf/timestamp.proto";
 import "common/cerror/proto/error.proto";
 
 package store;
-option go_package = "store/proto;store";
+option go_package = "github.com/idlab-discover/kebeng/services/store/proto;store";
 
 service StoreService {
     rpc RegisterSnapName(RegisterSnapNameRequest) returns (RegisterSnapNameResponse);

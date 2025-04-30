@@ -4,7 +4,7 @@ import (
 	"context"
 	"io"
 
-	proto "store/proto"
+	proto "github.com/idlab-discover/kebeng/services/store/proto"
 
 	"github.com/google/uuid"
 	"github.com/idlab-discover/kebeng/common/cerror"

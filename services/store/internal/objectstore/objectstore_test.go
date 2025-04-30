@@ -5,9 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	"store/internal/config"
-	"store/internal/models"
-	"store/internal/objectstore"
+	"github.com/idlab-discover/kebeng/services/store/internal/config"
+	"github.com/idlab-discover/kebeng/services/store/internal/models"
+	"github.com/idlab-discover/kebeng/services/store/internal/objectstore"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/stretchr/testify/assert"
