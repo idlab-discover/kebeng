@@ -1,4 +1,4 @@
-module monitoring
+module github.com/idlab-discover/kebeng/services/monitoring
 
 go 1.22.2
 

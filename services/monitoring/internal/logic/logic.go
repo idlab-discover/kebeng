@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"time"
 
-	"monitoring/internal/config"
-	"monitoring/internal/model"
+	"github.com/idlab-discover/kebeng/services/monitoring/internal/config"
+	"github.com/idlab-discover/kebeng/services/monitoring/internal/model"
 
 	"github.com/sirupsen/logrus"
 )
