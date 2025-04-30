@@ -10,9 +10,8 @@ import (
 )
 
 type Config struct {
-	StoreUrl string `mapstructure:"store_url" yaml:"store_url"`
-	Macaroon string `mapstructure:"macaroon" yaml:"macaroon"`
-
+	StoreUrl     string `mapstructure:"store_url" yaml:"store_url"`
+	Macaroon     string `mapstructure:"macaroon" yaml:"macaroon"`
 	SnapDataPath string `mapstructure:"snap_data_path" yaml:"snap_data_path"`
 	DebugMode    bool   `mapstructure:"debug_mode" yaml:"debug_mode"`
 }

@@ -57,7 +57,7 @@ func (h *Handler) SnapcraftUpload(c *gin.Context) {
 	h.performOperation(c, func() SnapOperation {
 		return func() error {
 			rc, snapName, err := util.RandomSnapReader(snaps, 30, h.Logic.Config.SnapDataPath)
-			logrus.Debugf("Random snap name: %s", snapName)
+			logrus.Debugf("random snap name: %s", snapName)
 			if err != nil {
 				return fmt.Errorf("failed to create multi-source reader: %w", err)
 			}
@@ -67,7 +67,7 @@ func (h *Handler) SnapcraftUpload(c *gin.Context) {
 			if err != nil {
 				return err
 			}
-			logrus.Debugf("Registered snap name: %s", snapName)
+			logrus.Debugf("registered snap name: %s", snapName)
 
 			pushRequest := model.SnapPushRequest{
 				Name:   snapName,
@@ -77,12 +77,12 @@ func (h *Handler) SnapcraftUpload(c *gin.Context) {
 			if err != nil {
 				return err
 			}
-			logrus.Debugf("Push response 1: %+v", pushResp)
+			logrus.Debugf("push response 1: %+v", pushResp)
 			resp, err := h.Logic.UnscannedUpload(rc, snapName)
 			if err != nil {
 				return err
 			}
-			logrus.Debugf("Unscanned upload: %+v", resp)
+			logrus.Debugf("unscanned upload: %+v", resp)
 			pushRequest = model.SnapPushRequest{
 				Name:              snapName,
 				UnscannedFileName: resp.UploadID,
@@ -92,7 +92,7 @@ func (h *Handler) SnapcraftUpload(c *gin.Context) {
 			if err != nil {
 				return err
 			}
-			logrus.Debugf("Push response 2: %+v", pushResp)
+			logrus.Debugf("push response 2: %+v", pushResp)
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
 			ticker := time.NewTicker(1 * time.Second)
@@ -106,7 +106,7 @@ func (h *Handler) SnapcraftUpload(c *gin.Context) {
 					if err != nil {
 						return fmt.Errorf("failed to get upload status: %w", err)
 					}
-					logrus.Debugf("Upload status: %+v", status)
+					logrus.Debugf("upload status: %+v", status)
 					if status.Processed {
 						return nil
 					}

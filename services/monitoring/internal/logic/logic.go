@@ -174,7 +174,7 @@ func (l *Logic) GetAccountAssertion(accountID, maxFormat string) (string, error)
 		l.Config.StoreUrl, accountID, maxFormat)
 	respBytes, err := l.doRequest("GET", url, "", nil)
 	if err != nil {
-		logrus.Error("GetAccountAssertion:", err)
+		logrus.Error("getAccountAssertion: ", err)
 		return "", err
 	}
 	return string(respBytes), nil
@@ -185,7 +185,7 @@ func (l *Logic) GetAccountKeyAssertion(pubKeySha, maxFormat string) (string, err
 		l.Config.StoreUrl, pubKeySha, maxFormat)
 	respBytes, err := l.doRequest("GET", url, "", nil)
 	if err != nil {
-		logrus.Error("GetAccountKeyAssertion:", err)
+		logrus.Error("getAccountKeyAssertion: ", err)
 		return "", err
 	}
 	return string(respBytes), nil
