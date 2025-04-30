@@ -46,10 +46,11 @@ func TestStoreClient_RegisterSnapName(t *testing.T) {
 		expectedResp       *proto.RegisterSnapNameResponse
 		expectedErrors     bool
 		expectedProtoError bool
+		NoCall             bool
 	}{
 		{
 			name:        "Successful proto call",
-			snapName:    "test_snap",
+			snapName:    "test-snap",
 			snapType:    "app",
 			confinement: "strict",
 			base:        "core24",
@@ -69,7 +70,7 @@ func TestStoreClient_RegisterSnapName(t *testing.T) {
 		},
 		{
 			name:               "proto call returns error",
-			snapName:           "test_snap",
+			snapName:           "test-snap",
 			snapType:           "app",
 			confinement:        "strict",
 			base:               "core24",
@@ -85,7 +86,7 @@ func TestStoreClient_RegisterSnapName(t *testing.T) {
 		},
 		{
 			name:        "response contains errors",
-			snapName:    "test_snap",
+			snapName:    "test-snap",
 			snapType:    "app",
 			confinement: "strict",
 			base:        "core24",
@@ -104,13 +105,36 @@ func TestStoreClient_RegisterSnapName(t *testing.T) {
 			expectedErrors:     true,
 			expectedProtoError: false,
 		},
+		{
+			name:        "invalid snap name",
+			snapName:    "snap.snap",
+			snapType:    "app",
+			confinement: "strict",
+			base:        "core24",
+			isPrivate:   false,
+			status:      "active",
+			price:       9.99,
+			storeName:   "test_store",
+			iconUrl:     "http://example.com/icon.png",
+			dryRun:      false,
+			expectedResp: &proto.RegisterSnapNameResponse{
+				Errors: []*cerrorpb.Error{{
+					Code:    cerror.InvalidField,
+					Message: "snap name is invalid, it should only have ASCII lowercase letters, numbers, and hyphens, and must have at least one letter: snap.snap",
+				},
+				},
+			},
+			expectedErrors:     true,
+			expectedProtoError: false,
+			NoCall:             true,
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if tc.expectedProtoError {
+			if tc.expectedProtoError && !tc.NoCall {
 				mockProtoClient.On("RegisterSnapName", mock.Anything, mock.Anything).Return(nil, errors.New("")).Once()
-			} else {
+			} else if !tc.NoCall {
 				mockProtoClient.On("RegisterSnapName", mock.Anything, mock.Anything).Return(tc.expectedResp, nil).Once()
 			}
 

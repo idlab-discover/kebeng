@@ -41,11 +41,6 @@ func NewStoreLogic(repo repository.ISnapsRepository, config *config.Config, obj 
 func (s *StoreLogic) RegisterSnapName(ctx context.Context, req *proto.RegisterSnapNameRequest) (*proto.RegisterSnapNameResponse, error) {
 	el := cerror.NewErrorList()
 
-	if !checkValidName(req.SnapName) {
-		el.Add(cerror.InvalidField, "snap name is invalid, it should only have ASCII lowercase letters, numbers, and hyphens, and must have at least one letter")
-		return &proto.RegisterSnapNameResponse{Errors: el.ConvertToProtoErrorList()}, nil
-	}
-
 	// First check if the snap name is already registered
 	snapEntry, cerr := s.repo.GetEntryByName(req.SnapName, nil, el)
 	if cerr != nil && cerr.GetCode() != cerror.ResourceNotFound {
@@ -1083,26 +1078,6 @@ func getSnapMetaFromPath(snapFilePath string, workingDirectory string) (*models.
 	}
 
 	return &snapMeta, nil
-}
-
-func checkValidName(name string) bool {
-	if name == "" {
-		return false
-	}
-
-	hasLetter := false
-	for i := range len(name) {
-		c := name[i]
-		switch {
-		case c >= 'a' && c <= 'z':
-			hasLetter = true
-		case c >= '0' && c <= '9', c == '-':
-			// allowed
-		default:
-			return false
-		}
-	}
-	return hasLetter
 }
 
 func parseEntryToProto(entry *models.SnapEntry) *proto.GetEntryResponse {
