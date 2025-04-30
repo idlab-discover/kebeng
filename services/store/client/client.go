@@ -91,6 +91,14 @@ func (c *StoreClient) Close() {
 }
 
 func (c *StoreClient) RegisterSnapName(snapName string, snapType string, confinement string, base string, isPrivate bool, status string, price float64, storeName string, iconUrl string, dryRun bool, accountId uuid.UUID) *proto.RegisterSnapNameResponse {
+	if !checkValidName(snapName) {
+		return &proto.RegisterSnapNameResponse{
+			Errors: []*cerrorpb.Error{{
+				Code:    cerror.InvalidField,
+				Message: "snap name is invalid, it should only have ASCII lowercase letters, numbers, and hyphens, and must have at least one letter: " + snapName},
+			},
+		}
+	}
 	req := &proto.RegisterSnapNameRequest{
 		SnapName:    snapName,
 		SnapType:    snapType,
@@ -458,4 +466,25 @@ func (c *StoreClient) UpdateSnapEntryWithMetadata(snapEntryId uuid.UUID, metadat
 		}
 	}
 	return resp
+}
+
+// =============== HELPER FUNCTIONS ===================
+func checkValidName(name string) bool {
+	if name == "" {
+		return false
+	}
+
+	hasLetter := false
+	for i := range len(name) {
+		c := name[i]
+		switch {
+		case c >= 'a' && c <= 'z':
+			hasLetter = true
+		case c >= '0' && c <= '9', c == '-':
+			// allowed
+		default:
+			return false
+		}
+	}
+	return hasLetter
 }
