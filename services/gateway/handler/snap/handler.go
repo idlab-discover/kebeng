@@ -389,7 +389,7 @@ func (h *Handler) UnscannedUpload(c *gin.Context) {
 	// Grab the multipart reader for the request
 	mr, err := c.Request.MultipartReader()
 	if err != nil {
-		el.Add(cerror.BadRequest, "invalid multipart/form-data")
+		el.Add(cerror.BadRequest, "invalid multipart/form-data binary file not found")
 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
 		return
 	}
