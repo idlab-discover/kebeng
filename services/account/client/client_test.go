@@ -4,8 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	logic "account/internal/logic"
-	proto "account/proto"
+	logic "github.com/idlab-discover/kebeng/services/account/internal/logic"
+	proto "github.com/idlab-discover/kebeng/services/account/proto"
 
 	"github.com/go-playground/assert/v2"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"

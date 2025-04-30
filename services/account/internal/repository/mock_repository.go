@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 
-	"account/internal/models"
+	"github.com/idlab-discover/kebeng/services/account/internal/models"
 
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
 )
