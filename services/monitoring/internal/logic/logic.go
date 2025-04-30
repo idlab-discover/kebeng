@@ -36,7 +36,7 @@ func (l *Logic) RegisterName(snapName string) error {
 }
 
 func (l *Logic) RefreshSnap(req model.RefreshSnapRequest) (*model.RefreshSnapResponses, error) {
-	url := fmt.Sprintf("%s/dev/api/refresh-snap", l.Config.StoreUrl)
+	url := fmt.Sprintf("%s/v2/snaps/refresh", l.Config.StoreUrl)
 	b, _ := json.Marshal(req)
 	respBytes, err := l.doRequest("POST", url, "application/json", bytes.NewReader(b))
 	if err != nil {
@@ -82,9 +82,8 @@ func (l *Logic) RefreshInstall(snapName, channel string) (*model.RefreshSnapResp
 	return l.RefreshSnap(req)
 }
 
-func (l *Logic) SnapDownload(revisionID string) error {
-	url := fmt.Sprintf("%s/download/%s", l.Config.StoreUrl, revisionID)
-	if _, err := l.doRequest("GET", url, "", nil); err != nil {
+func (l *Logic) SnapDownload(downloadURL string) error {
+	if _, err := l.doRequest("GET", downloadURL, "", nil); err != nil {
 		logrus.Error("SnapDownload:", err)
 		return err
 	}

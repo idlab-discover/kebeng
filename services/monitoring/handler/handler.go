@@ -2,6 +2,8 @@ package handler
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -32,7 +34,8 @@ func NewHandler(logic *logic.Logic) *Handler {
 
 func (h *Handler) SetupEndpoints(r *gin.Engine) {
 	r.GET("/register-name", h.RegisterName)
-	r.GET("/snapcraft-upload", h.SnapcraftUpload)
+	r.POST("/snapcraft-upload", h.SnapcraftUpload)
+	r.POST("/snapd-download", h.SnapdDownload)
 }
 
 func (h *Handler) RegisterName(c *gin.Context) {
@@ -111,6 +114,87 @@ func (h *Handler) SnapcraftUpload(c *gin.Context) {
 						return nil
 					}
 				}
+			}
+		}
+	})
+}
+
+func (h *Handler) SnapdDownload(c *gin.Context) {
+	var req model.SnapDownloadRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		logrus.Errorf("failed to bind JSON: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+
+	h.performOperation(c, func() SnapOperation {
+		return func() error {
+			// 1) Get URL and download
+			refreshResp, err := h.Logic.RefreshDownload(req.SnapName, req.Channel)
+			if err != nil {
+				return err
+			}
+			url := *refreshResp.Responses[0].Snap.Download.URL
+			if err := h.Logic.SnapDownload(url); err != nil {
+				return err
+			}
+
+			// 2) Revision assertion
+			// NOTE: snapd calculates the sha themselves and checks with ours but we use our own for easy of testing
+			hexSha := *refreshResp.Responses[0].Snap.Download.Sha3_384
+			b, err := hex.DecodeString(hexSha)
+			if err != nil {
+				// handle
+			}
+			sha := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(b)
+			revBlob, err := h.Logic.GetSnapRevisionAssertion(sha, "0")
+			if err != nil {
+				return err
+			}
+			revFields := util.ParseAssertion(revBlob)
+			snapID := revFields["snap-id"]
+			nextKey := revFields["sign-key-sha3-384"]
+
+			// 3) Declaration assertion
+			declBlob, err := h.Logic.GetSnapDeclarationAssertion("16", snapID)
+			if err != nil {
+				return err
+			}
+			declFields := util.ParseAssertion(declBlob)
+			// sometimes declaration uses the same key, but could differ:
+			nextKey = declFields["sign-key-sha3-384"]
+
+			// 4) Now climb the key/account chain
+			seen := map[string]bool{}
+			for {
+				if seen[nextKey] {
+					return fmt.Errorf("cycle detected in key chain at %s", nextKey)
+				}
+				seen[nextKey] = true
+
+				// fetch account-key assertion
+				keyBlob, err := h.Logic.GetAccountKeyAssertion(nextKey, "0")
+				if err != nil {
+					return err
+				}
+				keyFields := util.ParseAssertion(keyBlob)
+				accountID := keyFields["account-id"]
+
+				// fetch account assertion
+				acctBlob, err := h.Logic.GetAccountAssertion(accountID, "0")
+				if err != nil {
+					return err
+				}
+				logrus.Debugf("Account assertion blob: %s", acctBlob)
+				acctFields := util.ParseAssertion(acctBlob)
+				displayName := acctFields["display-name"]
+				logrus.Debugf("Account displayName of account assertion: %s", displayName)
+				if displayName == "kebeng" && acctFields["validation"] == "certified" {
+					// we trust this account—done!
+					return nil
+				}
+				// otherwise, climb again using the sign-key from this account
+				nextKey = acctFields["sign-key-sha3-384"]
 			}
 		}
 	})
