@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"assertion/internal/config"
+	"github.com/idlab-discover/kebeng/services/assertion/internal/config"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"

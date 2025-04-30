@@ -3,7 +3,7 @@ package logic
 import (
 	"context"
 
-	proto "account/proto"
+	proto "github.com/idlab-discover/kebeng/services/account/proto"
 
 	"github.com/stretchr/testify/mock"
 	"google.golang.org/grpc"

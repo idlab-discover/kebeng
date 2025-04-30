@@ -7,9 +7,9 @@ import (
 	"io"
 	"testing"
 
-	"store/client"
-	"store/internal/logic"
-	proto "store/proto"
+	"github.com/idlab-discover/kebeng/services/store/client"
+	"github.com/idlab-discover/kebeng/services/store/internal/logic"
+	proto "github.com/idlab-discover/kebeng/services/store/proto"
 
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"

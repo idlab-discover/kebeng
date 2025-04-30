@@ -6,7 +6,7 @@ import (
 	"slices"
 	"time"
 
-	"account/internal/models"
+	"github.com/idlab-discover/kebeng/services/account/internal/models"
 
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"

@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"assertion/internal/config"
-	"assertion/internal/model"
-	"assertion/internal/repository"
-	proto "assertion/proto"
+	"github.com/idlab-discover/kebeng/services/assertion/internal/config"
+	"github.com/idlab-discover/kebeng/services/assertion/internal/model"
+	"github.com/idlab-discover/kebeng/services/assertion/internal/repository"
+	proto "github.com/idlab-discover/kebeng/services/assertion/proto"
 
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"

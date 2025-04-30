@@ -9,9 +9,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"monitoring/internal/logic"
-	"monitoring/internal/model"
-	"monitoring/internal/util"
+	"github.com/idlab-discover/kebeng/services/monitoring/internal/logic"
+	"github.com/idlab-discover/kebeng/services/monitoring/internal/model"
+	"github.com/idlab-discover/kebeng/services/monitoring/internal/util"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"

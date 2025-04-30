@@ -8,12 +8,12 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
-	"store/internal/config"
-	"store/internal/database"
-	logic "store/internal/logic"
-	"store/internal/objectstore"
-	repositories "store/internal/repository"
-	proto "store/proto"
+	"github.com/idlab-discover/kebeng/services/store/internal/config"
+	"github.com/idlab-discover/kebeng/services/store/internal/database"
+	logic "github.com/idlab-discover/kebeng/services/store/internal/logic"
+	"github.com/idlab-discover/kebeng/services/store/internal/objectstore"
+	repositories "github.com/idlab-discover/kebeng/services/store/internal/repository"
+	proto "github.com/idlab-discover/kebeng/services/store/proto"
 
 	"github.com/idlab-discover/kebeng/common/monitoring"
 	"github.com/minio/minio-go/v7"
