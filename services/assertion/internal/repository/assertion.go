@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"assertion/internal/model"
+	"github.com/idlab-discover/kebeng/services/assertion/internal/model"
 
 	"github.com/google/uuid"
 	"github.com/idlab-discover/kebeng/common/cerror"

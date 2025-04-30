@@ -3,7 +3,7 @@ package model_test
 import (
 	"testing"
 
-	"assertion/internal/model"
+	"github.com/idlab-discover/kebeng/services/assertion/internal/model"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
