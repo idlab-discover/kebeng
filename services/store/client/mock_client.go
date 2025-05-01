@@ -102,10 +102,7 @@ func (m *MockStoreClient) GetLatestRevisionByTrackAndChannel(snapName, track, ch
 // SnapDownload mocks the SnapDownload function.
 func (m *MockStoreClient) SnapDownloadStream(revisionId string) (proto.StoreService_SnapDownloadClient, error) {
 	args := m.Called(revisionId)
-	if resp, ok := args.Get(0).(proto.StoreService_SnapDownloadClient); ok {
-		return resp, nil
-	}
-	return nil, args.Error(1)
+	return args.Get(0).(proto.StoreService_SnapDownloadClient), args.Error(1)
 }
 
 // UnscannedUpload mocks the UnscannedUpload function.
