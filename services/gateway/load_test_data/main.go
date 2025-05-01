@@ -244,8 +244,7 @@ func (h *testHandler) loadInStoreDataInDB(ctx context.Context, storeTestData *Te
 		if len(revisionResp.Errors) > 0 {
 			return fmt.Errorf("failed to add revision: %v", revisionResp.Errors)
 		}
-		now := time.Now()
-		revisionAssertionRespo := h.AssertionClient.AddSnapRevisionAssertion(metadata.GetSha3_384Encoded(), accID.String(), snapEntryId.String(), uint32(revisionResp.Revision), uint64(fileInfo.Size()), now)
+		revisionAssertionRespo := h.AssertionClient.AddSnapRevisionAssertion(metadata.GetSha3_384Encoded(), accID.String(), snapEntryId.String(), uint32(revisionResp.Revision), uint64(fileInfo.Size()))
 		if len(revisionAssertionRespo.Errors) > 0 {
 			return fmt.Errorf("failed to add revision assertion: %v", revisionAssertionRespo.Errors)
 		}
@@ -268,6 +267,7 @@ func (h *testHandler) loadInStoreDataInDB(ctx context.Context, storeTestData *Te
 			logrus.Errorf("failed to get entry ID: %v", err)
 		}
 		// don't know what refreshControl field has to be so place holders for now
+		now := time.Now()
 		declarationAssertionResp := h.AssertionClient.AddSnapDeclarationAssertion(entryID.String(), entry.Name, accID.String(), uint32(16), now, []string{"refreshControl"}, aliases, plugs, slots)
 		if len(declarationAssertionResp.Errors) > 0 {
 			return fmt.Errorf("failed to add declaration assertion: %v", declarationAssertionResp.Errors)

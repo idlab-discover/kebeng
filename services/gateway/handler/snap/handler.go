@@ -356,7 +356,7 @@ func (h *Handler) SnapPush(c *gin.Context) {
 		el.ExtendProtoError(metadata.Errors)
 		return
 	}
-	logrus.Debugf("Metadata: %v", metadata)
+	logrus.Debugf("metadata: %v", metadata)
 
 	// Update the snapEntry with the metadata
 	updatedEntry := h.StoreClient.UpdateSnapEntryWithMetadata(parsedEntryUUID, metadata)
@@ -370,6 +370,12 @@ func (h *Handler) SnapPush(c *gin.Context) {
 	revision := h.StoreClient.AddRevision(entry.SnapName, metadata.GetSha3_384Encoded(), uint64(req.BinaryFileSize), metadata.Architectures, req.Channels, req.UnscannedFileName) // FIX: architectures should be passed from the request
 	if len(revision.Errors) > 0 {
 		el.ExtendProtoError(revision.Errors)
+	}
+
+	// Create a new assertion for the snap upload
+	assertion := h.AssertionClient.AddSnapRevisionAssertion(metadata.Sha3_384Encoded, accountUUID.String(), parsedEntryUUID.String(), revision.Revision, uint64(req.BinaryFileSize))
+	if len(assertion.Errors) > 0 {
+		el.ExtendProtoError(assertion.Errors)
 	}
 
 	// Ignore 'resource not found' errors for the revision -> this is expected if the revision already exists, or tracks and channels didn't exist
