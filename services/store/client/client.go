@@ -403,6 +403,7 @@ func (c *StoreClient) UpdateUploadStatus(uploadId string, status string, revisio
 }
 
 func (c *StoreClient) AddRevision(snapName string, sha3_384_encoded string, size uint64, architectures []string, tracksAndChannels []string, unscannedFileName string) *proto.AddRevisionResponse {
+	el := cerror.NewErrorList()
 	req := &proto.AddRevisionRequest{
 		SnapName:          snapName,
 		Sha3_384Encoded:   sha3_384_encoded,
@@ -414,11 +415,9 @@ func (c *StoreClient) AddRevision(snapName string, sha3_384_encoded string, size
 
 	resp, err := c.client.AddRevision(context.Background(), req)
 	if err != nil {
+		el.Add(cerror.InternalServerError, err.Error())
 		resp = &proto.AddRevisionResponse{
-			Errors: []*cerrorpb.Error{{
-				Code:    cerror.InternalServerError,
-				Message: err.Error()},
-			},
+			Errors: el.ConvertToProtoErrorList(),
 		}
 	}
 	return resp
@@ -488,3 +487,4 @@ func checkValidName(name string) bool {
 	}
 	return hasLetter
 }
+
