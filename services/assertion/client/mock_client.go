@@ -38,8 +38,8 @@ func (m *MockAssertionClient) AddAccountKeyAssertion(encoded_public_key, publicK
 	return nil
 }
 
-func (m *MockAssertionClient) AddSnapRevisionAssertion(snapSha3_384 string, developerId string, snapEntryId string, snapRevisionSequenceNumber uint32, snapSize uint64, timestamp time.Time) *proto.SnapRevisionAssertionResponse {
-	args := m.Called(snapSha3_384, developerId, snapEntryId, snapRevisionSequenceNumber, snapSize, timestamp)
+func (m *MockAssertionClient) AddSnapRevisionAssertion(snapSha3_384 string, developerId string, snapEntryId string, snapRevisionSequenceNumber uint32, snapSize uint64) *proto.SnapRevisionAssertionResponse {
+	args := m.Called(snapSha3_384, developerId, snapEntryId, snapRevisionSequenceNumber, snapSize)
 	if resp, ok := args.Get(0).(*proto.SnapRevisionAssertionResponse); ok {
 		return resp
 	}

@@ -30,7 +30,7 @@ type AssertionClientInterface interface {
 	ProcessSnapBuildAssertion(assertion []byte) *proto.SnapBuildAssertionResponse
 
 	AddAccountKeyAssertion(encoded_public_key, publicKeySha3_384Encoded, accountId, name string, since time.Time, until time.Time) *proto.AccountKeyAssertionResponse
-	AddSnapRevisionAssertion(snapSha3_384 string, developerId string, snapEntryId string, snapRevisionSequenceNumber uint32, snapSize uint64, timestamp time.Time) *proto.SnapRevisionAssertionResponse
+	AddSnapRevisionAssertion(snapSha3_384 string, developerId string, snapEntryId string, snapRevisionSequenceNumber uint32, snapSize uint64) *proto.SnapRevisionAssertionResponse
 	AddSnapDeclarationAssertion(snapID, snapName, publisherID string, series uint32, timestamp time.Time, refreshControl []string, aliases []model.Alias, plugs model.PlugMap, slots model.SlotMap) *proto.SnapDeclarationAssertionResponse
 	AddAccountAssertion(accountId, displayName, username, validation string, timestamp time.Time) *proto.AccountAssertionResponse
 
@@ -165,7 +165,7 @@ func (c *AssertionClient) AddAccountKeyAssertion(encoded_public_key, publicKeySh
 	return resp
 }
 
-func (c *AssertionClient) AddSnapRevisionAssertion(snapSha3_384, developerId, snapEntryId string, snapRevisionSequenceNumber uint32, snapSize uint64, timestamp time.Time) *proto.SnapRevisionAssertionResponse {
+func (c *AssertionClient) AddSnapRevisionAssertion(snapSha3_384, developerId, snapEntryId string, snapRevisionSequenceNumber uint32, snapSize uint64) *proto.SnapRevisionAssertionResponse {
 	el := cerror.NewErrorList()
 
 	// check input
@@ -199,7 +199,7 @@ func (c *AssertionClient) AddSnapRevisionAssertion(snapSha3_384, developerId, sn
 		SnapEntryId:                snapEntryId,
 		SnapRevisionSequenceNumber: snapRevisionSequenceNumber,
 		SnapSize:                   snapSize,
-		Timestamp:                  timestamppb.New(timestamp),
+		Timestamp:                  timestamppb.New(time.Now()),
 	}
 
 	resp, err := c.client.AddSnapRevisionAssertion(context.Background(), req)
