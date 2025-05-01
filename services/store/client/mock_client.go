@@ -165,3 +165,19 @@ func (m *MockStoreClient) UpdateSnapEntryWithMetadata(entryId uuid.UUID, metadat
 	}
 	return nil
 }
+
+// MockSnapDownloadClient fakes the gRPC client‐stream returned by SnapDownloadStream.
+type MockSnapDownloadClient struct {
+	mock.Mock
+	grpc.ClientStream
+}
+
+func (m *MockSnapDownloadClient) Recv() (*proto.SnapDownloadResponse, error) {
+	args := m.Called()
+	return args.Get(0).(*proto.SnapDownloadResponse), args.Error(1)
+}
+
+func (m *MockSnapDownloadClient) CloseSend() error {
+	args := m.Called()
+	return args.Error(0)
+}
