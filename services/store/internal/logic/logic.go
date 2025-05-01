@@ -656,7 +656,7 @@ func (s *StoreLogic) UnscannedUpload(stream proto.StoreService_UnscannedUploadSe
 
 	logrus.Infof("snap metadata yaml: %v", metadataYaml)
 
-	metadataMinio, err := s.obs.SaveFileToBucket("unscanned", tmpFilePath, sha3_384HashEncoded, metadataYaml.Name, metadataYaml.Version, metadataYaml.Summary, metadataYaml.Description, metadataYaml.Confinement, metadataYaml.Base, metadataYaml.Grade, metadataYaml.Architectures)
+	metadataMinio, err := s.obs.SaveFileToBucket("unscanned", tmpFilePath, sha3_384HashEncoded, metadataYaml.Name, metadataYaml.Version, metadataYaml.Summary, metadataYaml.Description, metadataYaml.Confinement, metadataYaml.Base, metadataYaml.Grade, metadataYaml.Architectures, metadataYaml.Plugs)
 	if err != nil {
 		cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to save file to object store: %v", err))
 		logrus.Error(cerr)
@@ -1076,6 +1076,8 @@ func getSnapMetaFromPath(snapFilePath string, workingDirectory string) (*models.
 	if err := yaml.Unmarshal(data, &snapMeta); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal snap.yaml: %v", err)
 	}
+
+	logrus.Infof("metadata in data: %v", string(data))
 
 	return &snapMeta, nil
 }

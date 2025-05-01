@@ -29,7 +29,7 @@ type IMinioClient interface {
 }
 
 type IObjectStore interface {
-	SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string, name string, version string, summary string, description string, confinement string, base string, grade string, architectures []string) (*models.Metadata, error)
+	SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string, name string, version string, summary string, description string, confinement string, base string, grade string, architectures []string, plugs map[string]string) (*models.Metadata, error)
 	GetSnapFileReader(ctx context.Context, filePath string) (io.ReadCloser, error)
 	Move(sourceBucket, destinationBucket, objectName string, newObjectName string) error
 	GetObjectCustomMetadata(bucket string, objectName string) (*models.Metadata, error)
@@ -88,7 +88,7 @@ func (obs *ObjectStore) Move(sourceBucket, destinationBucket, objectName, newObj
 	return nil
 }
 
-func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string, name string, version string, summary string, description string, confinement string, base string, grade string, architectures []string) (*models.Metadata, error) {
+func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string, name string, version string, summary string, description string, confinement string, base string, grade string, architectures []string, plugs map[string]string) (*models.Metadata, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -105,7 +105,6 @@ func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_38
 
 	// Prepare user metadata
 	userMetadata := map[string]string{
-		"Sha3-384-Encoded": sha3_384_encoded,
 		"Name":             name,
 		"Version":          version,
 		"Summary":          summary,
@@ -114,6 +113,7 @@ func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_38
 		"Base":             base,
 		"Grade":            grade,
 		"Architectures":    strings.Join(architectures, ","),
+		"Plugs":            formatMapKeys(plugs),
 	}
 
 	uploadInfo, err := obs.MinioClient.FPutObject(ctx, bucket, baseFileName, filePath, minio.PutObjectOptions{
@@ -135,6 +135,7 @@ func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_38
 		Base:             base,
 		Grade:            grade,
 		Architectures:    architectures,
+		Plugs:            plugs,
 	}
 
 	return metadata, nil
@@ -161,6 +162,7 @@ func (obs *ObjectStore) GetObjectCustomMetadata(bucket string, objectName string
 		Base:             objectInfo.UserMetadata["Base"],
 		Grade:            objectInfo.UserMetadata["Grade"],
 		Architectures:    strings.Split(objectInfo.UserMetadata["Architectures"], ","),
+		Plugs:            convertToMap(strings.Split(objectInfo.UserMetadata["Plugs"], ",")),
 	}
 
 	return metadata, nil
@@ -205,4 +207,25 @@ func (obs *ObjectStore) DeleteFileFromBucket(bucket string, filePath string) *ce
 	}
 
 	return nil
+}
+
+// getMapKeys converts a map[string]string into a single string formatted as "key:value,key:value,key:value".
+func formatMapKeys(m map[string]string) string {
+	pairs := make([]string, 0, len(m))
+	for k, v := range m {
+		pairs = append(pairs, k+":"+v)
+	}
+	return strings.Join(pairs, ",")
+}
+
+// convertToMap parses a string formatted as "key:value,key:value,..." back into a map[string]string.
+func convertToMap(keys []string) map[string]string {
+	result := make(map[string]string, len(keys))
+	for _, pair := range keys {
+		parts := strings.SplitN(pair, ":", 2)
+		if len(parts) == 2 {
+			result[parts[0]] = parts[1]
+		}
+	}
+	return result
 }
