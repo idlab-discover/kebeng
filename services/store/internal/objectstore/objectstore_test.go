@@ -53,11 +53,7 @@ func TestSaveFileToBucket_succes(t *testing.T) {
 	assert.Equal(t, "core18", metadata.Base)
 	assert.Equal(t, "test-grade", metadata.Grade)
 	assert.ElementsMatch(t, []string{"amd64", "arm64"}, metadata.Architectures)
-	var plugs []string
-	for k, v := range metadata.Plugs {
-		plugs = append(plugs, k+":"+v)
-	}
-	assert.ElementsMatch(t, []string{"key:value"}, plugs)
+	assert.ElementsMatch(t, []string{"key:value"}, metadata.Plugs)
 
 	mockMinio.AssertExpectations(t)
 }
@@ -303,8 +299,8 @@ func TestGetObjectCustomMetadata(t *testing.T) {
 	plugs := map[string]string{"key1": "value1", "key2": "value2"}
 
 	expectedMetadata := &models.Metadata{
-		SHA3_384_Encoded: sha3_384_encoded,
 		Name:             name,
+		SHA3_384_Encoded: sha3_384_encoded,
 		Version:          version,
 		Type:             fileType,
 		Summary:          summary,
@@ -312,7 +308,7 @@ func TestGetObjectCustomMetadata(t *testing.T) {
 		Confinement:      confinement,
 		Base:             base,
 		Architectures:    architectures,
-		Plugs:            plugs,
+		Plugs:            convertMapToStringArray(plugs),
 	}
 
 	mockMinio.On("StatObject", mock.Anything, bucket, object, mock.Anything).
@@ -428,4 +424,12 @@ func TestGetMinioClient(t *testing.T) {
 	endpoint := client.EndpointURL()
 	assert.Equal(t, "http://minio:9000", endpoint.String())
 	assert.Equal(t, "http", endpoint.Scheme)
+}
+
+func convertMapToStringArray(input map[string]string) []string {
+	result := []string{}
+	for key, value := range input {
+		result = append(result, key+":"+value)
+	}
+	return result
 }

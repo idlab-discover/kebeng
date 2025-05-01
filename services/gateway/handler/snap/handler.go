@@ -379,7 +379,7 @@ func (h *Handler) SnapPush(c *gin.Context) {
 	}
 
 	// Create a new SnapDeclarationAssertion for the snap upload
-	//declAssertion := h.AssertionClient.AddSnapDeclarationAssertion(entry.Id, entry.SnapName, accountUUID.String(), req.Series, 
+	//declAssertion := h.AssertionClient.AddSnapDeclarationAssertion(entry.Id, entry.SnapName, accountUUID.String(), req.Series,
 
 	// Ignore 'resource not found' errors for the revision -> this is expected if the revision already exists, or tracks and channels didn't exist
 	el.RemoveErrorWithCode(cerror.ResourceNotFound)

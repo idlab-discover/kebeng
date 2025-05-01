@@ -135,7 +135,7 @@ func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_38
 		Base:             base,
 		Grade:            grade,
 		Architectures:    architectures,
-		Plugs:            plugs,
+		Plugs:            convertMapToArray(plugs),
 	}
 
 	return metadata, nil
@@ -162,7 +162,7 @@ func (obs *ObjectStore) GetObjectCustomMetadata(bucket string, objectName string
 		Base:             objectInfo.UserMetadata["Base"],
 		Grade:            objectInfo.UserMetadata["Grade"],
 		Architectures:    strings.Split(objectInfo.UserMetadata["Architectures"], ","),
-		Plugs:            convertToMap(strings.Split(objectInfo.UserMetadata["Plugs"], ",")),
+		Plugs:            strings.Split(objectInfo.UserMetadata["Plugs"], ","),
 	}
 
 	return metadata, nil
@@ -228,4 +228,12 @@ func convertToMap(keys []string) map[string]string {
 		}
 	}
 	return result
+}
+
+func convertMapToArray(m map[string]string) []string {
+	pairs := make([]string, 0, len(m))
+	for k, v := range m {
+		pairs = append(pairs, k+":"+v)
+	}
+	return pairs
 }

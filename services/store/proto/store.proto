@@ -272,7 +272,8 @@ message GetObjectCustomMetadataResponse {
     string base = 8;
     string grade = 9;
     repeated string architectures = 10;
-    repeated proto.Error errors = 11;
+    repeated string plugs = 11;
+    repeated proto.Error errors = 12;
 }
 
 message UpdateUploadStatusRequest {

@@ -904,6 +904,7 @@ func (s *StoreLogic) GetObjectCustomMetadata(ctx context.Context, req *proto.Get
 		Base:            metadata.Base,
 		Grade:           metadata.Grade,
 		Architectures:   metadata.Architectures,
+		Plugs:           metadata.Plugs,
 	}, nil
 }
 
