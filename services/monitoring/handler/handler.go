@@ -144,7 +144,7 @@ func (h *Handler) SnapdDownload(c *gin.Context) {
 			hexSha := *refreshResp.Responses[0].Snap.Download.Sha3_384
 			b, err := hex.DecodeString(hexSha)
 			if err != nil {
-				// handle
+				return fmt.Errorf("failed to decode hex string: %w", err)
 			}
 			sha := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(b)
 			revBlob, err := h.Logic.GetSnapRevisionAssertion(sha, "0")
@@ -153,7 +153,6 @@ func (h *Handler) SnapdDownload(c *gin.Context) {
 			}
 			revFields := util.ParseAssertion(revBlob)
 			snapID := revFields["snap-id"]
-			nextKey := revFields["sign-key-sha3-384"]
 
 			// 3) Declaration assertion
 			declBlob, err := h.Logic.GetSnapDeclarationAssertion("16", snapID)
@@ -162,7 +161,7 @@ func (h *Handler) SnapdDownload(c *gin.Context) {
 			}
 			declFields := util.ParseAssertion(declBlob)
 			// sometimes declaration uses the same key, but could differ:
-			nextKey = declFields["sign-key-sha3-384"]
+			nextKey := declFields["sign-key-sha3-384"]
 
 			// 4) Now climb the key/account chain
 			seen := map[string]bool{}
