@@ -1,7 +1,6 @@
 package client
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -33,7 +32,7 @@ type StoreClientInterface interface {
 	GetEntriesByAccountID(accountID string) *proto.GetEntriesResponse
 	GetRevisionsByEntryIds(entryIds *proto.GetRevisionsByEntryIdRequests) *proto.GetRevisionsByEntryIdResponses
 	GetLatestRevisionByTrackAndChannel(snapName, track, channel string) *proto.GetRevisionResponse
-	SnapDownload(revisionId string) *proto.SnapDownloadCompleteResponse
+	SnapDownloadStream(revisionId string) (proto.StoreService_SnapDownloadClient, error)
 	UnscannedUpload(ctx context.Context, snapFile io.Reader) *proto.UnscannedUploadCompleteResponse
 	AddUpload(entryId uuid.UUID, accountId uuid.UUID, snapName string, status string, unscannedFileName string, revision uint32) *proto.AddUploadResponse
 	GetUploadStatus(uploadId string) *proto.GetUploadStatusResponse
@@ -298,68 +297,11 @@ func (c *StoreClient) AddUpload(entryId, accountId uuid.UUID, snapName, status, 
 	return resp
 }
 
-func (c *StoreClient) SnapDownload(revisionId string) *proto.SnapDownloadCompleteResponse {
+func (c *StoreClient) SnapDownloadStream(revisionId string) (proto.StoreService_SnapDownloadClient, error) {
 	req := &proto.SnapDownloadRequest{
 		RevisionId: revisionId,
 	}
-
-	stream, err := c.client.SnapDownload(context.Background(), req)
-	if err != nil {
-		// if err != nil we should read the stream (if we can) to get the actual error and then return it
-		if stream != nil {
-			if resp, recvErr := stream.Recv(); recvErr == nil && resp != nil && len(resp.Errors) > 0 {
-				logrus.Errorf("error starting grpc download stream, received: %v", resp.Errors)
-				return &proto.SnapDownloadCompleteResponse{Errors: resp.Errors}
-			}
-		}
-		logrus.Errorf("error starting grpc download stream: %v", err)
-		return &proto.SnapDownloadCompleteResponse{
-			Errors: []*cerrorpb.Error{{
-				Code:    cerror.InternalServerError,
-				Message: err.Error(),
-			}},
-		}
-	}
-
-	// create buffer for snap data
-	var fileData bytes.Buffer
-	response := &proto.SnapDownloadCompleteResponse{}
-
-	// loop over stream until EOF
-	for {
-		resp, err := stream.Recv()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			logrus.Errorf("error receiving grpc download stream: %v", err)
-			return &proto.SnapDownloadCompleteResponse{
-				Errors: []*cerrorpb.Error{{
-					Code:    cerror.InternalServerError,
-					Message: err.Error(),
-				}},
-			}
-		}
-
-		// Check for errors embedded in the response message
-		if len(resp.Errors) > 0 {
-			logrus.Errorf("received grpc stream error response: %v", resp.Errors)
-			return &proto.SnapDownloadCompleteResponse{
-				Errors: resp.Errors,
-			}
-		}
-
-		// first message contains revision metadata
-		if initial := resp.GetInitial(); initial != nil {
-			logrus.Debugf("received revision metadata: %v", initial.Revision)
-			response.Revision = initial.Revision
-		} else if data := resp.GetData(); data != nil {
-			fileData.Write(data.Chunk)
-		}
-	}
-
-	response.Data = fileData.Bytes()
-	return response
+	return c.client.SnapDownload(context.Background(), req)
 }
 
 func (c *StoreClient) GetUploadStatus(uploadId string) *proto.GetUploadStatusResponse {
