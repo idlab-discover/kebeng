@@ -424,6 +424,7 @@ func (c *StoreClient) AddRevision(snapName string, sha3_384_encoded string, size
 }
 
 func (c *StoreClient) GetObjectCustomMetadata(bucket string, objectKey string) *proto.GetObjectCustomMetadataResponse {
+	el := cerror.NewErrorList()
 	req := &proto.GetObjectCustomMetadataRequest{
 		Bucket:    bucket,
 		ObjectKey: objectKey,
@@ -431,11 +432,9 @@ func (c *StoreClient) GetObjectCustomMetadata(bucket string, objectKey string) *
 
 	resp, err := c.client.GetObjectCustomMetadata(context.Background(), req)
 	if err != nil {
+		el.Add(cerror.InternalServerError, err.Error())
 		return &proto.GetObjectCustomMetadataResponse{
-			Errors: []*cerrorpb.Error{{
-				Code:    cerror.InternalServerError,
-				Message: err.Error()},
-			},
+			Errors: el.ConvertToProtoErrorList(),
 		}
 	}
 	return resp
@@ -487,4 +486,3 @@ func checkValidName(name string) bool {
 	}
 	return hasLetter
 }
-
