@@ -485,7 +485,12 @@ func (h *Handler) downloadSnap(c *gin.Context, revisionId string, el *cerror.Err
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
-	defer stream.CloseSend()
+	defer func() {
+		err := stream.CloseSend()
+		if err != nil {
+			logrus.Errorf("failed to close stream: %v", err)
+		}
+	}()
 
 	c.Writer.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, revisionId+".snap"))
 	c.Writer.Header().Set("Content-Type", "application/octet-stream")
