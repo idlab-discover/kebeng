@@ -82,10 +82,36 @@ func (l *Logic) RefreshInstall(snapName, channel string) (*model.RefreshSnapResp
 	return l.RefreshSnap(req)
 }
 
+// SnapDownload no longer uses doRequest (which does ReadAll).
+// Instead we stream the GET response body directly to io.Discard.
 func (l *Logic) SnapDownload(downloadURL string) error {
-	if _, err := l.doRequest("GET", downloadURL, "", nil); err != nil {
+	req, err := http.NewRequest("GET", downloadURL, nil)
+	if err != nil {
+		return fmt.Errorf("creating GET %s: %w", downloadURL, err)
+	}
+	req.Header.Set("Authorization", fmt.Sprintf(
+		"Macaroon root=%s, discharge=%s",
+		l.Config.Macaroon, l.Config.Macaroon,
+	))
+
+	resp, err := l.Client.Do(req)
+	if err != nil {
 		logrus.Error("SnapDownload:", err)
-		return err
+		return fmt.Errorf("HTTP GET %s error: %w", downloadURL, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		// read a small snippet of the error body, not the whole file
+		buf := make([]byte, 512)
+		n, _ := resp.Body.Read(buf)
+		return fmt.Errorf("bad status %d from %s: %s", resp.StatusCode, downloadURL, buf[:n])
+	}
+
+	// stream into /dev/null (or any io.Writer)
+	if _, err := io.Copy(io.Discard, resp.Body); err != nil {
+		logrus.Error("SnapDownload copy:", err)
+		return fmt.Errorf("reading body from %s: %w", downloadURL, err)
 	}
 	return nil
 }
@@ -105,27 +131,57 @@ func (l *Logic) SnapPush(req model.SnapPushRequest) (*model.SnapPushResponse, er
 	return &out, nil
 }
 
+// UnscannedUpload now uses an io.Pipe + multipart.Writer so the binary
+// is streamed directly from `reader` into the request body.
 func (l *Logic) UnscannedUpload(reader io.Reader, entryName string) (*model.UnscannedUploadResponse, error) {
-	var buf bytes.Buffer
-	w := multipart.NewWriter(&buf)
-	p, _ := w.CreateFormFile("binary", entryName)
-	_, err := io.Copy(p, reader)
-	if err != nil {
-		logrus.Error("UnscannedUpload:", err)
-		return nil, err
-	}
+	pr, pw := io.Pipe()
+	mw := multipart.NewWriter(pw)
 
-	w.Close()
+	// spawn the goroutine that writes the multipart body into the pipe
+	go func() {
+		defer pw.Close()
+		defer mw.Close()
+
+		part, err := mw.CreateFormFile("binary", entryName)
+		if err != nil {
+			pw.CloseWithError(fmt.Errorf("create form file: %w", err))
+			return
+		}
+		if _, err := io.Copy(part, reader); err != nil {
+			pw.CloseWithError(fmt.Errorf("copy binary into multipart: %w", err))
+			return
+		}
+	}()
 
 	url := fmt.Sprintf("%s/unscanned-upload/", l.Config.StoreUrl)
-	bodyBytes, err := l.doRequest("POST", url, w.FormDataContentType(), &buf)
+	req, err := http.NewRequest("POST", url, pr)
+	if err != nil {
+		return nil, fmt.Errorf("creating POST %s: %w", url, err)
+	}
+	req.Header.Set("Content-Type", mw.FormDataContentType())
+	req.Header.Set("Authorization", fmt.Sprintf(
+		"Macaroon root=%s, discharge=%s",
+		l.Config.Macaroon, l.Config.Macaroon,
+	))
+
+	resp, err := l.Client.Do(req)
 	if err != nil {
 		logrus.Error("UnscannedUpload:", err)
-		return nil, err
+		return nil, fmt.Errorf("HTTP POST %s error: %w", url, err)
+	}
+	defer resp.Body.Close()
+
+	// read the (small) JSON response
+	respBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("reading response from %s: %w", url, err)
+	}
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("bad status %d from %s: %s", resp.StatusCode, url, respBytes)
 	}
 
 	var out model.UnscannedUploadResponse
-	if err := json.Unmarshal(bodyBytes, &out); err != nil {
+	if err := json.Unmarshal(respBytes, &out); err != nil {
 		return nil, fmt.Errorf("unmarshal unscanned-upload response: %w", err)
 	}
 	return &out, nil
