@@ -3,6 +3,7 @@ package client
 import (
 	"time"
 
+	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/idlab-discover/kebeng/services/assertion/client/model"
 	proto "github.com/idlab-discover/kebeng/services/assertion/proto"
 
@@ -100,4 +101,12 @@ func (m *MockAssertionClient) GetAccountAssertionByAccountID(accountId string) *
 		return resp
 	}
 	return nil
+}
+
+func (m *MockAssertionClient) DeserializePlugMap(data string) (model.PlugMap, *cerror.CustomError) {
+	args := m.Called(data)
+	if resp, ok := args.Get(0).(model.PlugMap); ok {
+		return resp, nil
+	}
+	return nil, args.Get(1).(*cerror.CustomError)
 }

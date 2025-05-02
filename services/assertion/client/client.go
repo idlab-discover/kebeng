@@ -40,6 +40,8 @@ type AssertionClientInterface interface {
 	GetSnapDeclarationAssertionBySnapID(snapId string) *proto.SnapDeclarationAssertionResponse
 	GetAccountAssertionByAccountID(accountId string) *proto.AccountAssertionResponse
 
+	DeserializePlugMap(data string) (model.PlugMap, *cerror.CustomError)
+
 	Close()
 }
 
