@@ -15,7 +15,7 @@ CREATE TABLE snap_declaration_assertion (
     snap_name         TEXT        NOT NULL,
     publisher_id      TEXT        NOT NULL,
     revision          INTEGER     NOT NULL,
-    series            INTEGER     NOT NULL,
+    series            TEXT     NOT NULL,
     timestamp         TIMESTAMPTZ NOT NULL,
     refresh_control   TEXT[]      NOT NULL  DEFAULT '{}',
     

@@ -101,7 +101,7 @@ message GetAccountKeyAssertionByPublicKeyShaRequest {
 }
 
 message AddSnapDeclarationAssertionRequest {
-  uint32 series  = 1;
+  string series  = 1;
   string snap_id = 2;
   string snap_name = 3;
   string publisher_id = 4;
@@ -117,7 +117,7 @@ message SnapDeclarationAssertionResponse {
   string type = 2;
   string authority_id = 3;
   uint32 revision = 4;
-  uint32 series = 5;
+  string series = 5;
   string snap_id = 6;
   string snap_name = 7;
   string publisher_id = 8;

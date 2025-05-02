@@ -47,7 +47,7 @@ func (m *MockAssertionRepository) AddSnapRevisionAssertion(el *cerror.ErrorList,
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
-func (m *MockAssertionRepository) AddSnapDeclarationAssertion(el *cerror.ErrorList, authorityID, signKey, snapID, snapName, publisherID string, revision, series uint32, timestamp time.Time, refreshControl []string, aliases []model.Alias, plugs map[string]*model.Plug, slots map[string]*model.Slot, signature string) (*model.SnapDeclarationAssertion, *cerror.CustomError) {
+func (m *MockAssertionRepository) AddSnapDeclarationAssertion(el *cerror.ErrorList, authorityID, signKey, snapID, snapName, publisherID string, revision uint32, series string, timestamp time.Time, refreshControl []string, aliases []model.Alias, plugs map[string]*model.Plug, slots map[string]*model.Slot, signature string) (*model.SnapDeclarationAssertion, *cerror.CustomError) {
 	args := m.Called(el, authorityID, signKey, snapID, snapName, publisherID, revision, series, timestamp, refreshControl, aliases, plugs, slots, signature)
 	if args.Get(0) != nil {
 		return args.Get(0).(*model.SnapDeclarationAssertion), nil

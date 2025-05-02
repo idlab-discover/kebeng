@@ -105,6 +105,7 @@ func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_38
 
 	// Prepare user metadata
 	userMetadata := map[string]string{
+		"Sha3-384-Encoded": sha3_384_encoded,
 		"Name":             name,
 		"Version":          version,
 		"Summary":          summary,
@@ -113,7 +114,7 @@ func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_38
 		"Base":             base,
 		"Grade":            grade,
 		"Architectures":    strings.Join(architectures, ","),
-		"Plugs":            formatMapKeys(plugs),
+		//"Plugs":         formatMapKeys(plugs), // TODO: support plugs
 	}
 
 	uploadInfo, err := obs.MinioClient.FPutObject(ctx, bucket, baseFileName, filePath, minio.PutObjectOptions{
@@ -135,7 +136,7 @@ func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_38
 		Base:             base,
 		Grade:            grade,
 		Architectures:    architectures,
-		Plugs:            convertMapToArray(plugs),
+		// Plugs:            convertMapToArray(plugs), // TODO: support plugs
 	}
 
 	return metadata, nil
@@ -209,31 +210,27 @@ func (obs *ObjectStore) DeleteFileFromBucket(bucket string, filePath string) *ce
 	return nil
 }
 
+// Helper functions for plugs
+
 // getMapKeys converts a map[string]string into a single string formatted as "key:value,key:value,key:value".
-func formatMapKeys(m map[string]string) string {
-	pairs := make([]string, 0, len(m))
-	for k, v := range m {
-		pairs = append(pairs, k+":"+v)
-	}
-	return strings.Join(pairs, ",")
-}
+// func formatMapKeys(m map[string]string) string {
+// 	if len(m) == 0 {
+// 		return ""
+// 	}
+// 	pairs := make([]string, 0, len(m))
+// 	for k, v := range m {
+// 		pairs = append(pairs, k+":"+v)
+// 	}
+// 	return strings.Join(pairs, ",")
+// }
 
-// convertToMap parses a string formatted as "key:value,key:value,..." back into a map[string]string.
-func convertToMap(keys []string) map[string]string {
-	result := make(map[string]string, len(keys))
-	for _, pair := range keys {
-		parts := strings.SplitN(pair, ":", 2)
-		if len(parts) == 2 {
-			result[parts[0]] = parts[1]
-		}
-	}
-	return result
-}
-
-func convertMapToArray(m map[string]string) []string {
-	pairs := make([]string, 0, len(m))
-	for k, v := range m {
-		pairs = append(pairs, k+":"+v)
-	}
-	return pairs
-}
+// func convertMapToArray(m map[string]string) []string {
+// 	if len(m) == 0 {
+// 		return nil
+// 	}
+// 	pairs := make([]string, 0, len(m))
+// 	for k, v := range m {
+// 		pairs = append(pairs, k+":"+v)
+// 	}
+// 	return pairs
+// }

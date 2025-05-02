@@ -57,7 +57,7 @@ type SnapDeclarationAssertion struct {
 	Type            string         `json:"type" db:"type"`
 	AuthorityID     string         `json:"authority_id" db:"authority_id"`
 	Revision        uint32         `json:"revision" db:"revision"`
-	Series          uint32         `json:"series" db:"series"`
+	Series          string         `json:"series" db:"series"`
 	SnapID          string         `json:"snap_id" db:"snap_id"`
 	SnapName        string         `json:"snap_name" db:"snap_name"`
 	PublisherID     string         `json:"publisher_id" db:"publisher_id"`

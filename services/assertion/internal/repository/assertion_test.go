@@ -476,7 +476,7 @@ func TestAddSnapDeclarationAssertion(t *testing.T) {
 	snapName := "MySnap"
 	publisherID := "pub-xyz"
 	revision := uint32(42)
-	series := uint32(16)
+	series := "16"
 	timestamp := now
 	refreshControl := []string{"foo", "bar"}
 	aliases := []model.Alias{

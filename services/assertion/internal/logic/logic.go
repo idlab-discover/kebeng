@@ -671,6 +671,9 @@ func parseAssertion(data string) map[string]string {
 
 // convert proto Alias to model Alias
 func protoAliasToModelAlias(protoAliases []*proto.Alias) []model.Alias {
+	if len(protoAliases) == 0 {
+		return nil
+	}
 	aliases := make([]model.Alias, len(protoAliases))
 	for i, protoAlias := range protoAliases {
 		aliases[i] = model.Alias{
@@ -715,6 +718,9 @@ func protoSlotToModelSlot(protoSlot map[string]*proto.SlotRule) map[string]*mode
 
 // convert model Alias to proto Alias
 func modelAliasToProtoAlias(modelAliases []model.Alias) []*proto.Alias {
+	if len(modelAliases) == 0 {
+		return nil
+	}
 	protoAliases := make([]*proto.Alias, len(modelAliases))
 	for i, modelAlias := range modelAliases {
 		protoAliases[i] = &proto.Alias{
@@ -727,6 +733,9 @@ func modelAliasToProtoAlias(modelAliases []model.Alias) []*proto.Alias {
 
 // convert model Plug to proto Plug
 func modelPlugToProtoPlug(modelPlugs map[string]*model.Plug) map[string]*proto.PlugRule {
+	if len(modelPlugs) == 0 {
+		return nil
+	}
 	protoPlugs := make(map[string]*proto.PlugRule)
 	for k, v := range modelPlugs {
 		protoPlugs[k] = &proto.PlugRule{
@@ -743,6 +752,9 @@ func modelPlugToProtoPlug(modelPlugs map[string]*model.Plug) map[string]*proto.P
 
 // convert model Slot to proto Slot
 func modelSlotToProtoSlot(modelSlots map[string]*model.Slot) map[string]*proto.SlotRule {
+	if len(modelSlots) == 0 {
+		return nil
+	}
 	protoSlots := make(map[string]*proto.SlotRule)
 	for k, v := range modelSlots {
 		protoSlots[k] = &proto.SlotRule{
