@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -438,4 +439,15 @@ func (c *AssertionClient) GetAccountAssertionByAccountID(accountId string) *prot
 		}
 	}
 	return resp
+}
+
+func (c *AssertionClient) DeserializePlugMap(data string) (model.PlugMap, *cerror.CustomError) {
+	var plugMap model.PlugMap
+	err := json.Unmarshal([]byte(data), &plugMap)
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.BadRequest, fmt.Sprintf("failed to deserialize plug map: %s", err.Error()))
+		logrus.Errorf(cerr.GetMessage())
+		return nil, cerr
+	}
+	return plugMap, nil
 }
