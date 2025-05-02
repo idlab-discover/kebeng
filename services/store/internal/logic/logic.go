@@ -3,6 +3,7 @@ package logic
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -893,6 +894,12 @@ func (s *StoreLogic) GetObjectCustomMetadata(ctx context.Context, req *proto.Get
 		return &proto.GetObjectCustomMetadataResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
 
+	plugs, cerr := SerializeNestedMap(metadata.Plugs)
+	if cerr != nil {
+		el.AddCustomError(cerr)
+		return &proto.GetObjectCustomMetadataResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
 	return &proto.GetObjectCustomMetadataResponse{
 		Sha3_384Encoded: metadata.SHA3_384_Encoded,
 		Name:            metadata.Name,
@@ -904,7 +911,7 @@ func (s *StoreLogic) GetObjectCustomMetadata(ctx context.Context, req *proto.Get
 		Base:            metadata.Base,
 		Grade:           metadata.Grade,
 		Architectures:   metadata.Architectures,
-		Plugs:           metadata.Plugs,
+		Plugs:           plugs,
 	}, nil
 }
 
@@ -1078,8 +1085,6 @@ func getSnapMetaFromPath(snapFilePath string, workingDirectory string) (*models.
 		return nil, fmt.Errorf("failed to unmarshal snap.yaml: %v", err)
 	}
 
-	logrus.Infof("metadata in data: %v", string(data))
-
 	return &snapMeta, nil
 }
 
@@ -1097,4 +1102,14 @@ func parseEntryToProto(entry *models.SnapEntry) *proto.GetEntryResponse {
 		Since:       timestamppb.New(entry.CreatedAt),
 		IconUrl:     entry.IconURL,
 	}
+}
+
+func SerializeNestedMap(data map[string]map[string]interface{}) (string, *cerror.CustomError) {
+	jsonBytes, err := json.Marshal(data)
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to serialize nested map: %v", err))
+		logrus.Errorf(cerr.GetMessage())
+		return "", cerr
+	}
+	return string(jsonBytes), nil
 }

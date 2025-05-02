@@ -272,7 +272,7 @@ message GetObjectCustomMetadataResponse {
     string base = 8;
     string grade = 9;
     repeated string architectures = 10;
-    repeated string plugs = 11;
+    string plugs = 11;
     repeated proto.Error errors = 12;
 }
 

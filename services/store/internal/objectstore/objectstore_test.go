@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	acmodel "github.com/idlab-discover/kebeng/services/assertion/client/model"
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
 	"github.com/idlab-discover/kebeng/services/store/internal/models"
 	"github.com/idlab-discover/kebeng/services/store/internal/objectstore"
@@ -40,7 +41,7 @@ func TestSaveFileToBucket_succes(t *testing.T) {
 		"core18",
 		"test-grade",
 		[]string{"amd64", "arm64"},
-		map[string]string{"key": "value"},
+		acmodel.PlugMap{},
 	)
 	assert.NoError(t, err)
 	assert.NotNil(t, metadata)
@@ -53,7 +54,6 @@ func TestSaveFileToBucket_succes(t *testing.T) {
 	assert.Equal(t, "core18", metadata.Base)
 	assert.Equal(t, "test-grade", metadata.Grade)
 	assert.ElementsMatch(t, []string{"amd64", "arm64"}, metadata.Architectures)
-	assert.ElementsMatch(t, []string{"key:value"}, metadata.Plugs)
 
 	mockMinio.AssertExpectations(t)
 }
@@ -82,7 +82,7 @@ func TestSaveFileToBucket_ErrorCreatingBucket(t *testing.T) {
 		"core18",
 		"test-grade",
 		[]string{"amd64", "arm64"},
-		map[string]string{},
+		acmodel.PlugMap{},
 	)
 	assert.Error(t, err)
 	assert.Nil(t, metadata)
@@ -115,7 +115,7 @@ func TestSaveFileToBucket_ErrorUploadingFile(t *testing.T) {
 		"core18",
 		"test-grade",
 		[]string{"amd64", "arm64"},
-		map[string]string{},
+		acmodel.PlugMap{},
 	)
 	assert.Error(t, err)
 	assert.Nil(t, metadata)
@@ -283,7 +283,7 @@ func TestGetObjectCustomMetadata(t *testing.T) {
 			"Confinement":      "strict",
 			"Base":             "core18",
 			"Architectures":    "amd64,arm64",
-			"Plugs":            "key1:value1,key2:value2",
+			"Plugs":            `{"camera":{"allow-installation":true,"deny-installation":false,"allow-connection":true,"deny-connection":false,"allow-auto-connection":true,"deny-auto-connection":false}}`,
 		},
 	}
 
@@ -296,7 +296,16 @@ func TestGetObjectCustomMetadata(t *testing.T) {
 	confinement := mockObjectInfo.UserMetadata["Confinement"]
 	base := mockObjectInfo.UserMetadata["Base"]
 	architectures := []string{"amd64", "arm64"}
-	plugs := map[string]string{"key1": "value1", "key2": "value2"}
+	plugs := acmodel.PlugMap{
+		"camera": &acmodel.Plug{
+			AllowInstallation:   boolPtr(true),
+			DenyInstallation:    boolPtr(false),
+			AllowConnection:     boolPtr(true),
+			DenyConnection:      boolPtr(false),
+			AllowAutoConnection: boolPtr(true),
+			DenyAutoConnection:  boolPtr(false),
+		},
+	}
 
 	expectedMetadata := &models.Metadata{
 		Name:             name,
@@ -308,7 +317,7 @@ func TestGetObjectCustomMetadata(t *testing.T) {
 		Confinement:      confinement,
 		Base:             base,
 		Architectures:    architectures,
-		Plugs:            convertMapToStringArray(plugs),
+		Plugs:            objectstore.ConvertPlugMapToNestedMap(plugs),
 	}
 
 	mockMinio.On("StatObject", mock.Anything, bucket, object, mock.Anything).
@@ -432,4 +441,8 @@ func convertMapToStringArray(input map[string]string) []string {
 		result = append(result, key+":"+value)
 	}
 	return result
+}
+
+func boolPtr(value bool) *bool {
+	return &value
 }

@@ -267,7 +267,7 @@ func (h *testHandler) loadInStoreDataInDB(ctx context.Context, storeTestData *Te
 			logrus.Errorf("failed to get entry ID: %v", err)
 		}
 		// don't know what refreshControl field has to be so place holders for now
-		declarationAssertionResp := h.AssertionClient.AddSnapDeclarationAssertion(entryID.String(), entry.Name, accID.String(), uint32(16), []string{"refreshControl"}, aliases, plugs, slots)
+		declarationAssertionResp := h.AssertionClient.AddSnapDeclarationAssertion(entryID.String(), entry.Name, accID.String(), "16", []string{"refreshControl"}, aliases, plugs, slots)
 		if len(declarationAssertionResp.Errors) > 0 {
 			return fmt.Errorf("failed to add declaration assertion: %v", declarationAssertionResp.Errors)
 		}

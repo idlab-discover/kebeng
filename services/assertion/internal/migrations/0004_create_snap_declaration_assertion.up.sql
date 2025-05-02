@@ -17,10 +17,10 @@ CREATE TABLE snap_declaration_assertion (
     revision          INTEGER     NOT NULL,
     series            TEXT     NOT NULL,
     timestamp         TIMESTAMPTZ NOT NULL,
-    refresh_control   TEXT[]      NOT NULL  DEFAULT '{}',
+    refresh_control   TEXT[]        DEFAULT '{}',
     
-    plugs           JSONB       NOT NULL  DEFAULT '{}'::JSONB,
-    slots           JSONB       NOT NULL  DEFAULT '{}'::JSONB,
+    plugs           JSONB         DEFAULT '{}'::JSONB,
+    slots           JSONB         DEFAULT '{}'::JSONB,
 
     signature         TEXT        NOT NULL,
     created_at        TIMESTAMPTZ NOT NULL  DEFAULT now(),
