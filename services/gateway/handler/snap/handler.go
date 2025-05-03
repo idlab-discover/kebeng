@@ -479,27 +479,41 @@ func (h *Handler) downloadSnap(c *gin.Context, revisionId string, el *cerror.Err
 		return
 	}
 
-	response := h.StoreClient.SnapDownload(revisionId)
-	if len(response.Errors) > 0 {
-		el.ExtendProtoError(response.Errors)
+	stream, err := h.StoreClient.SnapDownloadStream(revisionId)
+	if err != nil {
+		el.Add(cerror.InternalServerError, err.Error())
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
+	defer func() {
+		err := stream.CloseSend()
+		if err != nil {
+			logrus.Errorf("failed to close stream: %v", err)
+		}
+	}()
 
-	filename := "downloaded.snap"
-	if response.Revision != nil && response.Revision.SnapName != "" {
-		// Optionally, you can incorporate the revision number or sequence too.
-		filename = fmt.Sprintf("%s_%d.snap", response.Revision.SnapName, response.Revision.SequenceNumber)
-	}
-
-	// … write the body …
-	c.Writer.Header().Set("Content-Disposition",
-		fmt.Sprintf(`attachment; filename="%s"`, filename))
+	c.Writer.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, revisionId+".snap"))
 	c.Writer.Header().Set("Content-Type", "application/octet-stream")
-	if _, err := c.Writer.Write(response.Data); err != nil {
-		logrus.Error("error writing snap to response: ", err)
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error_list": el})
-		return
+	c.Writer.WriteHeader(http.StatusOK)
+
+	for {
+		resp, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if len(resp.Errors) > 0 {
+			logrus.Errorf("failed while reading downloadstream: %+v", resp.Errors)
+			return
+		}
+		if data := resp.GetData(); data != nil {
+			if _, writeErr := c.Writer.Write(data.Chunk); writeErr != nil {
+				logrus.Errorf("write to HTTP client failed: %v", writeErr)
+				return
+			}
+			if f, ok := c.Writer.(http.Flusher); ok {
+				f.Flush()
+			}
+		}
 	}
 }
 

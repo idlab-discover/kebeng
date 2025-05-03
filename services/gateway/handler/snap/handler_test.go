@@ -2,6 +2,7 @@ package snap
 
 import (
 	"bytes"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -244,13 +245,18 @@ func TestRefreshSnapHandler_DownloadAction_NoLatestRevision(t *testing.T) {
 
 func TestDownloadSnapHandler_MissingRevisionID(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	handler := &Handler{BaseHandler: util.NewBaseHandler(nil, nil, nil, nil)}
+	// We don't even need a real store client here, because the handler
+	// returns early.
+	handler := &Handler{
+		BaseHandler: util.NewBaseHandler(nil, nil, nil, nil),
+	}
+
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	// No revision_id parameter.
 	c.Request = httptest.NewRequest("GET", "/downloadSnap", nil)
 
 	handler.DownloadSnap(c)
+
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Contains(t, w.Body.String(), "revision_id is required")
 }
@@ -258,39 +264,79 @@ func TestDownloadSnapHandler_MissingRevisionID(t *testing.T) {
 func TestDownloadSnapHandler_Success(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	mockStoreClient := new(storeClient.MockStoreClient)
-	// Dummy SnapDownload response.
-	dummyData := []byte("filedata")
-	dummyRev := &storepb.GetRevisionResponse{
-		SnapName:       "snap1",
-		SequenceNumber: 1,
-	}
-	downloadResp := &storepb.SnapDownloadCompleteResponse{
-		Data:     dummyData,
-		Revision: dummyRev,
-		Errors:   nil,
-	}
-	mockStoreClient.
-		On("SnapDownload", "rev1").
-		Return(downloadResp).
+	// --- build a mock stream that speaks our protocol ---
+	mockStream := new(storeClient.MockSnapDownloadClient)
+
+	// First, the server sends an “initial” payload (we ignore it in the body).
+	mockStream.
+		On("Recv").
+		Return(&storepb.SnapDownloadResponse{
+			Payload: &storepb.SnapDownloadResponse_Initial{
+				Initial: &storepb.InitialDownloadResponse{
+					Revision: &storepb.GetRevisionResponse{
+						Id:             "rev1",
+						SnapName:       "snap1",
+						SequenceNumber: 1,
+					},
+				},
+			},
+		}, nil).
 		Once()
 
-	baseHandler := util.NewBaseHandler(nil, mockStoreClient, nil, nil)
-	handler := &Handler{BaseHandler: baseHandler}
+	// Next, it sends an actual data chunk
+	dataChunk := []byte("hello world")
+	mockStream.
+		On("Recv").
+		Return(&storepb.SnapDownloadResponse{
+			Payload: &storepb.SnapDownloadResponse_Data{
+				Data: &storepb.DataChunk{Chunk: dataChunk},
+			},
+		}, nil).
+		Once()
 
+	// Then EOF
+	mockStream.
+		On("Recv").
+		Return((*storepb.SnapDownloadResponse)(nil), io.EOF).
+		Once()
+
+	// And the handler defers a CloseSend on the stream
+	mockStream.
+		On("CloseSend").
+		Return(nil).
+		Once()
+
+	// --- mock the store client to return our stream ---
+	mockStore := new(storeClient.MockStoreClient)
+	mockStore.
+		On("SnapDownloadStream", "rev1").
+		Return(mockStream, nil).
+		Once()
+
+	// Wire up the handler
+	base := util.NewBaseHandler(nil, mockStore, nil, nil)
+	handler := &Handler{BaseHandler: base}
+
+	// Exercise the HTTP handler
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	// Set revision_id parameter.
+	// inject the path parameter
 	c.Params = append(c.Params, gin.Param{Key: "revision_id", Value: "rev1"})
 
 	handler.DownloadSnap(c)
-	// Expect success 200.
+
+	// ---- assertions ----
 	assert.Equal(t, http.StatusOK, w.Code)
-	// Check that the Content-Disposition header is set with filename.
-	assert.Contains(t, c.Writer.Header().Get("Content-Disposition"), "snap1_1.snap")
-	// Check that the response body equals dummyData.
-	assert.Equal(t, string(dummyData), w.Body.String())
-	mockStoreClient.AssertExpectations(t)
+
+	// Content‐Disposition should be exactly revision_id+".snap"
+	hdr := w.Header().Get("Content-Disposition")
+	assert.Equal(t, `attachment; filename="rev1.snap"`, hdr)
+
+	// We wrote exactly the data chunk
+	assert.Equal(t, string(dataChunk), w.Body.String())
+
+	mockStream.AssertExpectations(t)
+	mockStore.AssertExpectations(t)
 }
 
 // ------------------
