@@ -1,13 +1,15 @@
 module github.com/idlab-discover/kebeng/common
 
-go 1.22.2
+go 1.23
+
+toolchain go1.23.8
 
 require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/lib/pq v1.10.9
 	github.com/prometheus/client_golang v1.22.0
 	github.com/snapcore/snapd v0.0.0-20250429095531-40da7e0e1234
-	google.golang.org/grpc v1.72.0
+	google.golang.org/grpc v1.71.1
 	google.golang.org/protobuf v1.36.6
 )
 

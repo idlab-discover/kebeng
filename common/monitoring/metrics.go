@@ -69,7 +69,7 @@ func StartTimer(handler string) func() {
 	}
 }
 
-func StreamingInterceptor(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+func StreamingInterceptor(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 	start := time.Now()
 	err := handler(srv, ss)
 	StreamDuration.WithLabelValues(info.FullMethod).
