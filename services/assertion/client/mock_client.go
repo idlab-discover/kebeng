@@ -110,3 +110,11 @@ func (m *MockAssertionClient) DeserializePlugMap(data string) (model.Plugs, *cer
 	}
 	return nil, args.Get(1).(*cerror.CustomError)
 }
+
+func (m *MockAssertionClient) DeserializeSlotMap(data string) (model.Slots, *cerror.CustomError) {
+	args := m.Called(data)
+	if resp, ok := args.Get(0).(model.Slots); ok {
+		return resp, nil
+	}
+	return nil, args.Get(1).(*cerror.CustomError)
+}

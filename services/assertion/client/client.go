@@ -41,6 +41,7 @@ type AssertionClientInterface interface {
 	GetAccountAssertionByAccountID(accountId string) *proto.AccountAssertionResponse
 
 	DeserializePlugMap(data string) (model.Plugs, *cerror.CustomError)
+	DeserializeSlotMap(data string) (model.Slots, *cerror.CustomError)
 
 	Close()
 }
@@ -432,6 +433,17 @@ func (c *AssertionClient) DeserializePlugMap(data string) (model.Plugs, *cerror.
 		return nil, cerr
 	}
 	return plugs, nil
+}
+
+func (c *AssertionClient) DeserializeSlotMap(data string) (model.Slots, *cerror.CustomError) {
+	var slots model.Slots
+	err := json.Unmarshal([]byte(data), &slots)
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.BadRequest, fmt.Sprintf("failed to deserialize slots: %s", err.Error()))
+		logrus.Errorf(cerr.GetMessage())
+		return nil, cerr
+	}
+	return slots, nil
 }
 
 // ========== HELPER FUNCTIONS ==========
