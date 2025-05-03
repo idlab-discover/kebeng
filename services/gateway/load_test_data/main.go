@@ -252,9 +252,15 @@ func (h *testHandler) loadInStoreDataInDB(ctx context.Context, storeTestData *Te
 			Name:   "snap",
 			Target: "alias_snap",
 		}}
-		plugs := acmodel.PlugMap{
+		plugs := acmodel.Plugs{
 			"camera": {
-				AllowInstallation: boolptr(true),
+				"AllowInstallation": boolptr(true),
+			},
+			"location": {
+				"AllowInstallation": boolptr(true),
+			},
+			"network": {
+				"AllowInstallation": boolptr(true),
 			},
 		}
 		slots := acmodel.SlotMap{
