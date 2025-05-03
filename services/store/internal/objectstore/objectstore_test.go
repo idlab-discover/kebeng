@@ -453,7 +453,3 @@ func TestGetMinioClient(t *testing.T) {
 	assert.Equal(t, "http://minio:9000", endpoint.String())
 	assert.Equal(t, "http", endpoint.Scheme)
 }
-
-func boolPtr(value bool) *bool {
-	return &value
-}

@@ -465,8 +465,6 @@ func TestGetSnapRevisionAssertionBySHA3_384(t *testing.T) {
 	}
 }
 
-func ptrBool(b bool) *bool { return &b }
-
 func TestAddSnapDeclarationAssertion(t *testing.T) {
 	// common inputs
 	now := time.Now().UTC().Truncate(time.Second)
