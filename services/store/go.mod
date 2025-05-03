@@ -1,8 +1,6 @@
 module github.com/idlab-discover/kebeng/services/store
 
-go 1.23
-
-toolchain go1.24.2
+go 1.22.2
 
 require (
 	github.com/idlab-discover/kebeng/common v0.0.0-20250503125641-37309135c0d0
