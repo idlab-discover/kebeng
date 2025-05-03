@@ -32,7 +32,7 @@ type AssertionClientInterface interface {
 
 	AddAccountKeyAssertion(encoded_public_key, publicKeySha3_384Encoded, accountId, name string, since time.Time, until time.Time) *proto.AccountKeyAssertionResponse
 	AddSnapRevisionAssertion(snapSha3_384 string, developerId string, snapEntryId string, snapRevisionSequenceNumber uint32, snapSize uint64) *proto.SnapRevisionAssertionResponse
-	AddSnapDeclarationAssertion(snapID, snapName, publisherID string, series string, refreshControl []string, aliases []model.Alias, plugs model.Plugs, slots model.SlotMap) *proto.SnapDeclarationAssertionResponse
+	AddSnapDeclarationAssertion(snapID, snapName, publisherID string, series string, refreshControl []string, aliases []model.Alias, plugs model.Plugs, slots model.Slots) *proto.SnapDeclarationAssertionResponse
 	AddAccountAssertion(accountId, displayName, username, validation string, timestamp time.Time) *proto.AccountAssertionResponse
 
 	GetAccountKeyAssertionByPublicKeySha(publicKeySha3_384Encoded string) *proto.AccountKeyAssertionResponse
@@ -215,7 +215,7 @@ func (c *AssertionClient) AddSnapRevisionAssertion(snapSha3_384, developerId, sn
 	return resp
 }
 
-func (c *AssertionClient) AddSnapDeclarationAssertion(snapID, snapName, publisherID string, series string, refreshControl []string, aliases []model.Alias, plugs model.Plugs, slots model.SlotMap) *proto.SnapDeclarationAssertionResponse {
+func (c *AssertionClient) AddSnapDeclarationAssertion(snapID, snapName, publisherID string, series string, refreshControl []string, aliases []model.Alias, plugs model.Plugs, slots model.Slots) *proto.SnapDeclarationAssertionResponse {
 	el := cerror.NewErrorList()
 	// check input
 	if series == "" {
@@ -252,20 +252,10 @@ func (c *AssertionClient) AddSnapDeclarationAssertion(snapID, snapName, publishe
 	}
 
 	// plugs
-	req.Plugs = serializePlugs(plugs)
+	req.Plugs = serializeMap(plugs)
 
 	// slots
-	req.Slots = make(map[string]*proto.SlotRule, len(slots))
-	for iface, r := range slots {
-		req.Slots[iface] = &proto.SlotRule{
-			AllowInstallation:   r.AllowInstallation,
-			DenyInstallation:    r.DenyInstallation,
-			AllowConnection:     r.AllowConnection,
-			DenyConnection:      r.DenyConnection,
-			AllowAutoConnection: r.AllowAutoConnection,
-			DenyAutoConnection:  r.DenyAutoConnection,
-		}
-	}
+	req.Slots = serializeMap(slots)
 
 	// QUESTION: think the other 3 parameters could be empty, assertion of snap package "core" does not have any of the last 3 parameters
 	resp, err := c.client.AddSnapDeclarationAssertion(context.Background(), req)
@@ -446,10 +436,10 @@ func (c *AssertionClient) DeserializePlugMap(data string) (model.Plugs, *cerror.
 
 // ========== HELPER FUNCTIONS ==========
 
-func serializePlugs(plugs model.Plugs) string {
-	data, err := json.Marshal(plugs)
+func serializeMap(a any) string {
+	data, err := json.Marshal(a)
 	if err != nil {
-		logrus.Errorf("failed to serialize plugs: %s", err.Error())
+		logrus.Errorf("failed to serialize: %s", err.Error())
 		return ""
 	}
 	return string(data)

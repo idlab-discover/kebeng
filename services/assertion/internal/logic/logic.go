@@ -282,7 +282,7 @@ func (s *AssertionService) AddSnapDeclarationAssertion(ctx context.Context, req 
 		req.GetRefreshControl(),
 		protoAliasToModelAlias(req.GetAliases()),
 		deserializePlugs(req.GetPlugs()),
-		protoSlotToModelSlot(req.GetSlots()),
+		deserializeSlot(req.GetSlots()),
 		signature,
 	)
 	if cerr != nil {
@@ -485,8 +485,8 @@ func (s *AssertionService) GetSnapDeclarationAssertionBySnapID(ctx context.Conte
 		Timestamp:       timestamppb.New(snapDeclarationAssertion.Timestamp),
 		RefreshControl:  refreshControl,
 		Aliases:         modelAliasToProtoAlias(snapDeclarationAssertion.Aliases),
-		Plugs:           serializePlugs(snapDeclarationAssertion.Plugs),
-		Slots:           modelSlotToProtoSlot(snapDeclarationAssertion.Slots),
+		Plugs:           serializeMap(snapDeclarationAssertion.Plugs),
+		Slots:           serializeMap(snapDeclarationAssertion.Slots),
 		Signature:       snapDeclarationAssertion.Signature,
 		Type:            snapDeclarationAssertion.Type,
 		Errors:          el.ConvertToProtoErrorList(),
@@ -685,22 +685,6 @@ func protoAliasToModelAlias(protoAliases []*proto.Alias) []model.Alias {
 	return aliases
 }
 
-// convert proto Slot to model Slot
-func protoSlotToModelSlot(protoSlot map[string]*proto.SlotRule) map[string]*model.Slot {
-	slots := make(map[string]*model.Slot)
-	for k, v := range protoSlot {
-		slots[k] = &model.Slot{
-			AllowInstallation:   v.AllowInstallation,
-			DenyInstallation:    v.DenyInstallation,
-			AllowConnection:     v.AllowConnection,
-			DenyConnection:      v.DenyConnection,
-			AllowAutoConnection: v.AllowAutoConnection,
-			DenyAutoConnection:  v.DenyAutoConnection,
-		}
-	}
-	return slots
-}
-
 // convert model Alias to proto Alias
 func modelAliasToProtoAlias(modelAliases []model.Alias) []*proto.Alias {
 	if len(modelAliases) == 0 {
@@ -716,32 +700,13 @@ func modelAliasToProtoAlias(modelAliases []model.Alias) []*proto.Alias {
 	return protoAliases
 }
 
-// convert model Slot to proto Slot
-func modelSlotToProtoSlot(modelSlots map[string]*model.Slot) map[string]*proto.SlotRule {
-	if len(modelSlots) == 0 {
-		return nil
-	}
-	protoSlots := make(map[string]*proto.SlotRule)
-	for k, v := range modelSlots {
-		protoSlots[k] = &proto.SlotRule{
-			AllowInstallation:   v.AllowInstallation,
-			DenyInstallation:    v.DenyInstallation,
-			AllowConnection:     v.AllowConnection,
-			DenyConnection:      v.DenyConnection,
-			AllowAutoConnection: v.AllowAutoConnection,
-			DenyAutoConnection:  v.DenyAutoConnection,
-		}
-	}
-	return protoSlots
-}
-
-func serializePlugs(p model.Plugs) string {
-	if len(p) == 0 {
+func serializeMap[T model.Plugs | model.Slots](m T) string {
+	if len(m) == 0 {
 		return ""
 	}
-	serialized, err := json.Marshal(p)
+	serialized, err := json.Marshal(m)
 	if err != nil {
-		logrus.Errorf("failed to serialize plugs: %v", err)
+		logrus.Errorf("failed to serialize: %v", err)
 		return ""
 	}
 	return string(serialized)
@@ -753,6 +718,17 @@ func deserializePlugs(plugs string) model.Plugs {
 	err := json.Unmarshal([]byte(plugs), &deserialized)
 	if err != nil {
 		logrus.Errorf("failed to deserialize plugs: %v", err)
+		return nil
+	}
+	return deserialized
+}
+
+// DeserializeSlot converts a JSON string into a model.Slots object.
+func deserializeSlot(slots string) model.Slots {
+	var deserialized model.Slots
+	err := json.Unmarshal([]byte(slots), &deserialized)
+	if err != nil {
+		logrus.Errorf("failed to deserialize slots: %v", err)
 		return nil
 	}
 	return deserialized

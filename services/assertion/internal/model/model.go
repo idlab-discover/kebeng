@@ -64,8 +64,8 @@ type SnapDeclarationAssertion struct {
 	Timestamp       time.Time      `json:"timestamp" db:"timestamp"`
 	RefreshControl  pq.StringArray `json:"refresh_control" db:"refresh_control"`
 	Aliases         []Alias        `json:"aliases" db:"aliases"`
-	Plugs           Plugs        `json:"plugs" db:"plugs"`
-	Slots           SlotMap        `json:"slots" db:"slots"`
+	Plugs           Plugs          `json:"plugs" db:"plugs"`
+	Slots           Slots          `json:"slots" db:"slots"`
 	SignKeySHA3_384 string         `json:"sign_key_sha3_384" db:"sign_key_sha3_384"`
 	Signature       string         `json:"signature" db:"signature"`
 }
@@ -77,16 +77,7 @@ type Alias struct {
 
 type Plugs map[string]map[string]interface{}
 
-type Slot struct {
-	AllowInstallation   *bool
-	DenyInstallation    *bool
-	AllowConnection     *bool
-	DenyConnection      *bool
-	AllowAutoConnection *bool
-	DenyAutoConnection  *bool
-}
-
-type SlotMap map[string]*Slot
+type Slots map[string]map[string]interface{}
 
 type AccountAssertion struct {
 	ID              uuid.UUID  `json:"id" db:"id"`

@@ -486,8 +486,9 @@ func TestAddSnapDeclarationAssertion(t *testing.T) {
 		"plug1": {"allow-installation": true},
 		"plug2": {"deny-installation": false},
 	}
-	slots := model.SlotMap{
-		"iface2": {AllowConnection: ptrBool(false)},
+	slots := model.Slots{
+		"slot1": {"allow-installation": true},
+		"slot2": {"deny-installation": false},
 	}
 	signature := "signed-bytes"
 
