@@ -14,6 +14,5 @@ RUN apt-get update && apt-get install -y squashfs-tools
 COPY --from=builder /bin/store-service /app/store-service
 COPY --from=builder /app/config.yaml /app/config.yaml
 COPY --from=builder /app/internal/migrations /app/migrations
-COPY --from=builder /app/internal/keys /app/keys
 
 CMD ["/app/store-service"]
