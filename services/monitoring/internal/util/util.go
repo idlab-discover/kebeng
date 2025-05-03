@@ -1,12 +1,14 @@
 package util
 
 import (
+	"bufio"
 	"crypto/rand"
 	"fmt"
 	"io"
 	"math/big"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -56,4 +58,38 @@ func RandomSnapReader(snaps []string, suffixLen int, dataDir string) (io.ReadClo
 		return nil, snaps[idx], fmt.Errorf("failed to open %q: %w", fullPath, err)
 	}
 	return RandomSuffixReader(f, suffixLen), fmt.Sprintf("%s-%s", stripExt(snaps[idx]), uuid.New().String()), nil
+}
+
+// parseAssertion reads only top‐level key:value lines until
+// the first empty line, and skips unwanted keys.
+func ParseAssertion(blob string) map[string]string {
+	fields := make(map[string]string)
+	// match lines like "key: value" at start of line
+	re := regexp.MustCompile(`^([a-z0-9-]+):\s*(.+)$`)
+
+	// keys in snap-declaration we want to ignore entirely
+	skip := map[string]bool{
+		"refresh-control": true,
+		"aliases":         true,
+		"plugs":           true,
+		"slots":           true,
+	}
+
+	scanner := bufio.NewScanner(strings.NewReader(blob))
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.TrimSpace(line) == "" {
+			// blank line → stop parsing headers
+			break
+		}
+		// only unindented key:value lines
+		if m := re.FindStringSubmatch(line); m != nil {
+			key := m[1]
+			val := m[2]
+			if !skip[key] {
+				fields[key] = val
+			}
+		}
+	}
+	return fields
 }

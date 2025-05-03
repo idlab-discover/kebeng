@@ -100,12 +100,9 @@ func (m *MockStoreClient) GetLatestRevisionByTrackAndChannel(snapName, track, ch
 }
 
 // SnapDownload mocks the SnapDownload function.
-func (m *MockStoreClient) SnapDownload(revisionId string) *proto.SnapDownloadCompleteResponse {
+func (m *MockStoreClient) SnapDownloadStream(revisionId string) (proto.StoreService_SnapDownloadClient, error) {
 	args := m.Called(revisionId)
-	if resp, ok := args.Get(0).(*proto.SnapDownloadCompleteResponse); ok {
-		return resp
-	}
-	return nil
+	return args.Get(0).(proto.StoreService_SnapDownloadClient), args.Error(1)
 }
 
 // UnscannedUpload mocks the UnscannedUpload function.
@@ -164,4 +161,20 @@ func (m *MockStoreClient) UpdateSnapEntryWithMetadata(entryId uuid.UUID, metadat
 		return resp
 	}
 	return nil
+}
+
+// MockSnapDownloadClient fakes the gRPC client‐stream returned by SnapDownloadStream.
+type MockSnapDownloadClient struct {
+	mock.Mock
+	grpc.ClientStream
+}
+
+func (m *MockSnapDownloadClient) Recv() (*proto.SnapDownloadResponse, error) {
+	args := m.Called()
+	return args.Get(0).(*proto.SnapDownloadResponse), args.Error(1)
+}
+
+func (m *MockSnapDownloadClient) CloseSend() error {
+	args := m.Called()
+	return args.Error(0)
 }
