@@ -356,7 +356,7 @@ func (h *Handler) SnapPush(c *gin.Context) {
 		el.ExtendProtoError(metadata.Errors)
 		return
 	}
-	logrus.Debugf("metadata: %v", metadata)
+	logrus.Debugf("metadata: %v", metadata.Slots)
 
 	// Update the snapEntry with the metadata
 	updatedEntry := h.StoreClient.UpdateSnapEntryWithMetadata(parsedEntryUUID, metadata)

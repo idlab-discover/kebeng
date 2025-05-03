@@ -282,7 +282,7 @@ func (s *AssertionService) AddSnapDeclarationAssertion(ctx context.Context, req 
 		req.GetRefreshControl(),
 		protoAliasToModelAlias(req.GetAliases()),
 		deserializePlugs(req.GetPlugs()),
-		deserializeSlot(req.GetSlots()),
+		deserializeSlots(req.GetSlots()),
 		signature,
 	)
 	if cerr != nil {
@@ -724,7 +724,7 @@ func deserializePlugs(plugs string) model.Plugs {
 }
 
 // DeserializeSlot converts a JSON string into a model.Slots object.
-func deserializeSlot(slots string) model.Slots {
+func deserializeSlots(slots string) model.Slots {
 	var deserialized model.Slots
 	err := json.Unmarshal([]byte(slots), &deserialized)
 	if err != nil {
