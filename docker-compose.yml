@@ -12,7 +12,7 @@ services:
       - store_db
       - account_db
     volumes:
-      - ./services/gateway/config.yaml:/app/config.yaml  # config file
+      - ./services/gateway/config.yaml:/app/config.yaml
     environment:
       - CONFIG_FILE_PATH=/app/config.yaml
     restart: always
@@ -30,9 +30,7 @@ services:
       - store_db
       - minio
     volumes:
-      - ./services/store/config.yaml:/app/config.yaml  # config file
-      - ./init-config-example.json:/app/init-config-example.json  # init example
-      - ./services/store/internal/keys/:/app/keys/  # keys needed by store
+      - ./services/store/config.yaml:/app/config.yaml
     environment:
       - CONFIG_FILE_PATH=/app/config.yaml
     restart: always
@@ -77,7 +75,7 @@ services:
     depends_on:
       - account_db
     volumes:
-      - ./services/account/config.yaml:/app/config.yaml  # config file
+      - ./services/account/config.yaml:/app/config.yaml
     environment:
       - CONFIG_FILE_PATH=/app/config.yaml
     restart: always
@@ -108,7 +106,8 @@ services:
       depends_on:
         - assertion_db
       volumes:
-        - ./services/assertion/config.yaml:/app/config.yaml  # config file
+        - ./services/assertion/config.yaml:/app/config.yaml
+        - ./services/assertion/keys/:/app/keys/  # TODO: this path should become a variable instead of hardcoded
       environment:
         - CONFIG_FILE_PATH=/app/config.yaml
       restart: always
