@@ -79,7 +79,7 @@ func (m *MockAssertionClient) GetSnapRevisionAssertionBySHA3_384(snapSha3_384 st
 	return nil
 }
 
-func (m *MockAssertionClient) AddSnapDeclarationAssertion(snapID, snapName, publisherID string, series string, refreshControl []string, aliases []model.Alias, plugs model.PlugMap, slots model.SlotMap) *proto.SnapDeclarationAssertionResponse {
+func (m *MockAssertionClient) AddSnapDeclarationAssertion(snapID, snapName, publisherID string, series string, refreshControl []string, aliases []model.Alias, plugs model.Plugs, slots model.SlotMap) *proto.SnapDeclarationAssertionResponse {
 	args := m.Called(snapID, snapName, publisherID, series, refreshControl, aliases, plugs, slots)
 	if resp, ok := args.Get(0).(*proto.SnapDeclarationAssertionResponse); ok {
 		return resp
@@ -103,9 +103,9 @@ func (m *MockAssertionClient) GetAccountAssertionByAccountID(accountId string) *
 	return nil
 }
 
-func (m *MockAssertionClient) DeserializePlugMap(data string) (model.PlugMap, *cerror.CustomError) {
+func (m *MockAssertionClient) DeserializePlugMap(data string) (model.Plugs, *cerror.CustomError) {
 	args := m.Called(data)
-	if resp, ok := args.Get(0).(model.PlugMap); ok {
+	if resp, ok := args.Get(0).(model.Plugs); ok {
 		return resp, nil
 	}
 	return nil, args.Get(1).(*cerror.CustomError)

@@ -41,7 +41,7 @@ func TestSaveFileToBucket_succes(t *testing.T) {
 		"core18",
 		"test-grade",
 		[]string{"amd64", "arm64"},
-		acmodel.PlugMap{},
+		make(map[string]map[string]interface{}),
 	)
 	assert.NoError(t, err)
 	assert.NotNil(t, metadata)
@@ -82,7 +82,7 @@ func TestSaveFileToBucket_ErrorCreatingBucket(t *testing.T) {
 		"core18",
 		"test-grade",
 		[]string{"amd64", "arm64"},
-		acmodel.PlugMap{},
+		make(map[string]map[string]interface{}),
 	)
 	assert.Error(t, err)
 	assert.Nil(t, metadata)
@@ -115,7 +115,7 @@ func TestSaveFileToBucket_ErrorUploadingFile(t *testing.T) {
 		"core18",
 		"test-grade",
 		[]string{"amd64", "arm64"},
-		acmodel.PlugMap{},
+		make(map[string]map[string]interface{}),
 	)
 	assert.Error(t, err)
 	assert.Nil(t, metadata)

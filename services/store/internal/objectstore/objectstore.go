@@ -32,7 +32,7 @@ type IMinioClient interface {
 }
 
 type IObjectStore interface {
-	SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string, name string, version string, summary string, description string, confinement string, base string, grade string, architectures []string, plugs acmodel.PlugMap) (*models.Metadata, error)
+	SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string, name string, version string, summary string, description string, confinement string, base string, grade string, architectures []string, plugs map[string]map[string]interface{}) (*models.Metadata, error)
 	GetSnapFileReader(ctx context.Context, filePath string) (io.ReadCloser, error)
 	Move(sourceBucket, destinationBucket, objectName string, newObjectName string) error
 	GetObjectCustomMetadata(bucket string, objectName string) (*models.Metadata, error)
@@ -91,7 +91,7 @@ func (obs *ObjectStore) Move(sourceBucket, destinationBucket, objectName, newObj
 	return nil
 }
 
-func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string, name string, version string, summary string, description string, confinement string, base string, grade string, architectures []string, plugs acmodel.PlugMap) (*models.Metadata, error) {
+func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string, name string, version string, summary string, description string, confinement string, base string, grade string, architectures []string, plugs map[string]map[string]interface{}) (*models.Metadata, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -106,7 +106,7 @@ func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_38
 
 	baseFileName := path.Base(filePath)
 
-	serializedPlugs, cerr := SerializePlugMap(plugs)
+	serializedPlugs, cerr := SerializeNestedMap(plugs)
 	if cerr != nil {
 		// Already logged in SerializePlugMap
 		return nil, fmt.Errorf(cerr.GetMessage())
@@ -123,7 +123,7 @@ func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_38
 		"Base":             base,
 		"Grade":            grade,
 		"Architectures":    strings.Join(architectures, ","),
-		"Plugs":            serializedPlugs, // TODO: support plugs
+		"Plugs":            serializedPlugs,
 	}
 
 	uploadInfo, err := obs.MinioClient.FPutObject(ctx, bucket, baseFileName, filePath, minio.PutObjectOptions{
@@ -145,7 +145,7 @@ func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_38
 		Base:             base,
 		Grade:            grade,
 		Architectures:    architectures,
-		Plugs:            ConvertPlugMapToNestedMap(plugs), // TODO: support plugs
+		Plugs:            plugs,
 	}
 
 	return metadata, nil
@@ -257,6 +257,16 @@ func DeserializeToNestedMap(data string) (map[string]map[string]interface{}, *ce
 		return nil, cerr
 	}
 	return result, nil
+}
+
+func SerializeNestedMap(data map[string]map[string]interface{}) (string, *cerror.CustomError) {
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to serialize nested map: %v", err))
+		logrus.Errorf(cerr.GetMessage())
+		return "", cerr
+	}
+	return string(jsonData), nil
 }
 
 func ConvertPlugMapToNestedMap(pm acmodel.PlugMap) map[string]map[string]interface{} {

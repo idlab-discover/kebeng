@@ -379,7 +379,11 @@ func (h *Handler) SnapPush(c *gin.Context) {
 	}
 
 	// Create a new SnapDeclarationAssertion for the snap upload
-	declAssertion := h.AssertionClient.AddSnapDeclarationAssertion(entry.Id, entry.SnapName, accountUUID.String(), req.Series, nil, nil, nil, nil) // TODO: support refreshcontrol, aliases, plugs and slots
+	plugs, cerr := h.AssertionClient.DeserializePlugMap(metadata.Plugs)
+	if cerr != nil {
+		el.AddCustomError(cerr)
+	}
+	declAssertion := h.AssertionClient.AddSnapDeclarationAssertion(entry.Id, entry.SnapName, accountUUID.String(), req.Series, nil, nil, plugs, nil) // TODO: support refreshcontrol, aliases, plugs and slots
 	if len(declAssertion.Errors) > 0 {
 		el.ExtendProtoError(declAssertion.Errors)
 	}

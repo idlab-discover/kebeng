@@ -32,7 +32,7 @@ type AssertionClientInterface interface {
 
 	AddAccountKeyAssertion(encoded_public_key, publicKeySha3_384Encoded, accountId, name string, since time.Time, until time.Time) *proto.AccountKeyAssertionResponse
 	AddSnapRevisionAssertion(snapSha3_384 string, developerId string, snapEntryId string, snapRevisionSequenceNumber uint32, snapSize uint64) *proto.SnapRevisionAssertionResponse
-	AddSnapDeclarationAssertion(snapID, snapName, publisherID string, series string, refreshControl []string, aliases []model.Alias, plugs model.PlugMap, slots model.SlotMap) *proto.SnapDeclarationAssertionResponse
+	AddSnapDeclarationAssertion(snapID, snapName, publisherID string, series string, refreshControl []string, aliases []model.Alias, plugs model.Plugs, slots model.SlotMap) *proto.SnapDeclarationAssertionResponse
 	AddAccountAssertion(accountId, displayName, username, validation string, timestamp time.Time) *proto.AccountAssertionResponse
 
 	GetAccountKeyAssertionByPublicKeySha(publicKeySha3_384Encoded string) *proto.AccountKeyAssertionResponse
@@ -40,7 +40,7 @@ type AssertionClientInterface interface {
 	GetSnapDeclarationAssertionBySnapID(snapId string) *proto.SnapDeclarationAssertionResponse
 	GetAccountAssertionByAccountID(accountId string) *proto.AccountAssertionResponse
 
-	DeserializePlugMap(data string) (model.PlugMap, *cerror.CustomError)
+	DeserializePlugMap(data string) (model.Plugs, *cerror.CustomError)
 
 	Close()
 }
@@ -215,7 +215,7 @@ func (c *AssertionClient) AddSnapRevisionAssertion(snapSha3_384, developerId, sn
 	return resp
 }
 
-func (c *AssertionClient) AddSnapDeclarationAssertion(snapID, snapName, publisherID string, series string, refreshControl []string, aliases []model.Alias, plugs model.PlugMap, slots model.SlotMap) *proto.SnapDeclarationAssertionResponse {
+func (c *AssertionClient) AddSnapDeclarationAssertion(snapID, snapName, publisherID string, series string, refreshControl []string, aliases []model.Alias, plugs model.Plugs, slots model.SlotMap) *proto.SnapDeclarationAssertionResponse {
 	el := cerror.NewErrorList()
 	// check input
 	if series == "" {
@@ -252,17 +252,7 @@ func (c *AssertionClient) AddSnapDeclarationAssertion(snapID, snapName, publishe
 	}
 
 	// plugs
-	req.Plugs = make(map[string]*proto.PlugRule, len(plugs))
-	for iface, r := range plugs {
-		req.Plugs[iface] = &proto.PlugRule{
-			AllowInstallation:   r.AllowInstallation,
-			DenyInstallation:    r.DenyInstallation,
-			AllowConnection:     r.AllowConnection,
-			DenyConnection:      r.DenyConnection,
-			AllowAutoConnection: r.AllowAutoConnection,
-			DenyAutoConnection:  r.DenyAutoConnection,
-		}
-	}
+	req.Plugs = serializePlugs(plugs)
 
 	// slots
 	req.Slots = make(map[string]*proto.SlotRule, len(slots))
@@ -443,13 +433,24 @@ func (c *AssertionClient) GetAccountAssertionByAccountID(accountId string) *prot
 	return resp
 }
 
-func (c *AssertionClient) DeserializePlugMap(data string) (model.PlugMap, *cerror.CustomError) {
-	var plugMap model.PlugMap
-	err := json.Unmarshal([]byte(data), &plugMap)
+func (c *AssertionClient) DeserializePlugMap(data string) (model.Plugs, *cerror.CustomError) {
+	var plugs model.Plugs
+	err := json.Unmarshal([]byte(data), &plugs)
 	if err != nil {
-		cerr := cerror.NewCustomError(cerror.BadRequest, fmt.Sprintf("failed to deserialize plug map: %s", err.Error()))
+		cerr := cerror.NewCustomError(cerror.BadRequest, fmt.Sprintf("failed to deserialize plugs: %s", err.Error()))
 		logrus.Errorf(cerr.GetMessage())
 		return nil, cerr
 	}
-	return plugMap, nil
+	return plugs, nil
+}
+
+// ========== HELPER FUNCTIONS ==========
+
+func serializePlugs(plugs model.Plugs) string {
+	data, err := json.Marshal(plugs)
+	if err != nil {
+		logrus.Errorf("failed to serialize plugs: %s", err.Error())
+		return ""
+	}
+	return string(data)
 }

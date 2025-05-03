@@ -108,7 +108,7 @@ message AddSnapDeclarationAssertionRequest {
   google.protobuf.Timestamp timestamp = 5;
   repeated string refresh_control = 6;
   repeated Alias aliases = 7;
-  map<string, PlugRule> plugs = 8;
+  string plugs = 8;
   map<string, SlotRule> slots = 9;
 }
 
@@ -124,20 +124,11 @@ message SnapDeclarationAssertionResponse {
   google.protobuf.Timestamp timestamp = 9;
   repeated string refresh_control = 10;
   repeated Alias aliases = 11;
-  map<string, PlugRule> plugs = 12;
+  string plugs = 12;
   map<string, SlotRule> slots = 13;
   string sign_key_sha3_384 = 14;
   string signature = 15;
   repeated proto.Error errors = 16;
-}
-
-message PlugRule {
-  optional bool allow_installation    = 1;
-  optional bool deny_installation     = 2;
-  optional bool allow_connection      = 3;
-  optional bool deny_connection       = 4;
-  optional bool allow_auto_connection = 5;
-  optional bool deny_auto_connection  = 6;
 }
 
 message SlotRule {

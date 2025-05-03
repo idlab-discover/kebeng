@@ -7,7 +7,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/idlab-discover/kebeng v0.0.0-20250427131232-98fd21e0a2e6
 	github.com/idlab-discover/kebeng/services/account v0.0.0-20250423160216-bc71eecd8afa
-	github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250502093231-9c3c1566c6fc
+	github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250502154323-2fb17e317e5f
 	github.com/idlab-discover/kebeng/services/store v0.0.0-20250502153346-d7bb5cff5dca
 	github.com/sirupsen/logrus v1.9.3
 	github.com/snapcore/snapd v0.0.0-20250228185938-4d4437a35a6b

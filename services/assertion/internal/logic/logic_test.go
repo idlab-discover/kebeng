@@ -500,7 +500,7 @@ func TestAddSnapDeclarationAssertion(t *testing.T) {
 		Timestamp:       now,
 		RefreshControl:  pq.StringArray{"refresh-control"},
 		Aliases:         []model.Alias{{Name: "alias1", Target: "target1"}, {Name: "alias2", Target: "target2"}},
-		Plugs:           map[string]*model.Plug{"foo": {AllowConnection: boolPtr(true)}},
+		Plugs:           model.Plugs{"foo": {"AllowConnection": boolPtr(true)}},
 		Slots:           map[string]*model.Slot{"bar": {AllowInstallation: boolPtr(false)}},
 		Type:            asserts.SnapDeclarationType.Name,
 		Signature:       "deadbeef",
@@ -527,7 +527,7 @@ func TestAddSnapDeclarationAssertion(t *testing.T) {
 				Timestamp:      timestamppb.New(now),
 				RefreshControl: []string{"refresh-control"},
 				Aliases:        []*proto.Alias{{Name: "alias1", Target: "target1"}, {Name: "alias2", Target: "target2"}},
-				Plugs:          map[string]*proto.PlugRule{"foo": {AllowConnection: boolPtr(true)}},
+				Plugs:          "foo:{\"AllowConnection\":true}",
 				Slots:          map[string]*proto.SlotRule{"bar": {AllowInstallation: boolPtr(false)}},
 			},
 			mockGetLatest: notFoundErr, // triggers sequence = 1

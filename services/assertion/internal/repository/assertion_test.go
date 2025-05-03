@@ -482,8 +482,9 @@ func TestAddSnapDeclarationAssertion(t *testing.T) {
 	aliases := []model.Alias{
 		{Name: "alias1", Target: "target1"},
 	}
-	plugs := model.PlugMap{
-		"iface1": {AllowInstallation: ptrBool(true)},
+	plugs := model.Plugs{
+		"plug1": {"allow-installation": true},
+		"plug2": {"deny-installation": false},
 	}
 	slots := model.SlotMap{
 		"iface2": {AllowConnection: ptrBool(false)},
@@ -640,7 +641,7 @@ func TestGetSnapDeclarationAssertionByID(t *testing.T) {
 				assert.Equal(t, "authX", got.AuthorityID)
 				assert.Equal(t, "signKeyX", got.SignKeySHA3_384)
 				assert.Equal(t, uint32(1), got.Revision)
-				assert.Equal(t, uint32(2), got.Series)
+				assert.Equal(t, "2", got.Series)
 				assert.Equal(t, now.UTC().Truncate(time.Second), got.Timestamp.UTC().Truncate(time.Second))
 				assert.Equal(t, tt.refreshControl, []string(got.RefreshControl))
 				assert.Equal(t, "sigX", got.Signature)

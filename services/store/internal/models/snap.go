@@ -151,5 +151,5 @@ type SnapMeta struct {
 	Confinement   string                            `yaml:"confinement"`
 	Grade         string                            `yaml:"grade"`
 	Base          string                            `yaml:"base"`
-	Plugs         map[string]map[string]interface{} `yaml:"plugs"` // TODO: support plugs
+	Plugs         map[string]map[string]interface{} `yaml:"plugs"`
 }
