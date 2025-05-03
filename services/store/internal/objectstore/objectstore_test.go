@@ -291,6 +291,7 @@ func TestGetObjectCustomMetadata(t *testing.T) {
 			"Architectures":    "amd64,arm64",
 			"Plugs":            `{"camera":{"allow-installation":true,"deny-installation":false,"allow-connection":true,"deny-connection":false},"location":{"allow-installation":true,"deny-installation":false,"allow-connection":true,"deny-connection":false,"allow-auto-connection":true,"deny-auto-connection":false}}`,
 			"Slots":            `{"location":{"allow-installation":true,"deny-installation":false,"allow-connection":true,"deny-connection":false}}`,
+			"Refresh-Control":  "snap-id1,snap-id2",
 		},
 	}
 
@@ -327,6 +328,7 @@ func TestGetObjectCustomMetadata(t *testing.T) {
 			"deny-connection":    false,
 		},
 	}
+	refreshControl := []string{"snap-id1", "snap-id2"}
 
 	expectedMetadata := &models.Metadata{
 		Name:             name,
@@ -340,6 +342,7 @@ func TestGetObjectCustomMetadata(t *testing.T) {
 		Architectures:    architectures,
 		Plugs:            plugs,
 		Slots:            slots,
+		RefreshControl:   refreshControl,
 	}
 
 	mockMinio.On("StatObject", mock.Anything, bucket, object, mock.Anything).
