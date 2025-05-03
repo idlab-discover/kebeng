@@ -41,6 +41,7 @@ func TestSaveFileToBucket_succes(t *testing.T) {
 		"core18",
 		"test-grade",
 		[]string{"amd64", "arm64"},
+		[]string{"snap-id1", "snap-id2"},
 		make(map[string]map[string]interface{}),
 		make(map[string]map[string]interface{}),
 	)
@@ -83,6 +84,7 @@ func TestSaveFileToBucket_ErrorCreatingBucket(t *testing.T) {
 		"core18",
 		"test-grade",
 		[]string{"amd64", "arm64"},
+		[]string{"snap-id1", "snap-id2"},
 		make(map[string]map[string]interface{}),
 		make(map[string]map[string]interface{}),
 	)
@@ -117,6 +119,7 @@ func TestSaveFileToBucket_ErrorUploadingFile(t *testing.T) {
 		"core18",
 		"test-grade",
 		[]string{"amd64", "arm64"},
+		[]string{"snap-id1", "snap-id2"},
 		make(map[string]map[string]interface{}),
 		make(map[string]map[string]interface{}),
 	)

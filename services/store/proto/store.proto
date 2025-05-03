@@ -274,7 +274,8 @@ message GetObjectCustomMetadataResponse {
     repeated string architectures = 10;
     string plugs = 11;
     string slots = 12;
-    repeated proto.Error errors = 13;
+    repeated string refresh_control = 13;
+    repeated proto.Error errors = 14;
 }
 
 message UpdateUploadStatusRequest {

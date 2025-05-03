@@ -141,17 +141,19 @@ type Metadata struct {
 	Architectures     pq.StringArray                    `json:"architectures" db:"architectures"`
 	Plugs             map[string]map[string]interface{} `json:"plugs" db:"plugs"`
 	Slots             map[string]map[string]interface{} `json:"slots" db:"slots"`
+	RefreshControl    []string                          `json:"refresh_control" db:"refresh_control"`
 }
 
 type SnapMeta struct {
-	Name          string                            `yaml:"name"`
-	Version       string                            `yaml:"version"`
-	Summary       string                            `yaml:"summary"`
-	Description   string                            `yaml:"description"`
-	Architectures pq.StringArray                    `yaml:"architectures"`
-	Confinement   string                            `yaml:"confinement"`
-	Grade         string                            `yaml:"grade"`
-	Base          string                            `yaml:"base"`
-	Plugs         map[string]map[string]interface{} `yaml:"plugs"`
-	Slots         map[string]map[string]interface{} `yaml:"slots"`
+	Name           string                            `yaml:"name"`
+	Version        string                            `yaml:"version"`
+	Summary        string                            `yaml:"summary"`
+	Description    string                            `yaml:"description"`
+	Architectures  pq.StringArray                    `yaml:"architectures"`
+	Confinement    string                            `yaml:"confinement"`
+	Grade          string                            `yaml:"grade"`
+	Base           string                            `yaml:"base"`
+	Plugs          map[string]map[string]interface{} `yaml:"plugs"`
+	Slots          map[string]map[string]interface{} `yaml:"slots"`
+	RefreshControl []string                          `yaml:"refresh-control"`
 }

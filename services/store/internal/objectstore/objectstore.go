@@ -32,7 +32,7 @@ type IMinioClient interface {
 }
 
 type IObjectStore interface {
-	SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string, name string, version string, summary string, description string, confinement string, base string, grade string, architectures []string, plugs, slots map[string]map[string]interface{}) (*models.Metadata, error)
+	SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string, name string, version string, summary string, description string, confinement string, base string, grade string, architectures, refreshControl []string, plugs, slots map[string]map[string]interface{}) (*models.Metadata, error)
 	GetSnapFileReader(ctx context.Context, filePath string) (io.ReadCloser, error)
 	Move(sourceBucket, destinationBucket, objectName string, newObjectName string) error
 	GetObjectCustomMetadata(bucket string, objectName string) (*models.Metadata, error)
@@ -91,7 +91,7 @@ func (obs *ObjectStore) Move(sourceBucket, destinationBucket, objectName, newObj
 	return nil
 }
 
-func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string, name string, version string, summary string, description string, confinement string, base string, grade string, architectures []string, plugs, slots map[string]map[string]interface{}) (*models.Metadata, error) {
+func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string, name string, version string, summary string, description string, confinement string, base string, grade string, architectures, refreshControl []string, plugs, slots map[string]map[string]interface{}) (*models.Metadata, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -131,6 +131,7 @@ func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_38
 		"Architectures":    strings.Join(architectures, ","),
 		"Plugs":            serializedPlugs,
 		"Slots":            serializedSlots,
+		"Refresh-Control":  strings.Join(refreshControl, ","),
 	}
 
 	uploadInfo, err := obs.MinioClient.FPutObject(ctx, bucket, baseFileName, filePath, minio.PutObjectOptions{
@@ -154,6 +155,7 @@ func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_38
 		Architectures:    architectures,
 		Plugs:            plugs,
 		Slots:            slots,
+		RefreshControl:   refreshControl,
 	}
 
 	return metadata, nil
@@ -194,6 +196,7 @@ func (obs *ObjectStore) GetObjectCustomMetadata(bucket string, objectName string
 		Architectures:    strings.Split(objectInfo.UserMetadata["Architectures"], ","),
 		Plugs:            plugs,
 		Slots:            slots,
+		RefreshControl:   strings.Split(objectInfo.UserMetadata["Refresh-Control"], ","),
 	}
 
 	return metadata, nil
