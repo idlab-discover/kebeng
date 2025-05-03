@@ -140,6 +140,7 @@ type Metadata struct {
 	Grade             string                            `json:"grade" db:"grade"`
 	Architectures     pq.StringArray                    `json:"architectures" db:"architectures"`
 	Plugs             map[string]map[string]interface{} `json:"plugs" db:"plugs"`
+	Slots             map[string]map[string]interface{} `json:"slots" db:"slots"`
 }
 
 type SnapMeta struct {
@@ -152,4 +153,5 @@ type SnapMeta struct {
 	Grade         string                            `yaml:"grade"`
 	Base          string                            `yaml:"base"`
 	Plugs         map[string]map[string]interface{} `yaml:"plugs"`
+	Slots         map[string]map[string]interface{} `yaml:"slots"`
 }

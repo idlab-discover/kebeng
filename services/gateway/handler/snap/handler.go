@@ -367,7 +367,7 @@ func (h *Handler) SnapPush(c *gin.Context) {
 	logrus.Debugf("Updated entry: %v", updatedEntry)
 
 	// Create a new revision for the snap upload
-	revision := h.StoreClient.AddRevision(entry.SnapName, metadata.GetSha3_384Encoded(), uint64(req.BinaryFileSize), metadata.Architectures, req.Channels, req.UnscannedFileName) // FIX: architectures should be passed from the request
+	revision := h.StoreClient.AddRevision(entry.SnapName, metadata.GetSha3_384Encoded(), uint64(req.BinaryFileSize), metadata.Architectures, req.Channels, req.UnscannedFileName)
 	if len(revision.Errors) > 0 {
 		el.ExtendProtoError(revision.Errors)
 	}
@@ -383,7 +383,11 @@ func (h *Handler) SnapPush(c *gin.Context) {
 	if cerr != nil {
 		el.AddCustomError(cerr)
 	}
-	declAssertion := h.AssertionClient.AddSnapDeclarationAssertion(entry.Id, entry.SnapName, accountUUID.String(), req.Series, nil, nil, plugs, nil) // TODO: support refreshcontrol, aliases, plugs and slots
+	slots, cerr := h.AssertionClient.DeserializeSlotMap(metadata.Slots)
+	if cerr != nil {
+		el.AddCustomError(cerr)
+	}
+	declAssertion := h.AssertionClient.AddSnapDeclarationAssertion(entry.Id, entry.SnapName, accountUUID.String(), req.Series, nil, nil, plugs, slots) // TODO: support refreshcontrol, aliases, plugs and slots
 	if len(declAssertion.Errors) > 0 {
 		el.ExtendProtoError(declAssertion.Errors)
 	}

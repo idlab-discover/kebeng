@@ -263,9 +263,15 @@ func (h *testHandler) loadInStoreDataInDB(ctx context.Context, storeTestData *Te
 				"AllowInstallation": boolptr(true),
 			},
 		}
-		slots := acmodel.SlotMap{
+		slots := acmodel.Slots{
 			"camera": {
-				AllowInstallation: boolptr(true),
+				"AllowInstallation": boolptr(true),
+			},
+			"location": {
+				"AllowInstallation": boolptr(true),
+			},
+			"network": {
+				"AllowInstallation": boolptr(true),
 			},
 		}
 		entryID, err := h.getID(storeIDMap, entry.ID)

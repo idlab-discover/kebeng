@@ -14,7 +14,6 @@ import (
 	"github.com/idlab-discover/kebeng/services/store/internal/models"
 
 	"github.com/idlab-discover/kebeng/common/cerror"
-	acmodel "github.com/idlab-discover/kebeng/services/assertion/client/model"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/sirupsen/logrus"
@@ -33,7 +32,7 @@ type IMinioClient interface {
 }
 
 type IObjectStore interface {
-	SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string, name string, version string, summary string, description string, confinement string, base string, grade string, architectures []string, plugs map[string]map[string]interface{}) (*models.Metadata, error)
+	SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string, name string, version string, summary string, description string, confinement string, base string, grade string, architectures []string, plugs, slots map[string]map[string]interface{}) (*models.Metadata, error)
 	GetSnapFileReader(ctx context.Context, filePath string) (io.ReadCloser, error)
 	Move(sourceBucket, destinationBucket, objectName string, newObjectName string) error
 	GetObjectCustomMetadata(bucket string, objectName string) (*models.Metadata, error)
@@ -92,7 +91,7 @@ func (obs *ObjectStore) Move(sourceBucket, destinationBucket, objectName, newObj
 	return nil
 }
 
-func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string, name string, version string, summary string, description string, confinement string, base string, grade string, architectures []string, plugs map[string]map[string]interface{}) (*models.Metadata, error) {
+func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string, name string, version string, summary string, description string, confinement string, base string, grade string, architectures []string, plugs map[string]map[string]interface{}, slots map[string]map[string]interface{}) (*models.Metadata, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -113,6 +112,12 @@ func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_38
 		return nil, errors.New(cerr.GetMessage())
 	}
 
+	serializedSlots, cerr := SerializeNestedMap(slots)
+	if cerr != nil {
+		// Already logged in SerializePlugMap
+		return nil, errors.New(cerr.GetMessage())
+	}
+
 	// Prepare user metadata
 	userMetadata := map[string]string{
 		"Sha3-384-Encoded": sha3_384_encoded,
@@ -125,6 +130,7 @@ func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_38
 		"Grade":            grade,
 		"Architectures":    strings.Join(architectures, ","),
 		"Plugs":            serializedPlugs,
+		"Slots":            serializedSlots,
 	}
 
 	uploadInfo, err := obs.MinioClient.FPutObject(ctx, bucket, baseFileName, filePath, minio.PutObjectOptions{
@@ -147,6 +153,7 @@ func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_38
 		Grade:            grade,
 		Architectures:    architectures,
 		Plugs:            plugs,
+		Slots:            slots,
 	}
 
 	return metadata, nil
@@ -168,6 +175,12 @@ func (obs *ObjectStore) GetObjectCustomMetadata(bucket string, objectName string
 		return nil, errors.New(cerr.GetMessage())
 	}
 
+	slots, cerr := DeserializeToNestedMap(objectInfo.UserMetadata["Slots"])
+	if cerr != nil {
+		// Already logged in DeserializeToNestedMap
+		return nil, errors.New(cerr.GetMessage())
+	}
+
 	metadata := &models.Metadata{
 		SHA3_384_Encoded: objectInfo.UserMetadata["Sha3-384-Encoded"],
 		Name:             objectInfo.UserMetadata["Name"],
@@ -180,6 +193,7 @@ func (obs *ObjectStore) GetObjectCustomMetadata(bucket string, objectName string
 		Grade:            objectInfo.UserMetadata["Grade"],
 		Architectures:    strings.Split(objectInfo.UserMetadata["Architectures"], ","),
 		Plugs:            plugs,
+		Slots:            slots,
 	}
 
 	return metadata, nil
@@ -226,29 +240,6 @@ func (obs *ObjectStore) DeleteFileFromBucket(bucket string, filePath string) *ce
 	return nil
 }
 
-// Helper functions for plugs
-
-func SerializePlugMap(pm acmodel.PlugMap) (string, *cerror.CustomError) {
-	data, err := json.Marshal(pm)
-	if err != nil {
-		cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to serialize plug map: %v", err))
-		logrus.Errorf(cerr.GetMessage())
-		return "", cerr
-	}
-	return string(data), nil
-}
-
-func DeserializePlugMap(data string) (acmodel.PlugMap, *cerror.CustomError) {
-	var plugMap acmodel.PlugMap
-	err := json.Unmarshal([]byte(data), &plugMap)
-	if err != nil {
-		cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to deserialize plug map: %v", err))
-		logrus.Errorf(cerr.GetMessage())
-		return nil, cerr
-	}
-	return plugMap, nil
-}
-
 func DeserializeToNestedMap(data string) (map[string]map[string]interface{}, *cerror.CustomError) {
 	var result map[string]map[string]interface{}
 	err := json.Unmarshal([]byte(data), &result)
@@ -268,33 +259,4 @@ func SerializeNestedMap(data map[string]map[string]interface{}) (string, *cerror
 		return "", cerr
 	}
 	return string(jsonData), nil
-}
-
-func ConvertPlugMapToNestedMap(pm acmodel.PlugMap) map[string]map[string]interface{} {
-	result := make(map[string]map[string]interface{})
-
-	for name, plug := range pm {
-		rules := make(map[string]interface{})
-		if plug.AllowInstallation != nil {
-			rules["allow-installation"] = *plug.AllowInstallation
-		}
-		if plug.DenyInstallation != nil {
-			rules["deny-installation"] = *plug.DenyInstallation
-		}
-		if plug.AllowConnection != nil {
-			rules["allow-connection"] = *plug.AllowConnection
-		}
-		if plug.DenyConnection != nil {
-			rules["deny-connection"] = *plug.DenyConnection
-		}
-		if plug.AllowAutoConnection != nil {
-			rules["allow-auto-connection"] = *plug.AllowAutoConnection
-		}
-		if plug.DenyAutoConnection != nil {
-			rules["deny-auto-connection"] = *plug.DenyAutoConnection
-		}
-		result[name] = rules
-	}
-
-	return result
 }

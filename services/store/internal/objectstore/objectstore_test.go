@@ -42,6 +42,7 @@ func TestSaveFileToBucket_succes(t *testing.T) {
 		"test-grade",
 		[]string{"amd64", "arm64"},
 		make(map[string]map[string]interface{}),
+		make(map[string]map[string]interface{}),
 	)
 	assert.NoError(t, err)
 	assert.NotNil(t, metadata)
@@ -83,6 +84,7 @@ func TestSaveFileToBucket_ErrorCreatingBucket(t *testing.T) {
 		"test-grade",
 		[]string{"amd64", "arm64"},
 		make(map[string]map[string]interface{}),
+		make(map[string]map[string]interface{}),
 	)
 	assert.Error(t, err)
 	assert.Nil(t, metadata)
@@ -115,6 +117,7 @@ func TestSaveFileToBucket_ErrorUploadingFile(t *testing.T) {
 		"core18",
 		"test-grade",
 		[]string{"amd64", "arm64"},
+		make(map[string]map[string]interface{}),
 		make(map[string]map[string]interface{}),
 	)
 	assert.Error(t, err)
@@ -283,7 +286,8 @@ func TestGetObjectCustomMetadata(t *testing.T) {
 			"Confinement":      "strict",
 			"Base":             "core18",
 			"Architectures":    "amd64,arm64",
-			"Plugs":            `{"camera":{"allow-installation":true,"deny-installation":false,"allow-connection":true,"deny-connection":false,"allow-auto-connection":true,"deny-auto-connection":false}}`,
+			"Plugs":            `{"camera":{"allow-installation":true,"deny-installation":false,"allow-connection":true,"deny-connection":false},"location":{"allow-installation":true,"deny-installation":false,"allow-connection":true,"deny-connection":false,"allow-auto-connection":true,"deny-auto-connection":false}}`,
+			"Slots":            `{"location":{"allow-installation":true,"deny-installation":false,"allow-connection":true,"deny-connection":false}}`,
 		},
 	}
 
@@ -296,14 +300,28 @@ func TestGetObjectCustomMetadata(t *testing.T) {
 	confinement := mockObjectInfo.UserMetadata["Confinement"]
 	base := mockObjectInfo.UserMetadata["Base"]
 	architectures := []string{"amd64", "arm64"}
-	plugs := acmodel.PlugMap{
-		"camera": &acmodel.Plug{
-			AllowInstallation:   boolPtr(true),
-			DenyInstallation:    boolPtr(false),
-			AllowConnection:     boolPtr(true),
-			DenyConnection:      boolPtr(false),
-			AllowAutoConnection: boolPtr(true),
-			DenyAutoConnection:  boolPtr(false),
+	plugs := acmodel.Plugs{
+		"camera": {
+			"allow-installation": true,
+			"deny-installation":  false,
+			"allow-connection":   true,
+			"deny-connection":    false,
+		},
+		"location": {
+			"allow-installation":    true,
+			"deny-installation":     false,
+			"allow-connection":      true,
+			"deny-connection":       false,
+			"allow-auto-connection": true,
+			"deny-auto-connection":  false,
+		},
+	}
+	slots := acmodel.Slots{
+		"location": {
+			"allow-installation": true,
+			"deny-installation":  false,
+			"allow-connection":   true,
+			"deny-connection":    false,
 		},
 	}
 
@@ -317,7 +335,8 @@ func TestGetObjectCustomMetadata(t *testing.T) {
 		Confinement:      confinement,
 		Base:             base,
 		Architectures:    architectures,
-		Plugs:            objectstore.ConvertPlugMapToNestedMap(plugs),
+		Plugs:            plugs,
+		Slots:            slots,
 	}
 
 	mockMinio.On("StatObject", mock.Anything, bucket, object, mock.Anything).

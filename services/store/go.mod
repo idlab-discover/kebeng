@@ -80,7 +80,7 @@ require (
 	github.com/fergusstrange/embedded-postgres v1.30.0
 	github.com/golang-migrate/migrate/v4 v4.18.2
 	github.com/google/uuid v1.6.0
-	github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250430203906-ed4b93e26e2e
+	github.com/idlab-discover/kebeng/services/assertion v0.0.0-20250503143259-9d4e959afab7
 	github.com/minio/minio-go/v7 v7.0.87
 	github.com/spf13/viper v1.19.0
 	golang.org/x/sys v0.30.0 // indirect
