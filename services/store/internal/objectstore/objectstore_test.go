@@ -435,14 +435,6 @@ func TestGetMinioClient(t *testing.T) {
 	assert.Equal(t, "http", endpoint.Scheme)
 }
 
-func convertMapToStringArray(input map[string]string) []string {
-	result := []string{}
-	for key, value := range input {
-		result = append(result, key+":"+value)
-	}
-	return result
-}
-
 func boolPtr(value bool) *bool {
 	return &value
 }

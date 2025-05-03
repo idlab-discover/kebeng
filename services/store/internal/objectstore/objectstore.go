@@ -3,6 +3,7 @@ package objectstore
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -109,7 +110,7 @@ func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_38
 	serializedPlugs, cerr := SerializeNestedMap(plugs)
 	if cerr != nil {
 		// Already logged in SerializePlugMap
-		return nil, fmt.Errorf(cerr.GetMessage())
+		return nil, errors.New(cerr.GetMessage())
 	}
 
 	// Prepare user metadata
@@ -164,7 +165,7 @@ func (obs *ObjectStore) GetObjectCustomMetadata(bucket string, objectName string
 	plugs, cerr := DeserializeToNestedMap(objectInfo.UserMetadata["Plugs"])
 	if cerr != nil {
 		// Already logged in DeserializeToNestedMap
-		return nil, fmt.Errorf(cerr.GetMessage())
+		return nil, errors.New(cerr.GetMessage())
 	}
 
 	metadata := &models.Metadata{
