@@ -2,11 +2,13 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/idlab-discover/kebeng/services/assertion/client/model"
+	storeModel "github.com/idlab-discover/kebeng/services/store/client/model"
 	"github.com/idlab-discover/kebeng/services/assertion/internal/config"
 	proto "github.com/idlab-discover/kebeng/services/assertion/proto"
 
@@ -30,8 +32,8 @@ type AssertionClientInterface interface {
 	ProcessSnapBuildAssertion(assertion []byte) *proto.SnapBuildAssertionResponse
 
 	AddAccountKeyAssertion(encoded_public_key, publicKeySha3_384Encoded, accountId, name string, since time.Time, until time.Time) *proto.AccountKeyAssertionResponse
-	AddSnapRevisionAssertion(snapSha3_384 string, developerId string, snapEntryId string, snapRevisionSequenceNumber uint32, snapSize uint64, timestamp time.Time) *proto.SnapRevisionAssertionResponse
-	AddSnapDeclarationAssertion(snapID, snapName, publisherID string, series uint32, timestamp time.Time, refreshControl []string, aliases []model.Alias, plugs model.PlugMap, slots model.SlotMap) *proto.SnapDeclarationAssertionResponse
+	AddSnapRevisionAssertion(snapSha3_384 string, developerId string, snapEntryId string, snapRevisionSequenceNumber uint32, snapSize uint64) *proto.SnapRevisionAssertionResponse
+	AddSnapDeclarationAssertion(snapID, snapName, publisherID string, series string, refreshControl []string, aliases []model.Alias, plugs storeModel.Plugs, slots storeModel.Slots) *proto.SnapDeclarationAssertionResponse
 	AddAccountAssertion(accountId, displayName, username, validation string, timestamp time.Time) *proto.AccountAssertionResponse
 
 	GetAccountKeyAssertionByPublicKeySha(publicKeySha3_384Encoded string) *proto.AccountKeyAssertionResponse
@@ -165,7 +167,7 @@ func (c *AssertionClient) AddAccountKeyAssertion(encoded_public_key, publicKeySh
 	return resp
 }
 
-func (c *AssertionClient) AddSnapRevisionAssertion(snapSha3_384, developerId, snapEntryId string, snapRevisionSequenceNumber uint32, snapSize uint64, timestamp time.Time) *proto.SnapRevisionAssertionResponse {
+func (c *AssertionClient) AddSnapRevisionAssertion(snapSha3_384, developerId, snapEntryId string, snapRevisionSequenceNumber uint32, snapSize uint64) *proto.SnapRevisionAssertionResponse {
 	el := cerror.NewErrorList()
 
 	// check input
@@ -199,7 +201,7 @@ func (c *AssertionClient) AddSnapRevisionAssertion(snapSha3_384, developerId, sn
 		SnapEntryId:                snapEntryId,
 		SnapRevisionSequenceNumber: snapRevisionSequenceNumber,
 		SnapSize:                   snapSize,
-		Timestamp:                  timestamppb.New(timestamp),
+		Timestamp:                  timestamppb.New(time.Now()),
 	}
 
 	resp, err := c.client.AddSnapRevisionAssertion(context.Background(), req)
@@ -212,10 +214,10 @@ func (c *AssertionClient) AddSnapRevisionAssertion(snapSha3_384, developerId, sn
 	return resp
 }
 
-func (c *AssertionClient) AddSnapDeclarationAssertion(snapID, snapName, publisherID string, series uint32, timestamp time.Time, refreshControl []string, aliases []model.Alias, plugs model.PlugMap, slots model.SlotMap) *proto.SnapDeclarationAssertionResponse {
+func (c *AssertionClient) AddSnapDeclarationAssertion(snapID, snapName, publisherID string, series string, refreshControl []string, aliases []model.Alias, plugs storeModel.Plugs, slots storeModel.Slots) *proto.SnapDeclarationAssertionResponse {
 	el := cerror.NewErrorList()
 	// check input
-	if series == 0 {
+	if series == "" {
 		el.Add(cerror.InvalidField, "series is required")
 	}
 	if snapID == "" {
@@ -230,16 +232,13 @@ func (c *AssertionClient) AddSnapDeclarationAssertion(snapID, snapName, publishe
 	if _, err := uuid.Parse(publisherID); publisherID != "" && err != nil {
 		el.Add(cerror.InvalidField, "publisher id is not a valid uuid")
 	}
-	if timestamp.IsZero() {
-		el.Add(cerror.InvalidField, "timestamp is required")
-	}
 
 	req := &proto.AddSnapDeclarationAssertionRequest{
 		Series:         series,
 		SnapId:         snapID,
 		SnapName:       snapName,
 		PublisherId:    publisherID,
-		Timestamp:      timestamppb.New(timestamp),
+		Timestamp:      timestamppb.New(time.Now()),
 		RefreshControl: refreshControl,
 	}
 
@@ -252,30 +251,10 @@ func (c *AssertionClient) AddSnapDeclarationAssertion(snapID, snapName, publishe
 	}
 
 	// plugs
-	req.Plugs = make(map[string]*proto.PlugRule, len(plugs))
-	for iface, r := range plugs {
-		req.Plugs[iface] = &proto.PlugRule{
-			AllowInstallation:   r.AllowInstallation,
-			DenyInstallation:    r.DenyInstallation,
-			AllowConnection:     r.AllowConnection,
-			DenyConnection:      r.DenyConnection,
-			AllowAutoConnection: r.AllowAutoConnection,
-			DenyAutoConnection:  r.DenyAutoConnection,
-		}
-	}
+	req.Plugs = serializeMap(plugs)
 
 	// slots
-	req.Slots = make(map[string]*proto.SlotRule, len(slots))
-	for iface, r := range slots {
-		req.Slots[iface] = &proto.SlotRule{
-			AllowInstallation:   r.AllowInstallation,
-			DenyInstallation:    r.DenyInstallation,
-			AllowConnection:     r.AllowConnection,
-			DenyConnection:      r.DenyConnection,
-			AllowAutoConnection: r.AllowAutoConnection,
-			DenyAutoConnection:  r.DenyAutoConnection,
-		}
-	}
+	req.Slots = serializeMap(slots)
 
 	// QUESTION: think the other 3 parameters could be empty, assertion of snap package "core" does not have any of the last 3 parameters
 	resp, err := c.client.AddSnapDeclarationAssertion(context.Background(), req)
@@ -441,4 +420,15 @@ func (c *AssertionClient) GetAccountAssertionByAccountID(accountId string) *prot
 		}
 	}
 	return resp
+}
+
+// ========== HELPER FUNCTIONS ==========
+
+func serializeMap(a any) string {
+	data, err := json.Marshal(a)
+	if err != nil {
+		logrus.Errorf("failed to serialize: %s", err.Error())
+		return ""
+	}
+	return string(data)
 }

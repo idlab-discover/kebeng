@@ -15,6 +15,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/idlab-discover/kebeng/common/cerror"
 	acmodel "github.com/idlab-discover/kebeng/services/assertion/client/model"
+	storeModel "github.com/idlab-discover/kebeng/services/store/client/model"
 	"github.com/sirupsen/logrus"
 	"github.com/snapcore/snapd/asserts"
 )
@@ -235,17 +236,16 @@ func (h *testHandler) loadInStoreDataInDB(ctx context.Context, storeTestData *Te
 
 		// to get SHA3_384_encoded of uploaded file
 		metadata := h.StoreClient.GetObjectCustomMetadata("unscanned", uploadResp.GetTempFileName())
-		if len(metadata.Errors) > 0 {
+		if metadata.Errors.HasError() {
 			return fmt.Errorf("failed to get object metadata: %v", metadata.Errors)
 		}
 
 		// creates revision
-		revisionResp := h.StoreClient.AddRevision(entry.Name, metadata.GetSha3_384Encoded(), uint64(fileInfo.Size()), []string{"amd64"}, []string{"latest/stable"}, uploadResp.GetTempFileName())
+		revisionResp := h.StoreClient.AddRevision(entry.Name, metadata.Sha3_384Encoded, uint64(fileInfo.Size()), []string{"amd64"}, []string{"latest/stable"}, uploadResp.GetTempFileName())
 		if len(revisionResp.Errors) > 0 {
 			return fmt.Errorf("failed to add revision: %v", revisionResp.Errors)
 		}
-		now := time.Now()
-		revisionAssertionRespo := h.AssertionClient.AddSnapRevisionAssertion(metadata.GetSha3_384Encoded(), accID.String(), snapEntryId.String(), uint32(revisionResp.Revision), uint64(fileInfo.Size()), now)
+		revisionAssertionRespo := h.AssertionClient.AddSnapRevisionAssertion(metadata.Sha3_384Encoded, accID.String(), snapEntryId.String(), uint32(revisionResp.Revision), uint64(fileInfo.Size()))
 		if len(revisionAssertionRespo.Errors) > 0 {
 			return fmt.Errorf("failed to add revision assertion: %v", revisionAssertionRespo.Errors)
 		}
@@ -253,14 +253,26 @@ func (h *testHandler) loadInStoreDataInDB(ctx context.Context, storeTestData *Te
 			Name:   "snap",
 			Target: "alias_snap",
 		}}
-		plugs := acmodel.PlugMap{
+		plugs := storeModel.Plugs{
 			"camera": {
-				AllowInstallation: boolptr(true),
+				"AllowInstallation": boolptr(true),
+			},
+			"location": {
+				"AllowInstallation": boolptr(true),
+			},
+			"network": {
+				"AllowInstallation": boolptr(true),
 			},
 		}
-		slots := acmodel.SlotMap{
+		slots := storeModel.Slots{
 			"camera": {
-				AllowInstallation: boolptr(true),
+				"AllowInstallation": boolptr(true),
+			},
+			"location": {
+				"AllowInstallation": boolptr(true),
+			},
+			"network": {
+				"AllowInstallation": boolptr(true),
 			},
 		}
 		entryID, err := h.getID(storeIDMap, entry.ID)
@@ -268,7 +280,7 @@ func (h *testHandler) loadInStoreDataInDB(ctx context.Context, storeTestData *Te
 			logrus.Errorf("failed to get entry ID: %v", err)
 		}
 		// don't know what refreshControl field has to be so place holders for now
-		declarationAssertionResp := h.AssertionClient.AddSnapDeclarationAssertion(entryID.String(), entry.Name, accID.String(), uint32(16), now, []string{"refreshControl"}, aliases, plugs, slots)
+		declarationAssertionResp := h.AssertionClient.AddSnapDeclarationAssertion(entryID.String(), entry.Name, accID.String(), "16", []string{"refreshControl"}, aliases, plugs, slots)
 		if len(declarationAssertionResp.Errors) > 0 {
 			return fmt.Errorf("failed to add declaration assertion: %v", declarationAssertionResp.Errors)
 		}
