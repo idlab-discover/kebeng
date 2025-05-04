@@ -1,5 +1,3 @@
-[![Go Coverage](https://github.com/idlab-discover/kebeng/wiki/coverage.svg)](https://raw.githack.com/wiki/idlab-discover/kebeng/coverage.html)
-
 # Introduction
 
 Kebe intends to be a full replacement for the Snap Store.
