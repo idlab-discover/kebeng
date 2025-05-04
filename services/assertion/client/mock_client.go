@@ -3,9 +3,9 @@ package client
 import (
 	"time"
 
-	cerror "github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/idlab-discover/kebeng/services/assertion/client/model"
 	proto "github.com/idlab-discover/kebeng/services/assertion/proto"
+	storeModel "github.com/idlab-discover/kebeng/services/store/client/model"
 
 	"github.com/stretchr/testify/mock"
 )
@@ -79,7 +79,7 @@ func (m *MockAssertionClient) GetSnapRevisionAssertionBySHA3_384(snapSha3_384 st
 	return nil
 }
 
-func (m *MockAssertionClient) AddSnapDeclarationAssertion(snapID, snapName, publisherID string, series string, refreshControl []string, aliases []model.Alias, plugs model.Plugs, slots model.Slots) *proto.SnapDeclarationAssertionResponse {
+func (m *MockAssertionClient) AddSnapDeclarationAssertion(snapID, snapName, publisherID string, series string, refreshControl []string, aliases []model.Alias, plugs storeModel.Plugs, slots storeModel.Slots) *proto.SnapDeclarationAssertionResponse {
 	args := m.Called(snapID, snapName, publisherID, series, refreshControl, aliases, plugs, slots)
 	if resp, ok := args.Get(0).(*proto.SnapDeclarationAssertionResponse); ok {
 		return resp
@@ -101,20 +101,4 @@ func (m *MockAssertionClient) GetAccountAssertionByAccountID(accountId string) *
 		return resp
 	}
 	return nil
-}
-
-func (m *MockAssertionClient) DeserializePlugMap(data string) (model.Plugs, *cerror.CustomError) {
-	args := m.Called(data)
-	if resp, ok := args.Get(0).(model.Plugs); ok {
-		return resp, nil
-	}
-	return nil, args.Get(1).(*cerror.CustomError)
-}
-
-func (m *MockAssertionClient) DeserializeSlotMap(data string) (model.Slots, *cerror.CustomError) {
-	args := m.Called(data)
-	if resp, ok := args.Get(0).(model.Slots); ok {
-		return resp, nil
-	}
-	return nil, args.Get(1).(*cerror.CustomError)
 }

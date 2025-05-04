@@ -1,10 +1,7 @@
 package model
 
+// Alias will be moved to the store client eventually
 type Alias struct {
 	Name   string
 	Target string
 }
-
-type Plugs map[string]map[string]interface{}
-
-type Slots map[string]map[string]interface{}

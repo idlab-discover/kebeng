@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/idlab-discover/kebeng/services/assertion/client/model"
+	storeModel "github.com/idlab-discover/kebeng/services/store/client/model"
 	"github.com/idlab-discover/kebeng/services/assertion/internal/config"
 	proto "github.com/idlab-discover/kebeng/services/assertion/proto"
 
@@ -32,16 +33,13 @@ type AssertionClientInterface interface {
 
 	AddAccountKeyAssertion(encoded_public_key, publicKeySha3_384Encoded, accountId, name string, since time.Time, until time.Time) *proto.AccountKeyAssertionResponse
 	AddSnapRevisionAssertion(snapSha3_384 string, developerId string, snapEntryId string, snapRevisionSequenceNumber uint32, snapSize uint64) *proto.SnapRevisionAssertionResponse
-	AddSnapDeclarationAssertion(snapID, snapName, publisherID string, series string, refreshControl []string, aliases []model.Alias, plugs model.Plugs, slots model.Slots) *proto.SnapDeclarationAssertionResponse
+	AddSnapDeclarationAssertion(snapID, snapName, publisherID string, series string, refreshControl []string, aliases []model.Alias, plugs storeModel.Plugs, slots storeModel.Slots) *proto.SnapDeclarationAssertionResponse
 	AddAccountAssertion(accountId, displayName, username, validation string, timestamp time.Time) *proto.AccountAssertionResponse
 
 	GetAccountKeyAssertionByPublicKeySha(publicKeySha3_384Encoded string) *proto.AccountKeyAssertionResponse
 	GetSnapRevisionAssertionBySHA3_384(snapSha3_384 string) *proto.SnapRevisionAssertionResponse
 	GetSnapDeclarationAssertionBySnapID(snapId string) *proto.SnapDeclarationAssertionResponse
 	GetAccountAssertionByAccountID(accountId string) *proto.AccountAssertionResponse
-
-	DeserializePlugMap(data string) (model.Plugs, *cerror.CustomError)
-	DeserializeSlotMap(data string) (model.Slots, *cerror.CustomError)
 
 	Close()
 }
@@ -216,7 +214,7 @@ func (c *AssertionClient) AddSnapRevisionAssertion(snapSha3_384, developerId, sn
 	return resp
 }
 
-func (c *AssertionClient) AddSnapDeclarationAssertion(snapID, snapName, publisherID string, series string, refreshControl []string, aliases []model.Alias, plugs model.Plugs, slots model.Slots) *proto.SnapDeclarationAssertionResponse {
+func (c *AssertionClient) AddSnapDeclarationAssertion(snapID, snapName, publisherID string, series string, refreshControl []string, aliases []model.Alias, plugs storeModel.Plugs, slots storeModel.Slots) *proto.SnapDeclarationAssertionResponse {
 	el := cerror.NewErrorList()
 	// check input
 	if series == "" {
@@ -422,28 +420,6 @@ func (c *AssertionClient) GetAccountAssertionByAccountID(accountId string) *prot
 		}
 	}
 	return resp
-}
-
-func (c *AssertionClient) DeserializePlugMap(data string) (model.Plugs, *cerror.CustomError) {
-	var plugs model.Plugs
-	err := json.Unmarshal([]byte(data), &plugs)
-	if err != nil {
-		cerr := cerror.NewCustomError(cerror.BadRequest, fmt.Sprintf("failed to deserialize plugs: %s", err.Error()))
-		logrus.Errorf(cerr.GetMessage())
-		return nil, cerr
-	}
-	return plugs, nil
-}
-
-func (c *AssertionClient) DeserializeSlotMap(data string) (model.Slots, *cerror.CustomError) {
-	var slots model.Slots
-	err := json.Unmarshal([]byte(data), &slots)
-	if err != nil {
-		cerr := cerror.NewCustomError(cerror.BadRequest, fmt.Sprintf("failed to deserialize slots: %s", err.Error()))
-		logrus.Errorf(cerr.GetMessage())
-		return nil, cerr
-	}
-	return slots, nil
 }
 
 // ========== HELPER FUNCTIONS ==========
