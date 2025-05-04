@@ -312,6 +312,94 @@ func (s *AssertionService) AddSnapDeclarationAssertion(ctx context.Context, req 
 	}, nil
 }
 
+func (s *AssertionService) AddSnapBuildAssertion(ctx context.Context, req *proto.AddSnapBuildAssertionRequest) (*proto.SnapBuildAssertionResponse, error) {
+	el := cerror.NewErrorList()
+	parsedSnapId, err := uuid.Parse(req.GetSnapEntryId())
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.Invalid, fmt.Sprintf("failed to parse snap id: %s", err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.SnapBuildAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}, nil
+	}
+	parsedAccountId, err := uuid.Parse(req.GetDeveloperId())
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.Invalid, fmt.Sprintf("failed to parse developer id: %s", err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.SnapBuildAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}, nil
+	}
+
+	timestamp := time.Now().Format(time.RFC3339)
+	parsedTimestamp, err := time.Parse(time.RFC3339, timestamp)
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.Invalid, fmt.Sprintf("failed to parse timestamp: %s", err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.SnapBuildAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}, nil
+	}
+
+	headers := map[string]any{
+		"authority-id":      s.cfg.AuthorityID,
+		"snap-id":           req.GetSnapEntryId(),
+		"developer-id":      req.GetDeveloperId(),
+		"snap-size":         fmt.Sprintf("%d", req.GetSnapSize()),
+		"snap-sha3-384":     req.GetSha3_384Encoded(),
+		"grade":             req.GetGrade(),
+		"timestamp":         timestamp,
+		"sign-key-sha3-384": s.cfg.RootKey.PublicKey().ID(),
+	}
+	signedAssertion, err := s.assertionDB.Sign(asserts.SnapBuildType, headers, nil, s.cfg.RootKey.PublicKey().ID())
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.Invalid, fmt.Sprintf("failed to sign snap build assertion: %s", err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.SnapBuildAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}, nil
+	}
+	signature := string(asserts.Encode(signedAssertion))
+
+	snapBuildAssertion, cerr := s.repo.AddSnapBuildAssertion(
+		el,
+		s.cfg.AuthorityID,
+		s.cfg.RootKey.PublicKey().ID(), // this is the sign_key_SHA3_384
+		parsedSnapId,
+		parsedAccountId,
+		req.GetGrade(),
+		req.GetSha3_384Encoded(),
+		req.GetSnapSize(),
+		signature,
+		parsedTimestamp,
+	)
+	if cerr != nil {
+		// should have been logged and added to error list in repo function
+		return &proto.SnapBuildAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}, nil
+	}
+	snapBuildAssertion.Type = asserts.SnapBuildType.Name
+	return &proto.SnapBuildAssertionResponse{
+		Id:                     snapBuildAssertion.ID.String(),
+		AuthorityId:            snapBuildAssertion.AuthorityID,
+		SignKeySha3_384Encoded: snapBuildAssertion.SignKeySHA3_384,
+		SnapEntryId:            snapBuildAssertion.SnapEntryID.String(),
+		DeveloperId:            snapBuildAssertion.DeveloperID.String(),
+		SnapSize:               snapBuildAssertion.SnapSize,
+		Sha3_384Encoded:        snapBuildAssertion.SnapSHA3_384,
+		Grade:                  snapBuildAssertion.Grade,
+		Timestamp:              timestamppb.New(snapBuildAssertion.Timestamp),
+		Type:                   snapBuildAssertion.Type,
+		Signature:              snapBuildAssertion.Signature,
+		Errors:                 el.ConvertToProtoErrorList(),
+	}, nil
+}
+
 func (s *AssertionService) AddAccountAssertion(ctx context.Context, req *proto.AddAccountAssertionRequest) (*proto.AccountAssertionResponse, error) {
 	el := cerror.NewErrorList()
 	parsedAccountId, err := uuid.Parse(req.GetAccountId())
