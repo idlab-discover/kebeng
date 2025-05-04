@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
-	"github.com/idlab-discover/kebeng/services/store/internal/models"
+	"github.com/idlab-discover/kebeng/services/store/internal/model"
 	"github.com/idlab-discover/kebeng/services/store/internal/objectstore"
 	"github.com/idlab-discover/kebeng/services/store/internal/repository"
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
@@ -32,7 +32,7 @@ func TestRegisterSnapName(t *testing.T) {
 	tests := []struct {
 		name          string
 		req           *proto.RegisterSnapNameRequest
-		mockReturn    map[string]any // either *models.SnapEntry or cerror.CustomError
+		mockReturn    map[string]any // either *model.SnapEntry or cerror.CustomError
 		expectedError bool
 		errorCode     string
 	}{
@@ -50,11 +50,11 @@ func TestRegisterSnapName(t *testing.T) {
 					Code:    cerror.ResourceNotFound,
 					Message: "Snap name not found",
 				},
-				"RegisterSnap": &models.SnapEntry{
+				"RegisterSnap": &model.SnapEntry{
 					ID:   mockUUID,
 					Name: "test-snap-name",
 				},
-				"AddTrack": &models.SnapTrack{
+				"AddTrack": &model.SnapTrack{
 					Name: "test-track",
 					ID:   mockUUID,
 				},
@@ -108,7 +108,7 @@ func TestRegisterSnapName(t *testing.T) {
 				DryRun:    false,
 			},
 			mockReturn: map[string]any{
-				"GetEntryByName": &models.SnapEntry{
+				"GetEntryByName": &model.SnapEntry{
 					ID:   mockUUID,
 					Name: "test-snap-name",
 				},
@@ -188,7 +188,7 @@ func TestRegisterSnapName(t *testing.T) {
 					Code:    cerror.ResourceNotFound,
 					Message: "Snap name not found",
 				},
-				"RegisterSnap": &models.SnapEntry{
+				"RegisterSnap": &model.SnapEntry{
 					ID:   mockUUID,
 					Name: "test-snap-name",
 				},
@@ -214,11 +214,11 @@ func TestRegisterSnapName(t *testing.T) {
 					Code:    cerror.ResourceNotFound,
 					Message: "Snap name not found",
 				},
-				"RegisterSnap": &models.SnapEntry{
+				"RegisterSnap": &model.SnapEntry{
 					ID:   mockUUID,
 					Name: "test-snap-name",
 				},
-				"AddTrack": &models.SnapTrack{
+				"AddTrack": &model.SnapTrack{
 					Name: "test-track",
 					ID:   mockUUID,
 				},
@@ -240,7 +240,7 @@ func TestRegisterSnapName(t *testing.T) {
 				DryRun:    true,
 			},
 			mockReturn: map[string]any{
-				"GetEntryByName": &models.SnapEntry{
+				"GetEntryByName": &model.SnapEntry{
 					ID:   mockUUID,
 					Name: "test-snap-name",
 				},
@@ -283,7 +283,7 @@ func TestRegisterSnapName(t *testing.T) {
 					default:
 						t.Fatalf("invalid mock return function for CustomError")
 					}
-				case *models.SnapEntry:
+				case *model.SnapEntry:
 					switch function {
 					case "GetEntryByName":
 						mockRepo.On(function, tt.req.SnapName, mock.Anything, mock.Anything).Return(mockReturn, nil).Once()
@@ -292,7 +292,7 @@ func TestRegisterSnapName(t *testing.T) {
 					default:
 						t.Fatalf("invalid mock return function for SnapEntry")
 					}
-				case *models.SnapTrack:
+				case *model.SnapTrack:
 					switch function {
 					case "AddTrack":
 						mockRepo.On(function, mock.Anything, mock.Anything, mock.Anything).Return(mockReturn, nil).Once()
@@ -335,7 +335,7 @@ func TestGetEntries(t *testing.T) {
 	tests := []struct {
 		name          string
 		req           *proto.GetEntriesRequest
-		mockReturn    map[string]any // either *models.SnapEntry or cerror.CustomError
+		mockReturn    map[string]any // either *model.SnapEntry or cerror.CustomError
 		expectedError bool
 		expectedCount int
 	}{
@@ -347,7 +347,7 @@ func TestGetEntries(t *testing.T) {
 				},
 			},
 			mockReturn: map[string]any{
-				"GetEntryById": &models.SnapEntry{
+				"GetEntryById": &model.SnapEntry{
 					ID:          mockUUID,
 					Name:        "test-snap",
 					Type:        "app",
@@ -394,7 +394,7 @@ func TestGetEntries(t *testing.T) {
 				},
 			},
 			mockReturn: map[string]any{
-				"GetEntryByName": &models.SnapEntry{
+				"GetEntryByName": &model.SnapEntry{
 					ID:          mockUUID,
 					Name:        "test-snap",
 					Type:        "app",
@@ -449,7 +449,7 @@ func TestGetEntries(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			for function, mockReturn := range tt.mockReturn {
 				switch mockReturn := mockReturn.(type) {
-				case *models.SnapEntry:
+				case *model.SnapEntry:
 					switch function {
 					case "GetEntryById":
 						mockRepo.On(function, mock.Anything, mock.Anything, mock.Anything).Return(mockReturn, nil).Once()
@@ -499,7 +499,7 @@ func TestGetEntryById(t *testing.T) {
 	tests := []struct {
 		name          string
 		req           *proto.GetEntryRequest
-		mockReturn    any // either *models.SnapEntry or *cerror.CustomError
+		mockReturn    any // either *model.SnapEntry or *cerror.CustomError
 		expectedError bool
 		errorCode     string
 		expectedEntry *proto.GetEntryResponse
@@ -509,7 +509,7 @@ func TestGetEntryById(t *testing.T) {
 			req: &proto.GetEntryRequest{
 				Id: stringToPointer(mockUUID.String()),
 			},
-			mockReturn: &models.SnapEntry{
+			mockReturn: &model.SnapEntry{
 				ID:          mockUUID,
 				Name:        "test-snap",
 				Type:        "app",
@@ -571,7 +571,7 @@ func TestGetEntryById(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			switch mockReturn := tt.mockReturn.(type) {
-			case *models.SnapEntry:
+			case *model.SnapEntry:
 				mockRepo.On("GetEntryById", mock.Anything, mock.Anything, mock.Anything).Return(mockReturn, nil).Once()
 			case *cerror.CustomError:
 				mockRepo.On("GetEntryById", mock.Anything, mock.Anything, mock.Anything).Return(nil, mockReturn).Once()
@@ -615,7 +615,7 @@ func TestGetEntryByName(t *testing.T) {
 	tests := []struct {
 		name          string
 		req           *proto.GetEntryRequest
-		mockReturn    any // either *models.SnapEntry or *cerror.CustomError
+		mockReturn    any // either *model.SnapEntry or *cerror.CustomError
 		expectedError bool
 		errorCode     string
 		expectedEntry *proto.GetEntryResponse
@@ -625,7 +625,7 @@ func TestGetEntryByName(t *testing.T) {
 			req: &proto.GetEntryRequest{
 				Name: stringToPointer("test-snap"),
 			},
-			mockReturn: &models.SnapEntry{
+			mockReturn: &model.SnapEntry{
 				ID:          mockUUID,
 				Name:        "test-snap",
 				Type:        "app",
@@ -687,7 +687,7 @@ func TestGetEntryByName(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			switch mockReturn := tt.mockReturn.(type) {
-			case *models.SnapEntry:
+			case *model.SnapEntry:
 				mockRepo.On("GetEntryByName", mock.Anything, mock.Anything, mock.Anything).Return(mockReturn, nil).Once()
 			case *cerror.CustomError:
 				mockRepo.On("GetEntryByName", mock.Anything, mock.Anything, mock.Anything).Return(nil, mockReturn).Once()
@@ -730,7 +730,7 @@ func TestGetRevisions(t *testing.T) {
 	tests := []struct {
 		name          string
 		req           *proto.GetRevisionsRequest
-		mockReturn    map[string]any // either *models.SnapRevision or *cerror.CustomError
+		mockReturn    map[string]any // either *model.SnapRevision or *cerror.CustomError
 		expectedError bool
 		expectedCount int
 	}{
@@ -742,7 +742,7 @@ func TestGetRevisions(t *testing.T) {
 				},
 			},
 			mockReturn: map[string]any{
-				"GetRevisionById": &models.SnapRevision{
+				"GetRevisionById": &model.SnapRevision{
 					ID:               mockUUID,
 					SnapName:         "test-snap",
 					SequenceNumber:   1,
@@ -785,7 +785,7 @@ func TestGetRevisions(t *testing.T) {
 				},
 			},
 			mockReturn: map[string]any{
-				"GetRevisionByNameAndSequence": &models.SnapRevision{
+				"GetRevisionByNameAndSequence": &model.SnapRevision{
 					ID:               mockUUID,
 					SnapName:         "test-snap",
 					SequenceNumber:   1,
@@ -836,7 +836,7 @@ func TestGetRevisions(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			for function, mockReturn := range tt.mockReturn {
 				switch mockReturn := mockReturn.(type) {
-				case *models.SnapRevision:
+				case *model.SnapRevision:
 					switch function {
 					case "GetRevisionById":
 						mockRepo.On(function, mock.Anything, mock.Anything).Return(mockReturn, nil).Once()
@@ -886,7 +886,7 @@ func TestGetRevisionByNameAndSequence(t *testing.T) {
 	tests := []struct {
 		name           string
 		req            *proto.GetRevisionRequest
-		mockReturn     map[string]any // either *models.SnapRevision or *cerror.CustomError
+		mockReturn     map[string]any // either *model.SnapRevision or *cerror.CustomError
 		expectedError  bool
 		errorCode      string
 		expectedResult *proto.GetRevisionResponse
@@ -898,11 +898,11 @@ func TestGetRevisionByNameAndSequence(t *testing.T) {
 				Sequence: 1,
 			},
 			mockReturn: map[string]any{
-				"GetEntryByName": &models.SnapEntry{
+				"GetEntryByName": &model.SnapEntry{
 					ID:   mockUUID,
 					Name: "test-snap",
 				},
-				"GetRevisionByNameAndSequence": &models.SnapRevision{
+				"GetRevisionByNameAndSequence": &model.SnapRevision{
 					ID:               mockUUID,
 					SnapName:         "test-snap",
 					SequenceNumber:   1,
@@ -964,7 +964,7 @@ func TestGetRevisionByNameAndSequence(t *testing.T) {
 				Sequence: 1,
 			},
 			mockReturn: map[string]any{
-				"GetEntryByName": &models.SnapEntry{
+				"GetEntryByName": &model.SnapEntry{
 					ID:   mockUUID,
 					Name: "test-snap",
 				},
@@ -982,9 +982,9 @@ func TestGetRevisionByNameAndSequence(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			for function, mockReturn := range tt.mockReturn {
 				switch mockReturn := mockReturn.(type) {
-				case *models.SnapEntry:
+				case *model.SnapEntry:
 					mockRepo.On("GetEntryByName", tt.req.SnapName, mock.Anything, mock.Anything).Return(mockReturn, nil).Once()
-				case *models.SnapRevision:
+				case *model.SnapRevision:
 					mockRepo.On("GetRevisionByNameAndSequence", tt.req.SnapName, tt.req.Sequence, mock.Anything).Return(mockReturn, nil).Once()
 				case *cerror.CustomError:
 					switch function {
@@ -1033,7 +1033,7 @@ func TestGetEntriesByAccountId(t *testing.T) {
 	tests := []struct {
 		name           string
 		req            *proto.GetEntriesByAccountIdRequest
-		mockReturn     any // either []*models.SnapEntry or *cerror.CustomError
+		mockReturn     any // either []*model.SnapEntry or *cerror.CustomError
 		expectedError  bool
 		errorCode      string
 		expectedResult []*proto.GetEntryResponse
@@ -1043,7 +1043,7 @@ func TestGetEntriesByAccountId(t *testing.T) {
 			req: &proto.GetEntriesByAccountIdRequest{
 				AccountId: mockUUID.String(),
 			},
-			mockReturn: []*models.SnapEntry{
+			mockReturn: []*model.SnapEntry{
 				{
 					ID:          mockUUID,
 					Name:        "test-snap",
@@ -1097,7 +1097,7 @@ func TestGetEntriesByAccountId(t *testing.T) {
 			req: &proto.GetEntriesByAccountIdRequest{
 				AccountId: mockUUID.String(),
 			},
-			mockReturn:     []*models.SnapEntry{},
+			mockReturn:     []*model.SnapEntry{},
 			expectedError:  false,
 			expectedResult: []*proto.GetEntryResponse{},
 		},
@@ -1118,7 +1118,7 @@ func TestGetEntriesByAccountId(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			switch mockReturn := tt.mockReturn.(type) {
-			case []*models.SnapEntry:
+			case []*model.SnapEntry:
 				accountID, err := uuid.Parse(tt.req.AccountId)
 				if err != nil {
 					t.Fatalf("invalid UUID format for AccountId: %v", err)
@@ -1173,7 +1173,7 @@ func TestGetRevisionsByEntryIds(t *testing.T) {
 	tests := []struct {
 		name           string
 		req            *proto.GetRevisionsByEntryIdRequests
-		mockReturn     map[string]any // either []*models.SnapRevision or *cerror.CustomError
+		mockReturn     map[string]any // either []*model.SnapRevision or *cerror.CustomError
 		expectedError  bool
 		expectedResult []*proto.GetRevisionsByEntryIdResponse
 	}{
@@ -1185,7 +1185,7 @@ func TestGetRevisionsByEntryIds(t *testing.T) {
 				},
 			},
 			mockReturn: map[string]any{
-				"GetRevisionsByEntryId": []*models.SnapRevision{
+				"GetRevisionsByEntryId": []*model.SnapRevision{
 					{
 						ID:               mockUUID,
 						SnapName:         "test-snap",
@@ -1264,7 +1264,7 @@ func TestGetRevisionsByEntryIds(t *testing.T) {
 				},
 			},
 			mockReturn: map[string]any{
-				"GetRevisionsByEntryId": []*models.SnapRevision{},
+				"GetRevisionsByEntryId": []*model.SnapRevision{},
 			},
 			expectedError: false,
 			expectedResult: []*proto.GetRevisionsByEntryIdResponse{
@@ -1306,7 +1306,7 @@ func TestGetRevisionsByEntryIds(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			for function, mockReturn := range tt.mockReturn {
 				switch mockReturn := mockReturn.(type) {
-				case []*models.SnapRevision:
+				case []*model.SnapRevision:
 					entryID, err := uuid.Parse(tt.req.Requests[0].EntryId)
 					if err != nil {
 						t.Fatalf("invalid UUID format for EntryId: %v", err)
@@ -1356,7 +1356,7 @@ func TestGetLatestRevisionByTrackAndChannel(t *testing.T) {
 	tests := []struct {
 		name           string
 		req            *proto.GetLatestRevisionRequest
-		mockReturn     any // either *models.SnapRevision or *cerror.CustomError
+		mockReturn     any // either *model.SnapRevision or *cerror.CustomError
 		expectedError  bool
 		errorCode      string
 		expectedResult *proto.GetRevisionResponse
@@ -1368,7 +1368,7 @@ func TestGetLatestRevisionByTrackAndChannel(t *testing.T) {
 				Track:    "latest",
 				Channel:  "stable",
 			},
-			mockReturn: &models.SnapRevision{
+			mockReturn: &model.SnapRevision{
 				ID:               mockUUID,
 				SnapName:         "test-snap",
 				SequenceNumber:   1,
@@ -1431,7 +1431,7 @@ func TestGetLatestRevisionByTrackAndChannel(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			switch mockReturn := tt.mockReturn.(type) {
-			case *models.SnapRevision:
+			case *model.SnapRevision:
 				mockRepo.On("GetLatestRevisionByTrackAndChannel", tt.req.SnapName, tt.req.Track, tt.req.Channel, mock.Anything).Return(mockReturn, nil).Once()
 			case *cerror.CustomError:
 				mockRepo.On("GetLatestRevisionByTrackAndChannel", tt.req.SnapName, tt.req.Track, tt.req.Channel, mock.Anything).Return(nil, mockReturn).Once()
@@ -1472,7 +1472,7 @@ func TestSnapDownload(t *testing.T) {
 	tests := []struct {
 		name          string
 		req           *proto.SnapDownloadRequest
-		mockReturn    map[string]any // either *models.SnapDownload or *cerror.CustomError
+		mockReturn    map[string]any // either *model.SnapDownload or *cerror.CustomError
 		expectedError bool
 		errorCode     string
 	}{
@@ -1482,7 +1482,7 @@ func TestSnapDownload(t *testing.T) {
 				RevisionId: mockUUID.String(),
 			},
 			mockReturn: map[string]any{
-				"GetRevisionById": &models.SnapRevision{
+				"GetRevisionById": &model.SnapRevision{
 					ID:               mockUUID,
 					SnapName:         "test-snap",
 					SequenceNumber:   1,
@@ -1525,7 +1525,7 @@ func TestSnapDownload(t *testing.T) {
 				RevisionId: mockUUID.String(),
 			},
 			mockReturn: map[string]any{
-				"GetRevisionById": &models.SnapRevision{
+				"GetRevisionById": &model.SnapRevision{
 					ID:               mockUUID,
 					SnapName:         "test-snap",
 					SequenceNumber:   1,
@@ -1546,7 +1546,7 @@ func TestSnapDownload(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			for function, mockReturn := range tt.mockReturn {
 				switch v := mockReturn.(type) {
-				case *models.SnapRevision:
+				case *model.SnapRevision:
 					mockRepo.On(function, mock.Anything, mock.Anything).Return(v, nil).Maybe()
 				case io.ReadCloser:
 					mockObj.On(function, mock.Anything, mock.Anything).Return(v, nil).Maybe()
@@ -1589,7 +1589,7 @@ func TestAddUpload(t *testing.T) {
 	tests := []struct {
 		name          string
 		req           *proto.AddUploadRequest
-		mockReturn    map[string]any // either *models.SnapUpload or cerror.CustomError
+		mockReturn    map[string]any // either *model.SnapUpload or cerror.CustomError
 		expectedError bool
 		errorCode     string
 	}{
@@ -1603,7 +1603,7 @@ func TestAddUpload(t *testing.T) {
 				UnscannedFileName: "test-file-name",
 			},
 			mockReturn: map[string]any{
-				"AddUpload": &models.SnapUpload{
+				"AddUpload": &model.SnapUpload{
 					ID:               mockUUID,
 					SnapName:         "test-snap-name",
 					Status:           "pending",
@@ -1734,7 +1734,7 @@ func TestAddUpload(t *testing.T) {
 					default:
 						t.Fatalf("invalid mock return function for CustomError")
 					}
-				case *models.SnapUpload:
+				case *model.SnapUpload:
 					switch function {
 					case "AddUpload":
 						entryID, err := uuid.Parse(tt.req.EntryId)
@@ -1780,7 +1780,7 @@ func TestGetUploadStatus(t *testing.T) {
 	tests := []struct {
 		name          string
 		req           *proto.GetUploadStatusRequest
-		mockReturn    any // either *models.SnapUpload or *cerror.CustomError
+		mockReturn    any // either *model.SnapUpload or *cerror.CustomError
 		expectedError bool
 		errorCode     string
 		expectedResp  *proto.GetUploadStatusResponse
@@ -1790,7 +1790,7 @@ func TestGetUploadStatus(t *testing.T) {
 			req: &proto.GetUploadStatusRequest{
 				UploadId: mockUUID.String(),
 			},
-			mockReturn: &models.SnapUpload{
+			mockReturn: &model.SnapUpload{
 				ID:       mockUUID,
 				Status:   "processed",
 				Revision: 1,
@@ -1807,7 +1807,7 @@ func TestGetUploadStatus(t *testing.T) {
 			req: &proto.GetUploadStatusRequest{
 				UploadId: mockUUID.String(),
 			},
-			mockReturn: &models.SnapUpload{
+			mockReturn: &model.SnapUpload{
 				ID:       mockUUID,
 				Status:   "pending",
 				Revision: 0,
@@ -1854,7 +1854,7 @@ func TestGetUploadStatus(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			switch mockReturn := tt.mockReturn.(type) {
-			case *models.SnapUpload:
+			case *model.SnapUpload:
 				mockRepo.On("GetUploadById", mock.Anything, mock.Anything).Return(mockReturn, nil).Once()
 			case *cerror.CustomError:
 				mockRepo.On("GetUploadById", mock.Anything, mock.Anything).Return(nil, mockReturn).Once()

@@ -82,15 +82,15 @@ message GetAccountKeyAssertionByPublicKeyShaRequest {
 }
 
 message AddSnapDeclarationAssertionRequest {
-  uint32 series  = 1;
+  string series  = 1;
   string snap_id = 2;
   string snap_name = 3;
   string publisher_id = 4;
   google.protobuf.Timestamp timestamp = 5;
   repeated string refresh_control = 6;
   repeated Alias aliases = 7;
-  map<string, PlugRule> plugs = 8;
-  map<string, SlotRule> slots = 9;
+  string plugs = 8;
+  string slots = 9;
 }
 
 message SnapDeclarationAssertionResponse {
@@ -98,38 +98,19 @@ message SnapDeclarationAssertionResponse {
   string type = 2;
   string authority_id = 3;
   uint32 revision = 4;
-  uint32 series = 5;
+  string series = 5;
   string snap_id = 6;
   string snap_name = 7;
   string publisher_id = 8;
   google.protobuf.Timestamp timestamp = 9;
   repeated string refresh_control = 10;
   repeated Alias aliases = 11;
-  map<string, PlugRule> plugs = 12;
-  map<string, SlotRule> slots = 13;
+  string plugs = 12;
+  string slots = 13;
   string sign_key_sha3_384 = 14;
   string signature = 15;
   repeated proto.Error errors = 16;
 }
-
-message PlugRule {
-  optional bool allow_installation    = 1;
-  optional bool deny_installation     = 2;
-  optional bool allow_connection      = 3;
-  optional bool deny_connection       = 4;
-  optional bool allow_auto_connection = 5;
-  optional bool deny_auto_connection  = 6;
-}
-
-message SlotRule {
-  optional bool allow_installation    = 1;
-  optional bool deny_installation     = 2;
-  optional bool allow_connection      = 3;
-  optional bool deny_connection       = 4;
-  optional bool allow_auto_connection = 5;
-  optional bool deny_auto_connection  = 6;
-}
-
 
 message Alias {
   string name = 1;

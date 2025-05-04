@@ -2,10 +2,12 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"time"
 
+	"github.com/idlab-discover/kebeng/services/store/client/model"
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
 
@@ -37,9 +39,9 @@ type StoreClientInterface interface {
 	AddUpload(entryId uuid.UUID, accountId uuid.UUID, snapName string, status string, unscannedFileName string, revision uint32) *proto.AddUploadResponse
 	GetUploadStatus(uploadId string) *proto.GetUploadStatusResponse
 	AddRevision(snapName string, sha3_384_encoded string, size uint64, architectures []string, tracksAndChannels []string, unscannedFileName string) *proto.AddRevisionResponse
-	GetObjectCustomMetadata(bucket string, objectKey string) *proto.GetObjectCustomMetadataResponse
+	GetObjectCustomMetadata(bucket string, objectKey string) *model.Metadata
 	UpdateUploadStatus(uploadId string, status string, revision uint32, el *cerror.ErrorList) *proto.UpdateUploadStatusResponse
-	UpdateSnapEntryWithMetadata(snapEntryId uuid.UUID, metadata *proto.GetObjectCustomMetadataResponse) *proto.UpdateEntryResponse
+	UpdateSnapEntryWithMetadata(snapEntryId uuid.UUID, metadata *model.Metadata) *proto.UpdateEntryResponse
 }
 
 var _ StoreClientInterface = (*StoreClient)(nil)
@@ -345,6 +347,7 @@ func (c *StoreClient) UpdateUploadStatus(uploadId string, status string, revisio
 }
 
 func (c *StoreClient) AddRevision(snapName string, sha3_384_encoded string, size uint64, architectures []string, tracksAndChannels []string, unscannedFileName string) *proto.AddRevisionResponse {
+	el := cerror.NewErrorList()
 	req := &proto.AddRevisionRequest{
 		SnapName:          snapName,
 		Sha3_384Encoded:   sha3_384_encoded,
@@ -356,17 +359,16 @@ func (c *StoreClient) AddRevision(snapName string, sha3_384_encoded string, size
 
 	resp, err := c.client.AddRevision(context.Background(), req)
 	if err != nil {
+		el.Add(cerror.InternalServerError, err.Error())
 		resp = &proto.AddRevisionResponse{
-			Errors: []*cerrorpb.Error{{
-				Code:    cerror.InternalServerError,
-				Message: err.Error()},
-			},
+			Errors: el.ConvertToProtoErrorList(),
 		}
 	}
 	return resp
 }
 
-func (c *StoreClient) GetObjectCustomMetadata(bucket string, objectKey string) *proto.GetObjectCustomMetadataResponse {
+func (c *StoreClient) GetObjectCustomMetadata(bucket string, objectKey string) *model.Metadata {
+	el := cerror.NewErrorList()
 	req := &proto.GetObjectCustomMetadataRequest{
 		Bucket:    bucket,
 		ObjectKey: objectKey,
@@ -374,17 +376,42 @@ func (c *StoreClient) GetObjectCustomMetadata(bucket string, objectKey string) *
 
 	resp, err := c.client.GetObjectCustomMetadata(context.Background(), req)
 	if err != nil {
-		return &proto.GetObjectCustomMetadataResponse{
-			Errors: []*cerrorpb.Error{{
-				Code:    cerror.InternalServerError,
-				Message: err.Error()},
-			},
+		el.Add(cerror.InternalServerError, err.Error())
+		return &model.Metadata{
+			Errors: el,
 		}
 	}
-	return resp
+
+	// convert the response to a model.Metadata object
+	plugs, cerr := deserializePlugString(resp.Plugs)
+	if cerr != nil {
+		el.AddCustomError(cerr)
+	}
+	slots, cerr := deserializeSlotString(resp.Slots)
+	if cerr != nil {
+		el.AddCustomError(cerr)
+	}
+	metadata := &model.Metadata{
+		Sha3_384Encoded: resp.Sha3_384Encoded,
+		Name:            resp.Name,
+		Version:         resp.Version,
+		Type:            resp.Type,
+		Summary:         resp.Summary,
+		Description:     resp.Description,
+		Confinement:     resp.Confinement,
+		Base:            resp.Base,
+		Grade:           resp.Grade,
+		Architectures:   resp.Architectures,
+		Plugs:           plugs,
+		Slots:           slots,
+		RefreshControl:  resp.RefreshControl,
+		Errors:          el,
+	}
+
+	return metadata
 }
 
-func (c *StoreClient) UpdateSnapEntryWithMetadata(snapEntryId uuid.UUID, metadata *proto.GetObjectCustomMetadataResponse) *proto.UpdateEntryResponse {
+func (c *StoreClient) UpdateSnapEntryWithMetadata(snapEntryId uuid.UUID, metadata *model.Metadata) *proto.UpdateEntryResponse {
 	req := &proto.UpdateSnapEntryWithMetadataRequest{
 		EntryId:       snapEntryId.String(),
 		Name:          metadata.Name,
@@ -395,7 +422,7 @@ func (c *StoreClient) UpdateSnapEntryWithMetadata(snapEntryId uuid.UUID, metadat
 		Version:       metadata.Version,
 		Summary:       metadata.Summary,
 		Description:   metadata.Description,
-		Errors:        metadata.Errors,
+		Errors:        metadata.Errors.ConvertToProtoErrorList(),
 	}
 
 	resp, err := c.client.UpdateSnapEntryWithMetadata(context.Background(), req)
@@ -429,4 +456,26 @@ func checkValidName(name string) bool {
 		}
 	}
 	return hasLetter
+}
+
+func deserializePlugString(data string) (model.Plugs, *cerror.CustomError) {
+	var plugs model.Plugs
+	err := json.Unmarshal([]byte(data), &plugs)
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.BadRequest, fmt.Sprintf("failed to deserialize plugs: %s", err.Error()))
+		logrus.Errorf(cerr.GetMessage())
+		return nil, cerr
+	}
+	return plugs, nil
+}
+
+func deserializeSlotString(data string) (model.Slots, *cerror.CustomError) {
+	var slots model.Slots
+	err := json.Unmarshal([]byte(data), &slots)
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.BadRequest, fmt.Sprintf("failed to deserialize slots: %s", err.Error()))
+		logrus.Errorf(cerr.GetMessage())
+		return nil, cerr
+	}
+	return slots, nil
 }

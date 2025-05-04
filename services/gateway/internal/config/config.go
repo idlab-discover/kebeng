@@ -65,6 +65,11 @@ func LoadConfig() (*Config, error) {
 		cfg.TestMode = true
 	}
 
+	if cfg.DebugMode {
+		logrus.SetLevel(logrus.DebugLevel)
+		logrus.Info("running in debug mode")
+	}
+
 	if err := cfg.checkConfig(); err != nil {
 		return nil, fmt.Errorf("config validation failed: %v", err)
 	}

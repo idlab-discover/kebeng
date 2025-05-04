@@ -89,7 +89,7 @@ func (r *AssertionRepository) AddSnapRevisionAssertion(el *cerror.ErrorList, aut
 	return assertion, nil
 }
 
-func (r *AssertionRepository) AddSnapDeclarationAssertion(el *cerror.ErrorList, authorityID, signKey, snapID, snapName, publisherID string, revision, series uint32, timestamp time.Time, refreshControl []string, aliases []model.Alias, plugs map[string]*model.Plug, slots map[string]*model.Slot, signature string) (*model.SnapDeclarationAssertion, *cerror.CustomError) {
+func (r *AssertionRepository) AddSnapDeclarationAssertion(el *cerror.ErrorList, authorityID, signKey, snapID, snapName, publisherID string, revision uint32, series string, timestamp time.Time, refreshControl []string, aliases []model.Alias, plugs model.Plugs, slots model.Slots, signature string) (*model.SnapDeclarationAssertion, *cerror.CustomError) {
 	// start transaction
 	tx, err := r.db.Beginx()
 	if err != nil {

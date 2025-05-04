@@ -3,6 +3,7 @@ package logic
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -12,7 +13,7 @@ import (
 	"time"
 
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
-	"github.com/idlab-discover/kebeng/services/store/internal/models"
+	"github.com/idlab-discover/kebeng/services/store/internal/model"
 	"github.com/idlab-discover/kebeng/services/store/internal/objectstore"
 	"github.com/idlab-discover/kebeng/services/store/internal/repository"
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
@@ -654,9 +655,7 @@ func (s *StoreLogic) UnscannedUpload(stream proto.StoreService_UnscannedUploadSe
 		return fmt.Errorf("failed to get snap metadata: %v", cerr)
 	}
 
-	logrus.Infof("snap metadata yaml: %v", metadataYaml)
-
-	metadataMinio, err := s.obs.SaveFileToBucket("unscanned", tmpFilePath, sha3_384HashEncoded, metadataYaml.Name, metadataYaml.Version, metadataYaml.Summary, metadataYaml.Description, metadataYaml.Confinement, metadataYaml.Base, metadataYaml.Grade, metadataYaml.Architectures)
+	metadataMinio, err := s.obs.SaveFileToBucket("unscanned", tmpFilePath, sha3_384HashEncoded, metadataYaml.Name, metadataYaml.Version, metadataYaml.Summary, metadataYaml.Description, metadataYaml.Confinement, metadataYaml.Base, metadataYaml.Grade, metadataYaml.Architectures, metadataYaml.RefreshControl, metadataYaml.Plugs, metadataYaml.Slots)
 	if err != nil {
 		cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to save file to object store: %v", err))
 		logrus.Error(cerr)
@@ -893,6 +892,18 @@ func (s *StoreLogic) GetObjectCustomMetadata(ctx context.Context, req *proto.Get
 		return &proto.GetObjectCustomMetadataResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
 
+	plugs, cerr := SerializeNestedMap(metadata.Plugs)
+	if cerr != nil {
+		el.AddCustomError(cerr)
+		return &proto.GetObjectCustomMetadataResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	slots, cerr := SerializeNestedMap(metadata.Slots)
+	if cerr != nil {
+		el.AddCustomError(cerr)
+		return &proto.GetObjectCustomMetadataResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
 	return &proto.GetObjectCustomMetadataResponse{
 		Sha3_384Encoded: metadata.SHA3_384_Encoded,
 		Name:            metadata.Name,
@@ -904,6 +915,8 @@ func (s *StoreLogic) GetObjectCustomMetadata(ctx context.Context, req *proto.Get
 		Base:            metadata.Base,
 		Grade:           metadata.Grade,
 		Architectures:   metadata.Architectures,
+		Plugs:           plugs,
+		Slots:           slots,
 	}, nil
 }
 
@@ -924,7 +937,7 @@ func (s *StoreLogic) UpdateSnapEntryWithMetadata(ctx context.Context, req *proto
 		return &proto.UpdateEntryResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
 
-	meta := &models.SnapMeta{
+	meta := &model.SnapMeta{
 		Name:          req.Name,
 		Version:       req.Version,
 		Summary:       req.Summary,
@@ -964,7 +977,7 @@ func (s *StoreLogic) UpdateSnapEntryWithMetadata(ctx context.Context, req *proto
 
 // ################# HELPERS #################
 
-func (s *StoreLogic) getObjectStoreFilePath(revisionID string, el *cerror.ErrorList) (string, *models.SnapRevision, *cerror.CustomError) {
+func (s *StoreLogic) getObjectStoreFilePath(revisionID string, el *cerror.ErrorList) (string, *model.SnapRevision, *cerror.CustomError) {
 	parsedRevisionId, err := uuid.Parse(revisionID)
 	if err != nil {
 		cerr := cerror.NewCustomError(cerror.InvalidField, fmt.Sprintf("invalid UUID format: %s", revisionID))
@@ -991,7 +1004,7 @@ func timePointerToTimestamp(s *time.Time) *timestamppb.Timestamp {
 	return nil
 }
 
-func convertRevisionToProto(revision *models.SnapRevision) *proto.GetRevisionResponse {
+func convertRevisionToProto(revision *model.SnapRevision) *proto.GetRevisionResponse {
 	return &proto.GetRevisionResponse{
 		Id:                     revision.ID.String(),
 		CreatedAt:              timestamppb.New(revision.CreatedAt),
@@ -1043,11 +1056,11 @@ func parseTracksAndChannels(tracksAndChannels []string) map[string][]string {
 
 // GetSnapMetaFromFile will return SnapMeta from a byte array representing a snap file
 // This is an inefficient but expedient process
-func getSnapMetaFromFile(snapFilePath string, workingDirectory string) (*models.SnapMeta, error) {
+func getSnapMetaFromFile(snapFilePath string, workingDirectory string) (*model.SnapMeta, error) {
 	return getSnapMetaFromPath(snapFilePath, workingDirectory)
 }
 
-func getSnapMetaFromPath(snapFilePath string, workingDirectory string) (*models.SnapMeta, error) {
+func getSnapMetaFromPath(snapFilePath string, workingDirectory string) (*model.SnapMeta, error) {
 	err := os.Chdir(workingDirectory)
 	if err != nil {
 		return nil, fmt.Errorf("failed to change directory: %v", err)
@@ -1072,7 +1085,7 @@ func getSnapMetaFromPath(snapFilePath string, workingDirectory string) (*models.
 		return nil, fmt.Errorf("failed to read snap.yaml: %v", err)
 	}
 
-	var snapMeta models.SnapMeta
+	var snapMeta model.SnapMeta
 	if err := yaml.Unmarshal(data, &snapMeta); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal snap.yaml: %v", err)
 	}
@@ -1080,7 +1093,7 @@ func getSnapMetaFromPath(snapFilePath string, workingDirectory string) (*models.
 	return &snapMeta, nil
 }
 
-func parseEntryToProto(entry *models.SnapEntry) *proto.GetEntryResponse {
+func parseEntryToProto(entry *model.SnapEntry) *proto.GetEntryResponse {
 	return &proto.GetEntryResponse{
 		Id:          entry.ID.String(),
 		SnapName:    entry.Name,
@@ -1094,4 +1107,14 @@ func parseEntryToProto(entry *models.SnapEntry) *proto.GetEntryResponse {
 		Since:       timestamppb.New(entry.CreatedAt),
 		IconUrl:     entry.IconURL,
 	}
+}
+
+func SerializeNestedMap[T model.Plugs | model.Slots](data T) (string, *cerror.CustomError) {
+	jsonBytes, err := json.Marshal(data)
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to serialize nested map: %v", err))
+		logrus.Errorf(cerr.GetMessage())
+		return "", cerr
+	}
+	return string(jsonBytes), nil
 }

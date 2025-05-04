@@ -1,4 +1,4 @@
-package models
+package model
 
 import (
 	"time"
@@ -139,15 +139,24 @@ type Metadata struct {
 	Base              string         `json:"base" db:"base"`
 	Grade             string         `json:"grade" db:"grade"`
 	Architectures     pq.StringArray `json:"architectures" db:"architectures"`
+	Plugs             Plugs          `json:"plugs" db:"plugs"`
+	Slots             Slots          `json:"slots" db:"slots"`
+	RefreshControl    []string       `json:"refresh_control" db:"refresh_control"`
 }
 
 type SnapMeta struct {
-	Name          string         `yaml:"name"`
-	Version       string         `yaml:"version"`
-	Summary       string         `yaml:"summary"`
-	Description   string         `yaml:"description"`
-	Architectures pq.StringArray `yaml:"architectures"`
-	Confinement   string         `yaml:"confinement"`
-	Grade         string         `yaml:"grade"`
-	Base          string         `yaml:"base"`
+	Name           string         `yaml:"name"`
+	Version        string         `yaml:"version"`
+	Summary        string         `yaml:"summary"`
+	Description    string         `yaml:"description"`
+	Architectures  pq.StringArray `yaml:"architectures"`
+	Confinement    string         `yaml:"confinement"`
+	Grade          string         `yaml:"grade"`
+	Base           string         `yaml:"base"`
+	Plugs          Plugs          `yaml:"plugs"`
+	Slots          Slots          `yaml:"slots"`
+	RefreshControl []string       `yaml:"refresh-control"`
 }
+
+type Plugs map[string]map[string]interface{}
+type Slots map[string]map[string]interface{}

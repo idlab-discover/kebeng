@@ -83,8 +83,6 @@ services:
       - minio
     volumes:
       - ./services/store/config.yaml:/app/config.yaml  # config file
-      - ./init-config-example.json:/app/init-config-example.json  # init example
-      - ./services/store/internal/keys/:/app/keys/  # keys needed by store
     environment:
       - CONFIG_FILE_PATH=/app/config.yaml
       - TEST_MODE=1

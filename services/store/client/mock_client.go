@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 
+	"github.com/idlab-discover/kebeng/services/store/client/model"
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
 
 	"github.com/google/uuid"
@@ -139,9 +140,9 @@ func (m *MockStoreClient) AddRevision(snapName string, sha3_384_encoded string, 
 	return nil
 }
 
-func (m *MockStoreClient) GetObjectCustomMetadata(bucket string, objectKey string) *proto.GetObjectCustomMetadataResponse {
+func (m *MockStoreClient) GetObjectCustomMetadata(bucket string, objectKey string) *model.Metadata {
 	args := m.Called(bucket, objectKey)
-	if resp, ok := args.Get(0).(*proto.GetObjectCustomMetadataResponse); ok {
+	if resp, ok := args.Get(0).(*model.Metadata); ok {
 		return resp
 	}
 	return nil
@@ -155,7 +156,7 @@ func (m *MockStoreClient) UpdateUploadStatus(uploadId string, status string, rev
 	return nil
 }
 
-func (m *MockStoreClient) UpdateSnapEntryWithMetadata(entryId uuid.UUID, metadata *proto.GetObjectCustomMetadataResponse) *proto.UpdateEntryResponse {
+func (m *MockStoreClient) UpdateSnapEntryWithMetadata(entryId uuid.UUID, metadata *model.Metadata) *proto.UpdateEntryResponse {
 	args := m.Called(entryId, metadata)
 	if resp, ok := args.Get(0).(*proto.UpdateEntryResponse); ok {
 		return resp

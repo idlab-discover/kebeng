@@ -2,13 +2,16 @@ package objectstore
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"log"
 	"path"
 	"strings"
 
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
-	"github.com/idlab-discover/kebeng/services/store/internal/models"
+	"github.com/idlab-discover/kebeng/services/store/internal/model"
 
 	"github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/minio/minio-go/v7"
@@ -29,10 +32,10 @@ type IMinioClient interface {
 }
 
 type IObjectStore interface {
-	SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string, name string, version string, summary string, description string, confinement string, base string, grade string, architectures []string) (*models.Metadata, error)
+	SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string, name string, version string, summary string, description string, confinement string, base string, grade string, architectures, refreshControl []string, plugs model.Plugs, slots model.Slots) (*model.Metadata, error)
 	GetSnapFileReader(ctx context.Context, filePath string) (io.ReadCloser, error)
 	Move(sourceBucket, destinationBucket, objectName string, newObjectName string) error
-	GetObjectCustomMetadata(bucket string, objectName string) (*models.Metadata, error)
+	GetObjectCustomMetadata(bucket string, objectName string) (*model.Metadata, error)
 	DeleteFileFromBucket(bucket string, filePath string) *cerror.CustomError
 }
 
@@ -88,7 +91,7 @@ func (obs *ObjectStore) Move(sourceBucket, destinationBucket, objectName, newObj
 	return nil
 }
 
-func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string, name string, version string, summary string, description string, confinement string, base string, grade string, architectures []string) (*models.Metadata, error) {
+func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string, name string, version string, summary string, description string, confinement string, base string, grade string, architectures, refreshControl []string, plugs model.Plugs, slots model.Slots) (*model.Metadata, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -103,6 +106,18 @@ func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_38
 
 	baseFileName := path.Base(filePath)
 
+	serializedPlugs, cerr := serializeNestedMap(plugs)
+	if cerr != nil {
+		// Already logged in SerializePlugMap
+		return nil, errors.New(cerr.GetMessage())
+	}
+
+	serializedSlots, cerr := serializeNestedMap(slots)
+	if cerr != nil {
+		// Already logged in SerializePlugMap
+		return nil, errors.New(cerr.GetMessage())
+	}
+
 	// Prepare user metadata
 	userMetadata := map[string]string{
 		"Sha3-384-Encoded": sha3_384_encoded,
@@ -114,6 +129,9 @@ func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_38
 		"Base":             base,
 		"Grade":            grade,
 		"Architectures":    strings.Join(architectures, ","),
+		"Plugs":            serializedPlugs,
+		"Slots":            serializedSlots,
+		"Refresh-Control":  strings.Join(refreshControl, ","),
 	}
 
 	uploadInfo, err := obs.MinioClient.FPutObject(ctx, bucket, baseFileName, filePath, minio.PutObjectOptions{
@@ -124,7 +142,7 @@ func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_38
 		return nil, err
 	}
 
-	metadata := &models.Metadata{
+	metadata := &model.Metadata{
 		UploadInfo:       &uploadInfo,
 		SHA3_384_Encoded: sha3_384_encoded,
 		Name:             name,
@@ -135,12 +153,15 @@ func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_38
 		Base:             base,
 		Grade:            grade,
 		Architectures:    architectures,
+		Plugs:            plugs,
+		Slots:            slots,
+		RefreshControl:   refreshControl,
 	}
 
 	return metadata, nil
 }
 
-func (obs *ObjectStore) GetObjectCustomMetadata(bucket string, objectName string) (*models.Metadata, error) {
+func (obs *ObjectStore) GetObjectCustomMetadata(bucket string, objectName string) (*model.Metadata, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -150,7 +171,19 @@ func (obs *ObjectStore) GetObjectCustomMetadata(bucket string, objectName string
 		return nil, err
 	}
 
-	metadata := &models.Metadata{
+	plugs, cerr := deserializeToPlugs(objectInfo.UserMetadata["Plugs"])
+	if cerr != nil {
+		// Already logged in DeserializeToNestedMap
+		return nil, errors.New(cerr.GetMessage())
+	}
+
+	slots, cerr := deserializeToSlots(objectInfo.UserMetadata["Slots"])
+	if cerr != nil {
+		// Already logged in DeserializeToNestedMap
+		return nil, errors.New(cerr.GetMessage())
+	}
+
+	metadata := &model.Metadata{
 		SHA3_384_Encoded: objectInfo.UserMetadata["Sha3-384-Encoded"],
 		Name:             objectInfo.UserMetadata["Name"],
 		Version:          objectInfo.UserMetadata["Version"],
@@ -161,6 +194,9 @@ func (obs *ObjectStore) GetObjectCustomMetadata(bucket string, objectName string
 		Base:             objectInfo.UserMetadata["Base"],
 		Grade:            objectInfo.UserMetadata["Grade"],
 		Architectures:    strings.Split(objectInfo.UserMetadata["Architectures"], ","),
+		Plugs:            plugs,
+		Slots:            slots,
+		RefreshControl:   strings.Split(objectInfo.UserMetadata["Refresh-Control"], ","),
 	}
 
 	return metadata, nil
@@ -205,4 +241,42 @@ func (obs *ObjectStore) DeleteFileFromBucket(bucket string, filePath string) *ce
 	}
 
 	return nil
+}
+
+func deserializeToPlugs(data string) (model.Plugs, *cerror.CustomError) {
+	if data == "" {
+		return nil, nil
+	}
+	var result model.Plugs
+	err := json.Unmarshal([]byte(data), &result)
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to deserialize nested map: %v", err))
+		logrus.Errorf(cerr.GetMessage())
+		return nil, cerr
+	}
+	return result, nil
+}
+
+func deserializeToSlots(data string) (model.Slots, *cerror.CustomError) {
+	if data == "" {
+		return nil, nil
+	}
+	var result model.Slots
+	err := json.Unmarshal([]byte(data), &result)
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to deserialize nested map: %v", err))
+		logrus.Errorf(cerr.GetMessage())
+		return nil, cerr
+	}
+	return result, nil
+}
+
+func serializeNestedMap[T model.Plugs | model.Slots](data T) (string, *cerror.CustomError) {
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to serialize nested map: %v", err))
+		logrus.Errorf(cerr.GetMessage())
+		return "", cerr
+	}
+	return string(jsonData), nil
 }

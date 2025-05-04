@@ -313,11 +313,11 @@ func (h *Handler) SnapPush(c *gin.Context) {
 	// After the status details URL is returned, we can proceed with creating a new revision
 	// We need the sha3_384_encoded hash of the snap package, and other metadata
 	metadata := h.StoreClient.GetObjectCustomMetadata("unscanned", req.UnscannedFileName)
-	if len(metadata.Errors) > 0 {
-		el.ExtendProtoError(metadata.Errors)
+	if metadata.Errors.HasError() {
+		el.Extend(*metadata.Errors)
 		return
 	}
-	logrus.Debugf("Metadata: %v", metadata)
+	logrus.Debugf("metadata: %v", metadata)
 
 	// Update the snapEntry with the metadata
 	updatedEntry := h.StoreClient.UpdateSnapEntryWithMetadata(parsedEntryUUID, metadata)
@@ -328,9 +328,23 @@ func (h *Handler) SnapPush(c *gin.Context) {
 	logrus.Debugf("Updated entry: %v", updatedEntry)
 
 	// Create a new revision for the snap upload
-	revision := h.StoreClient.AddRevision(entry.SnapName, metadata.GetSha3_384Encoded(), uint64(req.BinaryFileSize), metadata.Architectures, req.Channels, req.UnscannedFileName) // FIX: architectures should be passed from the request
+	revision := h.StoreClient.AddRevision(entry.SnapName, metadata.Sha3_384Encoded, uint64(req.BinaryFileSize), metadata.Architectures, req.Channels, req.UnscannedFileName)
 	if len(revision.Errors) > 0 {
 		el.ExtendProtoError(revision.Errors)
+	}
+
+	logrus.Infof("HERE before revision assertion")
+	// Create a new SnapRevisionAssertion for the snap upload
+	revAssertion := h.AssertionClient.AddSnapRevisionAssertion(metadata.Sha3_384Encoded, accountUUID.String(), entry.Id, revision.Revision, uint64(req.BinaryFileSize))
+	if len(revAssertion.Errors) > 0 {
+		el.ExtendProtoError(revAssertion.Errors)
+	}
+
+	logrus.Infof("HERE before declaration assertion")
+	// Create a new SnapDeclarationAssertion for the snap upload
+	declAssertion := h.AssertionClient.AddSnapDeclarationAssertion(entry.Id, entry.SnapName, accountUUID.String(), req.Series, metadata.RefreshControl, nil, metadata.Plugs, metadata.Slots) // TODO: support aliases
+	if len(declAssertion.Errors) > 0 {
+		el.ExtendProtoError(declAssertion.Errors)
 	}
 
 	// Ignore 'resource not found' errors for the revision -> this is expected if the revision already exists, or tracks and channels didn't exist

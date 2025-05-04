@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/idlab-discover/kebeng/services/assertion/client/model"
 	proto "github.com/idlab-discover/kebeng/services/assertion/proto"
+	storeModel "github.com/idlab-discover/kebeng/services/store/client/model"
 
 	"github.com/stretchr/testify/mock"
 )
@@ -30,8 +31,8 @@ func (m *MockAssertionClient) AddAccountKeyAssertion(encoded_public_key, publicK
 	return nil
 }
 
-func (m *MockAssertionClient) AddSnapRevisionAssertion(snapSha3_384 string, developerId string, snapEntryId string, snapRevisionSequenceNumber uint32, snapSize uint64, timestamp time.Time) *proto.SnapRevisionAssertionResponse {
-	args := m.Called(snapSha3_384, developerId, snapEntryId, snapRevisionSequenceNumber, snapSize, timestamp)
+func (m *MockAssertionClient) AddSnapRevisionAssertion(snapSha3_384 string, developerId string, snapEntryId string, snapRevisionSequenceNumber uint32, snapSize uint64) *proto.SnapRevisionAssertionResponse {
+	args := m.Called(snapSha3_384, developerId, snapEntryId, snapRevisionSequenceNumber, snapSize)
 	if resp, ok := args.Get(0).(*proto.SnapRevisionAssertionResponse); ok {
 		return resp
 	}
@@ -70,8 +71,8 @@ func (m *MockAssertionClient) GetSnapRevisionAssertionBySHA3_384(snapSha3_384 st
 	return nil
 }
 
-func (m *MockAssertionClient) AddSnapDeclarationAssertion(snapID, snapName, publisherID string, series uint32, timestamp time.Time, refreshControl []string, aliases []model.Alias, plugs model.PlugMap, slots model.SlotMap) *proto.SnapDeclarationAssertionResponse {
-	args := m.Called(snapID, snapName, publisherID, series, timestamp, refreshControl, aliases, plugs, slots)
+func (m *MockAssertionClient) AddSnapDeclarationAssertion(snapID, snapName, publisherID string, series string, refreshControl []string, aliases []model.Alias, plugs storeModel.Plugs, slots storeModel.Slots) *proto.SnapDeclarationAssertionResponse {
+	args := m.Called(snapID, snapName, publisherID, series, refreshControl, aliases, plugs, slots)
 	if resp, ok := args.Get(0).(*proto.SnapDeclarationAssertionResponse); ok {
 		return resp
 	}

@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
-	"github.com/idlab-discover/kebeng/services/store/internal/models"
+	"github.com/idlab-discover/kebeng/services/store/internal/model"
 	"github.com/idlab-discover/kebeng/services/store/internal/objectstore"
 
 	"github.com/minio/minio-go/v7"
@@ -40,6 +40,9 @@ func TestSaveFileToBucket_succes(t *testing.T) {
 		"core18",
 		"test-grade",
 		[]string{"amd64", "arm64"},
+		[]string{"snap-id1", "snap-id2"},
+		make(map[string]map[string]interface{}),
+		make(map[string]map[string]interface{}),
 	)
 	assert.NoError(t, err)
 	assert.NotNil(t, metadata)
@@ -80,6 +83,9 @@ func TestSaveFileToBucket_ErrorCreatingBucket(t *testing.T) {
 		"core18",
 		"test-grade",
 		[]string{"amd64", "arm64"},
+		[]string{"snap-id1", "snap-id2"},
+		make(map[string]map[string]interface{}),
+		make(map[string]map[string]interface{}),
 	)
 	assert.Error(t, err)
 	assert.Nil(t, metadata)
@@ -112,6 +118,9 @@ func TestSaveFileToBucket_ErrorUploadingFile(t *testing.T) {
 		"core18",
 		"test-grade",
 		[]string{"amd64", "arm64"},
+		[]string{"snap-id1", "snap-id2"},
+		make(map[string]map[string]interface{}),
+		make(map[string]map[string]interface{}),
 	)
 	assert.Error(t, err)
 	assert.Nil(t, metadata)
@@ -279,6 +288,9 @@ func TestGetObjectCustomMetadata(t *testing.T) {
 			"Confinement":      "strict",
 			"Base":             "core18",
 			"Architectures":    "amd64,arm64",
+			"Plugs":            `{"camera":{"allow-installation":true,"deny-installation":false,"allow-connection":true,"deny-connection":false},"location":{"allow-installation":true,"deny-installation":false,"allow-connection":true,"deny-connection":false,"allow-auto-connection":true,"deny-auto-connection":false}}`,
+			"Slots":            `{"location":{"allow-installation":true,"deny-installation":false,"allow-connection":true,"deny-connection":false}}`,
+			"Refresh-Control":  "snap-id1,snap-id2",
 		},
 	}
 
@@ -291,10 +303,35 @@ func TestGetObjectCustomMetadata(t *testing.T) {
 	confinement := mockObjectInfo.UserMetadata["Confinement"]
 	base := mockObjectInfo.UserMetadata["Base"]
 	architectures := []string{"amd64", "arm64"}
+	plugs := model.Plugs{
+		"camera": {
+			"allow-installation": true,
+			"deny-installation":  false,
+			"allow-connection":   true,
+			"deny-connection":    false,
+		},
+		"location": {
+			"allow-installation":    true,
+			"deny-installation":     false,
+			"allow-connection":      true,
+			"deny-connection":       false,
+			"allow-auto-connection": true,
+			"deny-auto-connection":  false,
+		},
+	}
+	slots := model.Slots{
+		"location": {
+			"allow-installation": true,
+			"deny-installation":  false,
+			"allow-connection":   true,
+			"deny-connection":    false,
+		},
+	}
+	refreshControl := []string{"snap-id1", "snap-id2"}
 
-	expectedMetadata := &models.Metadata{
-		SHA3_384_Encoded: sha3_384_encoded,
+	expectedMetadata := &model.Metadata{
 		Name:             name,
+		SHA3_384_Encoded: sha3_384_encoded,
 		Version:          version,
 		Type:             fileType,
 		Summary:          summary,
@@ -302,6 +339,9 @@ func TestGetObjectCustomMetadata(t *testing.T) {
 		Confinement:      confinement,
 		Base:             base,
 		Architectures:    architectures,
+		Plugs:            plugs,
+		Slots:            slots,
+		RefreshControl:   refreshControl,
 	}
 
 	mockMinio.On("StatObject", mock.Anything, bucket, object, mock.Anything).
