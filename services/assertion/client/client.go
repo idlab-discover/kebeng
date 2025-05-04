@@ -310,7 +310,49 @@ func (c *AssertionClient) AddAccountAssertion(accountId, displayName, username, 
 	return resp
 }
 
-func (c *AssertionClient) AddSnapBuildAssertion()
+func (c *AssertionClient) AddSnapBuildAssertion(sha3_384Encoded, grade, signKeySha3_384Encoded string, developerId, snapEntryId uuid.UUID, size uint64) *proto.SnapBuildAssertionResponse {
+	el := cerror.NewErrorList()
+
+	// check input
+	if sha3_384Encoded == "" {
+		el.Add(cerror.InvalidField, "sha3_384_encoded is required")
+	}
+	if grade == "" {
+		el.Add(cerror.InvalidField, "grade is required")
+	}
+	if signKeySha3_384Encoded == "" {
+		el.Add(cerror.InvalidField, "sign key sha3_384 encoded is required")
+	}
+	if developerId == uuid.Nil {
+		el.Add(cerror.InvalidField, "developer id is required")
+	}
+	if snapEntryId == uuid.Nil {
+		el.Add(cerror.InvalidField, "snap entry id is required")
+	}
+	if el.HasError() {
+		return &proto.SnapBuildAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}
+	}
+
+	req := &proto.AddSnapBuildAssertionRequest{
+		Sha3_384Encoded:        sha3_384Encoded,
+		Grade:                 grade,
+		SignKeySha3_384Encoded: signKeySha3_384Encoded,
+		DeveloperId:           developerId.String(),
+		SnapEntryId:           snapEntryId.String(),
+		SnapSize:              size,
+	}
+
+	resp, err := c.client.AddSnapBuildAssertion(context.Background(), req)
+	if err != nil {
+		el.Add(cerror.InternalServerError, err.Error())
+		resp = &proto.SnapBuildAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}
+	}
+	return resp
+}
 
 func (c *AssertionClient) GetAccountKeyAssertionByPublicKeySha(publicKeySha3_384Encoded string) *proto.AccountKeyAssertionResponse {
 	el := cerror.NewErrorList()
