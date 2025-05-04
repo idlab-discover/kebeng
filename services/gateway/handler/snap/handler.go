@@ -352,8 +352,8 @@ func (h *Handler) SnapPush(c *gin.Context) {
 	// After the status details URL is returned, we can proceed with creating a new revision
 	// We need the sha3_384_encoded hash of the snap package, and other metadata
 	metadata := h.StoreClient.GetObjectCustomMetadata("unscanned", req.UnscannedFileName)
-	if len(metadata.Errors) > 0 {
-		el.ExtendProtoError(metadata.Errors)
+	if metadata.Errors != nil {
+		el.Extend(*metadata.Errors)
 		return
 	}
 	logrus.Debugf("metadata: %v", metadata)
@@ -367,7 +367,7 @@ func (h *Handler) SnapPush(c *gin.Context) {
 	logrus.Debugf("Updated entry: %v", updatedEntry)
 
 	// Create a new revision for the snap upload
-	revision := h.StoreClient.AddRevision(entry.SnapName, metadata.GetSha3_384Encoded(), uint64(req.BinaryFileSize), metadata.Architectures, req.Channels, req.UnscannedFileName)
+	revision := h.StoreClient.AddRevision(entry.SnapName, metadata.Sha3_384Encoded, uint64(req.BinaryFileSize), metadata.Architectures, req.Channels, req.UnscannedFileName)
 	if len(revision.Errors) > 0 {
 		el.ExtendProtoError(revision.Errors)
 	}
@@ -379,15 +379,7 @@ func (h *Handler) SnapPush(c *gin.Context) {
 	}
 
 	// Create a new SnapDeclarationAssertion for the snap upload
-	plugs, cerr := h.AssertionClient.DeserializePlugMap(metadata.Plugs)
-	if cerr != nil {
-		el.AddCustomError(cerr)
-	}
-	slots, cerr := h.AssertionClient.DeserializeSlotMap(metadata.Slots)
-	if cerr != nil {
-		el.AddCustomError(cerr)
-	}
-	declAssertion := h.AssertionClient.AddSnapDeclarationAssertion(entry.Id, entry.SnapName, accountUUID.String(), req.Series, metadata.RefreshControl, nil, plugs, slots) // TODO: support refreshcontrol, aliases, plugs and slots
+	declAssertion := h.AssertionClient.AddSnapDeclarationAssertion(entry.Id, entry.SnapName, accountUUID.String(), req.Series, metadata.RefreshControl, nil, metadata.Plugs, metadata.Slots) // TODO: support refreshcontrol, aliases, plugs and slots
 	if len(declAssertion.Errors) > 0 {
 		el.ExtendProtoError(declAssertion.Errors)
 	}
