@@ -18,8 +18,6 @@ import (
 	cerrorpb "github.com/idlab-discover/kebeng/common/cerror/proto"
 	accClient "github.com/idlab-discover/kebeng/services/account/client"
 	accountpb "github.com/idlab-discover/kebeng/services/account/proto"
-	assertionClient "github.com/idlab-discover/kebeng/services/assertion/client"
-	asspb "github.com/idlab-discover/kebeng/services/assertion/proto"
 	storeClient "github.com/idlab-discover/kebeng/services/store/client"
 	storepb "github.com/idlab-discover/kebeng/services/store/proto"
 	"github.com/stretchr/testify/assert"
@@ -415,86 +413,6 @@ func TestRegisterSnapNameDisputeHandler(t *testing.T) {
 	handler.RegisterSnapNameDispute(c)
 	assert.Equal(t, http.StatusNotImplemented, w.Code)
 	assert.Contains(t, w.Body.String(), "Not implemented")
-}
-
-// ------------------
-// ProcessSnapBuildAssertion
-// ------------------
-
-func TestProcessSnapBuildAssertionHandler_InvalidJSON(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	handler := &Handler{BaseHandler: util.NewBaseHandler(nil, nil, nil, nil)}
-	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest("POST", "/processSnapBuildAssertion/123", bytes.NewBufferString("invalid_json"))
-	c.Request.Header.Set("Content-Type", "application/json")
-
-	handler.ProcessSnapBuildAssertion(c)
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-}
-
-func TestProcessSnapBuildAssertionHandler_MissingSnapID(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	handler := &Handler{BaseHandler: util.NewBaseHandler(nil, nil, nil, nil)}
-	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
-	reqJSON := `{"assertion": "test"}`
-	c.Request = httptest.NewRequest("POST", "/processSnapBuildAssertion/", bytes.NewBufferString(reqJSON))
-	c.Request.Header.Set("Content-Type", "application/json")
-
-	handler.ProcessSnapBuildAssertion(c)
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Contains(t, w.Body.String(), "snap_id is required")
-}
-
-func TestProcessSnapBuildAssertionHandler_Success(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
-	// Create a mock AssertionClient.
-	mockAssertionClient := new(assertionClient.MockAssertionClient)
-
-	// For this example, we create a dummy using assertion client's proto definitions:
-	dummySnapAssertionResp := &asspb.SnapBuildAssertionResponse{
-		AuthorityId:     "auth-001",
-		Grade:           "A",
-		SignKeySha3_384: "hash001",
-		SnapId:          "snap-001",
-		SnapSha3_384:    "shahash",
-		SnapSize:        "12345",
-		Timestamp:       "2025-01-01T00:00:00Z",
-		Type:            "test",
-		Errors:          nil,
-	}
-
-	// "ZHVtbXk=" is the base64-encoding of "dummy".
-	decodedAssertion := []byte("dummy")
-	mockAssertionClient.
-		On("ProcessSnapBuildAssertion", decodedAssertion).
-		Return(dummySnapAssertionResp).
-		Once()
-
-	// Create a BaseHandler and handler with the mock injected.
-	baseHandler := util.NewBaseHandler(nil, nil, mockAssertionClient, nil)
-	handler := &Handler{
-		BaseHandler: baseHandler,
-	}
-
-	// Set up the Gin test context.
-	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
-	// Use valid base64 for assertion.
-	reqJSON := `{"assertion": "ZHVtbXk="}`
-	c.Request = httptest.NewRequest("POST", "/processSnapBuildAssertion/123", bytes.NewBufferString(reqJSON))
-	c.Request.Header.Set("Content-Type", "application/json")
-	// Set the snap_id path parameter.
-	c.Params = append(c.Params, gin.Param{Key: "snap_id", Value: "snap-001"})
-
-	handler.ProcessSnapBuildAssertion(c)
-
-	// Verify the HTTP response.
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Contains(t, w.Body.String(), "authority-id", "Expected response body to contain authority-id")
-	mockAssertionClient.AssertExpectations(t)
 }
 
 // ------------------

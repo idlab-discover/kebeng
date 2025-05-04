@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/idlab-discover/kebeng/services/assertion/internal/config"
@@ -14,7 +13,6 @@ import (
 
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
-	cerrorpb "github.com/idlab-discover/kebeng/common/cerror/proto"
 	"github.com/sirupsen/logrus"
 	"github.com/snapcore/snapd/asserts"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -391,6 +389,9 @@ func (s *AssertionService) AddAccountAssertion(ctx context.Context, req *proto.A
 	}, nil
 }
 
+// func (s *AssertionService) AddSnapBuildAssertion(ctx context.Context, req *proto.AddSnapBuildAssertionRequest) (*proto.SnapBuildAssertionResponse, error) {
+// }
+
 // ################### GETTERS #####################
 
 func (s *AssertionService) GetSnapRevisionAssertionBySHA3_384(ctx context.Context, req *proto.GetSnapRevisionAssertionBySHA3_384Request) (*proto.SnapRevisionAssertionResponse, error) {
@@ -533,138 +534,6 @@ func (s *AssertionService) GetAccountAssertionByAccountID(ctx context.Context, r
 		Revision:        accountAssertion.Revision,
 		Errors:          el.ConvertToProtoErrorList(),
 	}, nil
-}
-
-// ####################### SHOULD BE REMOVED #########################
-// TODO: remove all this and use better structure
-func (s *AssertionService) ProcessSnapBuildAssertion(ctx context.Context, req *proto.SnapBuildAssertionRequest) (*proto.SnapBuildAssertionResponse, error) {
-	errList := make([]*cerrorpb.Error, 0)
-
-	if req.Assertion == nil {
-		errList = append(errList, &cerrorpb.Error{
-			Code:    cerror.MissingField,
-			Message: "Assertion field is required",
-		})
-		return &proto.SnapBuildAssertionResponse{
-			Errors: errList,
-		}, nil
-	}
-
-	assertion := parseAssertion(string(req.Assertion))
-
-	err := validateSnapBuildAssertion(assertion)
-	if err != nil {
-		errList = append(errList, &cerrorpb.Error{
-			Code:    cerror.Invalid,
-			Message: "not a valid snap-build assertion: " + err.Error(),
-		})
-		return &proto.SnapBuildAssertionResponse{
-			Errors: errList,
-		}, nil
-	}
-
-	snapEntryId := assertion["snap-id"]
-	parsedUUID, err := uuid.Parse(snapEntryId)
-	if err != nil {
-		logrus.Errorf("Failed to parse snap-id: %v", err)
-		errList = append(errList, &cerrorpb.Error{
-			Code:    cerror.Invalid,
-			Message: "Invalid snap-id",
-		})
-		return &proto.SnapBuildAssertionResponse{
-			Errors: errList,
-		}, nil
-	}
-
-	_, err2 := s.repo.AddAssertion(parsedUUID, string(req.Assertion))
-	if err2 != nil {
-		logrus.Errorf("Failed to create assertion: %v", err2)
-		errList = append(errList, &cerrorpb.Error{
-			Code:    cerror.AssertionCreationFailed,
-			Message: "Failed to create assertion",
-		})
-		return &proto.SnapBuildAssertionResponse{
-			Errors: errList,
-		}, nil
-	}
-
-	// TODO: add logic to fill in the fields in the response
-	// This info will be present in the assertion object
-	return &proto.SnapBuildAssertionResponse{
-		AuthorityId:     assertion["authority-id"],
-		Grade:           assertion["grade"],
-		SignKeySha3_384: assertion["sign-key-sha3-384"],
-		SnapId:          assertion["snap-id"],
-		SnapSha3_384:    assertion["snap-sha3-384"],
-		SnapSize:        assertion["snap-size"],
-		Timestamp:       assertion["timestamp"],
-		Revision:        assertion["revision"],
-		Type:            assertion["type"],
-		DeveloperId:     assertion["developer-id"],
-		Errors:          errList,
-	}, nil
-}
-
-// TODO: implement this function to check if the assertion is a valid snap-build assertion
-// this is a placeholder for now
-// because currently no idea how to validate this
-func validateSnapBuildAssertion(assertion map[string]string) error {
-	requiredFields := []string{
-		"type",
-		"authority-id",
-		"snap-sha3-384",
-		"developer-id",
-		"grade",
-		"snap-id",
-		"snap-size",
-		"timestamp",
-		"revision",
-		"sign-key-sha3-384",
-	}
-
-	for _, field := range requiredFields {
-		if _, ok := assertion[field]; !ok {
-			return fmt.Errorf("missing required field: %s", field)
-		}
-	}
-
-	if assertion["type"] != "snap-build" {
-		return fmt.Errorf("invalid type: %s", assertion["type"])
-	}
-
-	return nil
-}
-
-// parseAssertion parses a string containing key-value pairs separated by colons
-// and returns a map where the keys are the parsed keys and the values are the
-// parsed values. Each key-value pair should be on a new line.
-//
-// The function ignores empty lines and lines that start with "AcLB".
-//
-// Parameters:
-//   - data: A string containing the key-value pairs to be parsed.
-//
-// Returns:
-//
-//	A map[string]string where the keys are the parsed keys and the values are
-//	the parsed values.
-func parseAssertion(data string) map[string]string {
-	lines := strings.Split(data, "\n")
-	result := make(map[string]string)
-
-	for _, line := range lines {
-		// Ignore empty lines and signature block
-		if line == "" || strings.HasPrefix(line, "AcLB") {
-			continue
-		}
-		parts := strings.SplitN(line, ":", 2)
-		if len(parts) == 2 {
-			key := strings.TrimSpace(parts[0])
-			value := strings.TrimSpace(parts[1])
-			result[key] = value
-		}
-	}
-	return result
 }
 
 // ############### HELPER FUNCTIONS #################

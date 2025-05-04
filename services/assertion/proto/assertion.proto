@@ -7,7 +7,6 @@ package assertion;
 option go_package = "github.com/idlab-discover/kebeng/services/assertion/proto;assertion";
 
 service AssertionService {
-    rpc ProcessSnapBuildAssertion(SnapBuildAssertionRequest) returns (SnapBuildAssertionResponse);
     rpc AddSnapRevisionAssertion(AddSnapRevisionAssertionRequest) returns (SnapRevisionAssertionResponse);
     rpc AddAccountKeyAssertion(AddAccountKeyAssertionRequest) returns (AccountKeyAssertionResponse);
     rpc AddSnapDeclarationAssertion(AddSnapDeclarationAssertionRequest) returns (SnapDeclarationAssertionResponse);
@@ -17,25 +16,6 @@ service AssertionService {
     rpc GetSnapDeclarationAssertionBySnapID(GetSnapDeclarationAssertionBySnapIDRequest) returns (SnapDeclarationAssertionResponse);
     rpc GetAccountAssertionByAccountID(GetAccountAssertionByAccountIDRequest) returns (AccountAssertionResponse);
     
-}
-
-message SnapBuildAssertionRequest {
-    bytes assertion = 1;
-}
-
-message SnapBuildAssertionResponse {
-    string id = 1;
-    string authority_id = 2;
-    string grade = 3;
-    string sign_key_sha3_384 = 4;
-    string snap_id = 5;
-    string snap_sha3_384 = 6;
-    string snap_size = 7;
-    string timestamp = 8;
-    string revision = 9;
-    string type = 10;
-    string developer_id = 11;
-    repeated proto.Error errors = 12;
 }
 
 message AddSnapRevisionAssertionRequest {

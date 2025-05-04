@@ -12,7 +12,6 @@ import (
 
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
-	cerrorpb "github.com/idlab-discover/kebeng/common/cerror/proto"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -27,8 +26,6 @@ const (
 )
 
 type AssertionClientInterface interface {
-	ProcessSnapBuildAssertion(assertion []byte) *proto.SnapBuildAssertionResponse
-
 	AddAccountKeyAssertion(encoded_public_key, publicKeySha3_384Encoded, accountId, name string, since time.Time, until time.Time) *proto.AccountKeyAssertionResponse
 	AddSnapRevisionAssertion(snapSha3_384 string, developerId string, snapEntryId string, snapRevisionSequenceNumber uint32, snapSize uint64, timestamp time.Time) *proto.SnapRevisionAssertionResponse
 	AddSnapDeclarationAssertion(snapID, snapName, publisherID string, series uint32, timestamp time.Time, refreshControl []string, aliases []model.Alias, plugs model.PlugMap, slots model.SlotMap) *proto.SnapDeclarationAssertionResponse
@@ -83,25 +80,6 @@ func (c *AssertionClient) Close() {
 	if err != nil {
 		logrus.Errorf("error closing connection: %v", err)
 	}
-}
-
-func (c *AssertionClient) ProcessSnapBuildAssertion(assertion []byte) *proto.SnapBuildAssertionResponse {
-	req := &proto.SnapBuildAssertionRequest{
-		Assertion: assertion,
-	}
-
-	resp, err := c.client.ProcessSnapBuildAssertion(context.Background(), req)
-	// err is not nil if something goes wrong with the client
-	// cerror regarding the request are in the response
-	if err != nil {
-		resp = &proto.SnapBuildAssertionResponse{
-			Errors: []*cerrorpb.Error{{
-				Code:    cerror.InternalServerError,
-				Message: err.Error()},
-			},
-		}
-	}
-	return resp
 }
 
 func (c *AssertionClient) AddAccountKeyAssertion(encoded_public_key, publicKeySha3_384Encoded, accountId, name string, since time.Time, until time.Time) *proto.AccountKeyAssertionResponse {
@@ -331,6 +309,8 @@ func (c *AssertionClient) AddAccountAssertion(accountId, displayName, username, 
 	}
 	return resp
 }
+
+func (c *AssertionClient) AddSnapBuildAssertion()
 
 func (c *AssertionClient) GetAccountKeyAssertionByPublicKeySha(publicKeySha3_384Encoded string) *proto.AccountKeyAssertionResponse {
 	el := cerror.NewErrorList()

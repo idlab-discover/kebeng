@@ -218,45 +218,6 @@ func (h *Handler) RegisterSnapNameDispute(c *gin.Context) {
 	c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 }
 
-func (h *Handler) ProcessSnapBuildAssertion(c *gin.Context) {
-	el := cerror.NewErrorList()
-	var req *model.SnapBuildAssertionRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		el.Add(cerror.BadRequest, cerror.FormatBindError(err))
-		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
-		return
-	}
-	// SnapID is a path parameter
-	snapID := c.Param("snap_id")
-	if snapID == "" {
-		el.Add(cerror.BadRequest, "snap_id is required")
-		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
-		return
-	}
-
-	// Process the snap build assertion with the snapID and req
-	resp := h.AssertionClient.ProcessSnapBuildAssertion(req.Assertion)
-	if len(resp.Errors) > 0 {
-		el.ExtendProtoError(resp.Errors)
-		//c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el}) // This would be the prefered way to return the error, but the documentation handles this error differently
-		c.JSON(http.StatusBadRequest, gin.H{"succes": false, "cerror": el})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"headers": gin.H{
-			"authority-id":      resp.AuthorityId,
-			"grade":             resp.Grade,
-			"sign-key-sha3-384": resp.SignKeySha3_384,
-			"snap-id":           resp.SnapId,
-			"snap-sha3-384":     resp.SnapSha3_384,
-			"snap-size":         resp.SnapSize,
-			"timestamp":         resp.Timestamp,
-			"type":              resp.Type,
-		},
-	})
-}
-
 // SnapPush checks if there exists a snap entry for the uploaded snap package.
 // It calls the RegisterSnapName function with dryRun = true.
 func (h *Handler) SnapPush(c *gin.Context) {

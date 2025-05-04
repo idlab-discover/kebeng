@@ -56,7 +56,6 @@ func (h *Handler) SetupEndpoints(r *gin.Engine) {
 	authGroup.POST("/register-name/", h.snapHandler.RegisterSnapName)
 	r.GET("/v2/snaps/find", h.snapHandler.FindSnaps) // TODO
 	r.POST("/dev/api/register-name-dispute/", h.snapHandler.RegisterSnapNameDispute)
-	r.POST("/dev/api/snaps/:snap_id/builds", h.snapHandler.ProcessSnapBuildAssertion)
 	r.GET("/download/:revision_id", h.snapHandler.DownloadSnap)
 	authGroup.POST("/snap-push/", h.snapHandler.SnapPush)
 	r.POST("/unscanned-upload/", h.snapHandler.UnscannedUpload)
@@ -95,7 +94,6 @@ func (h *Handler) SetupEndpointsWithMonitoring(r *gin.Engine) {
 	authGroup.POST("/register-name/", monitoring.Wrapper("RegisterSnapName", h.snapHandler.RegisterSnapName))
 	r.GET("/v2/snaps/find", monitoring.Wrapper("FindSnaps", h.snapHandler.FindSnaps))
 	r.POST("/dev/api/register-name-dispute/", monitoring.Wrapper("RegisterSnapNameDispute", h.snapHandler.RegisterSnapNameDispute))
-	r.POST("/dev/api/snaps/:snap_id/builds", monitoring.Wrapper("ProcessSnapBuildAssertion", h.snapHandler.ProcessSnapBuildAssertion))
 	r.GET("/download/:revision_id", monitoring.Wrapper("DownloadSnap", h.snapHandler.DownloadSnap))
 	authGroup.POST("/snap-push/", monitoring.Wrapper("SnapPush", h.snapHandler.SnapPush))
 	r.POST("/unscanned-upload/", monitoring.Wrapper("UnscannedUpload", h.snapHandler.UnscannedUpload))

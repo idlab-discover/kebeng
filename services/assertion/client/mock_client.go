@@ -21,15 +21,6 @@ func (m *MockAssertionClient) Close() {
 	m.Called()
 }
 
-// ProcessSnapBuildAssertion mocks the ProcessSnapBuildAssertion function.
-func (m *MockAssertionClient) ProcessSnapBuildAssertion(assertion []byte) *proto.SnapBuildAssertionResponse {
-	args := m.Called(assertion)
-	if resp, ok := args.Get(0).(*proto.SnapBuildAssertionResponse); ok {
-		return resp
-	}
-	return nil
-}
-
 func (m *MockAssertionClient) AddAccountKeyAssertion(encoded_public_key, publicKeySha3_384Encoded string, accountId string, name string, since time.Time, until time.Time) *proto.AccountKeyAssertionResponse {
 	args := m.Called(publicKeySha3_384Encoded, accountId, name, since, until)
 	if resp, ok := args.Get(0).(*proto.AccountKeyAssertionResponse); ok {
