@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
-	"github.com/idlab-discover/kebeng/services/store/internal/models"
+	"github.com/idlab-discover/kebeng/services/store/internal/model"
 	"github.com/idlab-discover/kebeng/services/store/internal/objectstore"
 
 	"github.com/minio/minio-go/v7"
@@ -303,7 +303,7 @@ func TestGetObjectCustomMetadata(t *testing.T) {
 	confinement := mockObjectInfo.UserMetadata["Confinement"]
 	base := mockObjectInfo.UserMetadata["Base"]
 	architectures := []string{"amd64", "arm64"}
-	plugs := models.Plugs{
+	plugs := model.Plugs{
 		"camera": {
 			"allow-installation": true,
 			"deny-installation":  false,
@@ -319,7 +319,7 @@ func TestGetObjectCustomMetadata(t *testing.T) {
 			"deny-auto-connection":  false,
 		},
 	}
-	slots := models.Slots{
+	slots := model.Slots{
 		"location": {
 			"allow-installation": true,
 			"deny-installation":  false,
@@ -329,7 +329,7 @@ func TestGetObjectCustomMetadata(t *testing.T) {
 	}
 	refreshControl := []string{"snap-id1", "snap-id2"}
 
-	expectedMetadata := &models.Metadata{
+	expectedMetadata := &model.Metadata{
 		Name:             name,
 		SHA3_384_Encoded: sha3_384_encoded,
 		Version:          version,

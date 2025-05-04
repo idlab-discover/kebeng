@@ -16,7 +16,7 @@ import (
 
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
 	storeDB "github.com/idlab-discover/kebeng/services/store/internal/database"
-	"github.com/idlab-discover/kebeng/services/store/internal/models"
+	"github.com/idlab-discover/kebeng/services/store/internal/model"
 	"github.com/idlab-discover/kebeng/services/store/internal/repository"
 
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
@@ -938,7 +938,7 @@ func TestGetTracksBySnapId(t *testing.T) {
 func TestGetPreloadAssociations(t *testing.T) {
 	tests := []struct {
 		name              string
-		entry             *models.SnapEntry
+		entry             *model.SnapEntry
 		associations      *[]string
 		el                *cerror.ErrorList
 		expectError       bool
@@ -946,20 +946,20 @@ func TestGetPreloadAssociations(t *testing.T) {
 	}{
 		{
 			name: "Success getting preload associations",
-			entry: &models.SnapEntry{
+			entry: &model.SnapEntry{
 				ID: mockUUID,
 			},
-			associations:      &[]string{models.ALL},
+			associations:      &[]string{model.ALL},
 			el:                cerror.NewErrorList(),
 			expectError:       false,
 			expectedErrorCode: "",
 		},
 		{
 			name: "Fail getting preload associations for non-existing entry",
-			entry: &models.SnapEntry{
+			entry: &model.SnapEntry{
 				ID: uuid.New(),
 			},
-			associations:      &[]string{models.ALL},
+			associations:      &[]string{model.ALL},
 			el:                cerror.NewErrorList(),
 			expectError:       true,
 			expectedErrorCode: cerror.ResourceNotFound,
@@ -1444,7 +1444,7 @@ func TestUpdateSnapEntryWithMetadata(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var metadata models.SnapMeta = models.SnapMeta{
+			var metadata model.SnapMeta = model.SnapMeta{
 				Confinement:   tt.confinement,
 				Base:          tt.base,
 				Summary:       tt.summary,
