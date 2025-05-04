@@ -32,7 +32,7 @@ type IMinioClient interface {
 }
 
 type IObjectStore interface {
-	SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string, name string, version string, summary string, description string, confinement string, base string, grade string, architectures, refreshControl []string, plugs, slots map[string]map[string]interface{}) (*models.Metadata, error)
+	SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string, name string, version string, summary string, description string, confinement string, base string, grade string, architectures, refreshControl []string, plugs models.Plugs, slots models.Slots) (*models.Metadata, error)
 	GetSnapFileReader(ctx context.Context, filePath string) (io.ReadCloser, error)
 	Move(sourceBucket, destinationBucket, objectName string, newObjectName string) error
 	GetObjectCustomMetadata(bucket string, objectName string) (*models.Metadata, error)
@@ -91,7 +91,7 @@ func (obs *ObjectStore) Move(sourceBucket, destinationBucket, objectName, newObj
 	return nil
 }
 
-func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string, name string, version string, summary string, description string, confinement string, base string, grade string, architectures, refreshControl []string, plugs, slots map[string]map[string]interface{}) (*models.Metadata, error) {
+func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string, name string, version string, summary string, description string, confinement string, base string, grade string, architectures, refreshControl []string, plugs models.Plugs, slots models.Slots) (*models.Metadata, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -106,13 +106,13 @@ func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_38
 
 	baseFileName := path.Base(filePath)
 
-	serializedPlugs, cerr := SerializeNestedMap(plugs)
+	serializedPlugs, cerr := serializeNestedMap(plugs)
 	if cerr != nil {
 		// Already logged in SerializePlugMap
 		return nil, errors.New(cerr.GetMessage())
 	}
 
-	serializedSlots, cerr := SerializeNestedMap(slots)
+	serializedSlots, cerr := serializeNestedMap(slots)
 	if cerr != nil {
 		// Already logged in SerializePlugMap
 		return nil, errors.New(cerr.GetMessage())
@@ -171,13 +171,13 @@ func (obs *ObjectStore) GetObjectCustomMetadata(bucket string, objectName string
 		return nil, err
 	}
 
-	plugs, cerr := DeserializeToNestedMap(objectInfo.UserMetadata["Plugs"])
+	plugs, cerr := deserializeToPlugs(objectInfo.UserMetadata["Plugs"])
 	if cerr != nil {
 		// Already logged in DeserializeToNestedMap
 		return nil, errors.New(cerr.GetMessage())
 	}
 
-	slots, cerr := DeserializeToNestedMap(objectInfo.UserMetadata["Slots"])
+	slots, cerr := deserializeToSlots(objectInfo.UserMetadata["Slots"])
 	if cerr != nil {
 		// Already logged in DeserializeToNestedMap
 		return nil, errors.New(cerr.GetMessage())
@@ -243,8 +243,11 @@ func (obs *ObjectStore) DeleteFileFromBucket(bucket string, filePath string) *ce
 	return nil
 }
 
-func DeserializeToNestedMap(data string) (map[string]map[string]interface{}, *cerror.CustomError) {
-	var result map[string]map[string]interface{}
+func deserializeToPlugs(data string) (models.Plugs, *cerror.CustomError) {
+	if data == "" {
+		return nil, nil
+	}
+	var result models.Plugs
 	err := json.Unmarshal([]byte(data), &result)
 	if err != nil {
 		cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to deserialize nested map: %v", err))
@@ -254,7 +257,21 @@ func DeserializeToNestedMap(data string) (map[string]map[string]interface{}, *ce
 	return result, nil
 }
 
-func SerializeNestedMap(data map[string]map[string]interface{}) (string, *cerror.CustomError) {
+func deserializeToSlots(data string) (models.Slots, *cerror.CustomError) {
+	if data == "" {
+		return nil, nil
+	}
+	var result models.Slots
+	err := json.Unmarshal([]byte(data), &result)
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to deserialize nested map: %v", err))
+		logrus.Errorf(cerr.GetMessage())
+		return nil, cerr
+	}
+	return result, nil
+}
+
+func serializeNestedMap[T models.Plugs | models.Slots](data T) (string, *cerror.CustomError) {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to serialize nested map: %v", err))

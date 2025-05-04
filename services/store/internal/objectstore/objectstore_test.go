@@ -5,7 +5,6 @@ import (
 	"errors"
 	"testing"
 
-	acmodel "github.com/idlab-discover/kebeng/services/assertion/client/model"
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
 	"github.com/idlab-discover/kebeng/services/store/internal/models"
 	"github.com/idlab-discover/kebeng/services/store/internal/objectstore"
@@ -304,7 +303,7 @@ func TestGetObjectCustomMetadata(t *testing.T) {
 	confinement := mockObjectInfo.UserMetadata["Confinement"]
 	base := mockObjectInfo.UserMetadata["Base"]
 	architectures := []string{"amd64", "arm64"}
-	plugs := acmodel.Plugs{
+	plugs := models.Plugs{
 		"camera": {
 			"allow-installation": true,
 			"deny-installation":  false,
@@ -320,7 +319,7 @@ func TestGetObjectCustomMetadata(t *testing.T) {
 			"deny-auto-connection":  false,
 		},
 	}
-	slots := acmodel.Slots{
+	slots := models.Slots{
 		"location": {
 			"allow-installation": true,
 			"deny-installation":  false,

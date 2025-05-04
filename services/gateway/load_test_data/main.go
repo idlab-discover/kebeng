@@ -236,7 +236,7 @@ func (h *testHandler) loadInStoreDataInDB(ctx context.Context, storeTestData *Te
 
 		// to get SHA3_384_encoded of uploaded file
 		metadata := h.StoreClient.GetObjectCustomMetadata("unscanned", uploadResp.GetTempFileName())
-		if metadata.Errors != nil {
+		if metadata.Errors.HasError() {
 			return fmt.Errorf("failed to get object metadata: %v", metadata.Errors)
 		}
 

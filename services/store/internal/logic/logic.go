@@ -1109,7 +1109,7 @@ func parseEntryToProto(entry *models.SnapEntry) *proto.GetEntryResponse {
 	}
 }
 
-func SerializeNestedMap(data map[string]map[string]interface{}) (string, *cerror.CustomError) {
+func SerializeNestedMap[T models.Plugs | models.Slots](data T) (string, *cerror.CustomError) {
 	jsonBytes, err := json.Marshal(data)
 	if err != nil {
 		cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to serialize nested map: %v", err))

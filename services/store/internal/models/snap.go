@@ -129,31 +129,34 @@ type SnapUpload struct {
 
 type Metadata struct {
 	*minio.UploadInfo `json:"upload_info" db:"upload_info"`
-	SHA3_384_Encoded  string                            `json:"sha3_384_encoded" db:"sha3_384_encoded"`
-	Name              string                            `json:"name" db:"name"`
-	Version           string                            `json:"version" db:"version"`
-	Type              string                            `json:"type" db:"type"`
-	Summary           string                            `json:"summary" db:"summary"`
-	Description       string                            `json:"description" db:"description"`
-	Confinement       string                            `json:"confinement" db:"confinement"`
-	Base              string                            `json:"base" db:"base"`
-	Grade             string                            `json:"grade" db:"grade"`
-	Architectures     pq.StringArray                    `json:"architectures" db:"architectures"`
-	Plugs             map[string]map[string]interface{} `json:"plugs" db:"plugs"`
-	Slots             map[string]map[string]interface{} `json:"slots" db:"slots"`
-	RefreshControl    []string                          `json:"refresh_control" db:"refresh_control"`
+	SHA3_384_Encoded  string         `json:"sha3_384_encoded" db:"sha3_384_encoded"`
+	Name              string         `json:"name" db:"name"`
+	Version           string         `json:"version" db:"version"`
+	Type              string         `json:"type" db:"type"`
+	Summary           string         `json:"summary" db:"summary"`
+	Description       string         `json:"description" db:"description"`
+	Confinement       string         `json:"confinement" db:"confinement"`
+	Base              string         `json:"base" db:"base"`
+	Grade             string         `json:"grade" db:"grade"`
+	Architectures     pq.StringArray `json:"architectures" db:"architectures"`
+	Plugs             Plugs          `json:"plugs" db:"plugs"`
+	Slots             Slots          `json:"slots" db:"slots"`
+	RefreshControl    []string       `json:"refresh_control" db:"refresh_control"`
 }
 
 type SnapMeta struct {
-	Name           string                            `yaml:"name"`
-	Version        string                            `yaml:"version"`
-	Summary        string                            `yaml:"summary"`
-	Description    string                            `yaml:"description"`
-	Architectures  pq.StringArray                    `yaml:"architectures"`
-	Confinement    string                            `yaml:"confinement"`
-	Grade          string                            `yaml:"grade"`
-	Base           string                            `yaml:"base"`
-	Plugs          map[string]map[string]interface{} `yaml:"plugs"`
-	Slots          map[string]map[string]interface{} `yaml:"slots"`
-	RefreshControl []string                          `yaml:"refresh-control"`
+	Name           string         `yaml:"name"`
+	Version        string         `yaml:"version"`
+	Summary        string         `yaml:"summary"`
+	Description    string         `yaml:"description"`
+	Architectures  pq.StringArray `yaml:"architectures"`
+	Confinement    string         `yaml:"confinement"`
+	Grade          string         `yaml:"grade"`
+	Base           string         `yaml:"base"`
+	Plugs          Plugs          `yaml:"plugs"`
+	Slots          Slots          `yaml:"slots"`
+	RefreshControl []string       `yaml:"refresh-control"`
 }
+
+type Plugs map[string]map[string]interface{}
+type Slots map[string]map[string]interface{}
