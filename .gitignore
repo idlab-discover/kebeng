@@ -11,3 +11,4 @@ keys
 config.yaml
 *.cov
 *.snap
+.go-version

@@ -66,16 +66,21 @@ func main() {
 		logrus.Infof("Running in test mode")
 	}
 
-	if cfg.Monitoring {
-		logrus.Infof("Starting metrics endpoint on port 9100")
-		monitoring.CreateMetricsEndpoint()
-	}
-
 	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", cfg.GRPCHost, cfg.GRPCPort))
 	if err != nil {
 		logrus.Fatalf("Failed to listen: %v", err)
 	}
-	grpcServer := grpc.NewServer()
+	var grpcServer *grpc.Server
+	if cfg.Monitoring {
+		logrus.Infof("Starting metrics endpoint on port 9100")
+		monitoring.CreateMetricsEndpoint()
+		grpcServer = grpc.NewServer(
+			grpc.StreamInterceptor(monitoring.StreamingInterceptor),
+		)
+	} else {
+		grpcServer = grpc.NewServer()
+
+	}
 	// register health check service
 	hs := health.NewServer()
 	hs.SetServingStatus("", healthpb.HealthCheckResponse_SERVING)

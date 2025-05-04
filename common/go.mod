@@ -1,13 +1,13 @@
-module common
+module github.com/idlab-discover/kebeng/common
 
 go 1.22.2
 
 require (
 	github.com/gin-gonic/gin v1.10.0
-	github.com/idlab-discover/kebeng v0.0.0-20250429090747-361d0217ad24
 	github.com/lib/pq v1.10.9
 	github.com/prometheus/client_golang v1.22.0
 	github.com/snapcore/snapd v0.0.0-20250429095531-40da7e0e1234
+	google.golang.org/grpc v1.71.1
 	google.golang.org/protobuf v1.36.6
 )
 
@@ -43,6 +43,7 @@ require (
 	golang.org/x/net v0.35.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
 	golang.org/x/text v0.22.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250218202821-56aae31c358a // indirect
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

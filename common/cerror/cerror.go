@@ -7,9 +7,10 @@ import (
 	"fmt"
 	"net/http"
 
+	"slices"
+
 	cerrorpb "github.com/idlab-discover/kebeng/common/cerror/proto"
 	"github.com/lib/pq"
-	"slices"
 )
 
 const (

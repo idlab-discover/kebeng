@@ -8,6 +8,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"google.golang.org/grpc"
 )
 
 var (
@@ -39,10 +40,18 @@ var (
 			return float64(m.HeapAlloc)
 		},
 	)
+
+	StreamDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Namespace: "kebeng",
+		Subsystem: "store",
+		Name:      "grpc_stream_duration_seconds",
+		Help:      "Time taken for each gRPC streaming RPC",
+		Buckets:   prometheus.DefBuckets,
+	}, []string{"method"})
 )
 
 func init() {
-	prometheus.MustRegister(requestDuration, requestCount)
+	prometheus.MustRegister(requestDuration, requestCount, StreamDuration)
 	// goHeapAlloc is already registered via promauto
 }
 
@@ -58,4 +67,12 @@ func StartTimer(handler string) func() {
 			Observe(float64(time.Since(start).Seconds()))
 		requestCount.WithLabelValues(handler).Inc()
 	}
+}
+
+func StreamingInterceptor(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+	start := time.Now()
+	err := handler(srv, ss)
+	StreamDuration.WithLabelValues(info.FullMethod).
+		Observe(time.Since(start).Seconds())
+	return err
 }

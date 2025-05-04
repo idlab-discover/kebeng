@@ -3,14 +3,15 @@ module github.com/idlab-discover/kebeng/services/store
 go 1.22.2
 
 require (
-	github.com/idlab-discover/kebeng v0.0.0-20250427131232-98fd21e0a2e6
+	github.com/idlab-discover/kebeng/common v0.0.0-20250503145811-6ba9e72c2a85
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/lib/pq v1.10.9
 	github.com/mattn/go-sqlite3 v1.14.22
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/crypto v0.33.0
-	google.golang.org/protobuf v1.36.5
+	google.golang.org/grpc v1.71.1
+	google.golang.org/protobuf v1.36.6
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -72,7 +73,7 @@ require (
 	golang.org/x/exp v0.0.0-20240416160154-fe59bbe5cc7f // indirect
 	golang.org/x/net v0.35.0 // indirect
 	golang.org/x/text v0.22.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250218202821-56aae31c358a // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 )
 
@@ -83,5 +84,4 @@ require (
 	github.com/minio/minio-go/v7 v7.0.87
 	github.com/spf13/viper v1.19.0
 	golang.org/x/sys v0.30.0 // indirect
-	google.golang.org/grpc v1.71.0
 )
