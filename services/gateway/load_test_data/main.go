@@ -15,6 +15,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/idlab-discover/kebeng/common/cerror"
 	acmodel "github.com/idlab-discover/kebeng/services/assertion/client/model"
+	storeModel "github.com/idlab-discover/kebeng/services/store/client/model"
 	"github.com/sirupsen/logrus"
 	"github.com/snapcore/snapd/asserts"
 )
@@ -235,16 +236,16 @@ func (h *testHandler) loadInStoreDataInDB(ctx context.Context, storeTestData *Te
 
 		// to get SHA3_384_encoded of uploaded file
 		metadata := h.StoreClient.GetObjectCustomMetadata("unscanned", uploadResp.GetTempFileName())
-		if len(metadata.Errors) > 0 {
+		if metadata.Errors != nil {
 			return fmt.Errorf("failed to get object metadata: %v", metadata.Errors)
 		}
 
 		// creates revision
-		revisionResp := h.StoreClient.AddRevision(entry.Name, metadata.GetSha3_384Encoded(), uint64(fileInfo.Size()), []string{"amd64"}, []string{"latest/stable"}, uploadResp.GetTempFileName())
+		revisionResp := h.StoreClient.AddRevision(entry.Name, metadata.Sha3_384Encoded, uint64(fileInfo.Size()), []string{"amd64"}, []string{"latest/stable"}, uploadResp.GetTempFileName())
 		if len(revisionResp.Errors) > 0 {
 			return fmt.Errorf("failed to add revision: %v", revisionResp.Errors)
 		}
-		revisionAssertionRespo := h.AssertionClient.AddSnapRevisionAssertion(metadata.GetSha3_384Encoded(), accID.String(), snapEntryId.String(), uint32(revisionResp.Revision), uint64(fileInfo.Size()))
+		revisionAssertionRespo := h.AssertionClient.AddSnapRevisionAssertion(metadata.Sha3_384Encoded, accID.String(), snapEntryId.String(), uint32(revisionResp.Revision), uint64(fileInfo.Size()))
 		if len(revisionAssertionRespo.Errors) > 0 {
 			return fmt.Errorf("failed to add revision assertion: %v", revisionAssertionRespo.Errors)
 		}
@@ -252,7 +253,7 @@ func (h *testHandler) loadInStoreDataInDB(ctx context.Context, storeTestData *Te
 			Name:   "snap",
 			Target: "alias_snap",
 		}}
-		plugs := acmodel.Plugs{
+		plugs := storeModel.Plugs{
 			"camera": {
 				"AllowInstallation": boolptr(true),
 			},
@@ -263,7 +264,7 @@ func (h *testHandler) loadInStoreDataInDB(ctx context.Context, storeTestData *Te
 				"AllowInstallation": boolptr(true),
 			},
 		}
-		slots := acmodel.Slots{
+		slots := storeModel.Slots{
 			"camera": {
 				"AllowInstallation": boolptr(true),
 			},
