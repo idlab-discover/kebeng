@@ -392,19 +392,20 @@ func (c *StoreClient) GetObjectCustomMetadata(bucket string, objectKey string) *
 		el.AddCustomError(cerr)
 	}
 	metadata := &model.Metadata{
-		Name:           resp.Name,
-		Version:        resp.Version,
-		Type:           resp.Type,
-		Summary:        resp.Summary,
-		Description:    resp.Description,
-		Confinement:    resp.Confinement,
-		Base:           resp.Base,
-		Grade:          resp.Grade,
-		Architectures:  resp.Architectures,
-		Plugs:          plugs,
-		Slots:          slots,
-		RefreshControl: resp.RefreshControl,
-		Errors:         el,
+		Sha3_384Encoded: resp.Sha3_384Encoded,
+		Name:            resp.Name,
+		Version:         resp.Version,
+		Type:            resp.Type,
+		Summary:         resp.Summary,
+		Description:     resp.Description,
+		Confinement:     resp.Confinement,
+		Base:            resp.Base,
+		Grade:           resp.Grade,
+		Architectures:   resp.Architectures,
+		Plugs:           plugs,
+		Slots:           slots,
+		RefreshControl:  resp.RefreshControl,
+		Errors:          el,
 	}
 
 	return metadata
