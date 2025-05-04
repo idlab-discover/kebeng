@@ -11,6 +11,7 @@ service AssertionService {
     rpc AddAccountKeyAssertion(AddAccountKeyAssertionRequest) returns (AccountKeyAssertionResponse);
     rpc AddSnapDeclarationAssertion(AddSnapDeclarationAssertionRequest) returns (SnapDeclarationAssertionResponse);
     rpc AddAccountAssertion(AddAccountAssertionRequest) returns (AccountAssertionResponse);
+    rpc AddSnapBuildAssertion(AddSnapBuildAssertionRequest) returns (SnapBuildAssertionResponse);
     rpc GetSnapRevisionAssertionBySHA3_384(GetSnapRevisionAssertionBySHA3_384Request) returns (SnapRevisionAssertionResponse);
     rpc GetAccountKeyAssertionByPublicKeySha(GetAccountKeyAssertionByPublicKeyShaRequest) returns (AccountKeyAssertionResponse);
     rpc GetSnapDeclarationAssertionBySnapID(GetSnapDeclarationAssertionBySnapIDRequest) returns (SnapDeclarationAssertionResponse);
@@ -129,6 +130,7 @@ message SlotRule {
   optional bool deny_auto_connection  = 6;
 }
 
+
 message Alias {
   string name = 1;
   string target = 2;
@@ -167,3 +169,26 @@ message GetAccountAssertionByAccountIDRequest {
   string account_id = 1;
 }
 
+message AddSnapBuildAssertionRequest {
+  string sha3_384_encoded = 1;
+  string grade = 2;
+  string sign_key_sha3_384_encoded = 3;
+  string developer_id = 4;
+  string snap_entry_id = 5;
+  uint64 snap_size = 6;
+}
+
+message SnapBuildAssertionResponse {
+  string authority_id = 1;
+  string sha3_384_encoded = 2;
+  string grade = 3;
+  string sign_key_sha3_384_encoded = 4;
+  string developer_id = 5;
+  string snap_entry_id = 6;
+  uint64 snap_size = 7;
+  google.protobuf.Timestamp timestamp = 8;
+  string signature = 9;
+  string type = 10;
+  string id = 11;
+  repeated proto.Error errors = 12;
+}

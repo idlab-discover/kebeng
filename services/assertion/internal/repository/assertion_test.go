@@ -914,7 +914,7 @@ func TestAddSnapBuildAssertion(t *testing.T) {
 	}{
 		{
 			name:         "Successful SnapBuild Assertion Insertion",
-			authorityID:  "canonical",
+			authorityID:  "kebeng-id",
 			signKey:      "sign-key-123",
 			snapID:       uuid.New(),
 			accountID:    uuid.New(),
@@ -927,11 +927,25 @@ func TestAddSnapBuildAssertion(t *testing.T) {
 		},
 		{
 			name:          "Fail Insertion on Missing Grade",
-			authorityID:   "canonical",
+			authorityID:   "kebeng-id",
 			signKey:       "sign-key-123",
 			snapID:        uuid.New(),
 			accountID:     uuid.New(),
 			grade:         "", // Missing grade to trigger error
+			snapSHA3_384:  "test-snap-sha3-384",
+			snapSize:      1234567,
+			signature:     "AcLBtest-signature-data",
+			timestamp:     time.Now().UTC(),
+			expectError:   true,
+			expectedError: cerror.InvalidField,
+		},
+		{
+			name:          "Fail Insertion on Invalid Grade",
+			authorityID:   "kebeng-id",
+			signKey:       "sign-key-123",
+			snapID:        uuid.New(),
+			accountID:     uuid.New(),
+			grade:         "invalid-grade", // Invalid grade to trigger error
 			snapSHA3_384:  "test-snap-sha3-384",
 			snapSize:      1234567,
 			signature:     "AcLBtest-signature-data",
