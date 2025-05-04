@@ -3,6 +3,7 @@ package client
 import (
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/idlab-discover/kebeng/services/assertion/client/model"
 	proto "github.com/idlab-discover/kebeng/services/assertion/proto"
 
@@ -88,6 +89,14 @@ func (m *MockAssertionClient) GetSnapDeclarationAssertionBySnapID(snapId string)
 func (m *MockAssertionClient) GetAccountAssertionByAccountID(accountId string) *proto.AccountAssertionResponse {
 	args := m.Called(accountId)
 	if resp, ok := args.Get(0).(*proto.AccountAssertionResponse); ok {
+		return resp
+	}
+	return nil
+}
+
+func (m *MockAssertionClient) AddSnapBuildAssertion(sha3_384Encoded, grade, signKeySha3_384Encoded string, developerId, snapEntryId uuid.UUID, size uint64) *proto.SnapBuildAssertionResponse {
+	args := m.Called(sha3_384Encoded, grade, signKeySha3_384Encoded, developerId, snapEntryId, size)
+	if resp, ok := args.Get(0).(*proto.SnapBuildAssertionResponse); ok {
 		return resp
 	}
 	return nil
