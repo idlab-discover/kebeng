@@ -478,9 +478,6 @@ func (s *AssertionService) AddAccountAssertion(ctx context.Context, req *proto.A
 	}, nil
 }
 
-// func (s *AssertionService) AddSnapBuildAssertion(ctx context.Context, req *proto.AddSnapBuildAssertionRequest) (*proto.SnapBuildAssertionResponse, error) {
-// }
-
 // ################### GETTERS #####################
 
 func (s *AssertionService) GetSnapRevisionAssertionBySHA3_384(ctx context.Context, req *proto.GetSnapRevisionAssertionBySHA3_384Request) (*proto.SnapRevisionAssertionResponse, error) {
