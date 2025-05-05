@@ -940,7 +940,7 @@ func TestAddSnapBuildAssertion(t *testing.T) {
 			resp, err := svc.AddSnapBuildAssertion(context.Background(), tc.req)
 
 			if tc.expectError {
-				assert.NoError(t, err, tc.name)                
+				assert.NoError(t, err, tc.name)
 				assert.NotNil(t, resp, tc.name)
 				assert.NotEmpty(t, resp.Errors, tc.name)
 			} else {
@@ -974,4 +974,3 @@ func TestAddSnapBuildAssertion(t *testing.T) {
 		})
 	}
 }
-

@@ -353,7 +353,7 @@ func (s *AssertionService) AddSnapBuildAssertion(ctx context.Context, req *proto
 		"snap-sha3-384":     req.GetSha3_384Encoded(),
 		"grade":             req.GetGrade(),
 		"timestamp":         timestamp,
-		"sign-key-sha3-384": s.cfg.RootKey.PublicKey().ID(),
+		"sign-key-sha3-384": req.GetSignKeySha3_384Encoded(),
 	}
 	signedAssertion, err := s.assertionDB.Sign(asserts.SnapBuildType, headers, nil, s.cfg.RootKey.PublicKey().ID())
 	if err != nil {
