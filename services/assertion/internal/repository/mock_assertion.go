@@ -130,3 +130,12 @@ func (m *MockAssertionRepository) GetLatestAccountAssertionByAccountID(el *cerro
 	el.AddCustomError(args.Get(1).(*cerror.CustomError))
 	return nil, args.Get(1).(*cerror.CustomError)
 }
+
+func (m *MockAssertionRepository) AddSnapBuildAssertion(el *cerror.ErrorList, authority_id, sign_key_SHA3_384 string, snap_id, account_id uuid.UUID, grade string, snap_sha3_384 string, snap_size uint64, signature string, timestamp time.Time) (*model.SnapBuildAssertion, *cerror.CustomError) {
+	args := m.Called(el, authority_id, sign_key_SHA3_384, snap_id, account_id, grade, snap_sha3_384, snap_size, signature, timestamp)
+	if args.Get(0) != nil {
+		return args.Get(0).(*model.SnapBuildAssertion), nil
+	}
+	el.AddCustomError(args.Get(1).(*cerror.CustomError))
+	return nil, args.Get(1).(*cerror.CustomError)
+}

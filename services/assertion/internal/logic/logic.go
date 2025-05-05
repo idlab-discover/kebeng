@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/idlab-discover/kebeng/services/assertion/internal/config"
@@ -15,7 +14,6 @@ import (
 
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
-	cerrorpb "github.com/idlab-discover/kebeng/common/cerror/proto"
 	"github.com/sirupsen/logrus"
 	"github.com/snapcore/snapd/asserts"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -315,6 +313,94 @@ func (s *AssertionService) AddSnapDeclarationAssertion(ctx context.Context, req 
 	}, nil
 }
 
+func (s *AssertionService) AddSnapBuildAssertion(ctx context.Context, req *proto.AddSnapBuildAssertionRequest) (*proto.SnapBuildAssertionResponse, error) {
+	el := cerror.NewErrorList()
+	parsedSnapId, err := uuid.Parse(req.GetSnapEntryId())
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.Invalid, fmt.Sprintf("failed to parse snap id: %s", err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.SnapBuildAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}, nil
+	}
+	parsedAccountId, err := uuid.Parse(req.GetDeveloperId())
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.Invalid, fmt.Sprintf("failed to parse developer id: %s", err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.SnapBuildAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}, nil
+	}
+
+	timestamp := time.Now().Format(time.RFC3339)
+	parsedTimestamp, err := time.Parse(time.RFC3339, timestamp)
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.Invalid, fmt.Sprintf("failed to parse timestamp: %s", err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.SnapBuildAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}, nil
+	}
+
+	headers := map[string]any{
+		"authority-id":      s.cfg.AuthorityID,
+		"snap-id":           req.GetSnapEntryId(),
+		"developer-id":      req.GetDeveloperId(),
+		"snap-size":         fmt.Sprintf("%d", req.GetSnapSize()),
+		"snap-sha3-384":     req.GetSha3_384Encoded(),
+		"grade":             req.GetGrade(),
+		"timestamp":         timestamp,
+		"sign-key-sha3-384": req.GetSignKeySha3_384Encoded(),
+	}
+	signedAssertion, err := s.assertionDB.Sign(asserts.SnapBuildType, headers, nil, s.cfg.RootKey.PublicKey().ID())
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.Invalid, fmt.Sprintf("failed to sign snap build assertion: %s", err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.SnapBuildAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}, nil
+	}
+	signature := string(asserts.Encode(signedAssertion))
+
+	snapBuildAssertion, cerr := s.repo.AddSnapBuildAssertion(
+		el,
+		s.cfg.AuthorityID,
+		s.cfg.RootKey.PublicKey().ID(), // this is the sign_key_SHA3_384
+		parsedSnapId,
+		parsedAccountId,
+		req.GetGrade(),
+		req.GetSha3_384Encoded(),
+		req.GetSnapSize(),
+		signature,
+		parsedTimestamp,
+	)
+	if cerr != nil {
+		// should have been logged and added to error list in repo function
+		return &proto.SnapBuildAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}, nil
+	}
+	snapBuildAssertion.Type = asserts.SnapBuildType.Name
+	return &proto.SnapBuildAssertionResponse{
+		Id:                     snapBuildAssertion.ID.String(),
+		AuthorityId:            snapBuildAssertion.AuthorityID,
+		SignKeySha3_384Encoded: snapBuildAssertion.SignKeySHA3_384,
+		SnapEntryId:            snapBuildAssertion.SnapEntryID.String(),
+		DeveloperId:            snapBuildAssertion.DeveloperID.String(),
+		SnapSize:               snapBuildAssertion.SnapSize,
+		Sha3_384Encoded:        snapBuildAssertion.SnapSHA3_384,
+		Grade:                  snapBuildAssertion.Grade,
+		Timestamp:              timestamppb.New(snapBuildAssertion.Timestamp),
+		Type:                   snapBuildAssertion.Type,
+		Signature:              snapBuildAssertion.Signature,
+		Errors:                 el.ConvertToProtoErrorList(),
+	}, nil
+}
+
 func (s *AssertionService) AddAccountAssertion(ctx context.Context, req *proto.AddAccountAssertionRequest) (*proto.AccountAssertionResponse, error) {
 	el := cerror.NewErrorList()
 	parsedAccountId, err := uuid.Parse(req.GetAccountId())
@@ -534,138 +620,6 @@ func (s *AssertionService) GetAccountAssertionByAccountID(ctx context.Context, r
 		Revision:        accountAssertion.Revision,
 		Errors:          el.ConvertToProtoErrorList(),
 	}, nil
-}
-
-// ####################### SHOULD BE REMOVED #########################
-// TODO: remove all this and use better structure
-func (s *AssertionService) ProcessSnapBuildAssertion(ctx context.Context, req *proto.SnapBuildAssertionRequest) (*proto.SnapBuildAssertionResponse, error) {
-	errList := make([]*cerrorpb.Error, 0)
-
-	if req.Assertion == nil {
-		errList = append(errList, &cerrorpb.Error{
-			Code:    cerror.MissingField,
-			Message: "Assertion field is required",
-		})
-		return &proto.SnapBuildAssertionResponse{
-			Errors: errList,
-		}, nil
-	}
-
-	assertion := parseAssertion(string(req.Assertion))
-
-	err := validateSnapBuildAssertion(assertion)
-	if err != nil {
-		errList = append(errList, &cerrorpb.Error{
-			Code:    cerror.Invalid,
-			Message: "not a valid snap-build assertion: " + err.Error(),
-		})
-		return &proto.SnapBuildAssertionResponse{
-			Errors: errList,
-		}, nil
-	}
-
-	snapEntryId := assertion["snap-id"]
-	parsedUUID, err := uuid.Parse(snapEntryId)
-	if err != nil {
-		logrus.Errorf("Failed to parse snap-id: %v", err)
-		errList = append(errList, &cerrorpb.Error{
-			Code:    cerror.Invalid,
-			Message: "Invalid snap-id",
-		})
-		return &proto.SnapBuildAssertionResponse{
-			Errors: errList,
-		}, nil
-	}
-
-	_, err2 := s.repo.AddAssertion(parsedUUID, string(req.Assertion))
-	if err2 != nil {
-		logrus.Errorf("Failed to create assertion: %v", err2)
-		errList = append(errList, &cerrorpb.Error{
-			Code:    cerror.AssertionCreationFailed,
-			Message: "Failed to create assertion",
-		})
-		return &proto.SnapBuildAssertionResponse{
-			Errors: errList,
-		}, nil
-	}
-
-	// TODO: add logic to fill in the fields in the response
-	// This info will be present in the assertion object
-	return &proto.SnapBuildAssertionResponse{
-		AuthorityId:     assertion["authority-id"],
-		Grade:           assertion["grade"],
-		SignKeySha3_384: assertion["sign-key-sha3-384"],
-		SnapId:          assertion["snap-id"],
-		SnapSha3_384:    assertion["snap-sha3-384"],
-		SnapSize:        assertion["snap-size"],
-		Timestamp:       assertion["timestamp"],
-		Revision:        assertion["revision"],
-		Type:            assertion["type"],
-		DeveloperId:     assertion["developer-id"],
-		Errors:          errList,
-	}, nil
-}
-
-// TODO: implement this function to check if the assertion is a valid snap-build assertion
-// this is a placeholder for now
-// because currently no idea how to validate this
-func validateSnapBuildAssertion(assertion map[string]string) error {
-	requiredFields := []string{
-		"type",
-		"authority-id",
-		"snap-sha3-384",
-		"developer-id",
-		"grade",
-		"snap-id",
-		"snap-size",
-		"timestamp",
-		"revision",
-		"sign-key-sha3-384",
-	}
-
-	for _, field := range requiredFields {
-		if _, ok := assertion[field]; !ok {
-			return fmt.Errorf("missing required field: %s", field)
-		}
-	}
-
-	if assertion["type"] != "snap-build" {
-		return fmt.Errorf("invalid type: %s", assertion["type"])
-	}
-
-	return nil
-}
-
-// parseAssertion parses a string containing key-value pairs separated by colons
-// and returns a map where the keys are the parsed keys and the values are the
-// parsed values. Each key-value pair should be on a new line.
-//
-// The function ignores empty lines and lines that start with "AcLB".
-//
-// Parameters:
-//   - data: A string containing the key-value pairs to be parsed.
-//
-// Returns:
-//
-//	A map[string]string where the keys are the parsed keys and the values are
-//	the parsed values.
-func parseAssertion(data string) map[string]string {
-	lines := strings.Split(data, "\n")
-	result := make(map[string]string)
-
-	for _, line := range lines {
-		// Ignore empty lines and signature block
-		if line == "" || strings.HasPrefix(line, "AcLB") {
-			continue
-		}
-		parts := strings.SplitN(line, ":", 2)
-		if len(parts) == 2 {
-			key := strings.TrimSpace(parts[0])
-			value := strings.TrimSpace(parts[1])
-			result[key] = value
-		}
-	}
-	return result
 }
 
 // ############### HELPER FUNCTIONS #################

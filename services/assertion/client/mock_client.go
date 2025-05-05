@@ -3,6 +3,7 @@ package client
 import (
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/idlab-discover/kebeng/services/assertion/client/model"
 	proto "github.com/idlab-discover/kebeng/services/assertion/proto"
 	storeModel "github.com/idlab-discover/kebeng/services/store/client/model"
@@ -20,15 +21,6 @@ var _ AssertionClientInterface = (*MockAssertionClient)(nil)
 // Close mocks the Close function.
 func (m *MockAssertionClient) Close() {
 	m.Called()
-}
-
-// ProcessSnapBuildAssertion mocks the ProcessSnapBuildAssertion function.
-func (m *MockAssertionClient) ProcessSnapBuildAssertion(assertion []byte) *proto.SnapBuildAssertionResponse {
-	args := m.Called(assertion)
-	if resp, ok := args.Get(0).(*proto.SnapBuildAssertionResponse); ok {
-		return resp
-	}
-	return nil
 }
 
 func (m *MockAssertionClient) AddAccountKeyAssertion(encoded_public_key, publicKeySha3_384Encoded string, accountId string, name string, since time.Time, until time.Time) *proto.AccountKeyAssertionResponse {
@@ -98,6 +90,14 @@ func (m *MockAssertionClient) GetSnapDeclarationAssertionBySnapID(snapId string)
 func (m *MockAssertionClient) GetAccountAssertionByAccountID(accountId string) *proto.AccountAssertionResponse {
 	args := m.Called(accountId)
 	if resp, ok := args.Get(0).(*proto.AccountAssertionResponse); ok {
+		return resp
+	}
+	return nil
+}
+
+func (m *MockAssertionClient) AddSnapBuildAssertion(sha3_384Encoded, grade, signKeySha3_384Encoded string, developerId, snapEntryId uuid.UUID, size uint64) *proto.SnapBuildAssertionResponse {
+	args := m.Called(sha3_384Encoded, grade, signKeySha3_384Encoded, developerId, snapEntryId, size)
+	if resp, ok := args.Get(0).(*proto.SnapBuildAssertionResponse); ok {
 		return resp
 	}
 	return nil

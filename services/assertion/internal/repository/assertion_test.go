@@ -896,3 +896,94 @@ func TestGetLatestAccountAssertionByAccountID(t *testing.T) {
 		})
 	}
 }
+
+func TestAddSnapBuildAssertion(t *testing.T) {
+	tests := []struct {
+		name          string
+		authorityID   string
+		signKey       string
+		snapID        uuid.UUID
+		accountID     uuid.UUID
+		grade         string
+		snapSHA3_384  string
+		snapSize      uint64
+		signature     string
+		timestamp     time.Time
+		expectError   bool
+		expectedError string // expected error code (if any)
+	}{
+		{
+			name:         "Successful SnapBuild Assertion Insertion",
+			authorityID:  "kebeng-id",
+			signKey:      "sign-key-123",
+			snapID:       uuid.New(),
+			accountID:    uuid.New(),
+			grade:        "stable",
+			snapSHA3_384: "test-snap-sha3-384",
+			snapSize:     1234567,
+			signature:    "AcLBtest-signature-data",
+			timestamp:    time.Now().UTC(),
+			expectError:  false,
+		},
+		{
+			name:          "Fail Insertion on Missing Grade",
+			authorityID:   "kebeng-id",
+			signKey:       "sign-key-123",
+			snapID:        uuid.New(),
+			accountID:     uuid.New(),
+			grade:         "", // Missing grade to trigger error
+			snapSHA3_384:  "test-snap-sha3-384",
+			snapSize:      1234567,
+			signature:     "AcLBtest-signature-data",
+			timestamp:     time.Now().UTC(),
+			expectError:   true,
+			expectedError: cerror.InvalidField,
+		},
+		{
+			name:          "Fail Insertion on Invalid Grade",
+			authorityID:   "kebeng-id",
+			signKey:       "sign-key-123",
+			snapID:        uuid.New(),
+			accountID:     uuid.New(),
+			grade:         "invalid-grade", // Invalid grade to trigger error
+			snapSHA3_384:  "test-snap-sha3-384",
+			snapSize:      1234567,
+			signature:     "AcLBtest-signature-data",
+			timestamp:     time.Now().UTC(),
+			expectError:   true,
+			expectedError: cerror.InvalidField,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			el := cerror.NewErrorList()
+			record, cerr := globalRepo.AddSnapBuildAssertion(
+				el,
+				tt.authorityID,
+				tt.signKey,
+				tt.snapID,
+				tt.accountID,
+				tt.grade,
+				tt.snapSHA3_384,
+				tt.snapSize,
+				tt.signature,
+				tt.timestamp,
+			)
+
+			if tt.expectError {
+				assert.NotNil(t, cerr, "Expected an error during insertion")
+				assert.True(t, el.HasError(), "Expected an error in the list")
+				if cerr != nil {
+					assert.Equal(t, tt.expectedError, cerr.GetCode(), "Error code should match expected")
+				}
+				assert.Nil(t, record, "No record should be returned on error")
+			} else {
+				assert.Nil(t, cerr, "Did not expect an error during insertion")
+				assert.False(t, el.HasError(), "Expected no errors in the list")
+				assert.NotNil(t, record, "Expected a non-nil assertion record")
+				assert.NotEqual(t, uuid.Nil, record.ID, "Expected a valid UUID for the record ID")
+			}
+		})
+	}
+}

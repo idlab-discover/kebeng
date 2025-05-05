@@ -19,6 +19,7 @@ type IAssertionRepository interface {
 	AddAccountKeyAssertion(el *cerror.ErrorList, authority_id, public_key_SHA3_384, sign_key_SHA3_384, name string, revision uint32, account_id uuid.UUID, since time.Time, until time.Time, body []byte, body_length uint64, signature string) (*model.AccountKeyAssertion, *cerror.CustomError)
 	AddSnapRevisionAssertion(el *cerror.ErrorList, authority_id, snap_sha3_384, sign_key_SHA3_384 string, developer_id, snap_entry_id uuid.UUID, snap_revision_sequence_number uint32, snap_size uint64, timestamp time.Time, signature string) (*model.SnapRevisionAssertion, *cerror.CustomError)
 	AddSnapDeclarationAssertion(el *cerror.ErrorList, authorityID, sign_key_SHA3_384, snapID, snapName, publisherID string, revision uint32, series string, timestamp time.Time, refreshControl []string, aliases []model.Alias, plugs model.Plugs, slots model.Slots, signature string) (*model.SnapDeclarationAssertion, *cerror.CustomError)
+	AddSnapBuildAssertion(el *cerror.ErrorList, authority_id, sign_key_SHA3_384 string, snap_id, account_id uuid.UUID, grade string, snap_sha3_384 string, snap_size uint64, signature string, timestamp time.Time) (*model.SnapBuildAssertion, *cerror.CustomError)
 	AddAccountAssertion(el *cerror.ErrorList, authority_id, displayName, username, validation string, accountID uuid.UUID, revision uint32, timestamp time.Time, sign_key_SHA3_384, signature string) (*model.AccountAssertion, *cerror.CustomError)
 
 	GetAccountKeyAssertionByPublicKeySha(el *cerror.ErrorList, public_key_SHA3_384 string) (*model.AccountKeyAssertion, *cerror.CustomError)
@@ -176,6 +177,24 @@ func (r *AssertionRepository) AddSnapDeclarationAssertion(el *cerror.ErrorList, 
 	parent.Slots = slots
 
 	return parent, nil
+}
+
+func (r *AssertionRepository) AddSnapBuildAssertion(el *cerror.ErrorList, authority_id, sign_key_SHA3_384 string, snap_id, account_id uuid.UUID, grade string, snap_sha3_384 string, snap_size uint64, signature string, timestamp time.Time) (*model.SnapBuildAssertion, *cerror.CustomError) {
+	query := `
+		INSERT INTO snap_build_assertion (authority_id, sign_key_SHA3_384, snap_id, account_id, grade, snap_sha3_384, snap_size, signature, timestamp) 
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
+		RETURNING id
+	`
+	assertion := &model.SnapBuildAssertion{}
+	err := r.db.Get(assertion, query, authority_id, sign_key_SHA3_384, snap_id, account_id, grade, snap_sha3_384, snap_size, signature, timestamp)
+	if err != nil {
+		cerr := cerror.ConvertError(err, fmt.Sprintf("failed to save snap build assertion in database: %v", err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return nil, cerr
+	}
+
+	return assertion, nil
 }
 
 func (r *AssertionRepository) AddAccountAssertion(el *cerror.ErrorList, authority_id, displayName, username, validation string, accountID uuid.UUID, revision uint32, timestamp time.Time, sign_key_SHA3_384, signature string) (*model.AccountAssertion, *cerror.CustomError) {

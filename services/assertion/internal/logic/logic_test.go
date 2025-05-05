@@ -806,3 +806,171 @@ func TestAddAccountAssertion(t *testing.T) {
 		})
 	}
 }
+
+func TestAddSnapBuildAssertion(t *testing.T) {
+	rootKey, err := asserts.GenerateKey()
+	assert.NoError(t, err)
+
+	assertionDB, err := asserts.OpenDatabase(&asserts.DatabaseConfig{})
+	assert.NoError(t, err)
+	assert.NoError(t, assertionDB.ImportKey(rootKey))
+
+	cfg := &config.Config{
+		AuthorityID: "kebeng",
+		RootKey:     rootKey,
+	}
+
+	mockRepo := new(repository.MockAssertionRepository)
+	svc := &AssertionService{
+		cfg:         cfg,
+		assertionDB: assertionDB,
+		repo:        mockRepo,
+	}
+
+	now := time.Now().UTC()
+	validSnapID := uuid.New()
+	validDeveloperID := uuid.New()
+
+	snapKey, err := asserts.GenerateKey()
+	assert.NoError(t, err)
+	validHash := snapKey.PublicKey().ID()
+
+	goldenModel := &model.SnapBuildAssertion{
+		ID:              uuid.New(),
+		AuthorityID:     cfg.AuthorityID,
+		SignKeySHA3_384: rootKey.PublicKey().ID(),
+		SnapEntryID:     validSnapID,
+		DeveloperID:     validDeveloperID,
+		Grade:           "stable",
+		SnapSHA3_384:    validHash,
+		SnapSize:        1234567,
+		Timestamp:       now,
+		Type:            asserts.SnapBuildType.Name,
+		Signature:       "signature-bytes",
+	}
+
+	tests := []struct {
+		name             string
+		req              *proto.AddSnapBuildAssertionRequest
+		mockReturn       any
+		expectError      bool
+		expectProtoError bool
+		expectProtoCode  string
+	}{
+		{
+			name: "happy path",
+			req: &proto.AddSnapBuildAssertionRequest{
+				SnapEntryId:     validSnapID.String(),
+				DeveloperId:     validDeveloperID.String(),
+				Grade:           "stable",
+				Sha3_384Encoded: validHash,
+				SnapSize:        1234567,
+			},
+			mockReturn: goldenModel,
+		},
+		{
+			name: "invalid snap ID",
+			req: &proto.AddSnapBuildAssertionRequest{
+				SnapEntryId:     "not-a-uuid",
+				DeveloperId:     validDeveloperID.String(),
+				Grade:           "stable",
+				Sha3_384Encoded: validHash,
+				SnapSize:        1234567,
+			},
+			mockReturn:       nil,
+			expectProtoError: true,
+			expectProtoCode:  cerror.Invalid,
+		},
+		{
+			name: "repo error",
+			req: &proto.AddSnapBuildAssertionRequest{
+				SnapEntryId:     validSnapID.String(),
+				DeveloperId:     validDeveloperID.String(),
+				Grade:           "stable",
+				Sha3_384Encoded: validHash,
+				SnapSize:        1234567,
+			},
+			mockReturn:  cerror.NewCustomError(cerror.DatabaseError, "insert failed"),
+			expectError: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockRepo.ExpectedCalls = nil // reset expectations
+
+			// skip mocking if invalid input
+			if tc.name != "invalid snap ID" {
+				switch v := tc.mockReturn.(type) {
+				case *model.SnapBuildAssertion:
+					mockRepo.
+						On("AddSnapBuildAssertion",
+							mock.AnythingOfType("*cerror.ErrorList"),
+							cfg.AuthorityID,
+							rootKey.PublicKey().ID(),
+							mock.MatchedBy(func(uuid.UUID) bool { return true }), // snap_id
+							mock.MatchedBy(func(uuid.UUID) bool { return true }), // account_id
+							tc.req.GetGrade(),
+							tc.req.GetSha3_384Encoded(),
+							tc.req.GetSnapSize(),
+							mock.AnythingOfType("string"), // signature
+							mock.AnythingOfType("time.Time"),
+						).
+						Return(v, nil).
+						Once()
+				case *cerror.CustomError:
+					mockRepo.
+						On("AddSnapBuildAssertion",
+							mock.AnythingOfType("*cerror.ErrorList"),
+							mock.AnythingOfType("string"),
+							mock.AnythingOfType("string"),
+							mock.Anything,
+							mock.Anything,
+							mock.AnythingOfType("string"),
+							mock.AnythingOfType("string"),
+							mock.AnythingOfType("uint64"),
+							mock.AnythingOfType("string"),
+							mock.AnythingOfType("time.Time"),
+						).
+						Return(nil, v).
+						Once()
+				}
+			}
+
+			resp, err := svc.AddSnapBuildAssertion(context.Background(), tc.req)
+
+			if tc.expectError {
+				assert.NoError(t, err, tc.name)
+				assert.NotNil(t, resp, tc.name)
+				assert.NotEmpty(t, resp.Errors, tc.name)
+			} else {
+				assert.NoError(t, err, tc.name)
+				assert.NotNil(t, resp, tc.name)
+
+				if tc.expectProtoError {
+					assert.NotEmpty(t, resp.Errors, tc.name)
+					found := false
+					for _, e := range resp.Errors {
+						if e.Code == tc.expectProtoCode {
+							found = true
+							break
+						}
+					}
+					assert.True(t, found, "expected error code %q", tc.expectProtoCode)
+				} else {
+					assert.Empty(t, resp.Errors, tc.name)
+					assert.Equal(t, goldenModel.ID.String(), resp.Id)
+					assert.Equal(t, goldenModel.SignKeySHA3_384, resp.SignKeySha3_384Encoded)
+					assert.Equal(t, validSnapID.String(), resp.SnapEntryId)
+					assert.Equal(t, validDeveloperID.String(), resp.DeveloperId)
+					assert.Equal(t, goldenModel.Grade, resp.Grade)
+					assert.Equal(t, goldenModel.SnapSHA3_384, resp.Sha3_384Encoded)
+					assert.Equal(t, goldenModel.SnapSize, resp.SnapSize)
+					assert.NotEmpty(t, resp.Signature)
+				}
+			}
+
+			mockRepo.AssertExpectations(t)
+		})
+	}
+}

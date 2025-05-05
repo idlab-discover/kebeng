@@ -18,11 +18,11 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AssertionServiceClient interface {
-	ProcessSnapBuildAssertion(ctx context.Context, in *SnapBuildAssertionRequest, opts ...grpc.CallOption) (*SnapBuildAssertionResponse, error)
 	AddSnapRevisionAssertion(ctx context.Context, in *AddSnapRevisionAssertionRequest, opts ...grpc.CallOption) (*SnapRevisionAssertionResponse, error)
 	AddAccountKeyAssertion(ctx context.Context, in *AddAccountKeyAssertionRequest, opts ...grpc.CallOption) (*AccountKeyAssertionResponse, error)
 	AddSnapDeclarationAssertion(ctx context.Context, in *AddSnapDeclarationAssertionRequest, opts ...grpc.CallOption) (*SnapDeclarationAssertionResponse, error)
 	AddAccountAssertion(ctx context.Context, in *AddAccountAssertionRequest, opts ...grpc.CallOption) (*AccountAssertionResponse, error)
+	AddSnapBuildAssertion(ctx context.Context, in *AddSnapBuildAssertionRequest, opts ...grpc.CallOption) (*SnapBuildAssertionResponse, error)
 	GetSnapRevisionAssertionBySHA3_384(ctx context.Context, in *GetSnapRevisionAssertionBySHA3_384Request, opts ...grpc.CallOption) (*SnapRevisionAssertionResponse, error)
 	GetAccountKeyAssertionByPublicKeySha(ctx context.Context, in *GetAccountKeyAssertionByPublicKeyShaRequest, opts ...grpc.CallOption) (*AccountKeyAssertionResponse, error)
 	GetSnapDeclarationAssertionBySnapID(ctx context.Context, in *GetSnapDeclarationAssertionBySnapIDRequest, opts ...grpc.CallOption) (*SnapDeclarationAssertionResponse, error)
@@ -35,15 +35,6 @@ type assertionServiceClient struct {
 
 func NewAssertionServiceClient(cc grpc.ClientConnInterface) AssertionServiceClient {
 	return &assertionServiceClient{cc}
-}
-
-func (c *assertionServiceClient) ProcessSnapBuildAssertion(ctx context.Context, in *SnapBuildAssertionRequest, opts ...grpc.CallOption) (*SnapBuildAssertionResponse, error) {
-	out := new(SnapBuildAssertionResponse)
-	err := c.cc.Invoke(ctx, "/assertion.AssertionService/ProcessSnapBuildAssertion", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *assertionServiceClient) AddSnapRevisionAssertion(ctx context.Context, in *AddSnapRevisionAssertionRequest, opts ...grpc.CallOption) (*SnapRevisionAssertionResponse, error) {
@@ -76,6 +67,15 @@ func (c *assertionServiceClient) AddSnapDeclarationAssertion(ctx context.Context
 func (c *assertionServiceClient) AddAccountAssertion(ctx context.Context, in *AddAccountAssertionRequest, opts ...grpc.CallOption) (*AccountAssertionResponse, error) {
 	out := new(AccountAssertionResponse)
 	err := c.cc.Invoke(ctx, "/assertion.AssertionService/AddAccountAssertion", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *assertionServiceClient) AddSnapBuildAssertion(ctx context.Context, in *AddSnapBuildAssertionRequest, opts ...grpc.CallOption) (*SnapBuildAssertionResponse, error) {
+	out := new(SnapBuildAssertionResponse)
+	err := c.cc.Invoke(ctx, "/assertion.AssertionService/AddSnapBuildAssertion", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -122,11 +122,11 @@ func (c *assertionServiceClient) GetAccountAssertionByAccountID(ctx context.Cont
 // All implementations must embed UnimplementedAssertionServiceServer
 // for forward compatibility
 type AssertionServiceServer interface {
-	ProcessSnapBuildAssertion(context.Context, *SnapBuildAssertionRequest) (*SnapBuildAssertionResponse, error)
 	AddSnapRevisionAssertion(context.Context, *AddSnapRevisionAssertionRequest) (*SnapRevisionAssertionResponse, error)
 	AddAccountKeyAssertion(context.Context, *AddAccountKeyAssertionRequest) (*AccountKeyAssertionResponse, error)
 	AddSnapDeclarationAssertion(context.Context, *AddSnapDeclarationAssertionRequest) (*SnapDeclarationAssertionResponse, error)
 	AddAccountAssertion(context.Context, *AddAccountAssertionRequest) (*AccountAssertionResponse, error)
+	AddSnapBuildAssertion(context.Context, *AddSnapBuildAssertionRequest) (*SnapBuildAssertionResponse, error)
 	GetSnapRevisionAssertionBySHA3_384(context.Context, *GetSnapRevisionAssertionBySHA3_384Request) (*SnapRevisionAssertionResponse, error)
 	GetAccountKeyAssertionByPublicKeySha(context.Context, *GetAccountKeyAssertionByPublicKeyShaRequest) (*AccountKeyAssertionResponse, error)
 	GetSnapDeclarationAssertionBySnapID(context.Context, *GetSnapDeclarationAssertionBySnapIDRequest) (*SnapDeclarationAssertionResponse, error)
@@ -138,9 +138,6 @@ type AssertionServiceServer interface {
 type UnimplementedAssertionServiceServer struct {
 }
 
-func (UnimplementedAssertionServiceServer) ProcessSnapBuildAssertion(context.Context, *SnapBuildAssertionRequest) (*SnapBuildAssertionResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ProcessSnapBuildAssertion not implemented")
-}
 func (UnimplementedAssertionServiceServer) AddSnapRevisionAssertion(context.Context, *AddSnapRevisionAssertionRequest) (*SnapRevisionAssertionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddSnapRevisionAssertion not implemented")
 }
@@ -152,6 +149,9 @@ func (UnimplementedAssertionServiceServer) AddSnapDeclarationAssertion(context.C
 }
 func (UnimplementedAssertionServiceServer) AddAccountAssertion(context.Context, *AddAccountAssertionRequest) (*AccountAssertionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddAccountAssertion not implemented")
+}
+func (UnimplementedAssertionServiceServer) AddSnapBuildAssertion(context.Context, *AddSnapBuildAssertionRequest) (*SnapBuildAssertionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddSnapBuildAssertion not implemented")
 }
 func (UnimplementedAssertionServiceServer) GetSnapRevisionAssertionBySHA3_384(context.Context, *GetSnapRevisionAssertionBySHA3_384Request) (*SnapRevisionAssertionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSnapRevisionAssertionBySHA3_384 not implemented")
@@ -176,24 +176,6 @@ type UnsafeAssertionServiceServer interface {
 
 func RegisterAssertionServiceServer(s grpc.ServiceRegistrar, srv AssertionServiceServer) {
 	s.RegisterService(&AssertionService_ServiceDesc, srv)
-}
-
-func _AssertionService_ProcessSnapBuildAssertion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SnapBuildAssertionRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AssertionServiceServer).ProcessSnapBuildAssertion(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/assertion.AssertionService/ProcessSnapBuildAssertion",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AssertionServiceServer).ProcessSnapBuildAssertion(ctx, req.(*SnapBuildAssertionRequest))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _AssertionService_AddSnapRevisionAssertion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -264,6 +246,24 @@ func _AssertionService_AddAccountAssertion_Handler(srv interface{}, ctx context.
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AssertionServiceServer).AddAccountAssertion(ctx, req.(*AddAccountAssertionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AssertionService_AddSnapBuildAssertion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddSnapBuildAssertionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AssertionServiceServer).AddSnapBuildAssertion(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/assertion.AssertionService/AddSnapBuildAssertion",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AssertionServiceServer).AddSnapBuildAssertion(ctx, req.(*AddSnapBuildAssertionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -348,10 +348,6 @@ var AssertionService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*AssertionServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "ProcessSnapBuildAssertion",
-			Handler:    _AssertionService_ProcessSnapBuildAssertion_Handler,
-		},
-		{
 			MethodName: "AddSnapRevisionAssertion",
 			Handler:    _AssertionService_AddSnapRevisionAssertion_Handler,
 		},
@@ -366,6 +362,10 @@ var AssertionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AddAccountAssertion",
 			Handler:    _AssertionService_AddAccountAssertion_Handler,
+		},
+		{
+			MethodName: "AddSnapBuildAssertion",
+			Handler:    _AssertionService_AddSnapBuildAssertion_Handler,
 		},
 		{
 			MethodName: "GetSnapRevisionAssertionBySHA3_384",

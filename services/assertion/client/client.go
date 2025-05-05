@@ -14,7 +14,6 @@ import (
 
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
-	cerrorpb "github.com/idlab-discover/kebeng/common/cerror/proto"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -29,9 +28,8 @@ const (
 )
 
 type AssertionClientInterface interface {
-	ProcessSnapBuildAssertion(assertion []byte) *proto.SnapBuildAssertionResponse
-
 	AddAccountKeyAssertion(encoded_public_key, publicKeySha3_384Encoded, accountId, name string, since time.Time, until time.Time) *proto.AccountKeyAssertionResponse
+	AddSnapBuildAssertion(sha3_384Encoded, grade, signKeySha3_384Encoded string, developerId, snapEntryId uuid.UUID, size uint64) *proto.SnapBuildAssertionResponse
 	AddSnapRevisionAssertion(snapSha3_384 string, developerId string, snapEntryId string, snapRevisionSequenceNumber uint32, snapSize uint64) *proto.SnapRevisionAssertionResponse
 	AddSnapDeclarationAssertion(snapID, snapName, publisherID string, series string, refreshControl []string, aliases []model.Alias, plugs storeModel.Plugs, slots storeModel.Slots) *proto.SnapDeclarationAssertionResponse
 	AddAccountAssertion(accountId, displayName, username, validation string, timestamp time.Time) *proto.AccountAssertionResponse
@@ -85,25 +83,6 @@ func (c *AssertionClient) Close() {
 	if err != nil {
 		logrus.Errorf("error closing connection: %v", err)
 	}
-}
-
-func (c *AssertionClient) ProcessSnapBuildAssertion(assertion []byte) *proto.SnapBuildAssertionResponse {
-	req := &proto.SnapBuildAssertionRequest{
-		Assertion: assertion,
-	}
-
-	resp, err := c.client.ProcessSnapBuildAssertion(context.Background(), req)
-	// err is not nil if something goes wrong with the client
-	// cerror regarding the request are in the response
-	if err != nil {
-		resp = &proto.SnapBuildAssertionResponse{
-			Errors: []*cerrorpb.Error{{
-				Code:    cerror.InternalServerError,
-				Message: err.Error()},
-			},
-		}
-	}
-	return resp
 }
 
 func (c *AssertionClient) AddAccountKeyAssertion(encoded_public_key, publicKeySha3_384Encoded, accountId, name string, since time.Time, until time.Time) *proto.AccountKeyAssertionResponse {
@@ -305,6 +284,50 @@ func (c *AssertionClient) AddAccountAssertion(accountId, displayName, username, 
 	if err != nil {
 		el.Add(cerror.InternalServerError, err.Error())
 		resp = &proto.AccountAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}
+	}
+	return resp
+}
+
+func (c *AssertionClient) AddSnapBuildAssertion(sha3_384Encoded, grade, signKeySha3_384Encoded string, developerId, snapEntryId uuid.UUID, size uint64) *proto.SnapBuildAssertionResponse {
+	el := cerror.NewErrorList()
+
+	// check input
+	if sha3_384Encoded == "" {
+		el.Add(cerror.InvalidField, "sha3_384_encoded is required")
+	}
+	if grade == "" {
+		el.Add(cerror.InvalidField, "grade is required")
+	}
+	if signKeySha3_384Encoded == "" {
+		el.Add(cerror.InvalidField, "sign key sha3_384 encoded is required")
+	}
+	if developerId == uuid.Nil {
+		el.Add(cerror.InvalidField, "developer id is required")
+	}
+	if snapEntryId == uuid.Nil {
+		el.Add(cerror.InvalidField, "snap entry id is required")
+	}
+	if el.HasError() {
+		return &proto.SnapBuildAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}
+	}
+
+	req := &proto.AddSnapBuildAssertionRequest{
+		Sha3_384Encoded:        sha3_384Encoded,
+		Grade:                 grade,
+		SignKeySha3_384Encoded: signKeySha3_384Encoded,
+		DeveloperId:           developerId.String(),
+		SnapEntryId:           snapEntryId.String(),
+		SnapSize:              size,
+	}
+
+	resp, err := c.client.AddSnapBuildAssertion(context.Background(), req)
+	if err != nil {
+		el.Add(cerror.InternalServerError, err.Error())
+		resp = &proto.SnapBuildAssertionResponse{
 			Errors: el.ConvertToProtoErrorList(),
 		}
 	}

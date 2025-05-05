@@ -70,6 +70,22 @@ type SnapDeclarationAssertion struct {
 	Signature       string         `json:"signature" db:"signature"`
 }
 
+type SnapBuildAssertion struct {
+	ID              uuid.UUID  `json:"id" db:"id"`
+	CreatedAt       time.Time  `json:"created_at" db:"created_at"`
+	DeletedAt       *time.Time `json:"deleted_at,omitempty" db:"deleted_at"`
+	Type            string     `json:"type" db:"type"`
+	AuthorityID     string     `json:"authority_id" db:"authority_id"`
+	SignKeySHA3_384 string     `json:"sign_key_sha3_384" db:"sign_key_sha3_384"`
+	SnapEntryID     uuid.UUID  `json:"snap_entry_id" db:"snap_entry_id"`
+	DeveloperID     uuid.UUID  `json:"developer_id" db:"developer_id"`
+	SnapSize        uint64     `json:"snap_size" db:"snap_size"`
+	SnapSHA3_384    string     `json:"snap_sha3_384" db:"snap_sha3_384"`
+	Grade           string     `json:"grade" db:"grade"`
+	Timestamp       time.Time  `json:"timestamp" db:"timestamp"`
+	Signature       string     `json:"signature" db:"signature"`
+}
+
 type Alias struct {
 	Name   string `json:"name" db:"name"`
 	Target string `json:"target" db:"target"`
