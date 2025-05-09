@@ -181,21 +181,29 @@ func (r *AssertionRepository) AddSnapBuildAssertion(
 	return assertion, nil
 }
 
-func (r *AssertionRepository) AddAccountAssertion(el *cerror.ErrorList, authority_id, displayName, username, validation string, accountID uuid.UUID, revision uint32, timestamp time.Time, sign_key_SHA3_384, signature string) (*model.AccountAssertion, *cerror.CustomError) {
-	query := `
-		INSERT INTO account_assertion (authority_id, display_name, username, validation, account_id, revision, timestamp, sign_key_SHA3_384, signature)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-	  RETURNING id, authority_id, display_name, username, validation, account_id,
-		revision, timestamp, sign_key_sha3_384, signature
-	`
-	assertion := &model.AccountAssertion{}
-	err := r.db.Get(assertion, query, authority_id, displayName, username, validation, accountID, revision, timestamp, sign_key_SHA3_384, signature)
+func (r *AssertionRepository) AddAccountAssertion(
+	el *cerror.ErrorList,
+	authorityID, displayName, username, validation string,
+	accountID uuid.UUID,
+	revision uint32,
+	timestamp time.Time,
+	signKeySHA3_384, signature string,
+) (*model.AccountAssertion, *cerror.CustomError) {
+	assertion := &model.AccountAssertion{
+		Type:      asserts.AccountType.Name,
+		AccountID: accountID,
+		Revision:  revision,
+		Signature: signature,
+	}
+
+	_, err := r.assertionCollections[ACCOUNT].InsertOne(context.Background(), assertion)
 	if err != nil {
-		cerr := cerror.ConvertError(err, fmt.Sprintf("failed to save account assertion in database: %v", err))
+		cerr := cerror.ConvertError(err, "failed to insert account assertion in MongoDB")
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
 		return nil, cerr
 	}
+
 	return assertion, nil
 }
 
@@ -305,37 +313,42 @@ func (r *AssertionRepository) GetLatestSnapDeclarationAssertion(el *cerror.Error
 }
 
 func (r *AssertionRepository) GetAccountAssertionByAccountID(el *cerror.ErrorList, accountID uuid.UUID) (*model.AccountAssertion, *cerror.CustomError) {
-	query := `
-		SELECT id, authority_id, display_name, username, validation, account_id, revision, timestamp, sign_key_SHA3_384, signature 
-		FROM account_assertion 
-		WHERE account_id = $1
-	`
-	assertion := &model.AccountAssertion{}
+	filter := bson.M{"accountid": accountID}
 
-	err := r.db.Get(assertion, query, accountID)
+	var assertion model.AccountAssertion
+	err := r.assertionCollections[ACCOUNT].FindOne(context.Background(), filter).Decode(&assertion)
 	if err != nil {
-		logrus.Errorf("failed to get account assertion by account id: %s, err: %v", accountID.String(), err)
-		el.AddCustomError(cerror.ConvertError(err, fmt.Sprintf("failed to get account assertion by account id: %s, err: %v", accountID.String(), err)))
-		return nil, cerror.ConvertError(err, fmt.Sprintf("failed to get account assertion by account id: %s, err: %v", accountID.String(), err))
+		if err == mongo.ErrNoDocuments {
+			cerr := cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("no account assertion found for account id: %s", accountID.String()))
+			el.AddCustomError(cerr)
+			return nil, cerr
+		}
+		cerr := cerror.ConvertError(err, fmt.Sprintf("failed to retrieve account assertion from MongoDB for account id: %s", accountID.String()))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return nil, cerr
 	}
 
-	return assertion, nil
+	return &assertion, nil
 }
 
 func (r *AssertionRepository) GetLatestAccountAssertionByAccountID(el *cerror.ErrorList, accountID uuid.UUID) (*model.AccountAssertion, *cerror.CustomError) {
-	query := `
-		SELECT id, authority_id, display_name, username, validation, account_id, revision, timestamp, sign_key_SHA3_384, signature 
-		FROM account_assertion 
-		WHERE account_id = $1 ORDER BY revision DESC LIMIT 1
-	`
-	assertion := &model.AccountAssertion{}
+	filter := bson.M{"accountid": accountID}
+	opts := options.FindOne().SetSort(bson.D{{Key: "revision", Value: -1}})
 
-	err := r.db.Get(assertion, query, accountID)
+	var assertion model.AccountAssertion
+	err := r.assertionCollections[ACCOUNT].FindOne(context.Background(), filter, opts).Decode(&assertion)
 	if err != nil {
-		logrus.Errorf("failed to get latest account assertion by account id: %s, err: %v", accountID.String(), err)
-		el.AddCustomError(cerror.ConvertError(err, fmt.Sprintf("failed to get latest account assertion by account id: %s, err: %v", accountID.String(), err)))
-		return nil, cerror.ConvertError(err, fmt.Sprintf("failed to get latest account assertion by account id: %s, err: %v", accountID.String(), err))
+		if err == mongo.ErrNoDocuments {
+			cerr := cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("no account assertion found for account id: %s", accountID.String()))
+			el.AddCustomError(cerr)
+			return nil, cerr
+		}
+		cerr := cerror.ConvertError(err, fmt.Sprintf("failed to retrieve latest account assertion from MongoDB for account id: %s", accountID.String()))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return nil, cerr
 	}
 
-	return assertion, nil
+	return &assertion, nil
 }
