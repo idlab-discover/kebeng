@@ -152,16 +152,27 @@ func (r *AssertionRepository) AddSnapDeclarationAssertion(el *cerror.ErrorList, 
 	return assertion, nil
 }
 
-func (r *AssertionRepository) AddSnapBuildAssertion(el *cerror.ErrorList, authority_id, sign_key_SHA3_384 string, snap_id, account_id uuid.UUID, grade string, snap_sha3_384 string, snap_size uint64, signature string, timestamp time.Time) (*model.SnapBuildAssertion, *cerror.CustomError) {
-	query := `
-		INSERT INTO snap_build_assertion (authority_id, sign_key_SHA3_384, snap_id, account_id, grade, snap_sha3_384, snap_size, signature, timestamp) 
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
-		RETURNING id
-	`
-	assertion := &model.SnapBuildAssertion{}
-	err := r.db.Get(assertion, query, authority_id, sign_key_SHA3_384, snap_id, account_id, grade, snap_sha3_384, snap_size, signature, timestamp)
+func (r *AssertionRepository) AddSnapBuildAssertion(
+	el *cerror.ErrorList,
+	authorityID, signKeySHA3_384 string,
+	snapID, accountID uuid.UUID,
+	grade, snapSHA3_384 string,
+	snapSize uint64,
+	signature string,
+	timestamp time.Time,
+) (*model.SnapBuildAssertion, *cerror.CustomError) {
+	assertion := &model.SnapBuildAssertion{
+		Type:            asserts.SnapBuildType.Name,
+		SignKeySHA3_384: signKeySHA3_384,
+		SnapEntryID:     snapID,
+		DeveloperID:     accountID,
+		SnapSHA3_384:    snapSHA3_384,
+		Signature:       signature,
+	}
+
+	_, err := r.assertionCollections[SNAPBUILD].InsertOne(context.Background(), assertion)
 	if err != nil {
-		cerr := cerror.ConvertError(err, fmt.Sprintf("failed to save snap build assertion in database: %v", err))
+		cerr := cerror.ConvertError(err, "failed to insert snap build assertion in MongoDB")
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
 		return nil, cerr
