@@ -155,6 +155,7 @@ func TestAddSnapRevisionAssertion(t *testing.T) {
 					case *model.SnapRevisionAssertion:
 						mockRepo.
 							On("AddSnapRevisionAssertion",
+								mock.Anything,
 								mock.Anything, cfg.AuthorityID, tc.req.GetSnapSha3_384(),
 								rootKey.PublicKey().ID(), mock.Anything, mock.Anything,
 								tc.req.GetSnapRevisionSequenceNumber(), tc.req.GetSnapSize(),
@@ -167,7 +168,8 @@ func TestAddSnapRevisionAssertion(t *testing.T) {
 							On("AddSnapRevisionAssertion",
 								mock.Anything, mock.Anything, mock.Anything,
 								mock.Anything, mock.Anything, mock.Anything,
-								mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+								mock.Anything, mock.Anything, mock.Anything,
+								mock.Anything, mock.Anything,
 							).
 							Return(nil, v).
 							Once()
@@ -407,11 +409,11 @@ func TestAddAccountKeyAssertion(t *testing.T) {
 				case "GetLatestAccountKeyAssertion":
 					if errVal, ok := ret.(*cerror.CustomError); ok {
 						mockRepo.
-							On("GetLatestAccountKeyAssertion", mock.Anything, mock.Anything).
+							On("GetLatestAccountKeyAssertion", mock.Anything, mock.Anything, mock.Anything).
 							Return(nil, errVal).Once()
 					} else if assertionRecord, ok := ret.(*model.AccountKeyAssertion); ok {
 						mockRepo.
-							On("GetLatestAccountKeyAssertion", mock.Anything, mock.Anything).
+							On("GetLatestAccountKeyAssertion", mock.Anything, mock.Anything, mock.Anything).
 							Return(assertionRecord, nil).Once()
 					} else {
 						t.Fatalf("Invalid type for mock return of GetLatestAccountKeyAssertion")
@@ -419,13 +421,13 @@ func TestAddAccountKeyAssertion(t *testing.T) {
 				case "AddAccountKeyAssertion":
 					if errVal, ok := ret.(*cerror.CustomError); ok {
 						mockRepo.
-							On("AddAccountKeyAssertion", mock.Anything, mock.Anything, mock.Anything,
+							On("AddAccountKeyAssertion", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 								mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 								mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 							Return(nil, errVal).Once()
 					} else if assertionRecord, ok := ret.(*model.AccountKeyAssertion); ok {
 						mockRepo.
-							On("AddAccountKeyAssertion", mock.Anything, mock.Anything, mock.Anything,
+							On("AddAccountKeyAssertion", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 								mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 								mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 							Return(assertionRecord, nil).Once()
@@ -571,12 +573,12 @@ func TestAddSnapDeclarationAssertion(t *testing.T) {
 			switch ret := tc.mockGetLatest.(type) {
 			case *model.SnapDeclarationAssertion:
 				mockRepo.
-					On("GetLatestSnapDeclarationAssertion", mock.Anything, tc.req.GetSnapId()).
+					On("GetLatestSnapDeclarationAssertion", mock.Anything, mock.Anything, tc.req.GetSnapId()).
 					Return(ret, nil).
 					Once()
 			case *cerror.CustomError:
 				mockRepo.
-					On("GetLatestSnapDeclarationAssertion", mock.Anything, tc.req.GetSnapId()).
+					On("GetLatestSnapDeclarationAssertion", mock.Anything, mock.Anything, tc.req.GetSnapId()).
 					Return(nil, ret).
 					Once()
 			default:
@@ -589,7 +591,7 @@ func TestAddSnapDeclarationAssertion(t *testing.T) {
 				case *model.SnapDeclarationAssertion:
 					mockRepo.
 						On("AddSnapDeclarationAssertion",
-							mock.Anything, mock.Anything, mock.Anything,
+							mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 							mock.Anything, mock.Anything, mock.Anything,
 							mock.Anything, mock.Anything,
 							mock.Anything, mock.Anything, mock.Anything,
@@ -600,7 +602,7 @@ func TestAddSnapDeclarationAssertion(t *testing.T) {
 				case *cerror.CustomError:
 					mockRepo.
 						On("AddSnapDeclarationAssertion",
-							mock.Anything, mock.Anything, mock.Anything,
+							mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 							mock.Anything, mock.Anything, mock.Anything,
 							mock.Anything, mock.Anything,
 							mock.Anything, mock.Anything, mock.Anything,
@@ -739,12 +741,12 @@ func TestAddAccountAssertion(t *testing.T) {
 				switch ret := tc.mockGetLatest.(type) {
 				case *model.AccountAssertion:
 					mockRepo.
-						On("GetLatestAccountAssertionByAccountID", mock.Anything, validAccountID).
+						On("GetLatestAccountAssertionByAccountID", mock.Anything, mock.Anything, validAccountID).
 						Return(ret, nil).
 						Once()
 				case *cerror.CustomError:
 					mockRepo.
-						On("GetLatestAccountAssertionByAccountID", mock.Anything, validAccountID).
+						On("GetLatestAccountAssertionByAccountID", mock.Anything, mock.Anything, validAccountID).
 						Return(nil, ret).
 						Once()
 				default:
@@ -758,16 +760,16 @@ func TestAddAccountAssertion(t *testing.T) {
 				case *model.AccountAssertion:
 					mockRepo.
 						On("AddAccountAssertion",
-							mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
-							mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+							mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+							mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 						).
 						Return(ret, nil).
 						Once()
 				case *cerror.CustomError:
 					mockRepo.
 						On("AddAccountAssertion",
-							mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
-							mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+							mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+							mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 						).
 						Return(nil, ret).
 						Once()
@@ -905,6 +907,7 @@ func TestAddSnapBuildAssertion(t *testing.T) {
 				case *model.SnapBuildAssertion:
 					mockRepo.
 						On("AddSnapBuildAssertion",
+							mock.Anything,
 							mock.AnythingOfType("*cerror.ErrorList"),
 							cfg.AuthorityID,
 							rootKey.PublicKey().ID(),
@@ -921,6 +924,7 @@ func TestAddSnapBuildAssertion(t *testing.T) {
 				case *cerror.CustomError:
 					mockRepo.
 						On("AddSnapBuildAssertion",
+							mock.Anything,
 							mock.AnythingOfType("*cerror.ErrorList"),
 							mock.AnythingOfType("string"),
 							mock.AnythingOfType("string"),

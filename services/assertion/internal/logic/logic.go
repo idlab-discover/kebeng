@@ -78,6 +78,7 @@ func (s *AssertionService) AddSnapRevisionAssertion(ctx context.Context, req *pr
 	signature := string(asserts.Encode(signedAssertion))
 
 	snapRevisionAssertion, cerr := s.repo.AddSnapRevisionAssertion(
+		ctx,
 		el,
 		s.cfg.AuthorityID,
 		req.GetSnapSha3_384(),
@@ -124,7 +125,7 @@ func (s *AssertionService) AddAccountKeyAssertion(ctx context.Context, req *prot
 	}
 
 	var sequenceNumber uint32
-	latestAccountKeyAssertion, cerr := s.repo.GetLatestAccountKeyAssertion(el, parsedAccountId)
+	latestAccountKeyAssertion, cerr := s.repo.GetLatestAccountKeyAssertion(ctx, el, parsedAccountId)
 	if cerr != nil && cerr.GetCode() != cerror.ResourceNotFound {
 		// should have been logged and added to error list in repo function
 		return &proto.AccountKeyAssertionResponse{
@@ -190,6 +191,7 @@ func (s *AssertionService) AddAccountKeyAssertion(ctx context.Context, req *prot
 
 	// NOTE: maybe also store encoded public key?
 	accountKeyAssertion, cerr := s.repo.AddAccountKeyAssertion(
+		ctx,
 		el,
 		s.cfg.AuthorityID,
 		req.GetPublicKeySha3_384Encoded(),
@@ -233,7 +235,7 @@ func (s *AssertionService) AddSnapDeclarationAssertion(ctx context.Context, req 
 	el := cerror.NewErrorList()
 
 	var sequenceNumber uint32
-	latestSnapDeclarationAssertion, cerr := s.repo.GetLatestSnapDeclarationAssertion(el, req.GetSnapId())
+	latestSnapDeclarationAssertion, cerr := s.repo.GetLatestSnapDeclarationAssertion(ctx, el, req.GetSnapId())
 	if cerr != nil && cerr.GetCode() != cerror.ResourceNotFound {
 		// should have been logged and added to error list in repo function
 		return &proto.SnapDeclarationAssertionResponse{
@@ -268,6 +270,7 @@ func (s *AssertionService) AddSnapDeclarationAssertion(ctx context.Context, req 
 
 	signature := string(asserts.Encode(signedAssertion))
 	snapDeclarationAssertion, cerr := s.repo.AddSnapDeclarationAssertion(
+		ctx,
 		el,
 		s.cfg.AuthorityID,
 		s.cfg.RootKey.PublicKey().ID(), // this is the sign_key_SHA3_384
@@ -367,6 +370,7 @@ func (s *AssertionService) AddSnapBuildAssertion(ctx context.Context, req *proto
 	signature := string(asserts.Encode(signedAssertion))
 
 	snapBuildAssertion, cerr := s.repo.AddSnapBuildAssertion(
+		ctx,
 		el,
 		s.cfg.AuthorityID,
 		s.cfg.RootKey.PublicKey().ID(), // this is the sign_key_SHA3_384
@@ -414,7 +418,7 @@ func (s *AssertionService) AddAccountAssertion(ctx context.Context, req *proto.A
 	}
 
 	var sequenceNumber uint32
-	latestAccountAssertion, cerr := s.repo.GetLatestAccountAssertionByAccountID(el, parsedAccountId)
+	latestAccountAssertion, cerr := s.repo.GetLatestAccountAssertionByAccountID(ctx, el, parsedAccountId)
 	if cerr != nil && cerr.GetCode() != cerror.ResourceNotFound {
 		// should have been logged and added to error list in repo function
 		return &proto.AccountAssertionResponse{
@@ -448,6 +452,7 @@ func (s *AssertionService) AddAccountAssertion(ctx context.Context, req *proto.A
 	}
 	signature := string(asserts.Encode(signedAssertion))
 	accountAssertion, cerr := s.repo.AddAccountAssertion(
+		ctx,
 		el,
 		s.cfg.AuthorityID,
 		req.GetDisplayName(),
@@ -487,7 +492,7 @@ func (s *AssertionService) GetSnapRevisionAssertionBySHA3_384(ctx context.Contex
 		return nil, fmt.Errorf("snap sha3_384 is required")
 	}
 
-	snapRevisionAssertion, cerr := s.repo.GetSnapRevisionAssertionBySHA3_384(el, req.GetSnapSha3_384())
+	snapRevisionAssertion, cerr := s.repo.GetSnapRevisionAssertionBySHA3_384(ctx, el, req.GetSnapSha3_384())
 	if cerr != nil {
 		// should have been logged and added to error list in repo function
 		return nil, fmt.Errorf("failed to get snap revision assertion: %v", cerr)
@@ -516,7 +521,7 @@ func (s *AssertionService) GetAccountKeyAssertionByPublicKeySha(ctx context.Cont
 		el.Add(cerror.Invalid, "name is required")
 		return nil, fmt.Errorf("name is required")
 	}
-	accountKeyAssertion, cerr := s.repo.GetAccountKeyAssertionByPublicKeySha(el, req.GetPublicKeySha3_384Encoded())
+	accountKeyAssertion, cerr := s.repo.GetAccountKeyAssertionByPublicKeySha(ctx, el, req.GetPublicKeySha3_384Encoded())
 	if cerr != nil {
 		// should have been logged and added to error list in repo function
 		return nil, fmt.Errorf("failed to get account key assertion: %v", cerr)
@@ -550,7 +555,7 @@ func (s *AssertionService) GetSnapDeclarationAssertionBySnapID(ctx context.Conte
 			Errors: el.ConvertToProtoErrorList(),
 		}, nil
 	}
-	snapDeclarationAssertion, cerr := s.repo.GetSnapDeclarationAssertionBySnapID(el, req.GetSnapId())
+	snapDeclarationAssertion, cerr := s.repo.GetSnapDeclarationAssertionBySnapID(ctx, el, req.GetSnapId())
 	if cerr != nil {
 		// should have been logged and added to error list in repo function
 		return &proto.SnapDeclarationAssertionResponse{
@@ -598,7 +603,7 @@ func (s *AssertionService) GetAccountAssertionByAccountID(ctx context.Context, r
 			Errors: el.ConvertToProtoErrorList(),
 		}, nil
 	}
-	accountAssertion, cerr := s.repo.GetAccountAssertionByAccountID(el, parsedAccountId)
+	accountAssertion, cerr := s.repo.GetAccountAssertionByAccountID(ctx, el, parsedAccountId)
 	if cerr != nil {
 		// should have been logged and added to error list in repo function
 		return &proto.AccountAssertionResponse{
