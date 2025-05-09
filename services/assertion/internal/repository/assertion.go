@@ -213,8 +213,7 @@ func (r *AssertionRepository) GetAccountKeyAssertionByPublicKeySha(
 ) (*model.AccountKeyAssertion, *cerror.CustomError) {
 	filter := bson.M{"publickeysha3_384encoded": publicKeySHA3_384}
 
-	var result model.AccountKeyAssertion
-	err := r.assertionCollections[ACCOUNTKEY].FindOne(context.Background(), filter).Decode(&result)
+	assertion, err := findOne[model.AccountKeyAssertion](r.assertionCollections[ACCOUNTKEY], filter, nil)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			cerr := cerror.NewCustomError(cerror.ResourceNotFound, "no matching AccountKeyAssertion found")
@@ -227,15 +226,14 @@ func (r *AssertionRepository) GetAccountKeyAssertionByPublicKeySha(
 		return nil, cerr
 	}
 
-	return &result, nil
+	return assertion, nil
 }
 
 func (r *AssertionRepository) GetLatestAccountKeyAssertion(el *cerror.ErrorList, accountID uuid.UUID) (*model.AccountKeyAssertion, *cerror.CustomError) {
 	filter := bson.M{"accountid": accountID}
 	opts := options.FindOne().SetSort(bson.D{{Key: "revisionsequencenumber", Value: -1}})
 
-	var result model.AccountKeyAssertion
-	err := r.assertionCollections[ACCOUNTKEY].FindOne(context.Background(), filter, opts).Decode(&result)
+	assertion, err := findOne[model.AccountKeyAssertion](r.assertionCollections[ACCOUNTKEY], filter, opts)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			cerr := cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("no account key assertion found for account id: %s", accountID.String()))
@@ -248,14 +246,13 @@ func (r *AssertionRepository) GetLatestAccountKeyAssertion(el *cerror.ErrorList,
 		return nil, cerr
 	}
 
-	return &result, nil
+	return assertion, nil
 }
 
 func (r *AssertionRepository) GetSnapRevisionAssertionBySHA3_384(el *cerror.ErrorList, snap_sha3_384 string) (*model.SnapRevisionAssertion, *cerror.CustomError) {
 	filter := bson.M{"snapsha3_384": snap_sha3_384}
 
-	var result model.SnapRevisionAssertion
-	err := r.assertionCollections[SNAPREVISION].FindOne(context.Background(), filter).Decode(&result)
+	assertion, err := findOne[model.SnapRevisionAssertion](r.assertionCollections[SNAPREVISION], filter, nil)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			cerr := cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("no snap revision assertion found for SHA3_384: %s", snap_sha3_384))
@@ -268,14 +265,13 @@ func (r *AssertionRepository) GetSnapRevisionAssertionBySHA3_384(el *cerror.Erro
 		return nil, cerr
 	}
 
-	return &result, nil
+	return assertion, nil
 }
 
 func (r *AssertionRepository) GetSnapDeclarationAssertionBySnapID(el *cerror.ErrorList, snapID string) (*model.SnapDeclarationAssertion, *cerror.CustomError) {
 	filter := bson.M{"snapid": snapID}
 
-	var assertion model.SnapDeclarationAssertion
-	err := r.assertionCollections[SNAPDECLARATION].FindOne(context.Background(), filter).Decode(&assertion)
+	assertion, err := findOne[model.SnapDeclarationAssertion](r.assertionCollections[SNAPDECLARATION], filter, nil)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			cerr := cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("no snap declaration assertion found for snap id: %s", snapID))
@@ -288,15 +284,14 @@ func (r *AssertionRepository) GetSnapDeclarationAssertionBySnapID(el *cerror.Err
 		return nil, cerr
 	}
 
-	return &assertion, nil
+	return assertion, nil
 }
 
 func (r *AssertionRepository) GetLatestSnapDeclarationAssertion(el *cerror.ErrorList, snapID string) (*model.SnapDeclarationAssertion, *cerror.CustomError) {
 	filter := bson.M{"snapid": snapID}
 	opts := options.FindOne().SetSort(bson.D{{Key: "revision", Value: -1}})
 
-	var assertion model.SnapDeclarationAssertion
-	err := r.assertionCollections[SNAPDECLARATION].FindOne(context.Background(), filter, opts).Decode(&assertion)
+	assertion, err := findOne[model.SnapDeclarationAssertion](r.assertionCollections[SNAPDECLARATION], filter, opts)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			cerr := cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("no snap declaration assertion found for snap id: %s", snapID))
@@ -309,14 +304,13 @@ func (r *AssertionRepository) GetLatestSnapDeclarationAssertion(el *cerror.Error
 		return nil, cerr
 	}
 
-	return &assertion, nil
+	return assertion, nil
 }
 
 func (r *AssertionRepository) GetAccountAssertionByAccountID(el *cerror.ErrorList, accountID uuid.UUID) (*model.AccountAssertion, *cerror.CustomError) {
 	filter := bson.M{"accountid": accountID}
 
-	var assertion model.AccountAssertion
-	err := r.assertionCollections[ACCOUNT].FindOne(context.Background(), filter).Decode(&assertion)
+	assertion, err := findOne[model.AccountAssertion](r.assertionCollections[ACCOUNT], filter, nil)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			cerr := cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("no account assertion found for account id: %s", accountID.String()))
@@ -329,15 +323,14 @@ func (r *AssertionRepository) GetAccountAssertionByAccountID(el *cerror.ErrorLis
 		return nil, cerr
 	}
 
-	return &assertion, nil
+	return assertion, nil
 }
 
 func (r *AssertionRepository) GetLatestAccountAssertionByAccountID(el *cerror.ErrorList, accountID uuid.UUID) (*model.AccountAssertion, *cerror.CustomError) {
 	filter := bson.M{"accountid": accountID}
 	opts := options.FindOne().SetSort(bson.D{{Key: "revision", Value: -1}})
 
-	var assertion model.AccountAssertion
-	err := r.assertionCollections[ACCOUNT].FindOne(context.Background(), filter, opts).Decode(&assertion)
+	assertion, err := findOne[model.AccountAssertion](r.assertionCollections[ACCOUNT], filter, opts)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			cerr := cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("no account assertion found for account id: %s", accountID.String()))
@@ -350,5 +343,12 @@ func (r *AssertionRepository) GetLatestAccountAssertionByAccountID(el *cerror.Er
 		return nil, cerr
 	}
 
-	return &assertion, nil
+	return assertion, nil
+}
+
+// ============= HELPERS =============
+func findOne[T any](collection *mongo.Collection, filter interface{}, opts *options.FindOneOptions) (*T, error) {
+	var result T
+	err := collection.FindOne(context.Background(), filter, opts).Decode(&result)
+	return &result, err
 }
