@@ -1,12 +1,16 @@
 package repository
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/idlab-discover/kebeng/services/assertion/internal/model"
+	"github.com/snapcore/snapd/asserts"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/google/uuid"
 	"github.com/idlab-discover/kebeng/common/cerror"
@@ -33,14 +37,18 @@ type IAssertionRepository interface {
 }
 
 type AssertionRepository struct {
-	db          *sqlx.DB
-	mongoClient *mongo.Client
+	db                            *sqlx.DB
+	mongoClient                   *mongo.Client
+	accountKeyAssertionCollection *mongo.Collection
 }
 
 func NewAssertionRepository(db *sqlx.DB, mongoClient *mongo.Client) IAssertionRepository {
+	dbName := "assertion" // Maybe this should be a config value
+
 	return &AssertionRepository{
-		db:          db,
-		mongoClient: mongoClient,
+		db:                            db,
+		mongoClient:                   mongoClient,
+		accountKeyAssertionCollection: mongoClient.Database(dbName).Collection("account_key_assertions"),
 	}
 }
 
@@ -58,16 +66,36 @@ func (r *AssertionRepository) AddAssertion(snapEntryId uuid.UUID, assertionStrin
 	return assertion, nil
 }
 
-func (r *AssertionRepository) AddAccountKeyAssertion(el *cerror.ErrorList, authority_id, public_key_SHA3_384, sign_key_SHA3_384, name string, revision uint32, account_id uuid.UUID, since time.Time, until time.Time, body []byte, body_length uint64, signature string) (*model.AccountKeyAssertion, *cerror.CustomError) {
-	query := `
-		INSERT INTO account_key_assertion (authority_id, public_key_SHA3_384, sign_key_SHA3_384, name, revision, account_id, since, until, body, body_length, signature) 
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) 
-		RETURNING id`
-	assertion := &model.AccountKeyAssertion{}
+func (r *AssertionRepository) AddAccountKeyAssertion(
+	el *cerror.ErrorList,
+	authorityID, publicKeySHA3_384, signKeySHA3_384, name string,
+	revision uint32,
+	accountID uuid.UUID,
+	since, until time.Time,
+	body []byte,
+	bodyLength uint64,
+	signature string,
+) (*model.AccountKeyAssertion, *cerror.CustomError) {
+	assertion := &model.AccountKeyAssertion{
+		ID:                       uuid.New(),
+		CreatedAt:                time.Now(),
+		Type:                     asserts.AccountKeyType.Name,
+		AuthorityID:              authorityID,
+		RevisionSequenceNumber:   revision,
+		PublicKeySha3_384Encoded: publicKeySHA3_384,
+		AccountID:                accountID,
+		Name:                     name,
+		Since:                    since,
+		Until:                    until,
+		Body:                     body,
+		BodyLength:               bodyLength,
+		SignKeySHA3_384:          signKeySHA3_384,
+		Signature:                signature,
+	}
 
-	err := r.db.Get(assertion, query, authority_id, public_key_SHA3_384, sign_key_SHA3_384, name, revision, account_id, since, until, body, body_length, signature)
+	_, err := r.accountKeyAssertionCollection.InsertOne(context.Background(), assertion)
 	if err != nil {
-		cerr := cerror.ConvertError(err, fmt.Sprintf("failed to save account key assertion in database: %v", err))
+		cerr := cerror.ConvertError(err, "failed to insert account key assertion in MongoDB")
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
 		return nil, cerr
@@ -220,42 +248,48 @@ func (r *AssertionRepository) AddAccountAssertion(el *cerror.ErrorList, authorit
 	return assertion, nil
 }
 
-func (r *AssertionRepository) GetAccountKeyAssertionByPublicKeySha(el *cerror.ErrorList, public_key_SHA3_384 string) (*model.AccountKeyAssertion, *cerror.CustomError) {
-	query := `
-		SELECT id, authority_id, public_key_SHA3_384, sign_key_SHA3_384, name, revision, account_id, since, until, body_length, signature 
-		FROM account_key_assertion 
-		WHERE public_key_SHA3_384 = $1
-	`
-	assertion := &model.AccountKeyAssertion{}
+func (r *AssertionRepository) GetAccountKeyAssertionByPublicKeySha(
+	el *cerror.ErrorList,
+	publicKeySHA3_384 string,
+) (*model.AccountKeyAssertion, *cerror.CustomError) {
+	filter := bson.M{"publickeysha3_384encoded": publicKeySHA3_384}
 
-	err := r.db.Get(assertion, query, public_key_SHA3_384)
+	var result model.AccountKeyAssertion
+	err := r.accountKeyAssertionCollection.FindOne(context.Background(), filter).Decode(&result)
 	if err != nil {
-		cerr := cerror.ConvertError(err, fmt.Sprintf("failed to get account key assertion by public key SHA3_384: %s, err: %v", public_key_SHA3_384, err))
+		if err == mongo.ErrNoDocuments {
+			cerr := cerror.NewCustomError(cerror.ResourceNotFound, "no matching AccountKeyAssertion found")
+			el.AddCustomError(cerr)
+			return nil, cerr
+		}
+		cerr := cerror.ConvertError(err, "failed to retrieve account key assertion from MongoDB")
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
 		return nil, cerr
 	}
 
-	return assertion, nil
+	return &result, nil
 }
 
-func (r *AssertionRepository) GetLatestAccountKeyAssertion(el *cerror.ErrorList, account_id uuid.UUID) (*model.AccountKeyAssertion, *cerror.CustomError) {
-	query := `
-		SELECT id, authority_id, public_key_SHA3_384, sign_key_SHA3_384, name, revision, account_id, since, until, body_length, signature 
-		FROM account_key_assertion 
-		WHERE account_id = $1 ORDER BY revision DESC LIMIT 1
-	`
-	assertion := &model.AccountKeyAssertion{}
+func (r *AssertionRepository) GetLatestAccountKeyAssertion(el *cerror.ErrorList, accountID uuid.UUID) (*model.AccountKeyAssertion, *cerror.CustomError) {
+	filter := bson.M{"accountid": accountID}
+	opts := options.FindOne().SetSort(bson.D{{Key: "revisionsequencenumber", Value: -1}})
 
-	err := r.db.Get(assertion, query, account_id)
+	var result model.AccountKeyAssertion
+	err := r.accountKeyAssertionCollection.FindOne(context.Background(), filter, opts).Decode(&result)
 	if err != nil {
-		cerr := cerror.ConvertError(err, fmt.Sprintf("failed to get latest account key assertion by account id: %s, err: %v", account_id.String(), err))
+		if err == mongo.ErrNoDocuments {
+			cerr := cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("no account key assertion found for account id: %s", accountID.String()))
+			el.AddCustomError(cerr)
+			return nil, cerr
+		}
+		cerr := cerror.ConvertError(err, fmt.Sprintf("failed to get latest account key assertion by account id: %s", accountID.String()))
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
 		return nil, cerr
 	}
 
-	return assertion, nil
+	return &result, nil
 }
 
 func (r *AssertionRepository) GetSnapRevisionAssertionBySHA3_384(el *cerror.ErrorList, snap_sha3_384 string) (*model.SnapRevisionAssertion, *cerror.CustomError) {
