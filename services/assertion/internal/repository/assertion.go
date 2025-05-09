@@ -19,6 +19,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	ACCOUNT         = "account_assertion"
+	ACCOUNTKEY      = "account_key_assertion"
+	SNAPREVISION    = "snap_revision_assertion"
+	SNAPDECLARATION = "snap_declaration_assertion"
+	SNAPBUILD       = "snap_build_assertion"
+)
+
 type IAssertionRepository interface {
 	AddAssertion(snapEntryId uuid.UUID, assertionString string) (*model.Assertion, *cerror.CustomError)
 	AddAccountKeyAssertion(el *cerror.ErrorList, authority_id, public_key_SHA3_384, sign_key_SHA3_384, name string, revision uint32, account_id uuid.UUID, since time.Time, until time.Time, body []byte, body_length uint64, signature string) (*model.AccountKeyAssertion, *cerror.CustomError)
@@ -37,18 +45,24 @@ type IAssertionRepository interface {
 }
 
 type AssertionRepository struct {
-	db                            *sqlx.DB
-	mongoClient                   *mongo.Client
-	accountKeyAssertionCollection *mongo.Collection
+	db                   *sqlx.DB
+	mongoClient          *mongo.Client
+	assertionCollections map[string]*mongo.Collection
 }
 
 func NewAssertionRepository(db *sqlx.DB, mongoClient *mongo.Client) IAssertionRepository {
 	dbName := "assertion" // Maybe this should be a config value
 
 	return &AssertionRepository{
-		db:                            db,
-		mongoClient:                   mongoClient,
-		accountKeyAssertionCollection: mongoClient.Database(dbName).Collection("account_key_assertions"),
+		db:          db,
+		mongoClient: mongoClient,
+		assertionCollections: map[string]*mongo.Collection{
+			ACCOUNT:         mongoClient.Database(dbName).Collection(ACCOUNT),
+			ACCOUNTKEY:      mongoClient.Database(dbName).Collection(ACCOUNTKEY),
+			SNAPREVISION:    mongoClient.Database(dbName).Collection(SNAPREVISION),
+			SNAPDECLARATION: mongoClient.Database(dbName).Collection(SNAPDECLARATION),
+			SNAPBUILD:       mongoClient.Database(dbName).Collection(SNAPBUILD),
+		},
 	}
 }
 
@@ -77,23 +91,13 @@ func (r *AssertionRepository) AddAccountKeyAssertion(
 	signature string,
 ) (*model.AccountKeyAssertion, *cerror.CustomError) {
 	assertion := &model.AccountKeyAssertion{
-		ID:                       uuid.New(),
-		CreatedAt:                time.Now(),
 		Type:                     asserts.AccountKeyType.Name,
-		AuthorityID:              authorityID,
 		RevisionSequenceNumber:   revision,
 		PublicKeySha3_384Encoded: publicKeySHA3_384,
-		AccountID:                accountID,
-		Name:                     name,
-		Since:                    since,
-		Until:                    until,
-		Body:                     body,
-		BodyLength:               bodyLength,
-		SignKeySHA3_384:          signKeySHA3_384,
 		Signature:                signature,
 	}
 
-	_, err := r.accountKeyAssertionCollection.InsertOne(context.Background(), assertion)
+	_, err := r.assertionCollections[ACCOUNTKEY].InsertOne(context.Background(), assertion)
 	if err != nil {
 		cerr := cerror.ConvertError(err, "failed to insert account key assertion in MongoDB")
 		logrus.Error(cerr)
@@ -104,16 +108,23 @@ func (r *AssertionRepository) AddAccountKeyAssertion(
 	return assertion, nil
 }
 
-func (r *AssertionRepository) AddSnapRevisionAssertion(el *cerror.ErrorList, authority_id, snap_sha3_384, sign_key_SHA3_384 string, developer_id, snap_entry_id uuid.UUID, snap_revision_sequence_number uint32, snap_size uint64, timestamp time.Time, signature string) (*model.SnapRevisionAssertion, *cerror.CustomError) {
-	query := `
-		INSERT INTO snap_revision_assertion (authority_id, snap_sha3_384, sign_key_SHA3_384, developer_id, snap_entry_id, snap_revision_sequence_number, timestamp, snap_size, signature) 
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
-		RETURNING id
-	`
-	assertion := &model.SnapRevisionAssertion{}
-	err := r.db.Get(assertion, query, authority_id, snap_sha3_384, sign_key_SHA3_384, developer_id, snap_entry_id, snap_revision_sequence_number, timestamp, snap_size, signature)
+func (r *AssertionRepository) AddSnapRevisionAssertion(
+	el *cerror.ErrorList,
+	authorityID, snapSHA3_384, signKeySHA3_384 string,
+	developerID, snapEntryID uuid.UUID,
+	snapRevisionSequenceNumber uint32,
+	snapSize uint64,
+	timestamp time.Time,
+	signature string,
+) (*model.SnapRevisionAssertion, *cerror.CustomError) {
+	assertion := &model.SnapRevisionAssertion{
+		SnapSHA3_384: snapSHA3_384,
+		Signature:    signature,
+	}
+
+	_, err := r.assertionCollections[SNAPREVISION].InsertOne(context.Background(), assertion)
 	if err != nil {
-		cerr := cerror.ConvertError(err, fmt.Sprintf("failed to save snap revision assertion in database: %v", err))
+		cerr := cerror.ConvertError(err, "failed to insert snap revision assertion in MongoDB")
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
 		return nil, cerr
@@ -255,7 +266,7 @@ func (r *AssertionRepository) GetAccountKeyAssertionByPublicKeySha(
 	filter := bson.M{"publickeysha3_384encoded": publicKeySHA3_384}
 
 	var result model.AccountKeyAssertion
-	err := r.accountKeyAssertionCollection.FindOne(context.Background(), filter).Decode(&result)
+	err := r.assertionCollections[ACCOUNTKEY].FindOne(context.Background(), filter).Decode(&result)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			cerr := cerror.NewCustomError(cerror.ResourceNotFound, "no matching AccountKeyAssertion found")
@@ -276,7 +287,7 @@ func (r *AssertionRepository) GetLatestAccountKeyAssertion(el *cerror.ErrorList,
 	opts := options.FindOne().SetSort(bson.D{{Key: "revisionsequencenumber", Value: -1}})
 
 	var result model.AccountKeyAssertion
-	err := r.accountKeyAssertionCollection.FindOne(context.Background(), filter, opts).Decode(&result)
+	err := r.assertionCollections[ACCOUNTKEY].FindOne(context.Background(), filter, opts).Decode(&result)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			cerr := cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("no account key assertion found for account id: %s", accountID.String()))
@@ -293,21 +304,23 @@ func (r *AssertionRepository) GetLatestAccountKeyAssertion(el *cerror.ErrorList,
 }
 
 func (r *AssertionRepository) GetSnapRevisionAssertionBySHA3_384(el *cerror.ErrorList, snap_sha3_384 string) (*model.SnapRevisionAssertion, *cerror.CustomError) {
-	query := `
-		SELECT id, authority_id, snap_sha3_384, developer_id, snap_entry_id, snap_revision_sequence_number, timestamp, signature 
-		FROM snap_revision_assertion 
-		WHERE snap_sha3_384 = $1
-	`
-	assertion := &model.SnapRevisionAssertion{}
-	err := r.db.Get(assertion, query, snap_sha3_384)
+	filter := bson.M{"snapsha3_384": snap_sha3_384}
+
+	var result model.SnapRevisionAssertion
+	err := r.assertionCollections[SNAPREVISION].FindOne(context.Background(), filter).Decode(&result)
 	if err != nil {
-		cerr := cerror.ConvertError(err, fmt.Sprintf("failed to get snap revision assertion by SHA3_384: %s, err: %v", snap_sha3_384, err))
+		if err == mongo.ErrNoDocuments {
+			cerr := cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("no snap revision assertion found for SHA3_384: %s", snap_sha3_384))
+			el.AddCustomError(cerr)
+			return nil, cerr
+		}
+		cerr := cerror.ConvertError(err, fmt.Sprintf("failed to retrieve snap revision assertion from MongoDB for SHA3_384: %s", snap_sha3_384))
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
 		return nil, cerr
 	}
 
-	return assertion, nil
+	return &result, nil
 }
 
 func (r *AssertionRepository) GetSnapDeclarationAssertionBySnapID(el *cerror.ErrorList, assertionID string) (*model.SnapDeclarationAssertion, *cerror.CustomError) {
