@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/idlab-discover/kebeng/services/assertion/internal/model"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/google/uuid"
 	"github.com/idlab-discover/kebeng/common/cerror"
@@ -32,11 +33,15 @@ type IAssertionRepository interface {
 }
 
 type AssertionRepository struct {
-	db *sqlx.DB
+	db          *sqlx.DB
+	mongoClient *mongo.Client
 }
 
-func NewAssertionRepository(db *sqlx.DB) IAssertionRepository {
-	return &AssertionRepository{db: db}
+func NewAssertionRepository(db *sqlx.DB, mongoClient *mongo.Client) IAssertionRepository {
+	return &AssertionRepository{
+		db:          db,
+		mongoClient: mongoClient,
+	}
 }
 
 // TODO: eventually remove this and use correct assertion, leaving this here now for backwards compatibility

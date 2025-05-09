@@ -1,24 +1,28 @@
 package database
 
 import (
+	"context"
 	"fmt"
 	"time"
 
-	"github.com/idlab-discover/kebeng/services/assertion/internal/config"
-
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
-	_ "github.com/golang-migrate/migrate/v4/source/file" // needed for file source
+	_ "github.com/golang-migrate/migrate/v4/source/file" // required for file source
+	"github.com/idlab-discover/kebeng/services/assertion/internal/config"
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
+
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// this is really bad for now just to test somehting
-func NewDatabase(cfg *config.Config) (*sqlx.DB, error) {
-	return createDatabaseWithDSN(getDSN(cfg), cfg)
+// NewPostgresDatabase establishes a connection to the PostgreSQL database
+func NewPostgresDatabase(cfg *config.Config) (*sqlx.DB, error) {
+	return createPostgresDatabaseWithDSN(getPostgresDSN(cfg), cfg)
 }
 
-func createDatabaseWithDSN(connectionString string, cfg *config.Config) (*sqlx.DB, error) {
+// createPostgresDatabaseWithDSN establishes a connection to PostgreSQL using a DSN (Data Source Name)
+func createPostgresDatabaseWithDSN(connectionString string, cfg *config.Config) (*sqlx.DB, error) {
 	var db *sqlx.DB
 	var err error
 
@@ -28,23 +32,24 @@ func createDatabaseWithDSN(connectionString string, cfg *config.Config) (*sqlx.D
 	for try := 0; try < maxRetries; try++ {
 		db, err = sqlx.Connect("postgres", connectionString)
 		if err == nil {
-			logrus.Info("Connected to database")
+			logrus.Info("Connected to PostgreSQL database")
 
-			err = RunMigrations(db, cfg)
+			err = RunPostgresMigrations(db, cfg)
 			if err != nil {
 				logrus.Errorf("Migration failed: %v", err)
 			}
 
 			return db, nil
 		}
-		logrus.Errorf("Failed to connect to database at try %d: %v", try, err)
+		logrus.Errorf("Failed to connect to PostgreSQL database at try %d: %v", try, err)
 		time.Sleep(retryInterval)
 	}
-	logrus.Errorf("Failed to connect to database after %d retries", maxRetries)
+	logrus.Errorf("Failed to connect to PostgreSQL database after %d retries", maxRetries)
 	return nil, err
 }
 
-func getDSN(cfg *config.Config) string {
+// getPostgresDSN returns the Postgres Data Source Name (DSN) string
+func getPostgresDSN(cfg *config.Config) string {
 	return fmt.Sprintf("host=%s port=%d user=%s dbname=%s password=%s sslmode=disable TimeZone=UTC",
 		cfg.DBHost,
 		cfg.DBPort,
@@ -54,17 +59,16 @@ func getDSN(cfg *config.Config) string {
 	)
 }
 
-// runs the migration files in the /migrations folder
-func RunMigrations(db *sqlx.DB, cfg *config.Config) error {
-	logrus.Info("Running database migrations")
+// RunPostgresMigrations executes the migrations for PostgreSQL
+func RunPostgresMigrations(db *sqlx.DB, cfg *config.Config) error {
+	logrus.Info("Running PostgreSQL database migrations")
 
 	driver, err := postgres.WithInstance(db.DB, &postgres.Config{})
 	if err != nil {
 		return fmt.Errorf("failed to create migration driver: %v", err)
 	}
 
-	// the path here is the path in the container where the migration files are stored
-
+	// Path to your migration files
 	m, err := migrate.NewWithDatabaseInstance(
 		fmt.Sprintf("file://%s", cfg.MigrationPath),
 		"postgres",
@@ -78,6 +82,26 @@ func RunMigrations(db *sqlx.DB, cfg *config.Config) error {
 	if err != nil && err != migrate.ErrNoChange {
 		return fmt.Errorf("failed to run migrations: %v", err)
 	}
-	logrus.Info("Database migrations ran successfully")
+	logrus.Info("PostgreSQL database migrations ran successfully")
 	return nil
+}
+
+// NewMongoDBConnection establishes a connection to MongoDB
+func NewMongoDBConnection(cfg *config.Config) (*mongo.Client, error) {
+	clientOptions := options.Client().ApplyURI(cfg.MongoDBURI)
+
+	// Establish connection to MongoDB
+	client, err := mongo.Connect(context.Background(), clientOptions)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to MongoDB: %v", err)
+	}
+
+	// Verify if the connection is successful
+	err = client.Ping(context.Background(), nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to ping MongoDB: %v", err)
+	}
+
+	logrus.Info("Connected to MongoDB database")
+	return client, nil
 }

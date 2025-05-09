@@ -11,6 +11,7 @@ services:
       - minio
       - store_db
       - account_db
+      - mongo_db
     volumes:
       - ./services/gateway/config.yaml:/app/config.yaml  # config file
       - ./test-data:/app/test-data 
@@ -110,7 +111,6 @@ services:
     volumes:
       - ./services/assertion/config.yaml:/app/config.yaml  # config file
       - ./services/assertion/keys/:/app/keys/  # TODO: this path should become a variable instead of hardcoded
-
     environment:
       - CONFIG_FILE_PATH=/app/config.yaml
       - TEST_MODE=1
@@ -132,11 +132,25 @@ services:
     networks: 
       - kebeng-backend
 
+  mongo_db:  # New MongoDB service
+    image: mongo:latest
+    restart: always
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - "27017:27017"  # MongoDB default port
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=mongo_user
+      - MONGO_INITDB_ROOT_PASSWORD=mongo_pass
+    networks:
+      - kebeng-backend
+
 volumes:
   store_data:
   minio_data:
   account_data:
   assertion_data:
+  mongo_data:  # Volume for MongoDB data
 
 networks:
   kebeng-backend:

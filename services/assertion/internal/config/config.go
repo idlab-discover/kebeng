@@ -33,6 +33,8 @@ type Config struct {
 	TestMode bool
 
 	Monitoring bool `mapstructure:"monitoring" yaml:"monitoring"`
+
+	MongoDBURI string `mapstructure:"mongodb_uri" yaml:"mongodb_uri"`
 }
 
 func LoadConfig() (*Config, error) {
