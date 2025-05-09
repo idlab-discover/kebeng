@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -15,7 +14,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/idlab-discover/kebeng/common/cerror"
 	"github.com/jmoiron/sqlx"
-	"github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 )
 
@@ -118,6 +116,7 @@ func (r *AssertionRepository) AddSnapRevisionAssertion(
 	signature string,
 ) (*model.SnapRevisionAssertion, *cerror.CustomError) {
 	assertion := &model.SnapRevisionAssertion{
+		Type:         asserts.SnapRevisionType.Name,
 		SnapSHA3_384: snapSHA3_384,
 		Signature:    signature,
 	}
@@ -135,92 +134,22 @@ func (r *AssertionRepository) AddSnapRevisionAssertion(
 
 func (r *AssertionRepository) AddSnapDeclarationAssertion(el *cerror.ErrorList, authorityID, signKey, snapID, snapName, publisherID string, revision uint32, series string, timestamp time.Time, refreshControl []string, aliases []model.Alias, plugs model.Plugs, slots model.Slots, signature string) (*model.SnapDeclarationAssertion, *cerror.CustomError) {
 	// start transaction
-	tx, err := r.db.Beginx()
+	assertion := &model.SnapDeclarationAssertion{
+		Type:      asserts.SnapDeclarationType.Name,
+		SnapID:    snapID,
+		Revision:  revision,
+		Signature: signature,
+	}
+
+	_, err := r.assertionCollections[SNAPDECLARATION].InsertOne(context.Background(), assertion)
 	if err != nil {
-		cerr := cerror.ConvertError(err, "failed to begin transaction")
-		logrus.Error(cerr)
-		el.AddCustomError(cerr)
-		return nil, cerr
-	}
-	defer func() {
-		if err != nil {
-			_ = tx.Rollback()
-		}
-	}()
-
-	// marshal plugs/slots into JSON
-	plugsJSON, err := json.Marshal(plugs)
-	if err != nil {
-		cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to marshal plugs: %v", err))
-		logrus.Error(cerr)
-		el.AddCustomError(cerr)
-		return nil, cerr
-	}
-	slotsJSON, err := json.Marshal(slots)
-	if err != nil {
-		cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to marshal slots: %v", err))
+		cerr := cerror.ConvertError(err, "failed to insert snap declaration assertion in MongoDB")
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
 		return nil, cerr
 	}
 
-	parent := &model.SnapDeclarationAssertion{}
-	const parentInsertQuery = `
-    INSERT INTO snap_declaration_assertion
-      (authority_id, sign_key_sha3_384,
-       snap_id,    snap_name,      publisher_id,
-       revision,   series,         timestamp,
-       refresh_control, plugs,      slots,
-       signature)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
-    RETURNING
-      id, authority_id, sign_key_sha3_384,
-      snap_id, snap_name, publisher_id,
-      revision, series, timestamp,
-      refresh_control, plugs, slots,
-      signature, created_at
-  `
-	err = tx.Get(parent, parentInsertQuery,
-		authorityID, signKey,
-		snapID, snapName, publisherID,
-		revision, series, timestamp,
-		pq.Array(refreshControl),
-		plugsJSON, slotsJSON,
-		signature,
-	)
-	if err != nil {
-		cerr := cerror.ConvertError(err, fmt.Sprintf("failed to insert snap_declaration_assertion: %v", err))
-		logrus.Error(cerr)
-		el.AddCustomError(cerr)
-		return nil, cerr
-	}
-
-	// insert aliases
-	for _, a := range aliases {
-		if _, err = tx.Exec(`
-      INSERT INTO alias (assertion_id, name, target)
-      VALUES ($1,$2,$3)
-    `, parent.ID, a.Name, a.Target); err != nil {
-			cerr := cerror.ConvertError(err, fmt.Sprintf("failed to insert alias %q: %v", a.Name, err))
-			logrus.Error(cerr)
-			el.AddCustomError(cerr)
-			return nil, cerr
-		}
-	}
-
-	// commit
-	if err = tx.Commit(); err != nil {
-		cerr := cerror.ConvertError(err, "failed to commit transaction")
-		logrus.Error(cerr)
-		el.AddCustomError(cerr)
-		return nil, cerr
-	}
-
-	parent.Aliases = aliases
-	parent.Plugs = plugs
-	parent.Slots = slots
-
-	return parent, nil
+	return assertion, nil
 }
 
 func (r *AssertionRepository) AddSnapBuildAssertion(el *cerror.ErrorList, authority_id, sign_key_SHA3_384 string, snap_id, account_id uuid.UUID, grade string, snap_sha3_384 string, snap_size uint64, signature string, timestamp time.Time) (*model.SnapBuildAssertion, *cerror.CustomError) {
@@ -323,59 +252,45 @@ func (r *AssertionRepository) GetSnapRevisionAssertionBySHA3_384(el *cerror.Erro
 	return &result, nil
 }
 
-func (r *AssertionRepository) GetSnapDeclarationAssertionBySnapID(el *cerror.ErrorList, assertionID string) (*model.SnapDeclarationAssertion, *cerror.CustomError) {
-	const parentQuery = `
-        SELECT
-            id, authority_id, sign_key_sha3_384, snap_id, snap_name, publisher_id, revision, series, timestamp,
-            refresh_control, plugs, slots, signature, created_at
-        FROM snap_declaration_assertion
-        WHERE snap_id = $1
-    `
+func (r *AssertionRepository) GetSnapDeclarationAssertionBySnapID(el *cerror.ErrorList, snapID string) (*model.SnapDeclarationAssertion, *cerror.CustomError) {
+	filter := bson.M{"snapid": snapID}
 
 	var assertion model.SnapDeclarationAssertion
-	if err := r.db.Get(&assertion, parentQuery, assertionID); err != nil {
-		cerr := cerror.ConvertError(err, fmt.Sprintf("failed to load snap_declaration_assertion %q: %v", assertionID, err))
+	err := r.assertionCollections[SNAPDECLARATION].FindOne(context.Background(), filter).Decode(&assertion)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			cerr := cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("no snap declaration assertion found for snap id: %s", snapID))
+			el.AddCustomError(cerr)
+			return nil, cerr
+		}
+		cerr := cerror.ConvertError(err, fmt.Sprintf("failed to retrieve snap declaration assertion from MongoDB for snap id: %s", snapID))
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
 		return nil, cerr
 	}
-
-	// now load aliases
-	const aliasQuery = `
-        SELECT name, target
-          FROM alias
-         WHERE assertion_id = $1
-         ORDER BY name
-    `
-	var aliases []model.Alias
-	if err := r.db.Select(&aliases, aliasQuery, assertion.ID); err != nil {
-		cerr := cerror.ConvertError(err, fmt.Sprintf("failed to load aliases for assertion %q: %v", assertionID, err))
-		logrus.Error(cerr)
-		el.AddCustomError(cerr)
-		return nil, cerr
-	}
-	assertion.Aliases = aliases
 
 	return &assertion, nil
 }
 
 func (r *AssertionRepository) GetLatestSnapDeclarationAssertion(el *cerror.ErrorList, snapID string) (*model.SnapDeclarationAssertion, *cerror.CustomError) {
-	query := `
-		SELECT id, authority_id, sign_key_sha3_384, snap_id, snap_name, publisher_id, revision, series, timestamp, refresh_control, plugs, slots, signature 
-		FROM snap_declaration_assertion 
-		WHERE snap_id = $1 ORDER BY revision DESC LIMIT 1
-	`
-	assertion := &model.SnapDeclarationAssertion{}
+	filter := bson.M{"snapid": snapID}
+	opts := options.FindOne().SetSort(bson.D{{Key: "revision", Value: -1}})
 
-	err := r.db.Get(assertion, query, snapID)
+	var assertion model.SnapDeclarationAssertion
+	err := r.assertionCollections[SNAPDECLARATION].FindOne(context.Background(), filter, opts).Decode(&assertion)
 	if err != nil {
-		cerr := cerror.ConvertError(err, fmt.Sprintf("failed to get latest snap declaration assertion by snap id: %s, err: %v", snapID, err))
+		if err == mongo.ErrNoDocuments {
+			cerr := cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("no snap declaration assertion found for snap id: %s", snapID))
+			el.AddCustomError(cerr)
+			return nil, cerr
+		}
+		cerr := cerror.ConvertError(err, fmt.Sprintf("failed to retrieve latest snap declaration assertion from MongoDB for snap id: %s", snapID))
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
-		return nil, cerror.ConvertError(err, fmt.Sprintf("failed to get latest snap declaration assertion by snap id: %s, err: %v", snapID, err))
+		return nil, cerr
 	}
 
-	return assertion, nil
+	return &assertion, nil
 }
 
 func (r *AssertionRepository) GetAccountAssertionByAccountID(el *cerror.ErrorList, accountID uuid.UUID) (*model.AccountAssertion, *cerror.CustomError) {
