@@ -14,7 +14,15 @@ import (
 
 // NewMongoDBConnection establishes a connection to MongoDB
 func NewMongoDBConnection(cfg *config.Config) (*mongo.Client, error) {
-	clientOptions := options.Client().ApplyURI(cfg.MongoDBURI)
+	mongoDBURI := fmt.Sprintf("mongodb://%s:%s@%s:%d/%s?authSource=%s",
+		cfg.MongoDBUser,
+		cfg.MongoDBPassword,
+		cfg.MongoDBHost,
+		cfg.MongoDBPort,
+		cfg.MongoDBDB,
+		cfg.MongoDBAuthSource,
+	)
+	clientOptions := options.Client().ApplyURI(mongoDBURI)
 
 	// Establish connection to MongoDB
 	client, err := mongo.Connect(context.Background(), clientOptions)

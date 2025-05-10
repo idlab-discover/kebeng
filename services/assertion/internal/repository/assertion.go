@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/idlab-discover/kebeng/services/assertion/internal/config"
 	"github.com/idlab-discover/kebeng/services/assertion/internal/model"
 	"github.com/snapcore/snapd/asserts"
 	"go.mongodb.org/mongo-driver/bson"
@@ -50,8 +51,8 @@ type AssertionRepository struct {
 	AssertionCollections map[string]ICollection
 }
 
-func NewAssertionRepository(mongoClient *mongo.Client) IAssertionRepository {
-	dbName := "assertion" // Maybe this should be a config value
+func NewAssertionRepository(cfg *config.Config,mongoClient *mongo.Client) IAssertionRepository {
+	dbName := cfg.MongoDBDB
 
 	return &AssertionRepository{
 		mongoClient: mongoClient,

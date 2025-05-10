@@ -51,7 +51,7 @@ func main() {
 	}
 
 	// Repositories for PostgreSQL and MongoDB
-	repo := repository.NewAssertionRepository(mongoDB)
+	repo := repository.NewAssertionRepository(cfg, mongoDB)
 
 	// Business Logic
 	assertionLogic := logic.NewAssertionLogic(cfg, repo, assertionDB)

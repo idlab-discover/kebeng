@@ -28,7 +28,12 @@ type Config struct {
 
 	Monitoring bool `mapstructure:"monitoring" yaml:"monitoring"`
 
-	MongoDBURI string `mapstructure:"mongodb_uri" yaml:"mongodb_uri"`
+	MongoDBDB         string `mapstructure:"mongodb_db" yaml:"mongodb_db"`
+	MongoDBUser       string `mapstructure:"mongodb_user" yaml:"mongodb_user"`
+	MongoDBPassword   string `mapstructure:"mongodb_password" yaml:"mongodb_password"`
+	MongoDBHost       string `mapstructure:"mongodb_host" yaml:"mongodb_host"`
+	MongoDBPort       int    `mapstructure:"mongodb_port" yaml:"mongodb_port"`
+	MongoDBAuthSource string `mapstructure:"mongodb_auth_source" yaml:"mongodb_auth_source"`
 }
 
 func LoadConfig() (*Config, error) {
@@ -119,6 +124,26 @@ func (c *Config) checkConfig() error {
 	}
 	if _, err := uuid.Parse(c.RootAccountIDString); err != nil {
 		errs = append(errs, "RootAccountID must be a valid UUID")
+	}
+
+	// Check MongoDB config.
+	if c.MongoDBHost == "" {
+		errs = append(errs, "MongoDBHost is required")
+	}
+	if c.MongoDBPort <= 0 {
+		errs = append(errs, "MongoDBPort must be a positive integer")
+	}
+	if c.MongoDBDB == "" {
+		errs = append(errs, "MongoDBDB is required")
+	}
+	if c.MongoDBUser == "" {
+		errs = append(errs, "MongoDBUser is required")
+	}
+	if c.MongoDBPassword == "" {
+		errs = append(errs, "MongoDBPassword is required")
+	}
+	if c.MongoDBAuthSource == "" {
+		errs = append(errs, "MongoDBAuthSource is required")
 	}
 
 	if len(errs) > 0 {

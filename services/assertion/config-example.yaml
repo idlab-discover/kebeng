@@ -1,4 +1,9 @@
-mongodb_uri: "mongodb://root:rootpassword@mongo_db:27017/assertions?authSource=admin"
+mongodb_db: "assertions"
+mongodb_user: "root"
+mongodb_password: "rootpassword"
+mongodb_host: "mongo_db"
+mongodb_port: 27017
+mongodb_auth_source: "admin"
 
 grpc_host: "assertion_service"
 grpc_port: 8083
