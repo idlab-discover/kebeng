@@ -21,15 +21,6 @@ type MockAssertionRepository struct {
 	mock.Mock
 }
 
-// AddAssertion mocks AddAssertion method.
-func (m *MockAssertionRepository) AddAssertion(ctx context.Context, snapEntryId uuid.UUID, assertionString string) (*model.Assertion, *cerror.CustomError) {
-	args := m.Called(ctx, snapEntryId, assertionString)
-	if args.Get(0) != nil {
-		return args.Get(0).(*model.Assertion), nil
-	}
-	return nil, args.Get(1).(*cerror.CustomError)
-}
-
 // AddAccountKeyAssertion mocks AddAccountKeyAssertion method.
 func (m *MockAssertionRepository) AddAccountKeyAssertion(ctx context.Context, el *cerror.ErrorList, authority_id, public_key_SHA3_384, sign_key_SHA3_384, name string, revision uint32, account_id uuid.UUID, since, until time.Time, body []byte, body_length uint64, signature string) (*model.AccountKeyAssertion, *cerror.CustomError) {
 	args := m.Called(ctx, el, authority_id, public_key_SHA3_384, sign_key_SHA3_384, name, revision, account_id, since, until, body, body_length, signature)

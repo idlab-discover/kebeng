@@ -13,7 +13,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/idlab-discover/kebeng/common/cerror"
-	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
 )
 
@@ -31,7 +30,6 @@ type ICollection interface {
 }
 
 type IAssertionRepository interface {
-	AddAssertion(ctx context.Context, snapEntryId uuid.UUID, assertionString string) (*model.Assertion, *cerror.CustomError)
 	AddAccountKeyAssertion(ctx context.Context, el *cerror.ErrorList, authority_id, public_key_SHA3_384, sign_key_SHA3_384, name string, revision uint32, account_id uuid.UUID, since time.Time, until time.Time, body []byte, body_length uint64, signature string) (*model.AccountKeyAssertion, *cerror.CustomError)
 	AddSnapRevisionAssertion(ctx context.Context, el *cerror.ErrorList, authority_id, snap_sha3_384, sign_key_SHA3_384 string, developer_id, snap_entry_id uuid.UUID, snap_revision_sequence_number uint32, snap_size uint64, timestamp time.Time, signature string) (*model.SnapRevisionAssertion, *cerror.CustomError)
 	AddSnapDeclarationAssertion(ctx context.Context, el *cerror.ErrorList, authorityID, sign_key_SHA3_384, snapID, snapName, publisherID string, revision uint32, series string, timestamp time.Time, refreshControl []string, aliases []model.Alias, plugs model.Plugs, slots model.Slots, signature string) (*model.SnapDeclarationAssertion, *cerror.CustomError)
@@ -48,16 +46,14 @@ type IAssertionRepository interface {
 }
 
 type AssertionRepository struct {
-	db                   *sqlx.DB
 	mongoClient          *mongo.Client
 	AssertionCollections map[string]ICollection
 }
 
-func NewAssertionRepository(db *sqlx.DB, mongoClient *mongo.Client) IAssertionRepository {
+func NewAssertionRepository(mongoClient *mongo.Client) IAssertionRepository {
 	dbName := "assertion" // Maybe this should be a config value
 
 	return &AssertionRepository{
-		db:          db,
 		mongoClient: mongoClient,
 		AssertionCollections: map[string]ICollection{
 			ACCOUNT:         &MongoCollection{col: mongoClient.Database(dbName).Collection(ACCOUNT)},
@@ -67,20 +63,6 @@ func NewAssertionRepository(db *sqlx.DB, mongoClient *mongo.Client) IAssertionRe
 			SNAPBUILD:       &MongoCollection{col: mongoClient.Database(dbName).Collection(SNAPBUILD)},
 		},
 	}
-}
-
-// TODO: eventually remove this and use correct assertion, leaving this here now for backwards compatibility
-func (r *AssertionRepository) AddAssertion(ctx context.Context, snapEntryId uuid.UUID, assertionString string) (*model.Assertion, *cerror.CustomError) {
-	query := `INSERT INTO assertions (snap_entry_id, assertion) VALUES ($1, $2) RETURNING id, assertion`
-	assertion := &model.Assertion{}
-
-	err := r.db.GetContext(ctx, assertion, query, snapEntryId, assertionString)
-	if err != nil {
-		logrus.Errorf("failed to save assertion in database: %v", err)
-		return nil, cerror.NewCustomError(cerror.DatabaseError, "failed to save assertion in database")
-	}
-
-	return assertion, nil
 }
 
 func (r *AssertionRepository) AddAccountKeyAssertion(

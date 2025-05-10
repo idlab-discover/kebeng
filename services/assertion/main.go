@@ -31,13 +31,6 @@ func main() {
 	}
 	logrus.Infof("Loaded configuration: %+v", cfg)
 
-	// Connect to PostgreSQL
-	db, err := database.NewPostgresDatabase(cfg)
-	if err != nil {
-		logrus.Fatalf("Failed to connect to PostgreSQL: %v", err)
-	}
-	logrus.Infof("Connected to PostgreSQL")
-
 	// Connect to MongoDB
 	mongoDB, err := database.NewMongoDBConnection(cfg)
 	if err != nil {
@@ -58,7 +51,7 @@ func main() {
 	}
 
 	// Repositories for PostgreSQL and MongoDB
-	repo := repository.NewAssertionRepository(db, mongoDB)
+	repo := repository.NewAssertionRepository(mongoDB)
 
 	// Business Logic
 	assertionLogic := logic.NewAssertionLogic(cfg, repo, assertionDB)

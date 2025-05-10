@@ -159,7 +159,7 @@ services:
       - "8083:8083"
       - "6063:6060"  # for pprof
     depends_on:
-      - assertion_db
+      - mongo_db
     volumes:
       - ./services/assertion/config.yaml:/app/config.yaml  # config file
       - ./services/assertion/keys/:/app/keys/  # TODO: this path should become a variable instead of hardcoded
@@ -170,19 +170,18 @@ services:
     restart: always
     networks: 
       - kebeng-backend
-
-  assertion_db:
-    image: postgres:13
+  
+  mongo_db:
+    image: mongo:latest
     restart: always
     volumes:
-      - assertion_data:/var/lib/postgresql/data
-    environment:
-      - POSTGRES_DB=assertion_db
-      - POSTGRES_USER=kebe_user
-      - POSTGRES_PASSWORD=kebe
+      - mongo_data:/data/db
     ports:
-      - "5434:5432"
-    networks: 
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: rootpassword
+    networks:
       - kebeng-backend
 
 volumes:
