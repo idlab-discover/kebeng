@@ -131,7 +131,7 @@ volumes:
   store_data:
   minio_data:
   account_data:
-  assertion_data:
+  mongo_data:
 
 networks:
   kebeng-backend:
