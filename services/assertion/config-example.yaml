@@ -1,7 +1,7 @@
 mongodb_db: "assertions"
 mongodb_user: "root"
 mongodb_password: "rootpassword"
-mongodb_host: "mongo_db"
+mongodb_host: "assertion_mongo_db" // This should be the name of the MongoDB service in docker-compose
 mongodb_port: 27017
 mongodb_auth_source: "admin"
 
