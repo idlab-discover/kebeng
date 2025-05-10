@@ -614,21 +614,6 @@ func (s *AssertionService) GetAccountAssertionByAccountID(ctx context.Context, r
 
 // ############### HELPER FUNCTIONS #################
 
-// convert proto Alias to model Alias
-func protoAliasToModelAlias(protoAliases []*proto.Alias) []model.Alias {
-	if len(protoAliases) == 0 {
-		return nil
-	}
-	aliases := make([]model.Alias, len(protoAliases))
-	for i, protoAlias := range protoAliases {
-		aliases[i] = model.Alias{
-			Name:   protoAlias.Name,
-			Target: protoAlias.Target,
-		}
-	}
-	return aliases
-}
-
 // convert model Alias to proto Alias
 func modelAliasToProtoAlias(modelAliases []model.Alias) []*proto.Alias {
 	if len(modelAliases) == 0 {
@@ -654,26 +639,4 @@ func serializeMap[T model.Plugs | model.Slots](m T) string {
 		return ""
 	}
 	return string(serialized)
-}
-
-// deserializePlugs converts a JSON string into a model.Plugs object.
-func deserializePlugs(plugs string) model.Plugs {
-	var deserialized model.Plugs
-	err := json.Unmarshal([]byte(plugs), &deserialized)
-	if err != nil {
-		logrus.Errorf("failed to deserialize plugs: %v", err)
-		return nil
-	}
-	return deserialized
-}
-
-// DeserializeSlot converts a JSON string into a model.Slots object.
-func deserializeSlots(slots string) model.Slots {
-	var deserialized model.Slots
-	err := json.Unmarshal([]byte(slots), &deserialized)
-	if err != nil {
-		logrus.Errorf("failed to deserialize slots: %v", err)
-		return nil
-	}
-	return deserialized
 }
