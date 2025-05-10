@@ -80,15 +80,10 @@ func (s *AssertionService) AddSnapRevisionAssertion(ctx context.Context, req *pr
 	snapRevisionAssertion, cerr := s.repo.AddSnapRevisionAssertion(
 		ctx,
 		el,
-		s.cfg.AuthorityID,
 		req.GetSnapSha3_384(),
-		s.cfg.RootKey.PublicKey().ID(), // this is the sign_key_SHA3_384
+		signature,
 		parsedDeveloperId,
 		parsedSnapEntryId,
-		req.GetSnapRevisionSequenceNumber(),
-		req.GetSnapSize(),
-		req.GetTimestamp().AsTime(),
-		signature,
 	)
 	if cerr != nil {
 		// should have been logged and added to error list in repo function
@@ -193,17 +188,10 @@ func (s *AssertionService) AddAccountKeyAssertion(ctx context.Context, req *prot
 	accountKeyAssertion, cerr := s.repo.AddAccountKeyAssertion(
 		ctx,
 		el,
-		s.cfg.AuthorityID,
 		req.GetPublicKeySha3_384Encoded(),
-		s.cfg.RootKey.PublicKey().ID(), // this is the sign_key_SHA3_384
-		req.GetName(),
+		signature,
 		sequenceNumber,
 		parsedAccountId,
-		req.GetSince().AsTime(),
-		req.GetUntil().AsTime(),
-		bodyBytes,
-		uint64(len(bodyBytes)),
-		signature,
 	)
 	if cerr != nil {
 		// should have been logged and added to error list in repo function
@@ -235,7 +223,25 @@ func (s *AssertionService) AddSnapDeclarationAssertion(ctx context.Context, req 
 	el := cerror.NewErrorList()
 
 	var sequenceNumber uint32
-	latestSnapDeclarationAssertion, cerr := s.repo.GetLatestSnapDeclarationAssertion(ctx, el, req.GetSnapId())
+	parsedSnapId, err := uuid.Parse(req.GetSnapId())
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.Invalid, fmt.Sprintf("failed to parse snap id: %s", err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.SnapDeclarationAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}, nil
+	}
+	parsedPublisherId, err := uuid.Parse(req.GetPublisherId())
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.Invalid, fmt.Sprintf("failed to parse publisher id: %s", err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.SnapDeclarationAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}, nil
+	}
+	latestSnapDeclarationAssertion, cerr := s.repo.GetLatestSnapDeclarationAssertion(ctx, el, parsedSnapId)
 	if cerr != nil && cerr.GetCode() != cerror.ResourceNotFound {
 		// should have been logged and added to error list in repo function
 		return &proto.SnapDeclarationAssertionResponse{
@@ -272,19 +278,10 @@ func (s *AssertionService) AddSnapDeclarationAssertion(ctx context.Context, req 
 	snapDeclarationAssertion, cerr := s.repo.AddSnapDeclarationAssertion(
 		ctx,
 		el,
-		s.cfg.AuthorityID,
-		s.cfg.RootKey.PublicKey().ID(), // this is the sign_key_SHA3_384
-		req.GetSnapId(),
-		req.GetSnapName(),
-		req.GetPublisherId(),
-		sequenceNumber,
-		req.GetSeries(),
-		req.GetTimestamp().AsTime(),
-		req.GetRefreshControl(),
-		protoAliasToModelAlias(req.GetAliases()),
-		deserializePlugs(req.GetPlugs()),
-		deserializeSlots(req.GetSlots()),
 		signature,
+		sequenceNumber,
+		parsedSnapId,
+		parsedPublisherId,
 	)
 	if cerr != nil {
 		// should have been logged and added to error list in repo function
@@ -300,9 +297,9 @@ func (s *AssertionService) AddSnapDeclarationAssertion(ctx context.Context, req 
 		Id:              snapDeclarationAssertion.ID.String(),
 		AuthorityId:     snapDeclarationAssertion.AuthorityID,
 		SignKeySha3_384: snapDeclarationAssertion.SignKeySHA3_384,
-		SnapId:          snapDeclarationAssertion.SnapID,
+		SnapId:          snapDeclarationAssertion.SnapEntryID.String(),
 		SnapName:        snapDeclarationAssertion.SnapName,
-		PublisherId:     snapDeclarationAssertion.PublisherID,
+		PublisherId:     snapDeclarationAssertion.PublisherID.String(),
 		Revision:        snapDeclarationAssertion.Revision,
 		Series:          snapDeclarationAssertion.Series,
 		Timestamp:       timestamppb.New(snapDeclarationAssertion.Timestamp),
@@ -338,15 +335,6 @@ func (s *AssertionService) AddSnapBuildAssertion(ctx context.Context, req *proto
 	}
 
 	timestamp := time.Now().Format(time.RFC3339)
-	parsedTimestamp, err := time.Parse(time.RFC3339, timestamp)
-	if err != nil {
-		cerr := cerror.NewCustomError(cerror.Invalid, fmt.Sprintf("failed to parse timestamp: %s", err))
-		logrus.Error(cerr)
-		el.AddCustomError(cerr)
-		return &proto.SnapBuildAssertionResponse{
-			Errors: el.ConvertToProtoErrorList(),
-		}, nil
-	}
 
 	headers := map[string]any{
 		"authority-id":      s.cfg.AuthorityID,
@@ -372,15 +360,9 @@ func (s *AssertionService) AddSnapBuildAssertion(ctx context.Context, req *proto
 	snapBuildAssertion, cerr := s.repo.AddSnapBuildAssertion(
 		ctx,
 		el,
-		s.cfg.AuthorityID,
-		s.cfg.RootKey.PublicKey().ID(), // this is the sign_key_SHA3_384
+		signature,
 		parsedSnapId,
 		parsedAccountId,
-		req.GetGrade(),
-		req.GetSha3_384Encoded(),
-		req.GetSnapSize(),
-		signature,
-		parsedTimestamp,
 	)
 	if cerr != nil {
 		// should have been logged and added to error list in repo function
@@ -454,15 +436,9 @@ func (s *AssertionService) AddAccountAssertion(ctx context.Context, req *proto.A
 	accountAssertion, cerr := s.repo.AddAccountAssertion(
 		ctx,
 		el,
-		s.cfg.AuthorityID,
-		req.GetDisplayName(),
-		req.GetUsername(),
-		req.GetValidation(),
-		parsedAccountId,
-		sequenceNumber,
-		req.GetTimestamp().AsTime(),
-		s.cfg.RootKey.PublicKey().ID(), // this is the sign_key_SHA3_384
 		signature,
+		sequenceNumber,
+		parsedAccountId,
 	)
 	if cerr != nil {
 		// should have been logged and added to error list in repo function
@@ -555,7 +531,16 @@ func (s *AssertionService) GetSnapDeclarationAssertionBySnapID(ctx context.Conte
 			Errors: el.ConvertToProtoErrorList(),
 		}, nil
 	}
-	snapDeclarationAssertion, cerr := s.repo.GetSnapDeclarationAssertionBySnapID(ctx, el, req.GetSnapId())
+	parsedSnapId, err := uuid.Parse(req.GetSnapId())
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.Invalid, fmt.Sprintf("failed to parse snap id: %s", err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.SnapDeclarationAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}, nil
+	}
+	snapDeclarationAssertion, cerr := s.repo.GetSnapDeclarationAssertionBySnapEntryID(ctx, el, parsedSnapId)
 	if cerr != nil {
 		// should have been logged and added to error list in repo function
 		return &proto.SnapDeclarationAssertionResponse{
@@ -568,9 +553,9 @@ func (s *AssertionService) GetSnapDeclarationAssertionBySnapID(ctx context.Conte
 		Id:              snapDeclarationAssertion.ID.String(),
 		AuthorityId:     snapDeclarationAssertion.AuthorityID,
 		SignKeySha3_384: snapDeclarationAssertion.SignKeySHA3_384,
-		SnapId:          snapDeclarationAssertion.SnapID,
+		SnapId:          snapDeclarationAssertion.SnapEntryID.String(),
 		SnapName:        snapDeclarationAssertion.SnapName,
-		PublisherId:     snapDeclarationAssertion.PublisherID,
+		PublisherId:     snapDeclarationAssertion.PublisherID.String(),
 		Revision:        snapDeclarationAssertion.Revision,
 		Series:          snapDeclarationAssertion.Series,
 		Timestamp:       timestamppb.New(snapDeclarationAssertion.Timestamp),

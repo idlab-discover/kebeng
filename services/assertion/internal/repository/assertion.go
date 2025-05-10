@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/idlab-discover/kebeng/services/assertion/internal/config"
 	"github.com/idlab-discover/kebeng/services/assertion/internal/model"
@@ -31,19 +30,19 @@ type ICollection interface {
 }
 
 type IAssertionRepository interface {
-	AddAccountKeyAssertion(ctx context.Context, el *cerror.ErrorList, authority_id, public_key_SHA3_384, sign_key_SHA3_384, name string, revision uint32, account_id uuid.UUID, since time.Time, until time.Time, body []byte, body_length uint64, signature string) (*model.AccountKeyAssertion, *cerror.CustomError)
-	AddSnapRevisionAssertion(ctx context.Context, el *cerror.ErrorList, authority_id, snap_sha3_384, sign_key_SHA3_384 string, developer_id, snap_entry_id uuid.UUID, snap_revision_sequence_number uint32, snap_size uint64, timestamp time.Time, signature string) (*model.SnapRevisionAssertion, *cerror.CustomError)
-	AddSnapDeclarationAssertion(ctx context.Context, el *cerror.ErrorList, authorityID, sign_key_SHA3_384, snapID, snapName, publisherID string, revision uint32, series string, timestamp time.Time, refreshControl []string, aliases []model.Alias, plugs model.Plugs, slots model.Slots, signature string) (*model.SnapDeclarationAssertion, *cerror.CustomError)
-	AddSnapBuildAssertion(ctx context.Context, el *cerror.ErrorList, authority_id, sign_key_SHA3_384 string, snap_id, account_id uuid.UUID, grade string, snap_sha3_384 string, snap_size uint64, signature string, timestamp time.Time) (*model.SnapBuildAssertion, *cerror.CustomError)
-	AddAccountAssertion(ctx context.Context, el *cerror.ErrorList, authority_id, displayName, username, validation string, accountID uuid.UUID, revision uint32, timestamp time.Time, sign_key_SHA3_384, signature string) (*model.AccountAssertion, *cerror.CustomError)
+	AddAccountKeyAssertion(ctx context.Context, el *cerror.ErrorList, public_key_SHA3_384, signature string, revision uint32, account_id uuid.UUID) (*model.AccountKeyAssertion, *cerror.CustomError)
+	AddSnapRevisionAssertion(ctx context.Context, el *cerror.ErrorList, snap_sha3_384, signature string, developer_id, snap_entry_id uuid.UUID) (*model.SnapRevisionAssertion, *cerror.CustomError)
+	AddSnapDeclarationAssertion(ctx context.Context, el *cerror.ErrorList, signature string, revision uint32, snapEntryId, publisherId uuid.UUID) (*model.SnapDeclarationAssertion, *cerror.CustomError)
+	AddSnapBuildAssertion(ctx context.Context, el *cerror.ErrorList, signature string, snap_entry_id, account_id uuid.UUID) (*model.SnapBuildAssertion, *cerror.CustomError)
+	AddAccountAssertion(ctx context.Context, el *cerror.ErrorList, signature string, revision uint32, account_id uuid.UUID) (*model.AccountAssertion, *cerror.CustomError)
 
 	GetAccountKeyAssertionByPublicKeySha(ctx context.Context, el *cerror.ErrorList, public_key_SHA3_384 string) (*model.AccountKeyAssertion, *cerror.CustomError)
 	GetLatestAccountKeyAssertion(ctx context.Context, el *cerror.ErrorList, account_id uuid.UUID) (*model.AccountKeyAssertion, *cerror.CustomError)
 	GetSnapRevisionAssertionBySHA3_384(ctx context.Context, el *cerror.ErrorList, snap_sha3_384 string) (*model.SnapRevisionAssertion, *cerror.CustomError)
-	GetSnapDeclarationAssertionBySnapID(ctx context.Context, el *cerror.ErrorList, snapID string) (*model.SnapDeclarationAssertion, *cerror.CustomError)
-	GetLatestSnapDeclarationAssertion(ctx context.Context, el *cerror.ErrorList, snapID string) (*model.SnapDeclarationAssertion, *cerror.CustomError)
-	GetAccountAssertionByAccountID(ctx context.Context, el *cerror.ErrorList, accountID uuid.UUID) (*model.AccountAssertion, *cerror.CustomError)
-	GetLatestAccountAssertionByAccountID(ctx context.Context, el *cerror.ErrorList, accountID uuid.UUID) (*model.AccountAssertion, *cerror.CustomError)
+	GetSnapDeclarationAssertionBySnapEntryID(ctx context.Context, el *cerror.ErrorList, snap_entry_id uuid.UUID) (*model.SnapDeclarationAssertion, *cerror.CustomError)
+	GetLatestSnapDeclarationAssertion(ctx context.Context, el *cerror.ErrorList, snap_entry_id uuid.UUID) (*model.SnapDeclarationAssertion, *cerror.CustomError)
+	GetAccountAssertionByAccountID(ctx context.Context, el *cerror.ErrorList, account_id uuid.UUID) (*model.AccountAssertion, *cerror.CustomError)
+	GetLatestAccountAssertionByAccountID(ctx context.Context, el *cerror.ErrorList, account_id uuid.UUID) (*model.AccountAssertion, *cerror.CustomError)
 }
 
 type AssertionRepository struct {
@@ -51,7 +50,7 @@ type AssertionRepository struct {
 	AssertionCollections map[string]ICollection
 }
 
-func NewAssertionRepository(cfg *config.Config,mongoClient *mongo.Client) IAssertionRepository {
+func NewAssertionRepository(cfg *config.Config, mongoClient *mongo.Client) IAssertionRepository {
 	dbName := cfg.MongoDBDB
 
 	return &AssertionRepository{
@@ -69,15 +68,13 @@ func NewAssertionRepository(cfg *config.Config,mongoClient *mongo.Client) IAsser
 func (r *AssertionRepository) AddAccountKeyAssertion(
 	ctx context.Context,
 	el *cerror.ErrorList,
-	authorityID, publicKeySHA3_384, signKeySHA3_384, name string,
+	publicKeySHA3_384, signature string,
 	revision uint32,
 	accountID uuid.UUID,
-	since, until time.Time,
-	body []byte,
-	bodyLength uint64,
-	signature string,
 ) (*model.AccountKeyAssertion, *cerror.CustomError) {
 	assertion := &model.AccountKeyAssertion{
+		ID:                       uuid.New(),
+		AccountID:                accountID,
 		Type:                     asserts.AccountKeyType.Name,
 		RevisionSequenceNumber:   revision,
 		PublicKeySha3_384Encoded: publicKeySHA3_384,
@@ -98,15 +95,14 @@ func (r *AssertionRepository) AddAccountKeyAssertion(
 func (r *AssertionRepository) AddSnapRevisionAssertion(
 	ctx context.Context,
 	el *cerror.ErrorList,
-	authorityID, snapSHA3_384, signKeySHA3_384 string,
+	snapSHA3_384, signature string,
 	developerID, snapEntryID uuid.UUID,
-	snapRevisionSequenceNumber uint32,
-	snapSize uint64,
-	timestamp time.Time,
-	signature string,
 ) (*model.SnapRevisionAssertion, *cerror.CustomError) {
 	assertion := &model.SnapRevisionAssertion{
+		ID:           uuid.New(),
 		Type:         asserts.SnapRevisionType.Name,
+		SnapEntryID:  snapEntryID,
+		DeveloperID:  developerID,
 		SnapSHA3_384: snapSHA3_384,
 		Signature:    signature,
 	}
@@ -125,21 +121,16 @@ func (r *AssertionRepository) AddSnapRevisionAssertion(
 func (r *AssertionRepository) AddSnapDeclarationAssertion(
 	ctx context.Context,
 	el *cerror.ErrorList,
-	authorityID, signKey, snapID, snapName, publisherID string,
-	revision uint32,
-	series string,
-	timestamp time.Time,
-	refreshControl []string,
-	aliases []model.Alias,
-	plugs model.Plugs,
-	slots model.Slots,
 	signature string,
+	revision uint32,
+	snapEntryId, publisherId uuid.UUID,
 ) (*model.SnapDeclarationAssertion, *cerror.CustomError) {
 	assertion := &model.SnapDeclarationAssertion{
-		Type:      asserts.SnapDeclarationType.Name,
-		SnapID:    snapID,
-		Revision:  revision,
-		Signature: signature,
+		ID:          uuid.New(),
+		Type:        asserts.SnapDeclarationType.Name,
+		Revision:    revision,
+		SnapEntryID: snapEntryId,
+		Signature:   signature,
 	}
 
 	_, err := r.AssertionCollections[SNAPDECLARATION].InsertOne(ctx, assertion)
@@ -156,20 +147,15 @@ func (r *AssertionRepository) AddSnapDeclarationAssertion(
 func (r *AssertionRepository) AddSnapBuildAssertion(
 	ctx context.Context,
 	el *cerror.ErrorList,
-	authorityID, signKeySHA3_384 string,
-	snapID, accountID uuid.UUID,
-	grade, snapSHA3_384 string,
-	snapSize uint64,
 	signature string,
-	timestamp time.Time,
+	snapEntryID, accountID uuid.UUID,
 ) (*model.SnapBuildAssertion, *cerror.CustomError) {
 	assertion := &model.SnapBuildAssertion{
-		Type:            asserts.SnapBuildType.Name,
-		SignKeySHA3_384: signKeySHA3_384,
-		SnapEntryID:     snapID,
-		DeveloperID:     accountID,
-		SnapSHA3_384:    snapSHA3_384,
-		Signature:       signature,
+		ID:          uuid.New(),
+		SnapEntryID: snapEntryID,
+		DeveloperID: accountID,
+		Type:        asserts.SnapBuildType.Name,
+		Signature:   signature,
 	}
 
 	_, err := r.AssertionCollections[SNAPBUILD].InsertOne(ctx, assertion)
@@ -186,13 +172,12 @@ func (r *AssertionRepository) AddSnapBuildAssertion(
 func (r *AssertionRepository) AddAccountAssertion(
 	ctx context.Context,
 	el *cerror.ErrorList,
-	authorityID, displayName, username, validation string,
-	accountID uuid.UUID,
+	signature string,
 	revision uint32,
-	timestamp time.Time,
-	signKeySHA3_384, signature string,
+	accountID uuid.UUID,
 ) (*model.AccountAssertion, *cerror.CustomError) {
 	assertion := &model.AccountAssertion{
+		ID:        uuid.New(),
 		Type:      asserts.AccountType.Name,
 		AccountID: accountID,
 		Revision:  revision,
@@ -265,10 +250,10 @@ func (r *AssertionRepository) GetSnapRevisionAssertionBySHA3_384(
 	return assertion, nil
 }
 
-func (r *AssertionRepository) GetSnapDeclarationAssertionBySnapID(
+func (r *AssertionRepository) GetSnapDeclarationAssertionBySnapEntryID(
 	ctx context.Context,
 	el *cerror.ErrorList,
-	snapID string,
+	snapID uuid.UUID,
 ) (*model.SnapDeclarationAssertion, *cerror.CustomError) {
 	filter := bson.M{"snapid": snapID}
 
@@ -286,14 +271,14 @@ func (r *AssertionRepository) GetSnapDeclarationAssertionBySnapID(
 func (r *AssertionRepository) GetLatestSnapDeclarationAssertion(
 	ctx context.Context,
 	el *cerror.ErrorList,
-	snapID string,
+	snapEntryID uuid.UUID,
 ) (*model.SnapDeclarationAssertion, *cerror.CustomError) {
-	filter := bson.M{"snapid": snapID}
+	filter := bson.M{"snapid": snapEntryID}
 	opts := options.FindOne().SetSort(bson.D{{Key: "revision", Value: -1}})
 
 	assertion, err := findOne[model.SnapDeclarationAssertion](ctx, r.AssertionCollections[SNAPDECLARATION], filter, opts)
 	if err != nil {
-		cerr := cerror.ConvertError(err, fmt.Sprintf("failed to retrieve latest snap declaration assertion from MongoDB for snap id: %s", snapID))
+		cerr := cerror.ConvertError(err, fmt.Sprintf("failed to retrieve latest snap declaration assertion from MongoDB for snap id: %s", snapEntryID))
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
 		return nil, cerr

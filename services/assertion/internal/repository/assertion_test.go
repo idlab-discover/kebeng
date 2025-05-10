@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/idlab-discover/kebeng/common/cerror"
@@ -27,7 +26,7 @@ func TestAddAccountKeyAssertion_Succes(t *testing.T) {
 	mockCol.On("InsertOne", mock.Anything, mock.Anything).Return(nil, nil)
 
 	el := &cerror.ErrorList{}
-	result, cerr := repo.AddAccountKeyAssertion(ctx, el, "auth-id", "public-key-sha3-384", "sign-key-sha3-384", "name", 1, uuid.New(), time.Now(), time.Now().Add(24*time.Hour), nil, 0, "signature")
+	result, cerr := repo.AddAccountKeyAssertion(ctx, el, "auth-id", "public-key-sha3-384", 1, uuid.New())
 
 	assert.Nil(t, cerr)
 	assert.NotNil(t, result)
@@ -45,7 +44,7 @@ func TestAddAccountKeyAssertion_Failure(t *testing.T) {
 	mockCol.On("InsertOne", mock.Anything, mock.Anything).Return(nil, errors.New("mock error"))
 
 	el := &cerror.ErrorList{}
-	result, cerr := repo.AddAccountKeyAssertion(ctx, el, "auth-id", "public-key-sha3-384", "sign-key-sha3-384", "name", 1, uuid.New(), time.Now(), time.Now().Add(24*time.Hour), nil, 0, "signature")
+	result, cerr := repo.AddAccountKeyAssertion(ctx, el, "public-key-sha3-384", "signature", 1, uuid.New())
 
 	assert.NotNil(t, cerr)
 	assert.Nil(t, result)
@@ -63,7 +62,7 @@ func TestAddSnapRevisionAssertion_Succes(t *testing.T) {
 	mockCol.On("InsertOne", mock.Anything, mock.Anything).Return(nil, nil)
 
 	el := &cerror.ErrorList{}
-	result, cerr := repo.AddSnapRevisionAssertion(ctx, el, "auth-id", "snap-sha3-384", "sign-key", uuid.New(), uuid.New(), 1, 123, time.Now(), "signature")
+	result, cerr := repo.AddSnapRevisionAssertion(ctx, el, "snap-sha3-384", "signature", uuid.New(), uuid.New())
 
 	assert.Nil(t, cerr)
 	assert.NotNil(t, result)
@@ -81,7 +80,7 @@ func TestAddSnapRevisionAssertion_Failure(t *testing.T) {
 	mockCol.On("InsertOne", mock.Anything, mock.Anything).Return(nil, errors.New("mock error"))
 
 	el := &cerror.ErrorList{}
-	result, cerr := repo.AddSnapRevisionAssertion(ctx, el, "auth-id", "snap-sha3-384", "sign-key", uuid.New(), uuid.New(), 1, 123, time.Now(), "signature")
+	result, cerr := repo.AddSnapRevisionAssertion(ctx, el, "snap-sha3-384", "signature", uuid.New(), uuid.New())
 
 	assert.NotNil(t, cerr)
 	assert.Nil(t, result)
@@ -99,7 +98,7 @@ func TestAddSnapDeclarationAssertion_Succes(t *testing.T) {
 	mockCol.On("InsertOne", mock.Anything, mock.Anything).Return(nil, nil)
 
 	el := &cerror.ErrorList{}
-	result, cerr := repo.AddSnapDeclarationAssertion(ctx, el, "auth-id", "sign-key", "snap-id", "snap-name", "publisher-id", 1, "series", time.Now(), []string{"refresh"}, nil, nil, nil, "signature")
+	result, cerr := repo.AddSnapDeclarationAssertion(ctx, el, "signature", 1, uuid.New(), uuid.New())
 
 	assert.Nil(t, cerr)
 	assert.NotNil(t, result)
@@ -117,7 +116,7 @@ func TestAddSnapDeclarationAssertion_Failure(t *testing.T) {
 	mockCol.On("InsertOne", mock.Anything, mock.Anything).Return(nil, errors.New("mock error"))
 
 	el := &cerror.ErrorList{}
-	result, cerr := repo.AddSnapDeclarationAssertion(ctx, el, "auth-id", "sign-key", "snap-id", "snap-name", "publisher-id", 1, "series", time.Now(), []string{"refresh"}, nil, nil, nil, "signature")
+	result, cerr := repo.AddSnapDeclarationAssertion(ctx, el, "signature", 1, uuid.New(), uuid.New())
 
 	assert.NotNil(t, cerr)
 	assert.Nil(t, result)
@@ -135,7 +134,7 @@ func TestAddSnapBuildAssertion_Succes(t *testing.T) {
 	mockCol.On("InsertOne", mock.Anything, mock.Anything).Return(nil, nil)
 
 	el := &cerror.ErrorList{}
-	result, cerr := repo.AddSnapBuildAssertion(ctx, el, "auth-id", "sign-key", uuid.New(), uuid.New(), "grade", "snap-sha3-384", 123, "signature", time.Now())
+	result, cerr := repo.AddSnapBuildAssertion(ctx, el, "signature", uuid.New(), uuid.New())
 
 	assert.Nil(t, cerr)
 	assert.NotNil(t, result)
@@ -153,7 +152,7 @@ func TestAddSnapBuildAssertion_Failure(t *testing.T) {
 	mockCol.On("InsertOne", mock.Anything, mock.Anything).Return(nil, errors.New("mock error"))
 
 	el := &cerror.ErrorList{}
-	result, cerr := repo.AddSnapBuildAssertion(ctx, el, "auth-id", "sign-key", uuid.New(), uuid.New(), "grade", "snap-sha3-384", 123, "signature", time.Now())
+	result, cerr := repo.AddSnapBuildAssertion(ctx, el, "signature", uuid.New(), uuid.New())
 
 	assert.NotNil(t, cerr)
 	assert.Nil(t, result)
@@ -171,7 +170,7 @@ func TestAddAccountAssertion_Succes(t *testing.T) {
 	mockCol.On("InsertOne", mock.Anything, mock.Anything).Return(nil, nil)
 
 	el := &cerror.ErrorList{}
-	result, cerr := repo.AddAccountAssertion(ctx, el, "auth-id", "display-name", "username", "validation", uuid.New(), 1, time.Now(), "sign-key", "signature")
+	result, cerr := repo.AddAccountAssertion(ctx, el, "signature", 1, uuid.New())
 
 	assert.Nil(t, cerr)
 	assert.NotNil(t, result)
@@ -189,7 +188,7 @@ func TestAddAccountAssertion_Failure(t *testing.T) {
 	mockCol.On("InsertOne", mock.Anything, mock.Anything).Return(nil, errors.New("mock error"))
 
 	el := &cerror.ErrorList{}
-	result, cerr := repo.AddAccountAssertion(ctx, el, "auth-id", "display-name", "username", "validation", uuid.New(), 1, time.Now(), "sign-key", "signature")
+	result, cerr := repo.AddAccountAssertion(ctx, el, "signature", 1, uuid.New())
 
 	assert.NotNil(t, cerr)
 	assert.Nil(t, result)
@@ -426,21 +425,21 @@ func TestGetSnapDeclarationAssertionBySnapID_Succes(t *testing.T) {
 	}
 
 	expected := model.SnapDeclarationAssertion{
-		ID:        uuid.MustParse("66666666-6666-6666-6666-666666666666"),
-		SnapID:    "snap-id",
-		Signature: "signed-assertion",
+		ID:          uuid.MustParse("66666666-6666-6666-6666-666666666666"),
+		SnapEntryID: uuid.MustParse("77777777-7777-7777-7777-777777777777"),
+		Signature:   "signed-assertion",
 	}
 
 	fakeResult := &FakeSingleResult{Doc: expected}
 	mockCol.
-		On("FindOne", mock.Anything, bson.M{"snapid": "snap-id"}).
+		On("FindOne", mock.Anything, bson.M{"snapid": uuid.MustParse("77777777-7777-7777-7777-777777777777")}).
 		Return(fakeResult)
 
 	el := cerror.NewErrorList()
-	got, cerr := repo.GetSnapDeclarationAssertionBySnapID(context.Background(), el, "snap-id")
+	got, cerr := repo.GetSnapDeclarationAssertionBySnapEntryID(context.Background(), el, uuid.MustParse("77777777-7777-7777-7777-777777777777"))
 
 	assert.Nil(t, cerr)
-	assert.Equal(t, expected.SnapID, got.SnapID)
+	assert.Equal(t, expected.SnapEntryID, got.SnapEntryID)
 	assert.Equal(t, expected.Signature, got.Signature)
 
 	mockCol.AssertExpectations(t)
@@ -455,11 +454,11 @@ func TestGetSnapDeclarationAssertionBySnapID_Failure(t *testing.T) {
 	}
 
 	mockCol.
-		On("FindOne", mock.Anything, bson.M{"snapid": "snap-id"}).
+		On("FindOne", mock.Anything, bson.M{"snapid": uuid.MustParse("77777777-7777-7777-7777-777777777777")}).
 		Return(&FakeSingleResult{Err: errors.New("mock error")})
 
 	el := cerror.NewErrorList()
-	got, cerr := repo.GetSnapDeclarationAssertionBySnapID(context.Background(), el, "snap-id")
+	got, cerr := repo.GetSnapDeclarationAssertionBySnapEntryID(context.Background(), el, uuid.MustParse("77777777-7777-7777-7777-777777777777"))
 
 	assert.NotNil(t, cerr)
 	assert.Nil(t, got)
@@ -476,11 +475,11 @@ func TestGetSnapDeclarationAssertionBySnapID_NotFound(t *testing.T) {
 	}
 
 	mockCol.
-		On("FindOne", mock.Anything, bson.M{"snapid": "snap-id"}).
+		On("FindOne", mock.Anything, bson.M{"snapid": uuid.MustParse("77777777-7777-7777-7777-777777777777")}).
 		Return(&FakeSingleResult{Err: mongo.ErrNoDocuments})
 
 	el := cerror.NewErrorList()
-	got, cerr := repo.GetSnapDeclarationAssertionBySnapID(context.Background(), el, "snap-id")
+	got, cerr := repo.GetSnapDeclarationAssertionBySnapEntryID(context.Background(), el, uuid.MustParse("77777777-7777-7777-7777-777777777777"))
 
 	assert.NotNil(t, cerr)
 	assert.Nil(t, got)
@@ -497,9 +496,9 @@ func TestGetLatestSnapDeclarationAssertion_Succes(t *testing.T) {
 	}
 
 	expected := model.SnapDeclarationAssertion{
-		ID:        uuid.MustParse("77777777-7777-7777-7777-777777777777"),
-		SnapID:    "snap-id",
-		Signature: "latest-signed-assertion",
+		ID:          uuid.MustParse("77777777-7777-7777-7777-777777777777"),
+		SnapEntryID: uuid.MustParse("88888888-8888-8888-8888-888888888888"),
+		Signature:   "latest-signed-assertion",
 	}
 
 	fakeResult := &FakeSingleResult{Doc: expected}
@@ -508,10 +507,10 @@ func TestGetLatestSnapDeclarationAssertion_Succes(t *testing.T) {
 		Return(fakeResult)
 
 	el := cerror.NewErrorList()
-	got, cerr := repo.GetLatestSnapDeclarationAssertion(context.Background(), el, "snap-id")
+	got, cerr := repo.GetLatestSnapDeclarationAssertion(context.Background(), el, uuid.MustParse("88888888-8888-8888-8888-888888888888"))
 
 	assert.Nil(t, cerr)
-	assert.Equal(t, expected.SnapID, got.SnapID)
+	assert.Equal(t, expected.SnapEntryID, got.SnapEntryID)
 	assert.Equal(t, expected.Signature, got.Signature)
 
 	mockCol.AssertExpectations(t)
@@ -530,7 +529,7 @@ func TestGetLatestSnapDeclarationAssertion_Failure(t *testing.T) {
 		Return(&FakeSingleResult{Err: errors.New("mock error")})
 
 	el := cerror.NewErrorList()
-	got, cerr := repo.GetLatestSnapDeclarationAssertion(context.Background(), el, "snap-id")
+	got, cerr := repo.GetLatestSnapDeclarationAssertion(context.Background(), el, uuid.MustParse("88888888-8888-8888-8888-888888888888"))
 
 	assert.NotNil(t, cerr)
 	assert.Nil(t, got)
@@ -551,7 +550,7 @@ func TestGetLatestSnapDeclarationAssertion_NotFound(t *testing.T) {
 		Return(&FakeSingleResult{Err: mongo.ErrNoDocuments})
 
 	el := cerror.NewErrorList()
-	got, cerr := repo.GetLatestSnapDeclarationAssertion(context.Background(), el, "snap-id")
+	got, cerr := repo.GetLatestSnapDeclarationAssertion(context.Background(), el, uuid.MustParse("88888888-8888-8888-8888-888888888888"))
 
 	assert.NotNil(t, cerr)
 	assert.Nil(t, got)

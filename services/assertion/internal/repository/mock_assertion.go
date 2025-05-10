@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"time"
 
 	"github.com/idlab-discover/kebeng/services/assertion/internal/model"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -22,8 +21,8 @@ type MockAssertionRepository struct {
 }
 
 // AddAccountKeyAssertion mocks AddAccountKeyAssertion method.
-func (m *MockAssertionRepository) AddAccountKeyAssertion(ctx context.Context, el *cerror.ErrorList, authority_id, public_key_SHA3_384, sign_key_SHA3_384, name string, revision uint32, account_id uuid.UUID, since, until time.Time, body []byte, body_length uint64, signature string) (*model.AccountKeyAssertion, *cerror.CustomError) {
-	args := m.Called(ctx, el, authority_id, public_key_SHA3_384, sign_key_SHA3_384, name, revision, account_id, since, until, body, body_length, signature)
+func (m *MockAssertionRepository) AddAccountKeyAssertion(ctx context.Context, el *cerror.ErrorList, public_key_SHA3_384, signature string, revision uint32, account_id uuid.UUID) (*model.AccountKeyAssertion, *cerror.CustomError) {
+	args := m.Called(ctx, el, public_key_SHA3_384, signature, revision, account_id)
 	if args.Get(0) != nil {
 		return args.Get(0).(*model.AccountKeyAssertion), nil
 	}
@@ -32,8 +31,8 @@ func (m *MockAssertionRepository) AddAccountKeyAssertion(ctx context.Context, el
 }
 
 // AddSnapRevisionAssertion mocks AddSnapRevisionAssertion method.
-func (m *MockAssertionRepository) AddSnapRevisionAssertion(ctx context.Context, el *cerror.ErrorList, authority_id, snap_sha3_384, sign_key_SHA3_384 string, developer_id, snap_entry_id uuid.UUID, snap_revision_sequence_number uint32, snap_size uint64, timestamp time.Time, signature string) (*model.SnapRevisionAssertion, *cerror.CustomError) {
-	args := m.Called(ctx, el, authority_id, snap_sha3_384, sign_key_SHA3_384, developer_id, snap_entry_id, snap_revision_sequence_number, snap_size, timestamp, signature)
+func (m *MockAssertionRepository) AddSnapRevisionAssertion(ctx context.Context, el *cerror.ErrorList, snap_sha3_384, signature string, developer_id, snap_entry_id uuid.UUID) (*model.SnapRevisionAssertion, *cerror.CustomError) {
+	args := m.Called(ctx, el, snap_sha3_384, signature, developer_id, snap_entry_id)
 	if args.Get(0) != nil {
 		return args.Get(0).(*model.SnapRevisionAssertion), nil
 	}
@@ -41,8 +40,9 @@ func (m *MockAssertionRepository) AddSnapRevisionAssertion(ctx context.Context, 
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
-func (m *MockAssertionRepository) AddSnapDeclarationAssertion(ctx context.Context, el *cerror.ErrorList, authorityID, signKey, snapID, snapName, publisherID string, revision uint32, series string, timestamp time.Time, refreshControl []string, aliases []model.Alias, plugs model.Plugs, slots model.Slots, signature string) (*model.SnapDeclarationAssertion, *cerror.CustomError) {
-	args := m.Called(ctx, el, authorityID, signKey, snapID, snapName, publisherID, revision, series, timestamp, refreshControl, aliases, plugs, slots, signature)
+// AddSnapDeclarationAssertion mocks AddSnapDeclarationAssertion method.
+func (m *MockAssertionRepository) AddSnapDeclarationAssertion(ctx context.Context, el *cerror.ErrorList, signature string, revision uint32, snapEntryId, publisherId uuid.UUID) (*model.SnapDeclarationAssertion, *cerror.CustomError) {
+	args := m.Called(ctx, el, signature, revision, snapEntryId, publisherId)
 	if args.Get(0) != nil {
 		return args.Get(0).(*model.SnapDeclarationAssertion), nil
 	}
@@ -50,8 +50,19 @@ func (m *MockAssertionRepository) AddSnapDeclarationAssertion(ctx context.Contex
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
-func (m *MockAssertionRepository) AddAccountAssertion(ctx context.Context, el *cerror.ErrorList, authority_id, displayName, username, validation string, accountID uuid.UUID, revision uint32, timestamp time.Time, sign_key_SHA3_384, signature string) (*model.AccountAssertion, *cerror.CustomError) {
-	args := m.Called(ctx, el, authority_id, displayName, username, validation, accountID, revision, timestamp, sign_key_SHA3_384, signature)
+// AddSnapBuildAssertion mocks AddSnapBuildAssertion method.
+func (m *MockAssertionRepository) AddSnapBuildAssertion(ctx context.Context, el *cerror.ErrorList, signature string, snap_entry_id, account_id uuid.UUID) (*model.SnapBuildAssertion, *cerror.CustomError) {
+	args := m.Called(ctx, el, signature, snap_entry_id, account_id)
+	if args.Get(0) != nil {
+		return args.Get(0).(*model.SnapBuildAssertion), nil
+	}
+	el.AddCustomError(args.Get(1).(*cerror.CustomError))
+	return nil, args.Get(1).(*cerror.CustomError)
+}
+
+// AddAccountAssertion mocks AddAccountAssertion method.
+func (m *MockAssertionRepository) AddAccountAssertion(ctx context.Context, el *cerror.ErrorList, signature string, revision uint32, account_id uuid.UUID) (*model.AccountAssertion, *cerror.CustomError) {
+	args := m.Called(ctx, el, signature, revision, account_id)
 	if args.Get(0) != nil {
 		return args.Get(0).(*model.AccountAssertion), nil
 	}
@@ -60,8 +71,8 @@ func (m *MockAssertionRepository) AddAccountAssertion(ctx context.Context, el *c
 }
 
 // GetAccountKeyAssertionByPublicKeySha mocks GetAccountKeyAssertionByPublicKeySha method.
-func (m *MockAssertionRepository) GetAccountKeyAssertionByPublicKeySha(ctx context.Context, el *cerror.ErrorList, name string) (*model.AccountKeyAssertion, *cerror.CustomError) {
-	args := m.Called(ctx, el, name)
+func (m *MockAssertionRepository) GetAccountKeyAssertionByPublicKeySha(ctx context.Context, el *cerror.ErrorList, public_key_SHA3_384 string) (*model.AccountKeyAssertion, *cerror.CustomError) {
+	args := m.Called(ctx, el, public_key_SHA3_384)
 	if args.Get(0) != nil {
 		return args.Get(0).(*model.AccountKeyAssertion), nil
 	}
@@ -89,8 +100,9 @@ func (m *MockAssertionRepository) GetSnapRevisionAssertionBySHA3_384(ctx context
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
-func (m *MockAssertionRepository) GetSnapDeclarationAssertionBySnapID(ctx context.Context, el *cerror.ErrorList, id string) (*model.SnapDeclarationAssertion, *cerror.CustomError) {
-	args := m.Called(ctx, el, id)
+// GetSnapDeclarationAssertionBySnapEntryID mocks GetSnapDeclarationAssertionBySnapEntryID method.
+func (m *MockAssertionRepository) GetSnapDeclarationAssertionBySnapEntryID(ctx context.Context, el *cerror.ErrorList, snap_entry_id uuid.UUID) (*model.SnapDeclarationAssertion, *cerror.CustomError) {
+	args := m.Called(ctx, el, snap_entry_id)
 	if args.Get(0) != nil {
 		return args.Get(0).(*model.SnapDeclarationAssertion), nil
 	}
@@ -98,8 +110,9 @@ func (m *MockAssertionRepository) GetSnapDeclarationAssertionBySnapID(ctx contex
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
-func (m *MockAssertionRepository) GetLatestSnapDeclarationAssertion(ctx context.Context, el *cerror.ErrorList, snapID string) (*model.SnapDeclarationAssertion, *cerror.CustomError) {
-	args := m.Called(ctx, el, snapID)
+// GetLatestSnapDeclarationAssertion mocks GetLatestSnapDeclarationAssertion method.
+func (m *MockAssertionRepository) GetLatestSnapDeclarationAssertion(ctx context.Context, el *cerror.ErrorList, snap_entry_id uuid.UUID) (*model.SnapDeclarationAssertion, *cerror.CustomError) {
+	args := m.Called(ctx, el, snap_entry_id)
 	if args.Get(0) != nil {
 		return args.Get(0).(*model.SnapDeclarationAssertion), nil
 	}
@@ -107,8 +120,9 @@ func (m *MockAssertionRepository) GetLatestSnapDeclarationAssertion(ctx context.
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
-func (m *MockAssertionRepository) GetAccountAssertionByAccountID(ctx context.Context, el *cerror.ErrorList, accountID uuid.UUID) (*model.AccountAssertion, *cerror.CustomError) {
-	args := m.Called(ctx, el, accountID)
+// GetAccountAssertionByAccountID mocks GetAccountAssertionByAccountID method.
+func (m *MockAssertionRepository) GetAccountAssertionByAccountID(ctx context.Context, el *cerror.ErrorList, account_id uuid.UUID) (*model.AccountAssertion, *cerror.CustomError) {
+	args := m.Called(ctx, el, account_id)
 	if args.Get(0) != nil {
 		return args.Get(0).(*model.AccountAssertion), nil
 	}
@@ -116,19 +130,11 @@ func (m *MockAssertionRepository) GetAccountAssertionByAccountID(ctx context.Con
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
-func (m *MockAssertionRepository) GetLatestAccountAssertionByAccountID(ctx context.Context, el *cerror.ErrorList, accountID uuid.UUID) (*model.AccountAssertion, *cerror.CustomError) {
-	args := m.Called(ctx, el, accountID)
+// GetLatestAccountAssertionByAccountID mocks GetLatestAccountAssertionByAccountID method.
+func (m *MockAssertionRepository) GetLatestAccountAssertionByAccountID(ctx context.Context, el *cerror.ErrorList, account_id uuid.UUID) (*model.AccountAssertion, *cerror.CustomError) {
+	args := m.Called(ctx, el, account_id)
 	if args.Get(0) != nil {
 		return args.Get(0).(*model.AccountAssertion), nil
-	}
-	el.AddCustomError(args.Get(1).(*cerror.CustomError))
-	return nil, args.Get(1).(*cerror.CustomError)
-}
-
-func (m *MockAssertionRepository) AddSnapBuildAssertion(ctx context.Context, el *cerror.ErrorList, authority_id, sign_key_SHA3_384 string, snap_id, account_id uuid.UUID, grade string, snap_sha3_384 string, snap_size uint64, signature string, timestamp time.Time) (*model.SnapBuildAssertion, *cerror.CustomError) {
-	args := m.Called(ctx, el, authority_id, sign_key_SHA3_384, snap_id, account_id, grade, snap_sha3_384, snap_size, signature, timestamp)
-	if args.Get(0) != nil {
-		return args.Get(0).(*model.SnapBuildAssertion), nil
 	}
 	el.AddCustomError(args.Get(1).(*cerror.CustomError))
 	return nil, args.Get(1).(*cerror.CustomError)
