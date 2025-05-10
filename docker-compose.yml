@@ -104,7 +104,7 @@ services:
       ports:
         - "8083:8083"
       depends_on:
-        - mongo_db
+        - assertion_mongo_db
       volumes:
         - ./services/assertion/config.yaml:/app/config.yaml
         - ./services/assertion/keys/:/app/keys/  # TODO: this path should become a variable instead of hardcoded
@@ -114,7 +114,7 @@ services:
       networks: 
         - kebeng-backend
   
-  mongo_db:
+  assertion_mongo_db:
     image: mongo:latest
     restart: always
     volumes:
