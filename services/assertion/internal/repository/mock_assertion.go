@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/idlab-discover/kebeng/services/assertion/internal/model"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/google/uuid"
 	cerror "github.com/idlab-discover/kebeng/common/cerror"
@@ -139,4 +141,19 @@ func (m *MockAssertionRepository) AddSnapBuildAssertion(ctx context.Context, el 
 	}
 	el.AddCustomError(args.Get(1).(*cerror.CustomError))
 	return nil, args.Get(1).(*cerror.CustomError)
+}
+
+// =========================
+type MockCollection struct {
+	mock.Mock
+}
+
+func (m *MockCollection) InsertOne(ctx context.Context, doc interface{}, opts ...*options.InsertOneOptions) (*mongo.InsertOneResult, error) {
+	args := m.Called(ctx, doc)
+	return nil, args.Error(1)
+}
+
+func (m *MockCollection) FindOne(ctx context.Context, filter interface{}, opts ...*options.FindOneOptions) SingleResult {
+	args := m.Called(ctx, filter)
+	return args.Get(0).(SingleResult)
 }
