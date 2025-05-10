@@ -50,7 +50,7 @@ func main() {
 		logrus.Fatalf("Failed to import root key: %s in assertions db", err)
 	}
 
-	// Repositories for PostgreSQL and MongoDB
+	// Repository for MongoDB
 	repo := repository.NewAssertionRepository(cfg, mongoDB)
 
 	// Business Logic
