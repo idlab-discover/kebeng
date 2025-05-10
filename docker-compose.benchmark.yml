@@ -175,7 +175,7 @@ services:
     image: mongo:latest
     restart: always
     volumes:
-      - mongo_data:/data/db
+      - assertion_data:/data/db
     ports:
       - "27017:27017"
     environment:
@@ -188,7 +188,7 @@ volumes:
   store_data:
   minio_data:
   account_data:
-  mongo_data:
+  assertion_data:
   grafana_data:
 
 networks:
