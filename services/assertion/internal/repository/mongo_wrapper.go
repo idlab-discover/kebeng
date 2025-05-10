@@ -7,6 +7,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// MongoWrapper is an interface that wraps the MongoDB collection methods
+// that we use in our application. This allows us to mock the MongoDB
+// collection in our tests.
+
 type SingleResult interface {
 	Decode(v interface{}) error
 }
