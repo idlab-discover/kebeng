@@ -183,6 +183,7 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: rootpassword
     networks:
       - kebeng-backend
+    command: mongod --quiet --logpath /dev/null
 
 volumes:
   store_data:

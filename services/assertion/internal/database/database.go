@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	_ "github.com/golang-migrate/migrate/v4/source/file" // required for file source
 	"github.com/idlab-discover/kebeng/services/assertion/internal/config"
 	"github.com/sirupsen/logrus"
 
