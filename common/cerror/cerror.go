@@ -11,6 +11,7 @@ import (
 
 	cerrorpb "github.com/idlab-discover/kebeng/common/cerror/proto"
 	"github.com/lib/pq"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 const (
@@ -81,6 +82,10 @@ func ConvertError(err error, message ...string) *CustomError {
 
 	if err, ok := err.(*pq.Error); ok {
 		return handlePqError(err)
+	}
+
+	if mongoErr := handleMongoError(err); mongoErr != nil {
+		return mongoErr
 	}
 
 	// Fallback for non-PostgreSQL errors.
@@ -320,4 +325,21 @@ func handlePqError(err *pq.Error) *CustomError {
 		}
 	}
 
+}
+
+func handleMongoError(err error) *CustomError {
+	if err == nil {
+		return nil
+	}
+
+	switch err {
+	case mongo.ErrNoDocuments:
+		return &CustomError{
+			Code:    ResourceNotFound,
+			Message: err.Error(),
+		}
+	default:
+		break
+	}
+	return nil
 }

@@ -219,11 +219,6 @@ func (r *AssertionRepository) GetAccountKeyAssertionByPublicKeySha(
 
 	assertion, err := findOne[model.AccountKeyAssertion](ctx, r.AssertionCollections[ACCOUNTKEY], filter, nil)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			cerr := cerror.NewCustomError(cerror.ResourceNotFound, "no matching AccountKeyAssertion found")
-			el.AddCustomError(cerr)
-			return nil, cerr
-		}
 		cerr := cerror.ConvertError(err, "failed to retrieve account key assertion from MongoDB")
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
@@ -243,11 +238,6 @@ func (r *AssertionRepository) GetLatestAccountKeyAssertion(
 
 	assertion, err := findOne[model.AccountKeyAssertion](ctx, r.AssertionCollections[ACCOUNTKEY], filter, opts)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			cerr := cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("no account key assertion found for account id: %s", accountID.String()))
-			el.AddCustomError(cerr)
-			return nil, cerr
-		}
 		cerr := cerror.ConvertError(err, fmt.Sprintf("failed to get latest account key assertion by account id: %s", accountID.String()))
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
@@ -266,11 +256,6 @@ func (r *AssertionRepository) GetSnapRevisionAssertionBySHA3_384(
 
 	assertion, err := findOne[model.SnapRevisionAssertion](ctx, r.AssertionCollections[SNAPREVISION], filter, nil)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			cerr := cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("no snap revision assertion found for SHA3_384: %s", snapSHA3_384))
-			el.AddCustomError(cerr)
-			return nil, cerr
-		}
 		cerr := cerror.ConvertError(err, fmt.Sprintf("failed to retrieve snap revision assertion from MongoDB for SHA3_384: %s", snapSHA3_384))
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
@@ -289,11 +274,6 @@ func (r *AssertionRepository) GetSnapDeclarationAssertionBySnapID(
 
 	assertion, err := findOne[model.SnapDeclarationAssertion](ctx, r.AssertionCollections[SNAPDECLARATION], filter, nil)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			cerr := cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("no snap declaration assertion found for snap id: %s", snapID))
-			el.AddCustomError(cerr)
-			return nil, cerr
-		}
 		cerr := cerror.ConvertError(err, fmt.Sprintf("failed to retrieve snap declaration assertion from MongoDB for snap id: %s", snapID))
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
@@ -313,11 +293,6 @@ func (r *AssertionRepository) GetLatestSnapDeclarationAssertion(
 
 	assertion, err := findOne[model.SnapDeclarationAssertion](ctx, r.AssertionCollections[SNAPDECLARATION], filter, opts)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			cerr := cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("no snap declaration assertion found for snap id: %s", snapID))
-			el.AddCustomError(cerr)
-			return nil, cerr
-		}
 		cerr := cerror.ConvertError(err, fmt.Sprintf("failed to retrieve latest snap declaration assertion from MongoDB for snap id: %s", snapID))
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
@@ -336,11 +311,6 @@ func (r *AssertionRepository) GetAccountAssertionByAccountID(
 
 	assertion, err := findOne[model.AccountAssertion](ctx, r.AssertionCollections[ACCOUNT], filter, nil)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			cerr := cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("no account assertion found for account id: %s", accountID.String()))
-			el.AddCustomError(cerr)
-			return nil, cerr
-		}
 		cerr := cerror.ConvertError(err, fmt.Sprintf("failed to retrieve account assertion from MongoDB for account id: %s", accountID.String()))
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
@@ -360,11 +330,6 @@ func (r *AssertionRepository) GetLatestAccountAssertionByAccountID(
 
 	assertion, err := findOne[model.AccountAssertion](ctx, r.AssertionCollections[ACCOUNT], filter, opts)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			cerr := cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("no account assertion found for account id: %s", accountID.String()))
-			el.AddCustomError(cerr)
-			return nil, cerr
-		}
 		cerr := cerror.ConvertError(err, fmt.Sprintf("failed to retrieve latest account assertion from MongoDB for account id: %s", accountID.String()))
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
