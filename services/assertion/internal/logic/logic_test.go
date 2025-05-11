@@ -41,8 +41,8 @@ func TestAddSnapRevisionAssertion(t *testing.T) {
 	}
 
 	now := time.Now().UTC()
-	validDev := uuid.New().String()
-	validSnap := uuid.New().String()
+	validDevUUID := uuid.New()
+	validSnapUUID := uuid.New()
 
 	// generate a valid multihash to use as snap‐sha3‐384
 	snapKey, err := asserts.GenerateKey()
@@ -55,8 +55,8 @@ func TestAddSnapRevisionAssertion(t *testing.T) {
 		AuthorityID:                cfg.AuthorityID,
 		SignKeySHA3_384:            rootKey.PublicKey().ID(),
 		SnapSHA3_384:               validHash,
-		DeveloperID:                uuid.MustParse(validDev),
-		SnapEntryID:                uuid.MustParse(validSnap),
+		DeveloperID:                validDevUUID,
+		SnapEntryID:                validSnapUUID,
 		SnapRevisionSequenceNumber: 1,
 		SnapSize:                   42,
 		Timestamp:                  now,
@@ -75,8 +75,8 @@ func TestAddSnapRevisionAssertion(t *testing.T) {
 		{
 			name: "happy path",
 			req: &proto.AddSnapRevisionAssertionRequest{
-				DeveloperId:                validDev,
-				SnapEntryId:                validSnap,
+				DeveloperId:                validDevUUID.String(),
+				SnapEntryId:                validSnapUUID.String(),
 				SnapSha3_384:               validHash,
 				SnapRevisionSequenceNumber: 1,
 				SnapSize:                   42,
@@ -90,7 +90,7 @@ func TestAddSnapRevisionAssertion(t *testing.T) {
 			name: "invalid developer id",
 			req: &proto.AddSnapRevisionAssertionRequest{
 				DeveloperId:                "not-a-uuid",
-				SnapEntryId:                validSnap,
+				SnapEntryId:                validSnapUUID.String(),
 				SnapSha3_384:               validHash,
 				SnapRevisionSequenceNumber: 1,
 				SnapSize:                   42,
@@ -103,7 +103,7 @@ func TestAddSnapRevisionAssertion(t *testing.T) {
 		{
 			name: "invalid snap entry id",
 			req: &proto.AddSnapRevisionAssertionRequest{
-				DeveloperId:                validDev,
+				DeveloperId:                validDevUUID.String(),
 				SnapEntryId:                "not-a-uuid",
 				SnapSha3_384:               validHash,
 				SnapRevisionSequenceNumber: 1,
@@ -117,8 +117,8 @@ func TestAddSnapRevisionAssertion(t *testing.T) {
 		{
 			name: "signing failure (bad hash length)",
 			req: &proto.AddSnapRevisionAssertionRequest{
-				DeveloperId:                validDev,
-				SnapEntryId:                validSnap,
+				DeveloperId:                validDevUUID.String(),
+				SnapEntryId:                validSnapUUID.String(),
 				SnapSha3_384:               "too-short",
 				SnapRevisionSequenceNumber: 1,
 				SnapSize:                   42,
@@ -131,8 +131,8 @@ func TestAddSnapRevisionAssertion(t *testing.T) {
 		{
 			name: "repo error",
 			req: &proto.AddSnapRevisionAssertionRequest{
-				DeveloperId:                validDev,
-				SnapEntryId:                validSnap,
+				DeveloperId:                validDevUUID.String(),
+				SnapEntryId:                validSnapUUID.String(),
 				SnapSha3_384:               validHash,
 				SnapRevisionSequenceNumber: 1,
 				SnapSize:                   42,
@@ -155,19 +155,24 @@ func TestAddSnapRevisionAssertion(t *testing.T) {
 					case *model.SnapRevisionAssertion:
 						mockRepo.
 							On("AddSnapRevisionAssertion",
-								mock.Anything, cfg.AuthorityID, tc.req.GetSnapSha3_384(),
-								rootKey.PublicKey().ID(), mock.Anything, mock.Anything,
-								tc.req.GetSnapRevisionSequenceNumber(), tc.req.GetSnapSize(),
-								tc.req.GetTimestamp().AsTime(), mock.Anything,
+								mock.Anything,
+								mock.AnythingOfType("*cerror.ErrorList"),
+								mock.AnythingOfType("string"),
+								mock.AnythingOfType("string"),
+								mock.AnythingOfType("uuid.UUID"),
+								mock.AnythingOfType("uuid.UUID"),
 							).
 							Return(v, nil).
 							Once()
 					case *cerror.CustomError:
 						mockRepo.
 							On("AddSnapRevisionAssertion",
-								mock.Anything, mock.Anything, mock.Anything,
-								mock.Anything, mock.Anything, mock.Anything,
-								mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+								mock.Anything,
+								mock.AnythingOfType("*cerror.ErrorList"),
+								mock.AnythingOfType("string"),
+								mock.AnythingOfType("string"),
+								mock.AnythingOfType("uuid.UUID"),
+								mock.AnythingOfType("uuid.UUID"),
 							).
 							Return(nil, v).
 							Once()
@@ -202,8 +207,8 @@ func TestAddSnapRevisionAssertion(t *testing.T) {
 					// verify the happy‐path result matches our golden
 					assert.Equal(t, golden.ID.String(), resp.Id)
 					assert.Equal(t, golden.SignKeySHA3_384, resp.SignKeySha3_384)
-					assert.Equal(t, validDev, resp.DeveloperId)
-					assert.Equal(t, validSnap, resp.SnapEntryId)
+					assert.Equal(t, validDevUUID.String(), resp.DeveloperId)
+					assert.Equal(t, validSnapUUID.String(), resp.SnapEntryId)
 					assert.Equal(t, validHash, resp.SnapSha3_384)
 					assert.Equal(t, uint64(42), resp.SnapSize)
 					assert.Equal(t, uint32(1), resp.SnapRevisionSequenceNumber)
@@ -407,11 +412,19 @@ func TestAddAccountKeyAssertion(t *testing.T) {
 				case "GetLatestAccountKeyAssertion":
 					if errVal, ok := ret.(*cerror.CustomError); ok {
 						mockRepo.
-							On("GetLatestAccountKeyAssertion", mock.Anything, mock.Anything).
+							On("GetLatestAccountKeyAssertion",
+								mock.Anything,
+								mock.AnythingOfType("*cerror.ErrorList"),
+								mock.AnythingOfType("uuid.UUID"),
+							).
 							Return(nil, errVal).Once()
 					} else if assertionRecord, ok := ret.(*model.AccountKeyAssertion); ok {
 						mockRepo.
-							On("GetLatestAccountKeyAssertion", mock.Anything, mock.Anything).
+							On("GetLatestAccountKeyAssertion",
+								mock.Anything,
+								mock.AnythingOfType("*cerror.ErrorList"),
+								mock.AnythingOfType("uuid.UUID"),
+							).
 							Return(assertionRecord, nil).Once()
 					} else {
 						t.Fatalf("Invalid type for mock return of GetLatestAccountKeyAssertion")
@@ -419,15 +432,25 @@ func TestAddAccountKeyAssertion(t *testing.T) {
 				case "AddAccountKeyAssertion":
 					if errVal, ok := ret.(*cerror.CustomError); ok {
 						mockRepo.
-							On("AddAccountKeyAssertion", mock.Anything, mock.Anything, mock.Anything,
-								mock.Anything, mock.Anything, mock.Anything, mock.Anything,
-								mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+							On("AddAccountKeyAssertion",
+								mock.Anything,
+								mock.AnythingOfType("*cerror.ErrorList"),
+								mock.AnythingOfType("string"),
+								mock.AnythingOfType("string"),
+								mock.AnythingOfType("uint32"),
+								mock.AnythingOfType("uuid.UUID"),
+							).
 							Return(nil, errVal).Once()
 					} else if assertionRecord, ok := ret.(*model.AccountKeyAssertion); ok {
 						mockRepo.
-							On("AddAccountKeyAssertion", mock.Anything, mock.Anything, mock.Anything,
-								mock.Anything, mock.Anything, mock.Anything, mock.Anything,
-								mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+							On("AddAccountKeyAssertion",
+								mock.Anything,
+								mock.AnythingOfType("*cerror.ErrorList"),
+								mock.AnythingOfType("string"),
+								mock.AnythingOfType("string"),
+								mock.AnythingOfType("uint32"),
+								mock.AnythingOfType("uuid.UUID"),
+							).
 							Return(assertionRecord, nil).Once()
 					} else {
 						t.Fatalf("Invalid type for mock return of AddAccountKeyAssertion")
@@ -492,9 +515,9 @@ func TestAddSnapDeclarationAssertion(t *testing.T) {
 		ID:              uuid.New(),
 		AuthorityID:     cfg.AuthorityID,
 		SignKeySHA3_384: rootKey.PublicKey().ID(),
-		SnapID:          "snap-123",
+		SnapEntryID:     uuid.New(),
 		SnapName:        "test-snap",
-		PublisherID:     "pub-456",
+		PublisherID:     uuid.New(),
 		Revision:        1, // first revision
 		Series:          "42",
 		Timestamp:       now,
@@ -520,9 +543,9 @@ func TestAddSnapDeclarationAssertion(t *testing.T) {
 		{
 			name: "happy path",
 			req: &proto.AddSnapDeclarationAssertionRequest{
-				SnapId:         "snap-123",
+				SnapId:         goldenModel.SnapEntryID.String(),
 				SnapName:       "test-snap",
-				PublisherId:    "pub-456",
+				PublisherId:    goldenModel.PublisherID.String(),
 				Series:         "42",
 				Timestamp:      timestamppb.New(now),
 				RefreshControl: []string{"refresh-control"},
@@ -536,9 +559,9 @@ func TestAddSnapDeclarationAssertion(t *testing.T) {
 		{
 			name: "GetLatest error",
 			req: &proto.AddSnapDeclarationAssertionRequest{
-				SnapId:         "snap-123",
+				SnapId:         goldenModel.SnapEntryID.String(),
 				SnapName:       "test-snap",
-				PublisherId:    "pub-456",
+				PublisherId:    goldenModel.PublisherID.String(),
 				Series:         "42",
 				Timestamp:      timestamppb.New(now),
 				RefreshControl: []string{"refresh-control"},
@@ -551,9 +574,9 @@ func TestAddSnapDeclarationAssertion(t *testing.T) {
 		{
 			name: "AddSnapDeclarationAssertion error",
 			req: &proto.AddSnapDeclarationAssertionRequest{
-				SnapId:         "snap-123",
+				SnapId:         goldenModel.SnapEntryID.String(),
 				SnapName:       "test-snap",
-				PublisherId:    "pub-456",
+				PublisherId:    goldenModel.PublisherID.String(),
 				Series:         "42",
 				Timestamp:      timestamppb.New(now),
 				RefreshControl: []string{"refresh-control"},
@@ -571,40 +594,49 @@ func TestAddSnapDeclarationAssertion(t *testing.T) {
 			switch ret := tc.mockGetLatest.(type) {
 			case *model.SnapDeclarationAssertion:
 				mockRepo.
-					On("GetLatestSnapDeclarationAssertion", mock.Anything, tc.req.GetSnapId()).
+					On("GetLatestSnapDeclarationAssertion",
+						mock.Anything,
+						mock.AnythingOfType("*cerror.ErrorList"),
+						mock.AnythingOfType("uuid.UUID"),
+					).
 					Return(ret, nil).
 					Once()
 			case *cerror.CustomError:
 				mockRepo.
-					On("GetLatestSnapDeclarationAssertion", mock.Anything, tc.req.GetSnapId()).
+					On("GetLatestSnapDeclarationAssertion",
+						mock.Anything,
+						mock.AnythingOfType("*cerror.ErrorList"),
+						mock.AnythingOfType("uuid.UUID"),
+					).
 					Return(nil, ret).
 					Once()
 			default:
 				t.Fatalf("unexpected mockGetLatest type %T", ret)
 			}
 
-			// --- mock AddSnapDeclarationAssertion if needed ---
 			if tc.mockAdd != nil {
 				switch ret := tc.mockAdd.(type) {
 				case *model.SnapDeclarationAssertion:
 					mockRepo.
 						On("AddSnapDeclarationAssertion",
-							mock.Anything, mock.Anything, mock.Anything,
-							mock.Anything, mock.Anything, mock.Anything,
-							mock.Anything, mock.Anything,
-							mock.Anything, mock.Anything, mock.Anything,
-							mock.Anything, mock.Anything, mock.Anything,
+							mock.Anything,
+							mock.AnythingOfType("*cerror.ErrorList"),
+							mock.AnythingOfType("string"),
+							mock.AnythingOfType("uint32"),
+							mock.AnythingOfType("uuid.UUID"),
+							mock.AnythingOfType("uuid.UUID"),
 						).
 						Return(ret, nil).
 						Once()
 				case *cerror.CustomError:
 					mockRepo.
 						On("AddSnapDeclarationAssertion",
-							mock.Anything, mock.Anything, mock.Anything,
-							mock.Anything, mock.Anything, mock.Anything,
-							mock.Anything, mock.Anything,
-							mock.Anything, mock.Anything, mock.Anything,
-							mock.Anything, mock.Anything, mock.Anything,
+							mock.Anything,
+							mock.AnythingOfType("*cerror.ErrorList"),
+							mock.AnythingOfType("string"),
+							mock.AnythingOfType("uint32"),
+							mock.AnythingOfType("uuid.UUID"),
+							mock.AnythingOfType("uuid.UUID"),
 						).
 						Return(nil, ret).
 						Once()
@@ -635,9 +667,9 @@ func TestAddSnapDeclarationAssertion(t *testing.T) {
 				// happy‑path fields
 				assert.Equal(t, goldenModel.ID.String(), resp.Id)
 				assert.Equal(t, goldenModel.SignKeySHA3_384, resp.SignKeySha3_384)
-				assert.Equal(t, goldenModel.SnapID, resp.SnapId)
+				assert.Equal(t, goldenModel.SnapEntryID.String(), resp.SnapId)
 				assert.Equal(t, goldenModel.SnapName, resp.SnapName)
-				assert.Equal(t, goldenModel.PublisherID, resp.PublisherId)
+				assert.Equal(t, goldenModel.PublisherID.String(), resp.PublisherId)
 				assert.Equal(t, uint32(1), resp.Revision) // first sequence
 				assert.Equal(t, goldenModel.Series, resp.Series)
 				assert.Equal(t, tc.req.GetRefreshControl(), resp.RefreshControl)
@@ -739,12 +771,20 @@ func TestAddAccountAssertion(t *testing.T) {
 				switch ret := tc.mockGetLatest.(type) {
 				case *model.AccountAssertion:
 					mockRepo.
-						On("GetLatestAccountAssertionByAccountID", mock.Anything, validAccountID).
+						On("GetLatestAccountAssertionByAccountID",
+							mock.Anything,
+							mock.AnythingOfType("*cerror.ErrorList"),
+							mock.AnythingOfType("uuid.UUID"),
+						).
 						Return(ret, nil).
 						Once()
 				case *cerror.CustomError:
 					mockRepo.
-						On("GetLatestAccountAssertionByAccountID", mock.Anything, validAccountID).
+						On("GetLatestAccountAssertionByAccountID",
+							mock.Anything,
+							mock.AnythingOfType("*cerror.ErrorList"),
+							mock.AnythingOfType("uuid.UUID"),
+						).
 						Return(nil, ret).
 						Once()
 				default:
@@ -758,16 +798,22 @@ func TestAddAccountAssertion(t *testing.T) {
 				case *model.AccountAssertion:
 					mockRepo.
 						On("AddAccountAssertion",
-							mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
-							mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+							mock.Anything,
+							mock.AnythingOfType("*cerror.ErrorList"),
+							mock.AnythingOfType("string"),
+							mock.AnythingOfType("uint32"),
+							mock.AnythingOfType("uuid.UUID"),
 						).
 						Return(ret, nil).
 						Once()
 				case *cerror.CustomError:
 					mockRepo.
 						On("AddAccountAssertion",
-							mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
-							mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+							mock.Anything,
+							mock.AnythingOfType("*cerror.ErrorList"),
+							mock.AnythingOfType("string"),
+							mock.AnythingOfType("uint32"),
+							mock.AnythingOfType("uuid.UUID"),
 						).
 						Return(nil, ret).
 						Once()
@@ -905,32 +951,22 @@ func TestAddSnapBuildAssertion(t *testing.T) {
 				case *model.SnapBuildAssertion:
 					mockRepo.
 						On("AddSnapBuildAssertion",
+							mock.Anything,
 							mock.AnythingOfType("*cerror.ErrorList"),
-							cfg.AuthorityID,
-							rootKey.PublicKey().ID(),
-							mock.MatchedBy(func(uuid.UUID) bool { return true }), // snap_id
-							mock.MatchedBy(func(uuid.UUID) bool { return true }), // account_id
-							tc.req.GetGrade(),
-							tc.req.GetSha3_384Encoded(),
-							tc.req.GetSnapSize(),
-							mock.AnythingOfType("string"), // signature
-							mock.AnythingOfType("time.Time"),
+							mock.AnythingOfType("string"),
+							mock.AnythingOfType("uuid.UUID"),
+							mock.AnythingOfType("uuid.UUID"),
 						).
 						Return(v, nil).
 						Once()
 				case *cerror.CustomError:
 					mockRepo.
 						On("AddSnapBuildAssertion",
+							mock.Anything,
 							mock.AnythingOfType("*cerror.ErrorList"),
 							mock.AnythingOfType("string"),
-							mock.AnythingOfType("string"),
-							mock.Anything,
-							mock.Anything,
-							mock.AnythingOfType("string"),
-							mock.AnythingOfType("string"),
-							mock.AnythingOfType("uint64"),
-							mock.AnythingOfType("string"),
-							mock.AnythingOfType("time.Time"),
+							mock.AnythingOfType("uuid.UUID"),
+							mock.AnythingOfType("uuid.UUID"),
 						).
 						Return(nil, v).
 						Once()

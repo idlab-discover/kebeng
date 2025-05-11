@@ -13,14 +13,8 @@ import (
 )
 
 type Config struct {
-	DBHost        string `mapstructure:"db_host" yaml:"db_host"`
-	DBPort        int    `mapstructure:"db_port" yaml:"db_port"`
-	DBUser        string `mapstructure:"db_user" yaml:"db_user"`
-	DBPassword    string `mapstructure:"db_password" yaml:"db_password"`
-	DBName        string `mapstructure:"db_name" yaml:"db_name"`
-	GRPCHost      string `mapstructure:"grpc_host" yaml:"grpc_host"`
-	GRPCPort      int    `mapstructure:"grpc_port" yaml:"grpc_port"`
-	MigrationPath string `mapstructure:"migration_path" yaml:"migration_path"`
+	GRPCHost string `mapstructure:"grpc_host" yaml:"grpc_host"`
+	GRPCPort int    `mapstructure:"grpc_port" yaml:"grpc_port"`
 
 	RootKey             asserts.PrivateKey
 	RootKeyPath         string `mapstructure:"root_key_path" yaml:"root_key_path"`
@@ -33,6 +27,13 @@ type Config struct {
 	TestMode bool
 
 	Monitoring bool `mapstructure:"monitoring" yaml:"monitoring"`
+
+	MongoDBDB         string `mapstructure:"mongodb_db" yaml:"mongodb_db"`
+	MongoDBUser       string `mapstructure:"mongodb_user" yaml:"mongodb_user"`
+	MongoDBPassword   string `mapstructure:"mongodb_password" yaml:"mongodb_password"`
+	MongoDBHost       string `mapstructure:"mongodb_host" yaml:"mongodb_host"`
+	MongoDBPort       int    `mapstructure:"mongodb_port" yaml:"mongodb_port"`
+	MongoDBAuthSource string `mapstructure:"mongodb_auth_source" yaml:"mongodb_auth_source"`
 }
 
 func LoadConfig() (*Config, error) {
@@ -98,34 +99,12 @@ func GetAssertionServiceAddress(host string, port int) string {
 func (c *Config) checkConfig() error {
 	var errs []string
 
-	// Check DB config.
-	if c.DBHost == "" {
-		errs = append(errs, "DBHost is required")
-	}
-	if c.DBPort <= 0 {
-		errs = append(errs, "DBPort must be a positive integer")
-	}
-	if c.DBUser == "" {
-		errs = append(errs, "DBUser is required")
-	}
-	if c.DBPassword == "" {
-		errs = append(errs, "DBPassword is required")
-	}
-	if c.DBName == "" {
-		errs = append(errs, "DBName is required")
-	}
-
 	// Check gRPC config.
 	if c.GRPCHost == "" {
 		errs = append(errs, "GRPCHost is required")
 	}
 	if c.GRPCPort <= 0 {
 		errs = append(errs, "GRPCPort must be a positive integer")
-	}
-
-	// Check migration path.
-	if c.MigrationPath == "" {
-		errs = append(errs, "MigrationPath is required")
 	}
 
 	// Check key paths.
@@ -145,6 +124,26 @@ func (c *Config) checkConfig() error {
 	}
 	if _, err := uuid.Parse(c.RootAccountIDString); err != nil {
 		errs = append(errs, "RootAccountID must be a valid UUID")
+	}
+
+	// Check MongoDB config.
+	if c.MongoDBHost == "" {
+		errs = append(errs, "MongoDBHost is required")
+	}
+	if c.MongoDBPort <= 0 {
+		errs = append(errs, "MongoDBPort must be a positive integer")
+	}
+	if c.MongoDBDB == "" {
+		errs = append(errs, "MongoDBDB is required")
+	}
+	if c.MongoDBUser == "" {
+		errs = append(errs, "MongoDBUser is required")
+	}
+	if c.MongoDBPassword == "" {
+		errs = append(errs, "MongoDBPassword is required")
+	}
+	if c.MongoDBAuthSource == "" {
+		errs = append(errs, "MongoDBAuthSource is required")
 	}
 
 	if len(errs) > 0 {

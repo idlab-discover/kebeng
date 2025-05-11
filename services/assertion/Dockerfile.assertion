@@ -11,7 +11,6 @@ FROM golang:1.22
 WORKDIR /app
 COPY --from=builder /bin/assertion-service /app/assertion-service
 COPY --from=builder /app/config.yaml /app/config.yaml
-COPY --from=builder /app/internal/migrations /app/migrations
 COPY --from=builder /app/keys /app/keys
 
 CMD ["/app/assertion-service"]

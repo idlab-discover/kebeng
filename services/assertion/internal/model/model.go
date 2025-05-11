@@ -34,20 +34,20 @@ type AccountKeyAssertion struct {
 }
 
 type SnapRevisionAssertion struct {
-	ID        uuid.UUID  `json:"id" db:"id"`
-	CreatedAt time.Time  `json:"created_at" db:"created_at"`
-	DeletedAt *time.Time `json:"deleted_at,omitempty" db:"deleted_at"`
+	ID        uuid.UUID  `json:"id" bson:"_id,omitempty"`
+	CreatedAt time.Time  `json:"created_at" bson:"createdat,omitempty"`
+	DeletedAt *time.Time `json:"deleted_at,omitempty" bson:"deletedat,omitempty"`
 
-	Type                       string    `json:"type" db:"type"`
-	AuthorityID                string    `json:"authority_id" db:"authority_id"`
-	SnapSHA3_384               string    `json:"snap_sha3_384" db:"snap_sha3_384"`
-	DeveloperID                uuid.UUID `json:"developer_id" db:"developer_id"`
-	SnapEntryID                uuid.UUID `json:"snap_entry_id" db:"snap_entry_id"`
-	SnapRevisionSequenceNumber uint32    `json:"snap_revision_sequence_number" db:"snap_revision_sequence_number"`
-	SnapSize                   uint64    `json:"snap_size" db:"snap_size"`
-	Timestamp                  time.Time `json:"timestamp" db:"timestamp"`
-	SignKeySHA3_384            string    `json:"sign_key_sha3_384" db:"sign_key_sha3_384"`
-	Signature                  string    `json:"signature" db:"signature"`
+	Type                       string    `json:"type" bson:"type"`
+	AuthorityID                string    `json:"authority_id,omitempty" bson:"authorityid,omitempty"`
+	SnapSHA3_384               string    `json:"snap_sha3_384" bson:"snapsha3_384"`
+	DeveloperID                uuid.UUID `json:"developer_id,omitempty" bson:"developerid,omitempty"`
+	SnapEntryID                uuid.UUID `json:"snap_entry_id,omitempty" bson:"snapentryid,omitempty"`
+	SnapRevisionSequenceNumber uint32    `json:"snap_revision_sequence_number,omitempty" bson:"snaprevisionsequencenumber,omitempty"`
+	SnapSize                   uint64    `json:"snap_size,omitempty" bson:"snapsize,omitempty"`
+	Timestamp                  time.Time `json:"timestamp,omitempty" bson:"timestamp,omitempty"`
+	SignKeySHA3_384            string    `json:"sign_key_sha3_384,omitempty" bson:"signkeysha3_384,omitempty"`
+	Signature                  string    `json:"signature" bson:"signature"`
 }
 
 type SnapDeclarationAssertion struct {
@@ -58,9 +58,9 @@ type SnapDeclarationAssertion struct {
 	AuthorityID     string         `json:"authority_id" db:"authority_id"`
 	Revision        uint32         `json:"revision" db:"revision"`
 	Series          string         `json:"series" db:"series"`
-	SnapID          string         `json:"snap_id" db:"snap_id"`
+	PublisherID     uuid.UUID      `json:"publisher_id" db:"publisher_id"`
+	SnapEntryID     uuid.UUID      `json:"snap_id" db:"snap_id"`
 	SnapName        string         `json:"snap_name" db:"snap_name"`
-	PublisherID     string         `json:"publisher_id" db:"publisher_id"`
 	Timestamp       time.Time      `json:"timestamp" db:"timestamp"`
 	RefreshControl  pq.StringArray `json:"refresh_control" db:"refresh_control"`
 	Aliases         []Alias        `json:"aliases" db:"aliases"`

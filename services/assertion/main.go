@@ -8,8 +8,6 @@ import (
 	"net/http"
 	"time"
 
-	_ "net/http/pprof"
-
 	"github.com/idlab-discover/kebeng/services/assertion/internal/config"
 	"github.com/idlab-discover/kebeng/services/assertion/internal/database"
 	"github.com/idlab-discover/kebeng/services/assertion/internal/logic"
@@ -33,17 +31,17 @@ func main() {
 	}
 	logrus.Infof("Loaded configuration: %+v", cfg)
 
-	db, err := database.NewDatabase(cfg)
+	// Connect to MongoDB
+	mongoDB, err := database.NewMongoDBConnection(cfg)
 	if err != nil {
-		logrus.Fatalf("Failed to connect to database: %v", err)
+		logrus.Fatalf("Failed to connect to MongoDB: %v", err)
 	}
+	logrus.Infof("Connected to MongoDB")
 
-	logrus.Infof("Connected to database: %v", db)
-
+	// Assertion DB for root key management
 	assertionDB, err := asserts.OpenDatabase(&asserts.DatabaseConfig{
 		KeypairManager: asserts.NewMemoryKeypairManager(),
 	})
-
 	if err != nil {
 		logrus.Fatalf("Failed to open assertion database: %s", err)
 	}
@@ -52,16 +50,17 @@ func main() {
 		logrus.Fatalf("Failed to import root key: %s in assertions db", err)
 	}
 
-	repo := repository.NewAssertionRepository(db)
+	// Repository for MongoDB
+	repo := repository.NewAssertionRepository(cfg, mongoDB)
+
+	// Business Logic
 	assertionLogic := logic.NewAssertionLogic(cfg, repo, assertionDB)
 
 	if cfg.TestMode {
 		logrus.Infof("Running in test mode")
 	}
 
-	// after creating the rootkey, a account key assertion has to be made this will be used by snapd to verify by who the other assertions were signed
-	// TODO: somehow fix that root account is created and matches the accountId here
-	// for now just random uuid that doesn't match real account
+	// Create account key assertion
 	now := time.Now()
 	serializedPub, err := asserts.EncodePublicKey(cfg.RootKey.PublicKey())
 	if err != nil {
@@ -83,7 +82,7 @@ func main() {
 		logrus.Fatalf("Failed to create account key assertion: %v", accountKeyAssertion.Errors)
 	}
 
-	// also create a root account assertion
+	// Create root account assertion
 	req2 := &proto.AddAccountAssertionRequest{
 		AccountId:   cfg.RootAccountID.String(),
 		DisplayName: "kebeng",
@@ -96,31 +95,29 @@ func main() {
 		logrus.Fatalf("Failed to create account assertion: %v", accountAssertion.Errors)
 	}
 
-	// create metrics endpoint
+	// Monitoring and metrics setup
 	if cfg.Monitoring {
 		logrus.Infof("Creating metrics endpoint")
-		// can be used to see the heap allocation
 		go func() {
 			logrus.Infof("Starting pprof endpoint on :6060")
 			if err := http.ListenAndServe(":6060", nil); err != nil {
 				logrus.Fatalf("pprof ListenAndServe: %v", err)
 			}
 		}()
-
 		monitoring.CreateMetricsEndpoint()
 	}
 
-	// start grpc server
+	// Start gRPC server
 	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", cfg.GRPCHost, cfg.GRPCPort))
 	if err != nil {
 		logrus.Fatalf("Failed to listen: %v", err)
 	}
 	grpcServer := grpc.NewServer()
-	// register health check service
+	// Register health check service
 	hs := health.NewServer()
 	hs.SetServingStatus("", healthpb.HealthCheckResponse_SERVING)
 
-	// register services
+	// Register services
 	healthpb.RegisterHealthServer(grpcServer, hs)
 	proto.RegisterAssertionServiceServer(grpcServer, assertionLogic)
 

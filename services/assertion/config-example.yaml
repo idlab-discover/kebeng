@@ -1,9 +1,9 @@
-db_host: "assertion_db"
-db_port: 5432
-db_user: "example_user"
-db_password: "example_password"
-db_name: "assertion_db"
-migration_path: "/app/migrations"
+mongodb_db: "assertions"
+mongodb_user: "root"
+mongodb_password: "rootpassword"
+mongodb_host: "assertion_mongo_db" // This should be the name of the MongoDB service in docker-compose
+mongodb_port: 27017
+mongodb_auth_source: "admin"
 
 grpc_host: "assertion_service"
 grpc_port: 8083

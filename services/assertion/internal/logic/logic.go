@@ -78,16 +78,12 @@ func (s *AssertionService) AddSnapRevisionAssertion(ctx context.Context, req *pr
 	signature := string(asserts.Encode(signedAssertion))
 
 	snapRevisionAssertion, cerr := s.repo.AddSnapRevisionAssertion(
+		ctx,
 		el,
-		s.cfg.AuthorityID,
 		req.GetSnapSha3_384(),
-		s.cfg.RootKey.PublicKey().ID(), // this is the sign_key_SHA3_384
+		signature,
 		parsedDeveloperId,
 		parsedSnapEntryId,
-		req.GetSnapRevisionSequenceNumber(),
-		req.GetSnapSize(),
-		req.GetTimestamp().AsTime(),
-		signature,
 	)
 	if cerr != nil {
 		// should have been logged and added to error list in repo function
@@ -124,7 +120,7 @@ func (s *AssertionService) AddAccountKeyAssertion(ctx context.Context, req *prot
 	}
 
 	var sequenceNumber uint32
-	latestAccountKeyAssertion, cerr := s.repo.GetLatestAccountKeyAssertion(el, parsedAccountId)
+	latestAccountKeyAssertion, cerr := s.repo.GetLatestAccountKeyAssertion(ctx, el, parsedAccountId)
 	if cerr != nil && cerr.GetCode() != cerror.ResourceNotFound {
 		// should have been logged and added to error list in repo function
 		return &proto.AccountKeyAssertionResponse{
@@ -190,18 +186,12 @@ func (s *AssertionService) AddAccountKeyAssertion(ctx context.Context, req *prot
 
 	// NOTE: maybe also store encoded public key?
 	accountKeyAssertion, cerr := s.repo.AddAccountKeyAssertion(
+		ctx,
 		el,
-		s.cfg.AuthorityID,
 		req.GetPublicKeySha3_384Encoded(),
-		s.cfg.RootKey.PublicKey().ID(), // this is the sign_key_SHA3_384
-		req.GetName(),
+		signature,
 		sequenceNumber,
 		parsedAccountId,
-		req.GetSince().AsTime(),
-		req.GetUntil().AsTime(),
-		bodyBytes,
-		uint64(len(bodyBytes)),
-		signature,
 	)
 	if cerr != nil {
 		// should have been logged and added to error list in repo function
@@ -233,7 +223,25 @@ func (s *AssertionService) AddSnapDeclarationAssertion(ctx context.Context, req 
 	el := cerror.NewErrorList()
 
 	var sequenceNumber uint32
-	latestSnapDeclarationAssertion, cerr := s.repo.GetLatestSnapDeclarationAssertion(el, req.GetSnapId())
+	parsedSnapId, err := uuid.Parse(req.GetSnapId())
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.Invalid, fmt.Sprintf("failed to parse snap id: %s", err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.SnapDeclarationAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}, nil
+	}
+	parsedPublisherId, err := uuid.Parse(req.GetPublisherId())
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.Invalid, fmt.Sprintf("failed to parse publisher id: %s", err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.SnapDeclarationAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}, nil
+	}
+	latestSnapDeclarationAssertion, cerr := s.repo.GetLatestSnapDeclarationAssertion(ctx, el, parsedSnapId)
 	if cerr != nil && cerr.GetCode() != cerror.ResourceNotFound {
 		// should have been logged and added to error list in repo function
 		return &proto.SnapDeclarationAssertionResponse{
@@ -268,20 +276,12 @@ func (s *AssertionService) AddSnapDeclarationAssertion(ctx context.Context, req 
 
 	signature := string(asserts.Encode(signedAssertion))
 	snapDeclarationAssertion, cerr := s.repo.AddSnapDeclarationAssertion(
+		ctx,
 		el,
-		s.cfg.AuthorityID,
-		s.cfg.RootKey.PublicKey().ID(), // this is the sign_key_SHA3_384
-		req.GetSnapId(),
-		req.GetSnapName(),
-		req.GetPublisherId(),
-		sequenceNumber,
-		req.GetSeries(),
-		req.GetTimestamp().AsTime(),
-		req.GetRefreshControl(),
-		protoAliasToModelAlias(req.GetAliases()),
-		deserializePlugs(req.GetPlugs()),
-		deserializeSlots(req.GetSlots()),
 		signature,
+		sequenceNumber,
+		parsedSnapId,
+		parsedPublisherId,
 	)
 	if cerr != nil {
 		// should have been logged and added to error list in repo function
@@ -297,9 +297,9 @@ func (s *AssertionService) AddSnapDeclarationAssertion(ctx context.Context, req 
 		Id:              snapDeclarationAssertion.ID.String(),
 		AuthorityId:     snapDeclarationAssertion.AuthorityID,
 		SignKeySha3_384: snapDeclarationAssertion.SignKeySHA3_384,
-		SnapId:          snapDeclarationAssertion.SnapID,
+		SnapId:          snapDeclarationAssertion.SnapEntryID.String(),
 		SnapName:        snapDeclarationAssertion.SnapName,
-		PublisherId:     snapDeclarationAssertion.PublisherID,
+		PublisherId:     snapDeclarationAssertion.PublisherID.String(),
 		Revision:        snapDeclarationAssertion.Revision,
 		Series:          snapDeclarationAssertion.Series,
 		Timestamp:       timestamppb.New(snapDeclarationAssertion.Timestamp),
@@ -335,15 +335,6 @@ func (s *AssertionService) AddSnapBuildAssertion(ctx context.Context, req *proto
 	}
 
 	timestamp := time.Now().Format(time.RFC3339)
-	parsedTimestamp, err := time.Parse(time.RFC3339, timestamp)
-	if err != nil {
-		cerr := cerror.NewCustomError(cerror.Invalid, fmt.Sprintf("failed to parse timestamp: %s", err))
-		logrus.Error(cerr)
-		el.AddCustomError(cerr)
-		return &proto.SnapBuildAssertionResponse{
-			Errors: el.ConvertToProtoErrorList(),
-		}, nil
-	}
 
 	headers := map[string]any{
 		"authority-id":      s.cfg.AuthorityID,
@@ -367,16 +358,11 @@ func (s *AssertionService) AddSnapBuildAssertion(ctx context.Context, req *proto
 	signature := string(asserts.Encode(signedAssertion))
 
 	snapBuildAssertion, cerr := s.repo.AddSnapBuildAssertion(
+		ctx,
 		el,
-		s.cfg.AuthorityID,
-		s.cfg.RootKey.PublicKey().ID(), // this is the sign_key_SHA3_384
+		signature,
 		parsedSnapId,
 		parsedAccountId,
-		req.GetGrade(),
-		req.GetSha3_384Encoded(),
-		req.GetSnapSize(),
-		signature,
-		parsedTimestamp,
 	)
 	if cerr != nil {
 		// should have been logged and added to error list in repo function
@@ -414,7 +400,7 @@ func (s *AssertionService) AddAccountAssertion(ctx context.Context, req *proto.A
 	}
 
 	var sequenceNumber uint32
-	latestAccountAssertion, cerr := s.repo.GetLatestAccountAssertionByAccountID(el, parsedAccountId)
+	latestAccountAssertion, cerr := s.repo.GetLatestAccountAssertionByAccountID(ctx, el, parsedAccountId)
 	if cerr != nil && cerr.GetCode() != cerror.ResourceNotFound {
 		// should have been logged and added to error list in repo function
 		return &proto.AccountAssertionResponse{
@@ -448,16 +434,11 @@ func (s *AssertionService) AddAccountAssertion(ctx context.Context, req *proto.A
 	}
 	signature := string(asserts.Encode(signedAssertion))
 	accountAssertion, cerr := s.repo.AddAccountAssertion(
+		ctx,
 		el,
-		s.cfg.AuthorityID,
-		req.GetDisplayName(),
-		req.GetUsername(),
-		req.GetValidation(),
-		parsedAccountId,
-		sequenceNumber,
-		req.GetTimestamp().AsTime(),
-		s.cfg.RootKey.PublicKey().ID(), // this is the sign_key_SHA3_384
 		signature,
+		sequenceNumber,
+		parsedAccountId,
 	)
 	if cerr != nil {
 		// should have been logged and added to error list in repo function
@@ -487,7 +468,7 @@ func (s *AssertionService) GetSnapRevisionAssertionBySHA3_384(ctx context.Contex
 		return nil, fmt.Errorf("snap sha3_384 is required")
 	}
 
-	snapRevisionAssertion, cerr := s.repo.GetSnapRevisionAssertionBySHA3_384(el, req.GetSnapSha3_384())
+	snapRevisionAssertion, cerr := s.repo.GetSnapRevisionAssertionBySHA3_384(ctx, el, req.GetSnapSha3_384())
 	if cerr != nil {
 		// should have been logged and added to error list in repo function
 		return nil, fmt.Errorf("failed to get snap revision assertion: %v", cerr)
@@ -516,7 +497,7 @@ func (s *AssertionService) GetAccountKeyAssertionByPublicKeySha(ctx context.Cont
 		el.Add(cerror.Invalid, "name is required")
 		return nil, fmt.Errorf("name is required")
 	}
-	accountKeyAssertion, cerr := s.repo.GetAccountKeyAssertionByPublicKeySha(el, req.GetPublicKeySha3_384Encoded())
+	accountKeyAssertion, cerr := s.repo.GetAccountKeyAssertionByPublicKeySha(ctx, el, req.GetPublicKeySha3_384Encoded())
 	if cerr != nil {
 		// should have been logged and added to error list in repo function
 		return nil, fmt.Errorf("failed to get account key assertion: %v", cerr)
@@ -550,7 +531,16 @@ func (s *AssertionService) GetSnapDeclarationAssertionBySnapID(ctx context.Conte
 			Errors: el.ConvertToProtoErrorList(),
 		}, nil
 	}
-	snapDeclarationAssertion, cerr := s.repo.GetSnapDeclarationAssertionBySnapID(el, req.GetSnapId())
+	parsedSnapId, err := uuid.Parse(req.GetSnapId())
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.Invalid, fmt.Sprintf("failed to parse snap id: %s", err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.SnapDeclarationAssertionResponse{
+			Errors: el.ConvertToProtoErrorList(),
+		}, nil
+	}
+	snapDeclarationAssertion, cerr := s.repo.GetSnapDeclarationAssertionBySnapEntryID(ctx, el, parsedSnapId)
 	if cerr != nil {
 		// should have been logged and added to error list in repo function
 		return &proto.SnapDeclarationAssertionResponse{
@@ -563,9 +553,9 @@ func (s *AssertionService) GetSnapDeclarationAssertionBySnapID(ctx context.Conte
 		Id:              snapDeclarationAssertion.ID.String(),
 		AuthorityId:     snapDeclarationAssertion.AuthorityID,
 		SignKeySha3_384: snapDeclarationAssertion.SignKeySHA3_384,
-		SnapId:          snapDeclarationAssertion.SnapID,
+		SnapId:          snapDeclarationAssertion.SnapEntryID.String(),
 		SnapName:        snapDeclarationAssertion.SnapName,
-		PublisherId:     snapDeclarationAssertion.PublisherID,
+		PublisherId:     snapDeclarationAssertion.PublisherID.String(),
 		Revision:        snapDeclarationAssertion.Revision,
 		Series:          snapDeclarationAssertion.Series,
 		Timestamp:       timestamppb.New(snapDeclarationAssertion.Timestamp),
@@ -598,7 +588,7 @@ func (s *AssertionService) GetAccountAssertionByAccountID(ctx context.Context, r
 			Errors: el.ConvertToProtoErrorList(),
 		}, nil
 	}
-	accountAssertion, cerr := s.repo.GetAccountAssertionByAccountID(el, parsedAccountId)
+	accountAssertion, cerr := s.repo.GetAccountAssertionByAccountID(ctx, el, parsedAccountId)
 	if cerr != nil {
 		// should have been logged and added to error list in repo function
 		return &proto.AccountAssertionResponse{
@@ -623,21 +613,6 @@ func (s *AssertionService) GetAccountAssertionByAccountID(ctx context.Context, r
 }
 
 // ############### HELPER FUNCTIONS #################
-
-// convert proto Alias to model Alias
-func protoAliasToModelAlias(protoAliases []*proto.Alias) []model.Alias {
-	if len(protoAliases) == 0 {
-		return nil
-	}
-	aliases := make([]model.Alias, len(protoAliases))
-	for i, protoAlias := range protoAliases {
-		aliases[i] = model.Alias{
-			Name:   protoAlias.Name,
-			Target: protoAlias.Target,
-		}
-	}
-	return aliases
-}
 
 // convert model Alias to proto Alias
 func modelAliasToProtoAlias(modelAliases []model.Alias) []*proto.Alias {
@@ -664,26 +639,4 @@ func serializeMap[T model.Plugs | model.Slots](m T) string {
 		return ""
 	}
 	return string(serialized)
-}
-
-// deserializePlugs converts a JSON string into a model.Plugs object.
-func deserializePlugs(plugs string) model.Plugs {
-	var deserialized model.Plugs
-	err := json.Unmarshal([]byte(plugs), &deserialized)
-	if err != nil {
-		logrus.Errorf("failed to deserialize plugs: %v", err)
-		return nil
-	}
-	return deserialized
-}
-
-// DeserializeSlot converts a JSON string into a model.Slots object.
-func deserializeSlots(slots string) model.Slots {
-	var deserialized model.Slots
-	err := json.Unmarshal([]byte(slots), &deserialized)
-	if err != nil {
-		logrus.Errorf("failed to deserialize slots: %v", err)
-		return nil
-	}
-	return deserialized
 }
