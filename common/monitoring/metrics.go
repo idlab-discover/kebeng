@@ -53,7 +53,7 @@ var (
 		prometheus.HistogramOpts{
 			Name:    "request_duration_seconds_monitoring",
 			Help:    "Duration of HTTP requests measured in monitoring service in seconds",
-			Buckets: generateBuckets(80, 0, 4),
+			Buckets: generateBuckets(160, 0, 3),
 		},
 		[]string{"handlerFunction"},
 	)
