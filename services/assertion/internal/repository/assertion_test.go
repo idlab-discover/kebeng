@@ -432,7 +432,7 @@ func TestGetSnapDeclarationAssertionBySnapID_Succes(t *testing.T) {
 
 	fakeResult := &FakeSingleResult{Doc: expected}
 	mockCol.
-		On("FindOne", mock.Anything, bson.M{"snapid": uuid.MustParse("77777777-7777-7777-7777-777777777777")}).
+		On("FindOne", mock.Anything, bson.M{"snapentryid": uuid.MustParse("77777777-7777-7777-7777-777777777777")}).
 		Return(fakeResult)
 
 	el := cerror.NewErrorList()
@@ -454,7 +454,7 @@ func TestGetSnapDeclarationAssertionBySnapID_Failure(t *testing.T) {
 	}
 
 	mockCol.
-		On("FindOne", mock.Anything, bson.M{"snapid": uuid.MustParse("77777777-7777-7777-7777-777777777777")}).
+		On("FindOne", mock.Anything, bson.M{"snapentryid": uuid.MustParse("77777777-7777-7777-7777-777777777777")}).
 		Return(&FakeSingleResult{Err: errors.New("mock error")})
 
 	el := cerror.NewErrorList()
@@ -475,7 +475,7 @@ func TestGetSnapDeclarationAssertionBySnapID_NotFound(t *testing.T) {
 	}
 
 	mockCol.
-		On("FindOne", mock.Anything, bson.M{"snapid": uuid.MustParse("77777777-7777-7777-7777-777777777777")}).
+		On("FindOne", mock.Anything, bson.M{"snapentryid": uuid.MustParse("77777777-7777-7777-7777-777777777777")}).
 		Return(&FakeSingleResult{Err: mongo.ErrNoDocuments})
 
 	el := cerror.NewErrorList()

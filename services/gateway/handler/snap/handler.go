@@ -333,14 +333,12 @@ func (h *Handler) SnapPush(c *gin.Context) {
 		el.ExtendProtoError(revision.Errors)
 	}
 
-	logrus.Infof("HERE before revision assertion")
 	// Create a new SnapRevisionAssertion for the snap upload
 	revAssertion := h.AssertionClient.AddSnapRevisionAssertion(metadata.Sha3_384Encoded, accountUUID.String(), entry.Id, revision.Revision, uint64(req.BinaryFileSize))
 	if len(revAssertion.Errors) > 0 {
 		el.ExtendProtoError(revAssertion.Errors)
 	}
 
-	logrus.Infof("HERE before declaration assertion")
 	// Create a new SnapDeclarationAssertion for the snap upload
 	declAssertion := h.AssertionClient.AddSnapDeclarationAssertion(entry.Id, entry.SnapName, accountUUID.String(), req.Series, metadata.RefreshControl, nil, metadata.Plugs, metadata.Slots) // TODO: support aliases
 	if len(declAssertion.Errors) > 0 {
