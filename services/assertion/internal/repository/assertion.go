@@ -253,13 +253,13 @@ func (r *AssertionRepository) GetSnapRevisionAssertionBySHA3_384(
 func (r *AssertionRepository) GetSnapDeclarationAssertionBySnapEntryID(
 	ctx context.Context,
 	el *cerror.ErrorList,
-	snapID uuid.UUID,
+	snapEntryID uuid.UUID,
 ) (*model.SnapDeclarationAssertion, *cerror.CustomError) {
-	filter := bson.M{"snapid": snapID}
+	filter := bson.M{"snapentryid": snapEntryID}
 
 	assertion, err := findOne[model.SnapDeclarationAssertion](ctx, r.AssertionCollections[SNAPDECLARATION], filter, nil)
 	if err != nil {
-		cerr := cerror.ConvertError(err, fmt.Sprintf("failed to retrieve snap declaration assertion from MongoDB for snap id: %s", snapID))
+		cerr := cerror.ConvertError(err, fmt.Sprintf("failed to retrieve snap declaration assertion from MongoDB for snap id: %s", snapEntryID))
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
 		return nil, cerr
@@ -273,7 +273,7 @@ func (r *AssertionRepository) GetLatestSnapDeclarationAssertion(
 	el *cerror.ErrorList,
 	snapEntryID uuid.UUID,
 ) (*model.SnapDeclarationAssertion, *cerror.CustomError) {
-	filter := bson.M{"snapid": snapEntryID}
+	filter := bson.M{"snapentryid": snapEntryID}
 	opts := options.FindOne().SetSort(bson.D{{Key: "revision", Value: -1}})
 
 	assertion, err := findOne[model.SnapDeclarationAssertion](ctx, r.AssertionCollections[SNAPDECLARATION], filter, opts)
