@@ -13,6 +13,8 @@ services:
       - store_service
       - account_service
       - assertion_service
+    command:
+      - prometheus --enable-feature=native-histograms
 
   monitoring:
     build:
