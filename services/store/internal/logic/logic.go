@@ -1065,12 +1065,12 @@ func getSnapMetaFromPath(snapFilePath string, workingDirectory string) (*model.S
 	if err != nil {
 		return nil, fmt.Errorf("failed to change directory: %v", err)
 	}
-
-	cmd := exec.Command("unsquashfs", snapFilePath, "-e", "meta/snap.yaml")
+	id := uuid.New()
+	cmd := exec.Command("unsquashfs", snapFilePath, "-e", fmt.Sprintf("meta/snap_%s.yaml", id.String()))
 	cmd.Stderr = os.Stderr
 
 	defer func() {
-		errIn := os.RemoveAll(path.Join(workingDirectory, "squashfs-root"))
+		errIn := os.Remove(path.Join(workingDirectory, "squashfs-root", "meta", fmt.Sprintf("snap_%s.yaml", id.String())))
 		if errIn != nil {
 			logrus.Error(errIn)
 		}
@@ -1080,14 +1080,14 @@ func getSnapMetaFromPath(snapFilePath string, workingDirectory string) (*model.S
 		return nil, fmt.Errorf("failed to run unsquashfs: %v", err)
 	}
 
-	data, err := os.ReadFile(path.Join(workingDirectory, "squashfs-root", "meta", "snap.yaml"))
+	data, err := os.ReadFile(path.Join(workingDirectory, "squashfs-root", "meta", fmt.Sprintf("snap_%s.yaml", id.String())))
 	if err != nil {
-		return nil, fmt.Errorf("failed to read snap.yaml: %v", err)
+		return nil, fmt.Errorf("failed to read snap_%s.yaml: %v", id.String(), err)
 	}
 
 	var snapMeta model.SnapMeta
 	if err := yaml.Unmarshal(data, &snapMeta); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal snap.yaml: %v", err)
+		return nil, fmt.Errorf("failed to unmarshal snap_%s.yaml: %v", id.String(), err)
 	}
 
 	return &snapMeta, nil
