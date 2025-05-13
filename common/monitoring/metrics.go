@@ -51,11 +51,9 @@ var (
 
 	monitoringRequestDuration = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name:                            "request_duration_seconds_monitoring",
-			Help:                            "Duration of HTTP requests measured in monitoring service in seconds",
-			NativeHistogramBucketFactor:     1.1,
-			NativeHistogramMaxBucketNumber:  200,
-			NativeHistogramMinResetDuration: 1 * time.Hour,
+			Name:    "request_duration_seconds_monitoring",
+			Help:    "Duration of HTTP requests measured in monitoring service in seconds",
+			Buckets: generateBuckets(120, 0, 4),
 		},
 		[]string{"handlerFunction"},
 	)
