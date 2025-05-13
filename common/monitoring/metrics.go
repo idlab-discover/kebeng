@@ -16,7 +16,7 @@ var (
 		prometheus.HistogramOpts{
 			Name:    "request_duration_seconds",
 			Help:    "Duration of HTTP requests in seconds",
-			Buckets: []float64{0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4.0},
+			Buckets: generateBuckets(80, 0, 4),
 		},
 		[]string{"handlerFunction"},
 	)
@@ -53,7 +53,7 @@ var (
 		prometheus.HistogramOpts{
 			Name:    "request_duration_seconds_monitoring",
 			Help:    "Duration of HTTP requests measured in monitoring service in seconds",
-			Buckets: []float64{0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4.0},
+			Buckets: generateBuckets(80, 0, 4),
 		},
 		[]string{"handlerFunction"},
 	)
@@ -92,4 +92,13 @@ func StreamingInterceptor(srv any, ss grpc.ServerStream, info *grpc.StreamServer
 	StreamDuration.WithLabelValues(info.FullMethod).
 		Observe(time.Since(start).Seconds())
 	return err
+}
+
+func generateBuckets(amount_buckets int, min float64, max float64) []float64 {
+	buckets := make([]float64, amount_buckets)
+	step := (max - min) / float64(amount_buckets)
+	for i := range amount_buckets {
+		buckets[i] = min + step*float64(i)
+	}
+	return buckets
 }
