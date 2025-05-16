@@ -59,9 +59,9 @@ func (r *fileRecorder) run() {
 	for {
 		select {
 		case ev := <-r.events:
-			// Write one CSV line: handler,duration_ms
+			// Write one CSV line: handler,duration_ns
 			r.writer.WriteString(fmt.Sprintf("%s,%d\n",
-				ev.Handler, ev.Duration.Milliseconds()))
+				ev.Handler, ev.Duration.Nanoseconds()))
 		case <-ticker.C:
 			r.writer.Flush()
 		case <-r.done:
