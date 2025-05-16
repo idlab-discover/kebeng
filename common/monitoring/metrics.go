@@ -1,7 +1,6 @@
 package monitoring
 
 import (
-	"fmt"
 	"net/http"
 	"runtime"
 	"time"
@@ -62,14 +61,6 @@ var (
 
 func init() {
 	prometheus.MustRegister(requestDuration, requestCount, StreamDuration, monitoringRequestDuration)
-	// goHeapAlloc is already registered via promauto
-	if err := InitFileRecorder(
-		"/var/log/request_durations.csv", // path
-		5*time.Second,                    // flush interval
-		10000,                            // channel buffer size
-	); err != nil {
-		panic(fmt.Sprintf("failed to init file recorder: %v", err))
-	}
 }
 
 func CreateMetricsEndpoint() {
