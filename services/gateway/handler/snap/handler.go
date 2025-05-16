@@ -453,8 +453,6 @@ func (h *Handler) downloadSnap(c *gin.Context, revisionId string, el *cerror.Err
 	}
 
 	stream, err := h.StoreClient.SnapDownloadStream(revisionId)
-	logrus.Infof("*************************** stream: %v", stream)
-	logrus.Infof("*************************** err: %v", err)
 	if err != nil {
 		el.Add(cerror.InternalServerError, err.Error())
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
