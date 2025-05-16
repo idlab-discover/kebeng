@@ -40,6 +40,11 @@ func (h *Handler) SetupEndpoints(r *gin.Engine) {
 }
 
 func (h *Handler) RegisterName(c *gin.Context) {
+	total, _, concurrentParse := setupQueryParams(c)
+	stamp := time.Now().Format("2006-01-02_15-04-05")
+	monitoring.InitFileRecorder(fmt.Sprintf("/var/log/request_duration_%s_%s_%d_%d.csv", "register-name", stamp, concurrentParse, total), 5*time.Second, 10000)
+	defer monitoring.ShutdownFileRecorder()
+
 	h.performOperation(c, func() SnapOperation {
 		snapName := fmt.Sprintf("snap%s", uuid.New().String())
 		return func() error {
@@ -57,6 +62,11 @@ func (h *Handler) SnapcraftUpload(c *gin.Context) {
 	}
 
 	snaps := req.SnapNames
+
+	total, _, concurrentParse := setupQueryParams(c)
+	stamp := time.Now().Format("2006-01-02_15-04-05")
+	monitoring.InitFileRecorder(fmt.Sprintf("/var/log/request_duration_%s_%s_%d_%d_%s.csv", "upload", stamp, concurrentParse, total, snaps[0]), 5*time.Second, 10000)
+	defer monitoring.ShutdownFileRecorder()
 
 	h.performOperation(c, func() SnapOperation {
 		return func() error {
@@ -141,6 +151,11 @@ func (h *Handler) SnapdDownload(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
 	}
+
+	total, _, concurrentParse := setupQueryParams(c)
+	stamp := time.Now().Format("2006-01-02_15-04-05")
+	monitoring.InitFileRecorder(fmt.Sprintf("/var/log/request_duration_%s_%s_%d_%d_%s.csv", "download", stamp, concurrentParse, total, req.SnapName), 5*time.Second, 10000)
+	defer monitoring.ShutdownFileRecorder()
 
 	h.performOperation(c, func() SnapOperation {
 		return func() error {
@@ -278,6 +293,7 @@ func (h *Handler) performOperation(c *gin.Context, operationFactory func() SnapO
 		}
 	}
 
+	logrus.Debug("Waiting for all operations to finish...")
 	wg.Wait()
 
 	// read out latestErr under lock

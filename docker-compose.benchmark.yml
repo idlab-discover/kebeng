@@ -25,6 +25,7 @@ services:
     volumes:
       - ./services/monitoring/config.yaml:/app/config.yaml
       - ./test-data/minio:/app/test-data
+      - ./monitoring_data/:/var/log # logs are put in the monitoring_data folder !!! this folder has to exists !!!
     environment:
       - CONFIG_FILE_PATH=/app/config.yaml
     restart: always
