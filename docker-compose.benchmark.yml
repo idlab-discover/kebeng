@@ -25,6 +25,7 @@ services:
     volumes:
       - ./services/monitoring/config.yaml:/app/config.yaml
       - ./test-data/minio:/app/test-data
+      - ./monitoring_data/:/var/log # logs are put in the monitoring_data folder !!! this folder has to exists !!!
     environment:
       - CONFIG_FILE_PATH=/app/config.yaml
     restart: always
@@ -36,7 +37,7 @@ services:
     container_name: cadvisor
     command:
       - --docker_only=true          # <— skip all raw cgroup/overlayfs probing
-      - --housekeeping_interval=30s
+      - --housekeeping_interval=1s
     ports:
     - 3031:8080
     volumes:

@@ -230,7 +230,7 @@ func (c *StoreClient) UnscannedUpload(ctx context.Context, snapFile io.Reader) *
 
 	var size uint64 = 0
 	// read the file in chunks of 1MB and send it to the server
-	buffer := make([]byte, 1024*1024) // 1 MB buffer
+	buffer := make([]byte, 64*1024) // 1 MB buffer
 	for {
 		n, err := snapFile.Read(buffer)
 		if err != nil && err != io.EOF {

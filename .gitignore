@@ -12,3 +12,4 @@ config.yaml
 *.cov
 *.snap
 .go-version
+monitoring_data

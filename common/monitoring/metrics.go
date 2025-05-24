@@ -16,7 +16,7 @@ var (
 		prometheus.HistogramOpts{
 			Name:    "request_duration_seconds",
 			Help:    "Duration of HTTP requests in seconds",
-			Buckets: []float64{0.05, 0.1, 0.15 /* … */, 1.5},
+			Buckets: generateBuckets(80, 0, 4),
 		},
 		[]string{"handlerFunction"},
 	)
@@ -48,11 +48,19 @@ var (
 		Help:      "Time taken for each gRPC streaming RPC",
 		Buckets:   prometheus.DefBuckets,
 	}, []string{"method"})
+
+	monitoringRequestDuration = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "request_duration_seconds_monitoring",
+			Help:    "Duration of HTTP requests measured in monitoring service in seconds",
+			Buckets: generateBuckets(250, 0, 3),
+		},
+		[]string{"handlerFunction"},
+	)
 )
 
 func init() {
-	prometheus.MustRegister(requestDuration, requestCount, StreamDuration)
-	// goHeapAlloc is already registered via promauto
+	prometheus.MustRegister(requestDuration, requestCount, StreamDuration, monitoringRequestDuration)
 }
 
 func CreateMetricsEndpoint() {
@@ -69,10 +77,30 @@ func StartTimer(handler string) func() {
 	}
 }
 
+func StartMonitoringTimer(handler string) func() {
+	start := time.Now()
+	return func() {
+		dur := time.Since(start)
+		monitoringRequestDuration.WithLabelValues(handler).
+			Observe(float64(dur.Seconds()))
+
+		RecordToFile(handler, dur)
+	}
+}
+
 func StreamingInterceptor(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 	start := time.Now()
 	err := handler(srv, ss)
 	StreamDuration.WithLabelValues(info.FullMethod).
 		Observe(time.Since(start).Seconds())
 	return err
+}
+
+func generateBuckets(amount_buckets int, min float64, max float64) []float64 {
+	buckets := make([]float64, amount_buckets)
+	step := (max - min) / float64(amount_buckets)
+	for i := range amount_buckets {
+		buckets[i] = min + step*float64(i)
+	}
+	return buckets
 }

@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/idlab-discover/kebeng/common/monitoring"
 	"github.com/idlab-discover/kebeng/services/monitoring/internal/logic"
 	"github.com/idlab-discover/kebeng/services/monitoring/internal/model"
 	"github.com/idlab-discover/kebeng/services/monitoring/internal/util"
@@ -39,6 +40,16 @@ func (h *Handler) SetupEndpoints(r *gin.Engine) {
 }
 
 func (h *Handler) RegisterName(c *gin.Context) {
+	total, _, concurrentParse := setupQueryParams(c)
+	stamp := time.Now().Format("2006-01-02_15-04-05")
+	err := monitoring.InitFileRecorder(fmt.Sprintf("/var/log/request_duration_%s_%s_%d_%d.csv", "register-name", stamp, concurrentParse, total), 5*time.Second, 10000)
+	if err != nil {
+		logrus.Errorf("failed to initialize file recorder: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to initialize monitoring"})
+		return
+	}
+	defer monitoring.ShutdownFileRecorder()
+
 	h.performOperation(c, func() SnapOperation {
 		snapName := fmt.Sprintf("snap%s", uuid.New().String())
 		return func() error {
@@ -57,6 +68,17 @@ func (h *Handler) SnapcraftUpload(c *gin.Context) {
 
 	snaps := req.SnapNames
 
+	total, _, concurrentParse := setupQueryParams(c)
+	stamp := time.Now().Format("2006-01-02_15-04-05")
+	err := monitoring.InitFileRecorder(fmt.Sprintf("/var/log/request_duration_%s_%s_%d_%d_%s.csv", "upload", stamp, concurrentParse, total, snaps[0]), 5*time.Second, 10000)
+	if err != nil {
+		logrus.Errorf("failed to initialize file recorder: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to initialize monitoring"})
+		return
+	}
+
+	defer monitoring.ShutdownFileRecorder()
+
 	h.performOperation(c, func() SnapOperation {
 		return func() error {
 			rc, snapName, err := util.RandomSnapReader(snaps, 30, h.Logic.Config.SnapDataPath)
@@ -66,7 +88,9 @@ func (h *Handler) SnapcraftUpload(c *gin.Context) {
 			}
 			defer rc.Close()
 
+			stop := monitoring.StartMonitoringTimer("register_name")
 			err = h.Logic.RegisterName(snapName)
+			stop()
 			if err != nil {
 				return err
 			}
@@ -76,12 +100,17 @@ func (h *Handler) SnapcraftUpload(c *gin.Context) {
 				Name:   snapName,
 				DryRun: true,
 			}
+			stop = monitoring.StartMonitoringTimer("snap_push_dry_run")
 			pushResp, err := h.Logic.SnapPush(pushRequest)
+			stop()
 			if err != nil {
 				return err
 			}
 			logrus.Debugf("push response 1: %+v", pushResp)
+
+			stop = monitoring.StartMonitoringTimer("unscanned_upload")
 			resp, err := h.Logic.UnscannedUpload(rc, snapName)
+			stop()
 			if err != nil {
 				return err
 			}
@@ -90,8 +119,12 @@ func (h *Handler) SnapcraftUpload(c *gin.Context) {
 				Name:              snapName,
 				UnscannedFileName: resp.UploadID,
 				BinaryFileSize:    resp.Size,
+				Series:            "20",
 			}
+
+			stop = monitoring.StartMonitoringTimer("snap_push")
 			pushResp, err = h.Logic.SnapPush(pushRequest)
+			stop()
 			if err != nil {
 				return err
 			}
@@ -105,7 +138,10 @@ func (h *Handler) SnapcraftUpload(c *gin.Context) {
 				case <-ctx.Done():
 					return fmt.Errorf("timed out waiting for upload %s to process", pushResp.UploadID)
 				case <-ticker.C:
+
+					//stop = monitoring.StartMonitoringTimer("upload_status")
 					status, err := h.Logic.GetUploadStatus(pushResp.UploadID)
+					//stop()
 					if err != nil {
 						return fmt.Errorf("failed to get upload status: %w", err)
 					}
@@ -127,17 +163,32 @@ func (h *Handler) SnapdDownload(c *gin.Context) {
 		return
 	}
 
+	total, _, concurrentParse := setupQueryParams(c)
+	stamp := time.Now().Format("2006-01-02_15-04-05")
+	err := monitoring.InitFileRecorder(fmt.Sprintf("/var/log/request_duration_%s_%s_%d_%d_%s.csv", "download", stamp, concurrentParse, total, req.SnapName), 5*time.Second, 10000)
+	if err != nil {
+		logrus.Errorf("failed to initialize file recorder: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to initialize monitoring"})
+		return
+	}
+
+	defer monitoring.ShutdownFileRecorder()
+
 	h.performOperation(c, func() SnapOperation {
 		return func() error {
 			// 1) Get URL and download
+			stop := monitoring.StartMonitoringTimer("snap_refresh")
 			refreshResp, err := h.Logic.RefreshDownload(req.SnapName, req.Channel)
+			stop()
 			if err != nil {
 				return err
 			}
 			url := *refreshResp.Responses[0].Snap.Download.URL
+			stop = monitoring.StartMonitoringTimer("snap_download")
 			if err := h.Logic.SnapDownload(url); err != nil {
 				return err
 			}
+			stop()
 
 			// 2) Revision assertion
 			// NOTE: snapd calculates the sha themselves and checks with ours but we use our own for easy of testing
@@ -147,7 +198,9 @@ func (h *Handler) SnapdDownload(c *gin.Context) {
 				return fmt.Errorf("failed to decode hex string: %w", err)
 			}
 			sha := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(b)
+			stop = monitoring.StartMonitoringTimer("snap_revision_assertion")
 			revBlob, err := h.Logic.GetSnapRevisionAssertion(sha, "0")
+			stop()
 			if err != nil {
 				return err
 			}
@@ -155,7 +208,9 @@ func (h *Handler) SnapdDownload(c *gin.Context) {
 			snapID := revFields["snap-id"]
 
 			// 3) Declaration assertion
+			stop = monitoring.StartMonitoringTimer("snap_declaration_assertion")
 			declBlob, err := h.Logic.GetSnapDeclarationAssertion("16", snapID)
+			stop()
 			if err != nil {
 				return err
 			}
@@ -172,7 +227,9 @@ func (h *Handler) SnapdDownload(c *gin.Context) {
 				seen[nextKey] = true
 
 				// fetch account-key assertion
+				stop = monitoring.StartMonitoringTimer("account_key_assertion")
 				keyBlob, err := h.Logic.GetAccountKeyAssertion(nextKey, "0")
+				stop()
 				if err != nil {
 					return err
 				}
@@ -180,7 +237,9 @@ func (h *Handler) SnapdDownload(c *gin.Context) {
 				accountID := keyFields["account-id"]
 
 				// fetch account assertion
+				stop = monitoring.StartMonitoringTimer("account_assertion")
 				acctBlob, err := h.Logic.GetAccountAssertion(accountID, "0")
+				stop()
 				if err != nil {
 					return err
 				}
@@ -251,6 +310,7 @@ func (h *Handler) performOperation(c *gin.Context, operationFactory func() SnapO
 		}
 	}
 
+	logrus.Debug("Waiting for all operations to finish...")
 	wg.Wait()
 
 	// read out latestErr under lock

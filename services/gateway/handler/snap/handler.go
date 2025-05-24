@@ -471,13 +471,23 @@ func (h *Handler) downloadSnap(c *gin.Context, revisionId string, el *cerror.Err
 
 	for {
 		resp, err := stream.Recv()
-		if err == io.EOF {
-			break
+		switch {
+		case err == io.EOF:
+			return
+		case err != nil:
+			logrus.Errorf("download stream error: %v", err)
+			return
+		}
+
+		if resp == nil {
+			logrus.Errorf("download stream returned nil resp")
+			return
 		}
 		if len(resp.Errors) > 0 {
 			logrus.Errorf("failed while reading downloadstream: %+v", resp.Errors)
 			return
 		}
+
 		if data := resp.GetData(); data != nil {
 			if _, writeErr := c.Writer.Write(data.Chunk); writeErr != nil {
 				logrus.Errorf("write to HTTP client failed: %v", writeErr)
