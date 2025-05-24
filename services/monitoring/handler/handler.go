@@ -42,7 +42,12 @@ func (h *Handler) SetupEndpoints(r *gin.Engine) {
 func (h *Handler) RegisterName(c *gin.Context) {
 	total, _, concurrentParse := setupQueryParams(c)
 	stamp := time.Now().Format("2006-01-02_15-04-05")
-	monitoring.InitFileRecorder(fmt.Sprintf("/var/log/request_duration_%s_%s_%d_%d.csv", "register-name", stamp, concurrentParse, total), 5*time.Second, 10000)
+	err := monitoring.InitFileRecorder(fmt.Sprintf("/var/log/request_duration_%s_%s_%d_%d.csv", "register-name", stamp, concurrentParse, total), 5*time.Second, 10000)
+	if err != nil {
+		logrus.Errorf("failed to initialize file recorder: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to initialize monitoring"})
+		return
+	}
 	defer monitoring.ShutdownFileRecorder()
 
 	h.performOperation(c, func() SnapOperation {
@@ -65,7 +70,13 @@ func (h *Handler) SnapcraftUpload(c *gin.Context) {
 
 	total, _, concurrentParse := setupQueryParams(c)
 	stamp := time.Now().Format("2006-01-02_15-04-05")
-	monitoring.InitFileRecorder(fmt.Sprintf("/var/log/request_duration_%s_%s_%d_%d_%s.csv", "upload", stamp, concurrentParse, total, snaps[0]), 5*time.Second, 10000)
+	err := monitoring.InitFileRecorder(fmt.Sprintf("/var/log/request_duration_%s_%s_%d_%d_%s.csv", "upload", stamp, concurrentParse, total, snaps[0]), 5*time.Second, 10000)
+	if err != nil {
+		logrus.Errorf("failed to initialize file recorder: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to initialize monitoring"})
+		return
+	}
+
 	defer monitoring.ShutdownFileRecorder()
 
 	h.performOperation(c, func() SnapOperation {
@@ -154,7 +165,13 @@ func (h *Handler) SnapdDownload(c *gin.Context) {
 
 	total, _, concurrentParse := setupQueryParams(c)
 	stamp := time.Now().Format("2006-01-02_15-04-05")
-	monitoring.InitFileRecorder(fmt.Sprintf("/var/log/request_duration_%s_%s_%d_%d_%s.csv", "download", stamp, concurrentParse, total, req.SnapName), 5*time.Second, 10000)
+	err := monitoring.InitFileRecorder(fmt.Sprintf("/var/log/request_duration_%s_%s_%d_%d_%s.csv", "download", stamp, concurrentParse, total, req.SnapName), 5*time.Second, 10000)
+	if err != nil {
+		logrus.Errorf("failed to initialize file recorder: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to initialize monitoring"})
+		return
+	}
+
 	defer monitoring.ShutdownFileRecorder()
 
 	h.performOperation(c, func() SnapOperation {
