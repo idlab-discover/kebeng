@@ -10,9 +10,14 @@ A fully self-hostable, open-source Snap Store backend for distributing and manag
 - Docker & Docker Compose
 
 ### Setup
+Clone the repository with the following command:
 ```bash
 git clone https://github.com/idlab-discover/kebeng.git
 cd kebeng
-docker compose -f docker-compose.test.yml up --build
 ```
 
+#### Configs
+Each service in the `/services` folder requires a `config.yaml`.
+An example for each config file (`config-example.yaml`) is present for each of the services in the correct folder.
+
+#### Keys for the account service
