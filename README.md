@@ -20,4 +20,11 @@ cd kebeng
 Each service in the `/services` folder requires a `config.yaml`.
 An example for each config file (`config-example.yaml`) is present for each of the services in the correct folder.
 
-#### Keys for the account service
+#### RootKey for the account service
+The account service needs a `root-private-key.pem` in orde to create a root account.
+Execute the following commands in the `/root` folder:
+```bash
+cd /services/account/internal
+mkdir /keys
+openssl genpkey -algorithm RSA -out root-private-key.pem -aes256
+```
