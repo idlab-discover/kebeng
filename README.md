@@ -28,3 +28,24 @@ cd /services/account/internal
 mkdir /keys
 openssl genpkey -algorithm RSA -out root-private-key.pem -aes256
 ```
+
+#### Run
+There are 3 different run modes:
+- **production**: no test data present, monitoring service not activated
+- **testing**: test data is added
+- **monitoring**: test data is added and monitoring service is activated
+
+Run them with the following commands:
+```bash
+# Production
+docker compose -f docker-compose.yml down -v --remove-orphans
+docker compose -f docker-compose.yml up --build
+
+# Testing
+docker compose -f docker-compose.test.yml down -v --remove-orphans
+docker compose -f docker-compose.test.yml up --build
+
+# Monitoring
+docker compose -f docker-compose.benchmark.yml down -v --remove-orphans
+docker compose -f docker-compose.benchmark.yml up --build
+```
