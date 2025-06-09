@@ -18,7 +18,6 @@ type Config struct {
 	GRPCHost       string `mapstructure:"grpc_host" yaml:"grpc_host"`
 	GRPCPort       int    `mapstructure:"grpc_port" yaml:"grpc_port"`
 	MigrationPath  string `mapstructure:"migration_path" yaml:"migration_path"`
-	GenericKeyPath string `mapstructure:"generic_key_path" yaml:"generic_key_path"`
 	MinioAccessKey string `mapstructure:"minio_access_key" yaml:"minio_access_key"`
 	MinioSecretKey string `mapstructure:"minio_secret_key" yaml:"minio_secret"`
 	MinioHost      string `mapstructure:"minio_host" yaml:"minio_host"`
@@ -103,11 +102,6 @@ func (c *Config) checkConfig() error {
 	// Check migration path.
 	if c.MigrationPath == "" {
 		errs = append(errs, "MigrationPath is required")
-	}
-
-	// Check key paths.
-	if c.GenericKeyPath == "" {
-		errs = append(errs, "GenericKeyPath is required")
 	}
 
 	// Check Minio settings.
