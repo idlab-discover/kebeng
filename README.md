@@ -8,6 +8,7 @@ A fully self-hostable, open-source Snap Store backend for distributing and manag
 ### Prerequisites
 - Go 1.22
 - Docker & Docker Compose
+- Modified `snapd` and `snapcraft` packages (see [tools](tools))
 
 ### Setup
 Clone the repository with the following command:
@@ -49,3 +50,10 @@ docker compose -f docker-compose.test.yml up --build
 docker compose -f docker-compose.benchmark.yml down -v --remove-orphans
 docker compose -f docker-compose.benchmark.yml up --build
 ```
+
+## Interact with the Kebeng store
+### Custom Snap tools
+To interact with the Kebeng store, a modified version of the `snapd` and `snapcraft` tools is used.
+Follow the two tutorials to create your own custom version of each tool:
+- [custom snapd](custom_snapd.md)
+- [custom snapcraft](custom_snapcraft.md)
