@@ -61,6 +61,14 @@ docker compose -f docker-compose.yml down -v --remove-orphans
 docker compose -f docker-compose.yml up --build
 ```
 
-2. Login to the assertion database with the credentials for the database set in the config of the account service.
+2. Login to the assertion database with the credentials for the database set in the config of the assertion service.
 
-3. 
+3. Retrieve the 2 automatically created assertions in the `account` and `accountkey` collections.
+
+4. Add the assertions to `/asserts/sysdb/trusted.go`. It should look like this:
+![trusted_assertions](/img/trusted_assertions.png)
+Once the assertions are added, snapd trusts your Kebeng store as root.
+
+## 4. Create package
+Use the `snapcraft` command in the root of the snapd repository to create a snap package of the modified snapd code.
+This modified snapd package can later be installed on devices that will use your Kebeng store. 
