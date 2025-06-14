@@ -8,7 +8,7 @@ A fully self-hostable, open-source Snap Store backend for distributing and manag
 ### Prerequisites
 - Go 1.22
 - Docker & Docker Compose
-- Modified `snapd` and `snapcraft` packages (see [tools](tools))
+- Modified `snapd` and `snapcraft` packages are required (see [Custom Snap tools](#custom-snap-tools) below)
 
 ### Setup
 Clone the repository with the following command:
@@ -57,3 +57,34 @@ To interact with the Kebeng store, a modified version of the `snapd` and `snapcr
 Follow the two tutorials to create your own custom version of each tool:
 - [custom snapd](custom_snapd.md)
 - [custom snapcraft](custom_snapcraft.md)
+
+### Install custom tools
+After you created the custom tools, you can install them to interact with the Kebeng store.
+For development, [lxc](https://linuxcontainers.org/) containers are used to install the tools on.
+This way, your custom `snapd` and `snapcraft` don't interfere with the official tools that might be present on your host machine.
+Make sure to push both custom snap packages to your container.
+
+To install the tools on a lxc container, execute the following steps:
+
+1. Install the official `snapd` tool in your container. This is needed to install the custom snapcraft tool
+
+2. Install the custom `snapcraft` tool that is locally available in your container.
+
+3. Install the custom `snapd` tool once the custom snapcraft tool is installed.
+
+4. On your host machine where the official snapcraft tool is installed (and you are logged in):
+```bash
+snapcraft export-login my-snapcraft-login.txt
+```
+Push the file to the lxc container.
+
+4. In the lxc container:
+```bash
+export SNAPCRAFT_STORE_CREDENTIALS=$(cat my-snapcraft-login.txt)
+```
+
+5. Add the `STORE_IP` variable to `/etc/environment` in your lxc container and set it to the IP/URL where your Kebeng store is hosted.
+Restart the snapd service. (`sudo systemctl restart snapd`)
+
+6. Add the `STORE_IP` variable to `.profile` in your lxc container and set it to the IP/URL where your Kebeng store is hosted.
+Source the `.profile` file. (`source .profile`)
