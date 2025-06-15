@@ -33,7 +33,7 @@ openssl genpkey -algorithm RSA -out root-private-key.pem -aes256
 #### Run
 There are 3 different run modes:
 - **production**: no test data present, monitoring service not activated
-- **testing**: test data is added
+- **testing**: test data is added (except for snap packages)
 - **monitoring**: test data is added and monitoring service is activated
 
 Run them with the following commands:
@@ -50,10 +50,11 @@ docker compose -f docker-compose.test.yml up --build
 docker compose -f docker-compose.benchmark.yml down -v --remove-orphans
 docker compose -f docker-compose.benchmark.yml up --build
 ```
+| note: you can find the test packages [here](https://drive.google.com/drive/folders/1O0bTcIKCArTn0rMwMKbboI2_iDhlQtGT?usp=sharing). Download and put them in `/test-data/minio/`
 
 ## Interact with the Kebeng store
 ### Custom Snap tools
-To interact with the Kebeng store, a modified version of the `snapd` and `snapcraft` tools is used.
+To interact with the Kebeng store, a modified version of the `snapd` and `snapcraft` tools are used.
 Follow the two tutorials to create your own custom version of each tool:
 - [custom snapd](custom_snapd.md)
 - [custom snapcraft](custom_snapcraft.md)

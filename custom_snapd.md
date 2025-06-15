@@ -28,7 +28,7 @@ func apiURL() *url.URL {
 
 2. Replace the `storeDeveloperURL()` function with the following code:
 ```go
-var defaultStoreDeveloperURL = os.Getenv("STORE_IP")
+var defaultStoreDeveloperURL = fmt.Sprintf("http://%s:8080/", os.Getenv("STORE_IP"))
 
 func storeDeveloperURL() string {
 	if snapdenv.UseStagingStore() {
@@ -48,7 +48,7 @@ func baseURL() *url.URL {
 	if snapdenv.UseStagingStore() {
 		return mustParse(fmt.Sprintf("http://%s:8080/", ip))
 	}
-	return mustParse(fmt.Sprintf("https://%s/", ip))
+	return mustParse(fmt.Sprintf("http://%s:8080/", ip))
 }
 ```
 ![baseurl](/img/snapd_overlord_baseurl.png)
