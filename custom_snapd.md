@@ -65,8 +65,32 @@ docker compose -f docker-compose.yml up --build
 
 3. Retrieve the 2 automatically created assertions in the `account` and `accountkey` collections.
 
-4. Add the assertions to `/asserts/sysdb/trusted.go`. It should look like this:
+4. Add the assertions to the `const` in `/asserts/sysdb/trusted.go`. It should look like this:
 ![trusted_assertions](/img/trusted_assertions.png)
+
+5. Replace the `init()` function in `/asserts/sysdb/trusted.go` with the following code:
+```go
+func init() {
+    canonicalAccount, err := asserts.Decode([]byte(encodedCanonicalAccount))
+    if err != nil {
+        panic(fmt.Sprintf("cannot decode trusted assertion: %v", err))
+    }
+    canonicalRootAccountKey, err := asserts.Decode([]byte(encodedCanonicalRootAccountKey))
+    if err != nil {
+        panic(fmt.Sprintf("cannot decode trusted assertion: %v", err))
+    }
+    kebengRootAccount, err := asserts.Decode([]byte(encodedKebengRootAccount))
+    if err != nil {
+        panic(fmt.Sprintf("cannot decode trusted assertion: %v", err))
+    }
+    kebengRootAccountKey, err := asserts.Decode([]byte(encodedKebengRootAccountKey))
+    if err != nil {
+        panic(fmt.Sprintf("cannot decode trusted assertion: %v", err))
+    }
+
+    trustedAssertions = []asserts.Assertion{canonicalAccount, canonicalRootAccountKey, kebengRootAccount, kebengRootAccountKey}
+}
+```
 Once the assertions are added, snapd trusts your Kebeng store as root.
 
 ## 4. Create package
