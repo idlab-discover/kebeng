@@ -33,7 +33,7 @@ openssl genpkey -algorithm RSA -out root-private-key.pem -aes256
 #### Run
 There are 3 different run modes:
 - **production**: no test data present, monitoring service not activated
-- **testing**: test data is added (except for snap packages)
+- **testing**: test data is added (except for snap packages, unless they are added to `/test-data/minio/` -> see note)
 - **monitoring**: test data is added and monitoring service is activated
 
 Run them with the following commands:
