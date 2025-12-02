@@ -1,7 +1,7 @@
 # Custom snapcraft
 ## 1. Clone the snapcraft repo
 ```bash
-https://github.com/canonical/snapcraft.git
+git clone https://github.com/canonical/snapcraft.git
 cd snapcraft
 ```
 
