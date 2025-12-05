@@ -1,7 +1,7 @@
 # Custom snapd
 ## 1. Clone the snapd repo
 ```bash
-https://github.com/canonical/snapd.git
+git clone https://github.com/canonical/snapd.git
 cd snapd
 ```
 

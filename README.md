@@ -23,11 +23,11 @@ An example for each config file (`config-example.yaml`) is present for each of t
 
 #### RootKey for the assertion service
 The assertion service needs a `root-private-key.pem` in orde to create assertions for the root account.
-Execute the following commands in the `/root` folder:
+Execute the following commands from the root of the repository:
 ```bash
-cd /services/assertion/internal
-mkdir /keys
-openssl genpkey -algorithm RSA -out root-private-key.pem -aes256
+cd services/assertion
+mkdir keys
+openssl genpkey -algorithm RSA -out root-private-key.pem
 ```
 
 #### Run
