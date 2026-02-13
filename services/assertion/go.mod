@@ -3,7 +3,6 @@ module github.com/idlab-discover/kebeng/services/assertion
 go 1.22.2
 
 require (
-	github.com/golang-migrate/migrate/v4 v4.18.2
 	github.com/google/uuid v1.6.0
 	github.com/idlab-discover/kebeng/common v0.0.0-20250510135817-7ce4451c6167
 	github.com/idlab-discover/kebeng/services/store v0.0.0-20250504165619-2e0f50425084
@@ -43,6 +42,7 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.62.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
+	github.com/rogpeppe/go-internal v1.12.0 // indirect
 	github.com/snapcore/go-gettext v0.0.0-20201130093759-38740d1bd3d2 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
