@@ -1,0 +1,144 @@
+services:
+  gateway-dev:
+    build: 
+      context: .
+      dockerfile: Dockerfile.dev
+    command: /workspace/services/gateway/gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - store_service-dev
+      - account_service-dev
+      - minio-dev
+      - store_db-dev
+      - account_db-dev
+      - assertion_mongo_db-dev
+    volumes:
+      - ./test-data:/workspace/services/gateway/test-data 
+    environment:
+      - CONFIG_FILE_PATH=/workspace/services/gateway/config.dev.yaml
+      - TEST_MODE=1
+    restart: always
+    networks: 
+      - kebeng-backend-dev
+
+  store_service-dev:
+    build: 
+      context: .
+      dockerfile: Dockerfile.dev
+    command: /workspace/services/store/store-service
+    ports:
+      - "8081:8081"
+    depends_on:
+      - store_db-dev
+      - minio-dev
+    environment:
+      - CONFIG_FILE_PATH=/workspace/services/store/config.dev.yaml
+      - TEST_MODE=1
+    restart: always
+    networks: 
+      - kebeng-backend-dev
+
+  store_db-dev:
+    image: postgres:13
+    restart: always
+    attach: false
+    volumes:
+      - store_data-dev:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=store_db
+      - POSTGRES_USER=kebe_user
+      - POSTGRES_PASSWORD=kebe
+    ports:
+      - "5432:5432"
+    networks: 
+      - kebeng-backend-dev
+
+  minio-dev:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    attach: false
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    volumes:
+      - minio_data-dev:/data
+    restart: always
+    networks: 
+      - kebeng-backend-dev
+
+  account_service-dev:
+    build: 
+      context: .
+      dockerfile: Dockerfile.dev
+    command: /workspace/services/account/account-service
+    ports:
+      - "8082:8082"
+    depends_on:
+      - account_db-dev
+    environment:
+      - CONFIG_FILE_PATH=/workspace/services/account/config.dev.yaml
+      - TEST_MODE=1
+    restart: always
+    networks: 
+      - kebeng-backend-dev
+
+  account_db-dev:
+    image: postgres:13
+    restart: always
+    attach: false
+    volumes:
+      - account_data-dev:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=account_db
+      - POSTGRES_USER=kebe_user
+      - POSTGRES_PASSWORD=kebe
+    ports:
+      - "5433:5432"
+    networks: 
+      - kebeng-backend-dev
+
+  assertion_service-dev:
+    build: 
+      context: .
+      dockerfile: Dockerfile.dev
+    command: /workspace/services/assertion/assertion-service
+    ports:
+      - "8083:8083"
+    depends_on:
+      - assertion_mongo_db-dev
+    volumes:
+      - ./services/assertion/keys/:/workspace/services/assertion/keys/  # TODO: this path should become a variable instead of hardcoded
+    environment:
+      - CONFIG_FILE_PATH=/workspace/services/assertion/config.dev.yaml
+      - TEST_MODE=1
+    restart: always
+    networks: 
+      - kebeng-backend-dev
+
+  assertion_mongo_db-dev:
+    image: mongo:latest
+    restart: always
+    attach: false
+    volumes:
+      - assertion_data-dev:/data/db
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: rootpassword
+    networks:
+      - kebeng-backend-dev
+
+volumes:
+  store_data-dev:
+  minio_data-dev:
+  account_data-dev:
+  assertion_data-dev:
+
+networks:
+  kebeng-backend-dev:
+    driver: bridge
