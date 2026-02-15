@@ -51,7 +51,6 @@ RUN go build -o assertion-service ./main.go
 
 WORKDIR /workspace/services/gateway
 RUN go build -o gateway ./main.go
-COPY test-data /workspace/services/gateway/test-data
 
 WORKDIR /workspace/services/store
 RUN apt-get update && apt-get install -y squashfs-tools
