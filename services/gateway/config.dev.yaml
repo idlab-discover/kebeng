@@ -1,0 +1,27 @@
+debug_mode: true
+
+store_service_host: "store_service-dev"
+store_service_port: 8081
+
+
+account_service_host: "account_service-dev"
+account_service_port: 8082
+
+
+assertion_service_host: "assertion_service-dev"
+assertion_service_port: 8083
+
+macaroon:
+  root_key: "example_root_key"
+  root_id: "ExampleStore"
+  root_location: "localhost"
+  discharge_key: "example_shared_key"
+  third_party_caveat_id: "exampleCaveatId"
+  third_party_location: "example.login.com"
+
+store_url: "http://localhost:8080"
+store_name: "example_store"
+
+test_data_folder_path: "/workspace/services/gateway/test-data"
+
+monitoring: true
