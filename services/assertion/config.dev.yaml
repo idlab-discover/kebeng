@@ -1,0 +1,18 @@
+mongodb_db: "assertions"
+mongodb_user: "root"
+mongodb_password: "rootpassword"
+mongodb_host: "assertion_mongo_db-dev"
+mongodb_port: 27017
+mongodb_auth_source: "admin"
+
+grpc_host: "assertion_service-dev"
+grpc_port: 8083
+
+root_key_path: "/workspace/services/assertion/keys/root-private-key.pem"
+root_account_id: "123e4567-e89b-12d3-a456-426614174000"
+
+authority_id: "123e4567-e89b-12d3-a456-426614174000"
+store_name: "ExampleStore"
+
+monitoring: true
+
