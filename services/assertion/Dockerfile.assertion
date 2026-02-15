@@ -2,7 +2,6 @@
 FROM golang:1.22 AS builder
 WORKDIR /app
 COPY . .
-RUN ls -al /app
 RUN go mod download
 RUN go build -o /bin/assertion-service ./main.go
 
