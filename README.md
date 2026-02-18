@@ -52,6 +52,8 @@ docker compose -f docker-compose.benchmark.yml up --build
 ```
 | note: you can find the test packages [here](https://drive.google.com/drive/folders/1O0bTcIKCArTn0rMwMKbboI2_iDhlQtGT?usp=sharing). Download and put them in `/test-data/minio/`
 
+A development-oriented Dockerfile is present for use during local development. More information is present in [DEVELOPMENT.md](DEVELOPMENT.md).
+
 ## Interact with the Kebeng store
 ### Custom Snap tools
 To interact with the Kebeng store, a modified version of the `snapd` and `snapcraft` tools are used.
