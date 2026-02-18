@@ -4,13 +4,18 @@ go 1.22.2
 
 require (
 	github.com/google/uuid v1.6.0
-	github.com/idlab-discover/kebeng/common v0.0.0-20250510135817-7ce4451c6167
-	github.com/idlab-discover/kebeng/services/store v0.0.0-20250504165619-2e0f50425084
+	github.com/idlab-discover/kebeng/common v0.0.0
+	github.com/idlab-discover/kebeng/services/store v0.0.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/snapcore/snapd v0.0.0-20250429095531-40da7e0e1234
 	github.com/spf13/viper v1.19.0
 	google.golang.org/grpc v1.71.1
 	google.golang.org/protobuf v1.36.6
+)
+
+replace (
+	github.com/idlab-discover/kebeng/common => ../../common
+	github.com/idlab-discover/kebeng/services/store => ../store
 )
 
 require (

@@ -1,0 +1,12 @@
+db_host: "account_db-dev"
+db_port: 5432
+db_user: "kebe_user"
+db_password: "kebe"
+db_name: "account_db"
+grpc_host: "account_service-dev"
+grpc_port: 8082
+migration_path: "/workspace/services/account/migrations"
+
+root_account_id: "123e4567-e89b-12d3-a456-426614174000" # Example UUID
+
+monitoring: true

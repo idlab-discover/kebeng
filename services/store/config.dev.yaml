@@ -1,0 +1,17 @@
+db_host: "store_db-dev"
+db_port: 5432
+db_user: "kebe_user"
+db_password: "kebe"
+db_name: "store_db"
+
+grpc_host: "store_service-dev"
+grpc_port: 8081
+
+migration_path: "/workspace/services/store/migrations"
+
+minio_host: "minio-dev:9000"
+minio_secret_key: "minioadmin"
+minio_access_key: "minioadmin"
+minio_secure: false
+
+monitoring: true

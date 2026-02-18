@@ -1,0 +1,63 @@
+# Dependency caching based on modfiles
+FROM golang:1.22 AS depcache
+# `go env GOMODCACHE` -> /go/pkg/mod for this golang img ver
+# NOTE: this path may change for more modern golang images
+
+# The modfiles are copied directly in this layer as we only
+# want Docker to rebuild the layer if the mod files change,
+# not if the source code of service changes
+COPY ./services/account/go.dev.mod /workspace/services/account/go.mod
+COPY ./services/assertion/go.dev.mod /workspace/services/assertion/go.mod
+COPY ./services/gateway/go.dev.mod /workspace/services/gateway/go.mod
+COPY ./services/store/go.dev.mod /workspace/services/store/go.mod
+# Common does currently not rely on kebeng dependencies, no go.dev.mod needed
+COPY ./common/go.mod /workspace/common/go.mod
+
+WORKDIR /workspace/services/account
+RUN go mod download
+
+WORKDIR /workspace/services/assertion
+RUN go mod download
+
+WORKDIR /workspace/services/gateway
+RUN go mod download
+
+WORKDIR /workspace/services/store
+RUN go mod download
+
+WORKDIR /workspace/common
+RUN go mod download
+
+
+
+# TODO: Further optimisation:
+# Make a buildstage for each service rather than one big build stage for all of them
+# The advantage is that unchanged services will not have to be re-compiled every time one service is modified
+FROM golang:1.22 AS builder
+WORKDIR /workspace
+# `go env GOMODCACHE` -> /go/pkg/mod for this golang img ver; copy mod cache from cache layer
+# NOTE: this path may change for more modern golang images
+COPY --from=depcache /go/pkg/mod /go/pkg/mod
+# We're copying the folders in its entirety here as we want docker to rebuild this layer
+# each time any part of the source changes
+COPY ./services /workspace/services
+COPY ./common /workspace/common
+
+WORKDIR /workspace/services/account
+RUN go build -modfile go.dev.mod -o account-service ./main.go
+RUN ["cp", "-r", "/workspace/services/account/internal/migrations", "/workspace/services/account/migrations"]
+
+WORKDIR /workspace/services/assertion
+RUN go build -modfile go.dev.mod -o assertion-service ./main.go
+
+WORKDIR /workspace/services/gateway
+RUN go build -modfile go.dev.mod -o gateway ./main.go
+
+WORKDIR /workspace/services/store
+RUN apt-get update && apt-get install -y squashfs-tools
+RUN go build -modfile go.dev.mod -o store-service ./main.go
+RUN ["cp", "-r", "/workspace/services/store/internal/migrations", "/workspace/services/store/migrations"]
+
+CMD ["echo", "This is a dummy command, specify the service to run in your `docker run` command or `docker-compose` file."]
+
+# No minimal final stage for dev image
