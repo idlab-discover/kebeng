@@ -32,6 +32,7 @@ type StoreClientInterface interface {
 	GetEntries(entries *proto.GetEntriesRequest) *proto.GetEntriesResponse
 	GetRevisions(revisions *proto.GetRevisionsRequest) *proto.GetRevisionsResponse
 	GetEntriesByAccountID(accountID string) *proto.GetEntriesResponse
+	GetEntriesByQuery(query string) *proto.GetEntriesResponse
 	GetRevisionsByEntryIds(entryIds *proto.GetRevisionsByEntryIdRequests) *proto.GetRevisionsByEntryIdResponses
 	GetLatestRevisionByTrackAndChannel(snapName, track, channel string) *proto.GetRevisionResponse
 	SnapDownloadStream(revisionId string) (proto.StoreService_SnapDownloadClient, error)
@@ -161,6 +162,20 @@ func (c *StoreClient) GetEntriesByAccountID(accountID string) *proto.GetEntriesR
 				Code:    cerror.InternalServerError,
 				Message: err.Error()},
 			},
+		}
+	}
+	return resp
+}
+
+func (c *StoreClient) GetEntriesByQuery(query string) *proto.GetEntriesResponse {
+	req := &proto.GetEntriesByQueryRequest{Query: query}
+	resp, err := c.client.GetEntriesByQuery(context.Background(), req)
+	if err != nil {
+		resp = &proto.GetEntriesResponse{
+			Errors: []*cerrorpb.Error{{
+				Code: cerror.InternalServerError,
+				Message: err.Error(),
+			}},
 		}
 	}
 	return resp

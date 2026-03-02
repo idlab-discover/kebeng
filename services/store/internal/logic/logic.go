@@ -224,6 +224,31 @@ func (s *StoreLogic) GetEntryByName(ctx context.Context, req *proto.GetEntryRequ
 	return parseEntryToProto(snapEntry), nil
 }
 
+func (s *StoreLogic) GetEntriesByQuery(ctx context.Context, req *proto.GetEntriesByQueryRequest) (*proto.GetEntriesResponse, error) {
+	el := cerror.NewErrorList()
+	if req.Query == "" {
+		cerr := cerror.NewCustomError(cerror.MissingField, "query is required")
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.GetEntriesResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	snapEntries, cerr := s.repo.GetEntriesByQuery(req.Query, nil, el)
+	if cerr != nil {
+		return &proto.GetEntriesResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	protoSnapEntryResponses := make([]*proto.GetEntryResponse, 0)
+
+	for _, entry := range(*snapEntries) {
+		protoEntry := parseEntryToProto(&entry)
+		protoSnapEntryResponses = append(protoSnapEntryResponses, protoEntry)
+	}
+
+	return &proto.GetEntriesResponse{Entries: protoSnapEntryResponses}, nil
+	
+}
+
 // GetRevisions retrieves a list of revisions based on the provided request.
 // It supports fetching revisions either by their ID or by their snap name and sequence number.
 // If a revision is found, it is added to the response along with its snap name and sequence number.

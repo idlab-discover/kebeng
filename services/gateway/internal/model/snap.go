@@ -18,6 +18,57 @@ type FindSnapsRequest struct {
 	Name string `json:"name"`
 }
 
+type FindSnapsResponse struct {
+	Results []struct {
+		Name     string `json:"name"`
+		Revision struct {
+			Base        string `json:"base"`
+			Channel     string `json:"channel"`
+			CommonIds   []any  `json:"common-ids"`
+			Confinement string `json:"confinement"`
+			Download    struct {
+				Size int `json:"size"`
+			} `json:"download"`
+			Revision int    `json:"revision"`
+			Type     string `json:"type"`
+			Version  string `json:"version"`
+		} `json:"revision"`
+		Snap struct {
+			Categories []struct {
+				Featured bool   `json:"featured"`
+				Name     string `json:"name"`
+			} `json:"categories"`
+			Contact     string `json:"contact"`
+			Description string `json:"description"`
+			License     string `json:"license"`
+			Links       struct {
+				Contact []string `json:"contact"`
+				Website []string `json:"website"`
+			} `json:"links"`
+			Media []struct {
+				Height int    `json:"height"`
+				Type   string `json:"type"`
+				URL    string `json:"url"`
+				Width  int    `json:"width"`
+			} `json:"media"`
+			Prices struct {
+			} `json:"prices"`
+			Private   bool `json:"private"`
+			Publisher struct {
+				DisplayName string `json:"display-name"`
+				ID          string `json:"id"`
+				Username    string `json:"username"`
+				Validation  string `json:"validation"`
+			} `json:"publisher"`
+			StoreURL string `json:"store-url"`
+			Summary  string `json:"summary"`
+			Title    string `json:"title"`
+			Website  string `json:"website"`
+		} `json:"snap"`
+		SnapID string `json:"snap-id"`
+	} `json:"results"`
+}
+
 type RegisterSnapNameRequest struct {
 	SnapName  string `json:"snap_name" binding:"required"` //TODO: check wheter this gets handled correctly
 	IsPrivate bool   `json:"is_private" default:"false"`

@@ -139,12 +139,17 @@ func (h *Handler) DownloadSnap(c *gin.Context) {
 
 func (h *Handler) FindSnaps(c *gin.Context) {
 	el := cerror.NewErrorList()
-	var req model.FindSnapsRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		el.Add(cerror.BadRequest, cerror.FormatBindError(err))
+
+	query, queryIsPresent := c.GetQuery("q")
+	if (!queryIsPresent) {
+		el.Add(cerror.BadRequest, "q (query) is required")	
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
+
+	entries := h.StoreClient.GetEntriesByQuery(query)
+
+	c.JSON(200, entries)
 }
 
 func (h *Handler) RegisterSnapName(c *gin.Context) {

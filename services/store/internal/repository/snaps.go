@@ -33,6 +33,7 @@ type ISnapsRepository interface {
 	GetEntriesByAccountId(accountId uuid.UUID, preloadAssociations []string, errorList *cerror.ErrorList) ([]*model.SnapEntry, *cerror.CustomError)
 	GetEntryById(id uuid.UUID, preloadAssociations []string, errorList *cerror.ErrorList) (*model.SnapEntry, *cerror.CustomError)
 	GetEntryByName(name string, preloadAssociations []string, errorList *cerror.ErrorList) (*model.SnapEntry, *cerror.CustomError)
+	GetEntriesByQuery(query string, preloadAssociations []string, errorList *cerror.ErrorList) (*[]model.SnapEntry, *cerror.CustomError)
 	GetLatestRevisionByEntryId(entryId uuid.UUID, errorList *cerror.ErrorList) (*model.SnapRevision, *cerror.CustomError)
 	GetLatestRevisionByTrackAndChannel(snapName string, track string, channel string, errorList *cerror.ErrorList) (*model.SnapRevision, *cerror.CustomError)
 	GetPreloadAssociations(entry *model.SnapEntry, preloadAssociations *[]string, errorList *cerror.ErrorList) *cerror.CustomError
@@ -384,6 +385,38 @@ func (sp *SnapsRepository) GetEntryByName(name string, preloadAssociations []str
 	}
 
 	return &snapEntry, nil
+}
+
+// TODO: this is a dummy implementation, make it use the actual query
+func (sp *SnapsRepository) GetEntriesByQuery(query string, preloadAssociations []string, el *cerror.ErrorList) (*[]model.SnapEntry, *cerror.CustomError) {
+	var snapEntries []model.SnapEntry
+
+	// % => ANY wildcard in SQL
+	looseQuery := "%" + query + "%"
+
+	stmt := `
+	SELECT *
+	FROM entry
+	WHERE name ILIKE $1
+	OR summary ILIKE $1
+	OR description ILIKE $1
+	`
+	err := sp.db.Select(&snapEntries, stmt, looseQuery)
+	if err != nil {
+		cerr := cerror.ConvertError(err, fmt.Sprintf("error getting snap with query = '%s' and looseQuery = '%s", query, looseQuery))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return nil, cerr
+	}
+
+	for _, entry := range snapEntries {
+		cerr := sp.GetPreloadAssociations(&entry, &preloadAssociations, el)
+		if cerr != nil {
+			return nil, cerr
+		}
+	}
+
+	return &snapEntries, nil
 }
 
 func (sp *SnapsRepository) GetRevisionsByEntryId(entryId uuid.UUID, el *cerror.ErrorList) ([]*model.SnapRevision, *cerror.CustomError) {

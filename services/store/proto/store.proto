@@ -11,6 +11,7 @@ service StoreService {
     rpc GetRevisions(GetRevisionsRequest) returns (GetRevisionsResponse);
     rpc GetEntries(GetEntriesRequest) returns (GetEntriesResponse);
     rpc GetEntriesByAccountId(GetEntriesByAccountIdRequest) returns (GetEntriesResponse);
+    rpc GetEntriesByQuery(GetEntriesByQueryRequest) returns (GetEntriesResponse);
     rpc GetRevisionsByEntryIds(GetRevisionsByEntryIdRequests) returns (GetRevisionsByEntryIdResponses);
     rpc GetLatestRevisionByTrackAndChannel(GetLatestRevisionRequest) returns (GetRevisionResponse);
     rpc SnapDownload(SnapDownloadRequest) returns (stream SnapDownloadResponse);
@@ -115,6 +116,10 @@ message GetRevisionsResponse {
 
 message GetEntriesByAccountIdRequest {
     string account_id = 1;
+}
+
+message GetEntriesByQueryRequest {
+    string query = 1;
 }
 
 message GetRevisionsByEntryIdRequest {
