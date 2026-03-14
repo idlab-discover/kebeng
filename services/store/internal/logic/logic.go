@@ -233,7 +233,30 @@ func (s *StoreLogic) GetEntriesByQuery(ctx context.Context, req *proto.GetEntrie
 		return &proto.GetEntriesResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
 
-	snapEntries, cerr := s.repo.GetEntriesByQuery(req.Query, nil, el)
+	if len(req.ConfinementsList) <= 0 {
+		cerr := cerror.NewCustomError(cerror.MissingField, "confinement is required!")
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.GetEntriesResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	if len(req.ArchitectureList) <= 0 {
+		cerr := cerror.NewCustomError(cerror.MissingField, "architecture is required!")
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.GetEntriesResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	snapEntries, cerr := s.repo.GetEntriesByQuery(
+		req.Query,
+		req.ArchitectureList,
+		req.ConfinementsList,
+		req.FieldsList,
+		req.Private,
+		nil,
+		el,
+	)
+	
 	if cerr != nil {
 		return &proto.GetEntriesResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
@@ -246,7 +269,6 @@ func (s *StoreLogic) GetEntriesByQuery(ctx context.Context, req *proto.GetEntrie
 	}
 
 	return &proto.GetEntriesResponse{Entries: protoSnapEntryResponses}, nil
-	
 }
 
 // GetRevisions retrieves a list of revisions based on the provided request.

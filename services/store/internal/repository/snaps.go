@@ -33,7 +33,7 @@ type ISnapsRepository interface {
 	GetEntriesByAccountId(accountId uuid.UUID, preloadAssociations []string, errorList *cerror.ErrorList) ([]*model.SnapEntry, *cerror.CustomError)
 	GetEntryById(id uuid.UUID, preloadAssociations []string, errorList *cerror.ErrorList) (*model.SnapEntry, *cerror.CustomError)
 	GetEntryByName(name string, preloadAssociations []string, errorList *cerror.ErrorList) (*model.SnapEntry, *cerror.CustomError)
-	GetEntriesByQuery(query string, preloadAssociations []string, errorList *cerror.ErrorList) (*[]model.SnapEntry, *cerror.CustomError)
+	GetEntriesByQuery(query string, architectureList []string, confinementsList []string, fieldsList []string, private bool, preloadAssociations []string, errorList *cerror.ErrorList) (*[]model.SnapEntry, *cerror.CustomError)
 	GetLatestRevisionByEntryId(entryId uuid.UUID, errorList *cerror.ErrorList) (*model.SnapRevision, *cerror.CustomError)
 	GetLatestRevisionByTrackAndChannel(snapName string, track string, channel string, errorList *cerror.ErrorList) (*model.SnapRevision, *cerror.CustomError)
 	GetPreloadAssociations(entry *model.SnapEntry, preloadAssociations *[]string, errorList *cerror.ErrorList) *cerror.CustomError
@@ -388,7 +388,14 @@ func (sp *SnapsRepository) GetEntryByName(name string, preloadAssociations []str
 }
 
 // TODO: this is a dummy implementation, make it use the actual query
-func (sp *SnapsRepository) GetEntriesByQuery(query string, preloadAssociations []string, el *cerror.ErrorList) (*[]model.SnapEntry, *cerror.CustomError) {
+func (sp *SnapsRepository) GetEntriesByQuery(
+	query string,
+	architectureList []string,
+	confinementsList []string,
+	fieldsList []string,
+	private bool,
+	preloadAssociations []string,
+	el *cerror.ErrorList) (*[]model.SnapEntry, *cerror.CustomError) {
 	var snapEntries []model.SnapEntry
 
 	// % => ANY wildcard in SQL

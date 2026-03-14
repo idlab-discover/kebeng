@@ -120,6 +120,11 @@ message GetEntriesByAccountIdRequest {
 
 message GetEntriesByQueryRequest {
     string query = 1;
+    repeated string architectureList = 2;
+    repeated string channelList = 3;
+    repeated string confinementsList = 4;
+    repeated string fieldsList = 5;
+    bool private = 6;
 }
 
 message GetRevisionsByEntryIdRequest {

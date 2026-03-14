@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"slices"
+	"strings"
 
 	"github.com/idlab-discover/kebeng/services/gateway/internal/model"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/util"
@@ -140,14 +141,63 @@ func (h *Handler) DownloadSnap(c *gin.Context) {
 func (h *Handler) FindSnaps(c *gin.Context) {
 	el := cerror.NewErrorList()
 
+	architecture, architectureIsPresent := c.GetQuery("architecture")
+	if !architectureIsPresent {
+		el.Add(cerror.BadRequest, "architecture is required")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
+	architectureList := strings.Split(architecture, ",")
+
+	channel, _ := c.GetQuery("channel")
+	channelList := strings.Split(channel, ",")
+
+	confinement, confinementIsPresent := c.GetQuery("confinement")
+	if !confinementIsPresent {
+		el.Add(cerror.BadRequest, "confinement is required")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
+	confinementsList := strings.Split(confinement, "")
+
 	query, queryIsPresent := c.GetQuery("q")
-	if (!queryIsPresent) {
+	if !queryIsPresent {
 		el.Add(cerror.BadRequest, "q (query) is required")	
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
 
-	entries := h.StoreClient.GetEntriesByQuery(query)
+	fields, _ := c.GetQuery("fields")
+	fieldsList := strings.Split(fields, ",")
+
+	private, privateIsPresent := c.GetQuery("private")
+	privateBool := privateIsPresent && private == "true"
+
+	entries := h.StoreClient.GetEntriesByQuery(
+		query, 
+		architectureList,
+		channelList,
+		confinementsList,
+		fieldsList,
+		privateBool,
+	)
+
+	if len(entries.Errors) > 0 {
+		el.ExtendProtoError(entries.Errors)
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return 
+	}
+
+	for _, entry := range entries.GetEntries() {
+		pubacc := h.AccountClient.GetAccountByID(entry.GetPublisherId())
+
+		if len(pubacc.Errors) > 0 {
+			el.ExtendProtoError(pubacc.Errors)
+			c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+			return
+		}
+
+	}
 
 	c.JSON(200, entries)
 }

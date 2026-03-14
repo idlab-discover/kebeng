@@ -32,7 +32,7 @@ type StoreClientInterface interface {
 	GetEntries(entries *proto.GetEntriesRequest) *proto.GetEntriesResponse
 	GetRevisions(revisions *proto.GetRevisionsRequest) *proto.GetRevisionsResponse
 	GetEntriesByAccountID(accountID string) *proto.GetEntriesResponse
-	GetEntriesByQuery(query string) *proto.GetEntriesResponse
+	GetEntriesByQuery(query string, architectureList []string, channelList []string, confinementsList []string, fieldsList []string, private bool) *proto.GetEntriesResponse
 	GetRevisionsByEntryIds(entryIds *proto.GetRevisionsByEntryIdRequests) *proto.GetRevisionsByEntryIdResponses
 	GetLatestRevisionByTrackAndChannel(snapName, track, channel string) *proto.GetRevisionResponse
 	SnapDownloadStream(revisionId string) (proto.StoreService_SnapDownloadClient, error)
@@ -167,8 +167,15 @@ func (c *StoreClient) GetEntriesByAccountID(accountID string) *proto.GetEntriesR
 	return resp
 }
 
-func (c *StoreClient) GetEntriesByQuery(query string) *proto.GetEntriesResponse {
-	req := &proto.GetEntriesByQueryRequest{Query: query}
+func (c *StoreClient) GetEntriesByQuery(query string, architectureList []string, channelList []string, confinementsList []string, fieldsList []string, private bool) *proto.GetEntriesResponse {
+	req := &proto.GetEntriesByQueryRequest{
+		Query: query,
+		ArchitectureList: architectureList,
+		ChannelList: channelList,
+		ConfinementsList: confinementsList,
+		FieldsList: fieldsList,
+		Private: private,
+	}
 	resp, err := c.client.GetEntriesByQuery(context.Background(), req)
 	if err != nil {
 		resp = &proto.GetEntriesResponse{

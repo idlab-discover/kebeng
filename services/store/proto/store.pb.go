@@ -877,10 +877,15 @@ func (x *GetEntriesByAccountIdRequest) GetAccountId() string {
 }
 
 type GetEntriesByQueryRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Query         string                 `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Query            string                 `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
+	ArchitectureList []string               `protobuf:"bytes,2,rep,name=architectureList,proto3" json:"architectureList,omitempty"`
+	ChannelList      []string               `protobuf:"bytes,3,rep,name=channelList,proto3" json:"channelList,omitempty"`
+	ConfinementsList []string               `protobuf:"bytes,4,rep,name=confinementsList,proto3" json:"confinementsList,omitempty"`
+	FieldsList       []string               `protobuf:"bytes,5,rep,name=fieldsList,proto3" json:"fieldsList,omitempty"`
+	Private          bool                   `protobuf:"varint,6,opt,name=private,proto3" json:"private,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *GetEntriesByQueryRequest) Reset() {
@@ -918,6 +923,41 @@ func (x *GetEntriesByQueryRequest) GetQuery() string {
 		return x.Query
 	}
 	return ""
+}
+
+func (x *GetEntriesByQueryRequest) GetArchitectureList() []string {
+	if x != nil {
+		return x.ArchitectureList
+	}
+	return nil
+}
+
+func (x *GetEntriesByQueryRequest) GetChannelList() []string {
+	if x != nil {
+		return x.ChannelList
+	}
+	return nil
+}
+
+func (x *GetEntriesByQueryRequest) GetConfinementsList() []string {
+	if x != nil {
+		return x.ConfinementsList
+	}
+	return nil
+}
+
+func (x *GetEntriesByQueryRequest) GetFieldsList() []string {
+	if x != nil {
+		return x.FieldsList
+	}
+	return nil
+}
+
+func (x *GetEntriesByQueryRequest) GetPrivate() bool {
+	if x != nil {
+		return x.Private
+	}
+	return false
 }
 
 type GetRevisionsByEntryIdRequest struct {
@@ -2889,9 +2929,16 @@ const file_services_store_proto_store_proto_rawDesc = "" +
 	"\x06errors\x18\x02 \x03(\v2\f.proto.ErrorR\x06errors\"=\n" +
 	"\x1cGetEntriesByAccountIdRequest\x12\x1d\n" +
 	"\n" +
-	"account_id\x18\x01 \x01(\tR\taccountId\"0\n" +
+	"account_id\x18\x01 \x01(\tR\taccountId\"\xe4\x01\n" +
 	"\x18GetEntriesByQueryRequest\x12\x14\n" +
-	"\x05query\x18\x01 \x01(\tR\x05query\"9\n" +
+	"\x05query\x18\x01 \x01(\tR\x05query\x12*\n" +
+	"\x10architectureList\x18\x02 \x03(\tR\x10architectureList\x12 \n" +
+	"\vchannelList\x18\x03 \x03(\tR\vchannelList\x12*\n" +
+	"\x10confinementsList\x18\x04 \x03(\tR\x10confinementsList\x12\x1e\n" +
+	"\n" +
+	"fieldsList\x18\x05 \x03(\tR\n" +
+	"fieldsList\x12\x18\n" +
+	"\aprivate\x18\x06 \x01(\bR\aprivate\"9\n" +
 	"\x1cGetRevisionsByEntryIdRequest\x12\x19\n" +
 	"\bentry_id\x18\x01 \x01(\tR\aentryId\"`\n" +
 	"\x1dGetRevisionsByEntryIdRequests\x12?\n" +
