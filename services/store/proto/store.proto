@@ -62,8 +62,10 @@ message GetEntryResponse {
     double price = 9;
     google.protobuf.Timestamp since = 10;
     string icon_url = 11;
-    repeated GetRevisionResponse revisions = 12;
-    repeated proto.Error errors = 13;
+    string summary = 12;
+    string description = 13;
+    repeated GetRevisionResponse revisions = 14;
+    repeated proto.Error errors = 15;
 }
 
 

@@ -256,14 +256,14 @@ func (s *StoreLogic) GetEntriesByQuery(ctx context.Context, req *proto.GetEntrie
 		nil,
 		el,
 	)
-	
+
 	if cerr != nil {
 		return &proto.GetEntriesResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
 
 	protoSnapEntryResponses := make([]*proto.GetEntryResponse, 0)
 
-	for _, entry := range(*snapEntries) {
+	for _, entry := range *snapEntries {
 		protoEntry := parseEntryToProto(&entry)
 		protoSnapEntryResponses = append(protoSnapEntryResponses, protoEntry)
 	}
@@ -1113,7 +1113,7 @@ func getSnapMetaFromPath(snapFilePath string, workingDirectory string) (*model.S
 		return nil, fmt.Errorf("failed to change directory: %v", err)
 	}
 	id := uuid.New()
-	cmd := exec.Command("unsquashfs", "-d", id.String() ,snapFilePath, "-e", "meta/snap.yaml")
+	cmd := exec.Command("unsquashfs", "-d", id.String(), snapFilePath, "-e", "meta/snap.yaml")
 	cmd.Stderr = os.Stderr
 
 	outPath := path.Join(workingDirectory, id.String(), "meta", "snap.yaml")
@@ -1155,6 +1155,8 @@ func parseEntryToProto(entry *model.SnapEntry) *proto.GetEntryResponse {
 		Status:      entry.Status,
 		Since:       timestamppb.New(entry.CreatedAt),
 		IconUrl:     entry.IconURL,
+		Summary:     entry.Summary,
+		Description: entry.Description,
 	}
 }
 

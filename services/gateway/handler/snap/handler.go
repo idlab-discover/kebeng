@@ -140,6 +140,7 @@ func (h *Handler) DownloadSnap(c *gin.Context) {
 
 func (h *Handler) FindSnaps(c *gin.Context) {
 	el := cerror.NewErrorList()
+	results := *model.NewFindSnapResponse()
 
 	architecture, architectureIsPresent := c.GetQuery("architecture")
 	if !architectureIsPresent {
@@ -189,17 +190,36 @@ func (h *Handler) FindSnaps(c *gin.Context) {
 	}
 
 	for _, entry := range entries.GetEntries() {
-		pubacc := h.AccountClient.GetAccountByID(entry.GetPublisherId())
-
-		if len(pubacc.Errors) > 0 {
-			el.ExtendProtoError(pubacc.Errors)
+		pub := h.AccountClient.GetAccountByID(entry.GetPublisherId())
+		if len(pub.Errors) > 0 {
+			el.ExtendProtoError(entries.Errors)
 			c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 			return
 		}
+		results.Results = append(
+			results.Results,
+			model.FindSnapResult{
+				Name: entry.SnapName,
+				SnapID: entry.Id,
+				Snap: model.Snap{
+					Summary: entry.Summary,
+					Description: entry.Description,
+					Publisher: model.Publisher{
+						ID: entry.PublisherId,
+						DisplayName: pub.DisplayName,
+						Username: pub.Username,
+						Validation: pub.Validation,
+					},
+				},
+				Revision: model.SnapRevision{
 
+				},
+			},
+		)
 	}
 
-	c.JSON(200, entries)
+	c.Header("Content-Type", "application/json")
+	c.JSON(200, results)
 }
 
 func (h *Handler) RegisterSnapName(c *gin.Context) {

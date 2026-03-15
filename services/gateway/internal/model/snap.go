@@ -18,6 +18,12 @@ type FindSnapResponse struct {
 	Results []FindSnapResult `json:"results"`
 }
 
+func NewFindSnapResponse() *FindSnapResponse {
+	return &FindSnapResponse{
+		Results: make([]FindSnapResult, 0),
+	}
+}
+
 type FindSnapResult struct {
 	Name     string       `json:"name"`
 	SnapID   string       `json:"snap-id"`
