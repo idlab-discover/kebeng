@@ -196,6 +196,7 @@ func (h *Handler) FindSnaps(c *gin.Context) {
 			c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 			return
 		}
+		// TODO: Properly build this object
 		results.Results = append(
 			results.Results,
 			model.FindSnapResult{
