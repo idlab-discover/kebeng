@@ -140,7 +140,7 @@ func (h *Handler) DownloadSnap(c *gin.Context) {
 
 func (h *Handler) FindSnaps(c *gin.Context) {
 	el := cerror.NewErrorList()
-	results := *model.NewFindSnapResponse()
+	result := *model.NewFindSnapResponse()
 
 	architecture, architectureIsPresent := c.GetQuery("architecture")
 	if !architectureIsPresent {
@@ -189,20 +189,34 @@ func (h *Handler) FindSnaps(c *gin.Context) {
 		return 
 	}
 
-	for _, entry := range entries.GetEntries() {
+	for _, entry := range entries.Entries {
 		pub := h.AccountClient.GetAccountByID(entry.GetPublisherId())
 		if len(pub.Errors) > 0 {
 			el.ExtendProtoError(entries.Errors)
 			c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 			return
 		}
-		// TODO: Properly build this object
-		results.Results = append(
-			results.Results,
+
+		// GetLatestRevisionByTrackAndChannel is invoked with defaults
+		lastRev := h.StoreClient.GetLatestRevisionByTrackAndChannel(
+			entry.SnapName,
+			"",
+			"",
+		)
+		if len(lastRev.Errors) > 0 {
+			el.ExtendProtoError(lastRev.Errors)
+			c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+			return
+		}
+
+		result.Results = append(
+			result.Results,
 			model.FindSnapResult{
 				Name: entry.SnapName,
 				SnapID: entry.Id,
 				Snap: model.Snap{
+					SnapID: entry.Id,
+					Title: entry.SnapName,
 					Summary: entry.Summary,
 					Description: entry.Description,
 					Publisher: model.Publisher{
@@ -213,14 +227,22 @@ func (h *Handler) FindSnaps(c *gin.Context) {
 					},
 				},
 				Revision: model.SnapRevision{
-
+					Base: entry.Base,
+					Channel: "stable",
+					Revision: int(lastRev.SequenceNumber),
+					Version: lastRev.Version,
+					Status: lastRev.Status,
+					Download: model.Download{
+						Size: &lastRev.Size,
+					},
 				},
 			},
 		)
 	}
 
+	// Snap Find fails the content-type is `application/json;charset=utf-8`
 	c.Header("Content-Type", "application/json")
-	c.JSON(200, results)
+	c.JSON(200, result)
 }
 
 func (h *Handler) RegisterSnapName(c *gin.Context) {
