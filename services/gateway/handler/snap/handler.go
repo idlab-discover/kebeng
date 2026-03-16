@@ -165,7 +165,7 @@ func (h *Handler) FindSnaps(c *gin.Context) {
 	if !queryIsPresent {
 		// TODO: The snap store itself does support a `snap find` invocation without query
 		// But for this it returns "featured" snaps, which we don't mark in our database yet
-		// For now we mark it as required
+		// For now we indicate query as required
 		el.Add(cerror.BadRequest, "q (query) is required")	
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
@@ -174,8 +174,30 @@ func (h *Handler) FindSnaps(c *gin.Context) {
 	fields, _ := c.GetQuery("fields")
 	fieldsList := strings.Split(fields, ",")
 
-	private, privateIsPresent := c.GetQuery("private")
-	privateBool := privateIsPresent && private == "true"
+	private, _ := c.GetQuery("private")
+
+	// NOTE: Once auth is implemented, a present email should mean properly logged in
+	// No email present means not logged in
+	email, emailIsPresent := c.Get("email")
+
+	privateBool := private == "true"
+	if !emailIsPresent && privateBool {
+		el.Add(cerror.Unauthorized, "cannot filter on private snaps when not logged in!")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
+
+	publisher_id := ""
+	if (emailIsPresent) {
+		acc := h.AccountClient.GetAccountByEmail(email.(string))
+		if len(acc.Errors) > 0 {
+			el.ExtendProtoError(acc.Errors)
+			c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+			return
+		}
+
+		publisher_id = acc.Id
+	}
 
 	entries := h.StoreClient.GetEntriesByQuery(
 		query, 
@@ -184,6 +206,7 @@ func (h *Handler) FindSnaps(c *gin.Context) {
 		confinementsList,
 		fieldsList,
 		privateBool,
+		publisher_id,
 	)
 
 	if len(entries.Errors) > 0 {

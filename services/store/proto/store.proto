@@ -129,6 +129,7 @@ message GetEntriesByQueryRequest {
     repeated string confinementsList = 4;
     repeated string fieldsList = 5;
     bool private = 6;
+    string publisher_id = 7;
 }
 
 message GetRevisionsByEntryIdRequest {

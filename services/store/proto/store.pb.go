@@ -916,6 +916,7 @@ type GetEntriesByQueryRequest struct {
 	ConfinementsList []string               `protobuf:"bytes,4,rep,name=confinementsList,proto3" json:"confinementsList,omitempty"`
 	FieldsList       []string               `protobuf:"bytes,5,rep,name=fieldsList,proto3" json:"fieldsList,omitempty"`
 	Private          bool                   `protobuf:"varint,6,opt,name=private,proto3" json:"private,omitempty"`
+	PublisherId      string                 `protobuf:"bytes,7,opt,name=publisher_id,json=publisherId,proto3" json:"publisher_id,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -990,6 +991,13 @@ func (x *GetEntriesByQueryRequest) GetPrivate() bool {
 		return x.Private
 	}
 	return false
+}
+
+func (x *GetEntriesByQueryRequest) GetPublisherId() string {
+	if x != nil {
+		return x.PublisherId
+	}
+	return ""
 }
 
 type GetRevisionsByEntryIdRequest struct {
@@ -2965,7 +2973,7 @@ const file_services_store_proto_store_proto_rawDesc = "" +
 	"\x06errors\x18\x02 \x03(\v2\f.proto.ErrorR\x06errors\"=\n" +
 	"\x1cGetEntriesByAccountIdRequest\x12\x1d\n" +
 	"\n" +
-	"account_id\x18\x01 \x01(\tR\taccountId\"\xe4\x01\n" +
+	"account_id\x18\x01 \x01(\tR\taccountId\"\x87\x02\n" +
 	"\x18GetEntriesByQueryRequest\x12\x14\n" +
 	"\x05query\x18\x01 \x01(\tR\x05query\x12*\n" +
 	"\x10architectureList\x18\x02 \x03(\tR\x10architectureList\x12 \n" +
@@ -2974,7 +2982,8 @@ const file_services_store_proto_store_proto_rawDesc = "" +
 	"\n" +
 	"fieldsList\x18\x05 \x03(\tR\n" +
 	"fieldsList\x12\x18\n" +
-	"\aprivate\x18\x06 \x01(\bR\aprivate\"9\n" +
+	"\aprivate\x18\x06 \x01(\bR\aprivate\x12!\n" +
+	"\fpublisher_id\x18\a \x01(\tR\vpublisherId\"9\n" +
 	"\x1cGetRevisionsByEntryIdRequest\x12\x19\n" +
 	"\bentry_id\x18\x01 \x01(\tR\aentryId\"`\n" +
 	"\x1dGetRevisionsByEntryIdRequests\x12?\n" +

@@ -253,6 +253,7 @@ func (s *StoreLogic) GetEntriesByQuery(ctx context.Context, req *proto.GetEntrie
 		req.ConfinementsList,
 		req.FieldsList,
 		req.Private,
+		req.PublisherId,
 		nil,
 		el,
 	)

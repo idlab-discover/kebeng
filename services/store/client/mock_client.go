@@ -89,8 +89,9 @@ func (m *MockStoreClient) GetEntriesByQuery(
 	confinementsList []string,
 	fieldsList []string,
 	private bool,
+	publisherId string,
 ) *proto.GetEntriesResponse {
-	args := m.Called(query, architectureList, channelList, confinementsList, fieldsList, private)
+	args := m.Called(query, architectureList, channelList, confinementsList, fieldsList, private, publisherId)
 	if resp, ok := args.Get(0).(*proto.GetEntriesResponse); ok {
 		return resp
 	}

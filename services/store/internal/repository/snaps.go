@@ -3,6 +3,7 @@ package repository
 import (
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 
@@ -33,7 +34,7 @@ type ISnapsRepository interface {
 	GetEntriesByAccountId(accountId uuid.UUID, preloadAssociations []string, errorList *cerror.ErrorList) ([]*model.SnapEntry, *cerror.CustomError)
 	GetEntryById(id uuid.UUID, preloadAssociations []string, errorList *cerror.ErrorList) (*model.SnapEntry, *cerror.CustomError)
 	GetEntryByName(name string, preloadAssociations []string, errorList *cerror.ErrorList) (*model.SnapEntry, *cerror.CustomError)
-	GetEntriesByQuery(query string, architectureList []string, confinementsList []string, fieldsList []string, private bool, preloadAssociations []string, errorList *cerror.ErrorList) (*[]model.SnapEntry, *cerror.CustomError)
+	GetEntriesByQuery(query string, architectureList []string, confinementsList []string, fieldsList []string, private bool, publisherId string, preloadAssociations []string, errorList *cerror.ErrorList) (*[]model.SnapEntry, *cerror.CustomError)
 	GetLatestRevisionByEntryId(entryId uuid.UUID, errorList *cerror.ErrorList) (*model.SnapRevision, *cerror.CustomError)
 	GetLatestRevisionByTrackAndChannel(snapName string, track string, channel string, errorList *cerror.ErrorList) (*model.SnapRevision, *cerror.CustomError)
 	GetPreloadAssociations(entry *model.SnapEntry, preloadAssociations *[]string, errorList *cerror.ErrorList) *cerror.CustomError
@@ -387,30 +388,53 @@ func (sp *SnapsRepository) GetEntryByName(name string, preloadAssociations []str
 	return &snapEntry, nil
 }
 
-// TODO: this is a dummy implementation, make it use the actual query
 func (sp *SnapsRepository) GetEntriesByQuery(
 	query string,
 	architectureList []string,
 	confinementsList []string,
 	fieldsList []string,
 	private bool,
+	publisherId string,
 	preloadAssociations []string,
 	el *cerror.ErrorList) (*[]model.SnapEntry, *cerror.CustomError) {
 	var snapEntries []model.SnapEntry
+	if len(fieldsList) == 0 {
+		return &snapEntries, nil
+	}
 
-	// % => ANY wildcard in SQL
-	looseQuery := "%" + query + "%"
+	// NOTE: Workaround. snapd searches on the field `title` by default but we don't have a field title
+	// We do have a field name which snapd doesn't use, but is interchangeable with `title`.
+	// This should however be fixed in the DB eventually
+	fieldsList = append(fieldsList, "name")
 
-	stmt := `
-	SELECT *
-	FROM entry
-	WHERE name ILIKE $1
-	OR summary ILIKE $1
-	OR description ILIKE $1
-	`
-	err := sp.db.Select(&snapEntries, stmt, looseQuery)
+	sqlArgs := []any{"%" + query + "%"}
+
+	stmt := "SELECT * FROM entry WHERE "
+	if private {
+		stmt += fmt.Sprintf("private = true AND account_id = $%d ", len(sqlArgs)+1)
+		sqlArgs = append(sqlArgs, publisherId)
+	} else {
+		stmt += "private = false "
+	}
+
+	var searchFilters []string
+	// TODO: We don't store all the fields snapd may request a query for yet,
+	// For now, we restrict to the fields we do support
+	searchableColumns := []string{"name", "base", "confinement", "description", "summary", "type", "version", "store"}
+
+	for _, col := range searchableColumns {
+		if slices.Contains(fieldsList, col) {
+			searchFilters = append(searchFilters, fmt.Sprintf("%s ILIKE $1", col))
+		}
+	}
+
+	if len(searchFilters) > 0 {
+		stmt += fmt.Sprintf("AND (%s)", strings.Join(searchFilters, " OR "))
+	}
+
+	err := sp.db.Select(&snapEntries, stmt, sqlArgs...)
 	if err != nil {
-		cerr := cerror.ConvertError(err, fmt.Sprintf("error getting snap with query = '%s' and looseQuery = '%s", query, looseQuery))
+		cerr := cerror.ConvertError(err, fmt.Sprintf("error getting snap with query = '%s'", query))
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
 		return nil, cerr
