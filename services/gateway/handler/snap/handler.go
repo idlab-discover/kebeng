@@ -163,6 +163,9 @@ func (h *Handler) FindSnaps(c *gin.Context) {
 
 	query, queryIsPresent := c.GetQuery("q")
 	if !queryIsPresent {
+		// TODO: The snap store itself does support a `snap find` invocation without query
+		// But for this it returns "featured" snaps, which we don't mark in our database yet
+		// For now we mark it as required
 		el.Add(cerror.BadRequest, "q (query) is required")	
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
@@ -230,8 +233,8 @@ func (h *Handler) FindSnaps(c *gin.Context) {
 					Base: entry.Base,
 					Channel: "stable",
 					Revision: int(lastRev.SequenceNumber),
-					Version: lastRev.Version,
-					Status: lastRev.Status,
+					Version: entry.Version,
+					Status: entry.Status,
 					Download: model.Download{
 						Size: &lastRev.Size,
 					},

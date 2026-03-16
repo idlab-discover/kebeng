@@ -1157,6 +1157,7 @@ func parseEntryToProto(entry *model.SnapEntry) *proto.GetEntryResponse {
 		IconUrl:     entry.IconURL,
 		Summary:     entry.Summary,
 		Description: entry.Description,
+		Version:     entry.Version,
 	}
 }
 

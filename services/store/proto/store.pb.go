@@ -281,10 +281,12 @@ type GetEntryResponse struct {
 	Price         float64                `protobuf:"fixed64,9,opt,name=price,proto3" json:"price,omitempty"`
 	Since         *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=since,proto3" json:"since,omitempty"`
 	IconUrl       string                 `protobuf:"bytes,11,opt,name=icon_url,json=iconUrl,proto3" json:"icon_url,omitempty"`
-	Summary       string                 `protobuf:"bytes,12,opt,name=summary,proto3" json:"summary,omitempty"`
-	Description   string                 `protobuf:"bytes,13,opt,name=description,proto3" json:"description,omitempty"`
-	Revisions     []*GetRevisionResponse `protobuf:"bytes,14,rep,name=revisions,proto3" json:"revisions,omitempty"`
-	Errors        []*proto.Error         `protobuf:"bytes,15,rep,name=errors,proto3" json:"errors,omitempty"`
+	Version       string                 `protobuf:"bytes,12,opt,name=version,proto3" json:"version,omitempty"`
+	Grade         string                 `protobuf:"bytes,13,opt,name=grade,proto3" json:"grade,omitempty"`
+	Summary       string                 `protobuf:"bytes,14,opt,name=summary,proto3" json:"summary,omitempty"`
+	Description   string                 `protobuf:"bytes,15,opt,name=description,proto3" json:"description,omitempty"`
+	Revisions     []*GetRevisionResponse `protobuf:"bytes,16,rep,name=revisions,proto3" json:"revisions,omitempty"`
+	Errors        []*proto.Error         `protobuf:"bytes,17,rep,name=errors,proto3" json:"errors,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -392,6 +394,20 @@ func (x *GetEntryResponse) GetSince() *timestamppb.Timestamp {
 func (x *GetEntryResponse) GetIconUrl() string {
 	if x != nil {
 		return x.IconUrl
+	}
+	return ""
+}
+
+func (x *GetEntryResponse) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+func (x *GetEntryResponse) GetGrade() string {
+	if x != nil {
+		return x.Grade
 	}
 	return ""
 }
@@ -2889,7 +2905,7 @@ const file_services_store_proto_store_proto_rawDesc = "" +
 	"\x04name\x18\x02 \x01(\tH\x01R\x04name\x88\x01\x01\x121\n" +
 	"\x14preload_associations\x18\x03 \x03(\tR\x13preloadAssociationsB\x05\n" +
 	"\x03_idB\a\n" +
-	"\x05_name\"\xdd\x03\n" +
+	"\x05_name\"\x8d\x04\n" +
 	"\x10GetEntryResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
 	"\tsnap_name\x18\x02 \x01(\tR\bsnapName\x12 \n" +
@@ -2903,10 +2919,12 @@ const file_services_store_proto_store_proto_rawDesc = "" +
 	"\x05since\x18\n" +
 	" \x01(\v2\x1a.google.protobuf.TimestampR\x05since\x12\x19\n" +
 	"\bicon_url\x18\v \x01(\tR\aiconUrl\x12\x18\n" +
-	"\asummary\x18\f \x01(\tR\asummary\x12 \n" +
-	"\vdescription\x18\r \x01(\tR\vdescription\x128\n" +
-	"\trevisions\x18\x0e \x03(\v2\x1a.store.GetRevisionResponseR\trevisions\x12$\n" +
-	"\x06errors\x18\x0f \x03(\v2\f.proto.ErrorR\x06errors\"E\n" +
+	"\aversion\x18\f \x01(\tR\aversion\x12\x14\n" +
+	"\x05grade\x18\r \x01(\tR\x05grade\x12\x18\n" +
+	"\asummary\x18\x0e \x01(\tR\asummary\x12 \n" +
+	"\vdescription\x18\x0f \x01(\tR\vdescription\x128\n" +
+	"\trevisions\x18\x10 \x03(\v2\x1a.store.GetRevisionResponseR\trevisions\x12$\n" +
+	"\x06errors\x18\x11 \x03(\v2\f.proto.ErrorR\x06errors\"E\n" +
 	"\x11GetEntriesRequest\x120\n" +
 	"\aentries\x18\x01 \x03(\v2\x16.store.GetEntryRequestR\aentries\"m\n" +
 	"\x12GetEntriesResponse\x121\n" +
