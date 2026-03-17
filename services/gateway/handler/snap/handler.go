@@ -255,6 +255,7 @@ func (h *Handler) FindSnaps(c *gin.Context) {
 				Revision: model.SnapRevision{
 					Base: entry.Base,
 					Channel: "stable",
+					Confinement: entry.Confinement,
 					Revision: int(lastRev.SequenceNumber),
 					Version: entry.Version,
 					Status: entry.Status,
