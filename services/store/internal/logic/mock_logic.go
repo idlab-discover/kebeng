@@ -77,6 +77,15 @@ func (m *MockStoreServiceClient) GetEntryById(ctx context.Context, in *proto.Get
 	return resp.(*proto.GetEntryResponse), args.Error(1)
 }
 
+func (m *MockStoreServiceClient) GetEntriesByQuery(ctx context.Context, in *proto.GetEntriesByQueryRequest, opts ...grpc.CallOption) (*proto.GetEntriesResponse, error) {
+	args := m.Called(ctx, in)
+	resp := args.Get(0)
+	if resp == nil {
+		return nil, args.Error(1)
+	}
+	return resp.(*proto.GetEntriesResponse), args.Error(1)
+}
+
 func (m *MockStoreServiceClient) GetEntryByName(ctx context.Context, in *proto.GetEntryRequest, opts ...grpc.CallOption) (*proto.GetEntryResponse, error) {
 	args := m.Called(ctx, in)
 	resp := args.Get(0)
