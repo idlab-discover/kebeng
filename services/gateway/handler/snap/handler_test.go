@@ -589,7 +589,7 @@ func TestFindSnaps_InvalidQuery(t *testing.T) {
 	// The query should not succeed (status code BAD_REQUEST)
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	// The error message should mention the required field
-	assert.Contains(t, "required", w.Body.String())
+	assert.Contains(t, w.Body.String(), "required")
 }
 
 // ------------------
