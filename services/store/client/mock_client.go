@@ -82,6 +82,22 @@ func (m *MockStoreClient) GetEntriesByAccountID(accountID string) *proto.GetEntr
 	return nil
 }
 
+func (m *MockStoreClient) GetEntriesByQuery(
+	query string,
+	architectureList []string,
+	channelList []string,
+	confinementsList []string,
+	fieldsList []string,
+	private bool,
+	publisherId string,
+) *proto.GetEntriesResponse {
+	args := m.Called(query, architectureList, channelList, confinementsList, fieldsList, private, publisherId)
+	if resp, ok := args.Get(0).(*proto.GetEntriesResponse); ok {
+		return resp
+	}
+	return nil
+}
+
 // GetRevisionsByEntryIds mocks the GetRevisionsByEntryIds function.
 func (m *MockStoreClient) GetRevisionsByEntryIds(entryIds *proto.GetRevisionsByEntryIdRequests) *proto.GetRevisionsByEntryIdResponses {
 	args := m.Called(entryIds)

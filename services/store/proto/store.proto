@@ -11,6 +11,7 @@ service StoreService {
     rpc GetRevisions(GetRevisionsRequest) returns (GetRevisionsResponse);
     rpc GetEntries(GetEntriesRequest) returns (GetEntriesResponse);
     rpc GetEntriesByAccountId(GetEntriesByAccountIdRequest) returns (GetEntriesResponse);
+    rpc GetEntriesByQuery(GetEntriesByQueryRequest) returns (GetEntriesResponse);
     rpc GetRevisionsByEntryIds(GetRevisionsByEntryIdRequests) returns (GetRevisionsByEntryIdResponses);
     rpc GetLatestRevisionByTrackAndChannel(GetLatestRevisionRequest) returns (GetRevisionResponse);
     rpc SnapDownload(SnapDownloadRequest) returns (stream SnapDownloadResponse);
@@ -61,8 +62,12 @@ message GetEntryResponse {
     double price = 9;
     google.protobuf.Timestamp since = 10;
     string icon_url = 11;
-    repeated GetRevisionResponse revisions = 12;
-    repeated proto.Error errors = 13;
+    string version = 12;
+    string grade = 13;
+    string summary = 14;
+    string description = 15;
+    repeated GetRevisionResponse revisions = 16;
+    repeated proto.Error errors = 17;
 }
 
 
@@ -115,6 +120,16 @@ message GetRevisionsResponse {
 
 message GetEntriesByAccountIdRequest {
     string account_id = 1;
+}
+
+message GetEntriesByQueryRequest {
+    string query = 1;
+    repeated string architectureList = 2;
+    repeated string channelList = 3;
+    repeated string confinementsList = 4;
+    repeated string fieldsList = 5;
+    bool private = 6;
+    string publisher_id = 7;
 }
 
 message GetRevisionsByEntryIdRequest {

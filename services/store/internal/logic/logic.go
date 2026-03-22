@@ -224,6 +224,54 @@ func (s *StoreLogic) GetEntryByName(ctx context.Context, req *proto.GetEntryRequ
 	return parseEntryToProto(snapEntry), nil
 }
 
+func (s *StoreLogic) GetEntriesByQuery(ctx context.Context, req *proto.GetEntriesByQueryRequest) (*proto.GetEntriesResponse, error) {
+	el := cerror.NewErrorList()
+	if req.Query == "" {
+		cerr := cerror.NewCustomError(cerror.MissingField, "query is required")
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.GetEntriesResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	if len(req.ConfinementsList) <= 0 {
+		cerr := cerror.NewCustomError(cerror.MissingField, "confinement is required!")
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.GetEntriesResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	if len(req.ArchitectureList) <= 0 {
+		cerr := cerror.NewCustomError(cerror.MissingField, "architecture is required!")
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.GetEntriesResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	snapEntries, cerr := s.repo.GetEntriesByQuery(
+		req.Query,
+		req.ArchitectureList,
+		req.ConfinementsList,
+		req.FieldsList,
+		req.Private,
+		req.PublisherId,
+		nil,
+		el,
+	)
+
+	if cerr != nil {
+		return &proto.GetEntriesResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	protoSnapEntryResponses := make([]*proto.GetEntryResponse, 0)
+
+	for _, entry := range *snapEntries {
+		protoEntry := parseEntryToProto(&entry)
+		protoSnapEntryResponses = append(protoSnapEntryResponses, protoEntry)
+	}
+
+	return &proto.GetEntriesResponse{Entries: protoSnapEntryResponses}, nil
+}
+
 // GetRevisions retrieves a list of revisions based on the provided request.
 // It supports fetching revisions either by their ID or by their snap name and sequence number.
 // If a revision is found, it is added to the response along with its snap name and sequence number.
@@ -1066,7 +1114,7 @@ func getSnapMetaFromPath(snapFilePath string, workingDirectory string) (*model.S
 		return nil, fmt.Errorf("failed to change directory: %v", err)
 	}
 	id := uuid.New()
-	cmd := exec.Command("unsquashfs", "-d", id.String() ,snapFilePath, "-e", "meta/snap.yaml")
+	cmd := exec.Command("unsquashfs", "-d", id.String(), snapFilePath, "-e", "meta/snap.yaml")
 	cmd.Stderr = os.Stderr
 
 	outPath := path.Join(workingDirectory, id.String(), "meta", "snap.yaml")
@@ -1108,6 +1156,9 @@ func parseEntryToProto(entry *model.SnapEntry) *proto.GetEntryResponse {
 		Status:      entry.Status,
 		Since:       timestamppb.New(entry.CreatedAt),
 		IconUrl:     entry.IconURL,
+		Summary:     entry.Summary,
+		Description: entry.Description,
+		Version:     entry.Version,
 	}
 }
 

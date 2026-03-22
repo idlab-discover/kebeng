@@ -28,9 +28,9 @@ type SnapEntry struct {
 	DeletedAt      *time.Time      `json:"deleted_at,omitempty" db:"deleted_at"`
 	Name           string          `json:"name" db:"name"`
 	Type           string          `json:"type,omitempty" db:"type"`
-	Version        string          `yaml:"version"`
-	Summary        string          `yaml:"summary"`
-	Description    string          `yaml:"description"`
+	Version        string          `yaml:"version" db:"version"`
+	Summary        string          `yaml:"summary" db:"summary"`
+	Description    string          `yaml:"description" db:"description"`
 	Confinement    string          `json:"confinement,omitempty" db:"confinement"`
 	Base           string          `json:"base,omitempty" db:"base"`
 	Grade          string          `json:"grade,omitempty" db:"grade"`

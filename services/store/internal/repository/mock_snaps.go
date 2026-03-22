@@ -128,6 +128,22 @@ func (m *MockSnapsRepository) GetEntryByName(name string, preloadAssociations []
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
+func (m *MockSnapsRepository) GetEntriesByQuery(
+	query string,
+	architectureList []string,
+	confinementsList []string,
+	fieldsList []string,
+	private bool,
+	publisherId string,
+	preloadAssociations []string, el *cerror.ErrorList) (*[]model.SnapEntry, *cerror.CustomError) {
+	args := m.Called(query, architectureList, confinementsList, fieldsList, private, publisherId, preloadAssociations, el)
+	if args.Get(0) != nil {
+		return args.Get(0).(*[]model.SnapEntry), nil
+	}
+	el.Add(cerror.InternalServerError, "")
+	return nil, args.Get(1).(*cerror.CustomError)
+}
+
 func (m *MockSnapsRepository) GetRevisionsByEntryId(entryId uuid.UUID, el *cerror.ErrorList) ([]*model.SnapRevision, *cerror.CustomError) {
 	args := m.Called(entryId, el)
 	if args.Get(0) != nil {

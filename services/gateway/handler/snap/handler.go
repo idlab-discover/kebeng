@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"slices"
+	"strings"
 
 	"github.com/idlab-discover/kebeng/services/gateway/internal/model"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/util"
@@ -139,12 +140,136 @@ func (h *Handler) DownloadSnap(c *gin.Context) {
 
 func (h *Handler) FindSnaps(c *gin.Context) {
 	el := cerror.NewErrorList()
-	var req model.FindSnapsRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		el.Add(cerror.BadRequest, cerror.FormatBindError(err))
+	result := *model.NewFindSnapResponse()
+
+	architecture, architectureIsPresent := c.GetQuery("architecture")
+	if !architectureIsPresent {
+		el.Add(cerror.BadRequest, "architecture is required")
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
+	architectureList := strings.Split(architecture, ",")
+
+	channel, _ := c.GetQuery("channel")
+	channelList := strings.Split(channel, ",")
+
+	confinement, confinementIsPresent := c.GetQuery("confinement")
+	if !confinementIsPresent {
+		el.Add(cerror.BadRequest, "confinement is required")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
+	confinementsList := strings.Split(confinement, ",")
+
+	query, queryIsPresent := c.GetQuery("q")
+	if !queryIsPresent {
+		// TODO: The snap store itself does support a `snap find` invocation without query
+		// But for this it returns "featured" snaps, which we don't mark in our database yet
+		// For now we indicate query as required
+		el.Add(cerror.BadRequest, "q (query) is required")	
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
+
+	fields, _ := c.GetQuery("fields")
+	fieldsList := strings.Split(fields, ",")
+
+	private, _ := c.GetQuery("private")
+
+	// NOTE: Once auth is implemented, a present email should mean properly logged in
+	// No email present means not logged in
+	email, emailIsPresent := c.Get("email")
+
+	privateBool := private == "true"
+	if !emailIsPresent && privateBool {
+		el.Add(cerror.Unauthorized, "cannot filter on private snaps when not logged in!")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return
+	}
+
+	publisher_id := ""
+	if (emailIsPresent) {
+		acc := h.AccountClient.GetAccountByEmail(email.(string))
+		if len(acc.Errors) > 0 {
+			el.ExtendProtoError(acc.Errors)
+			c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+			return
+		}
+
+		publisher_id = acc.Id
+	}
+
+	entries := h.StoreClient.GetEntriesByQuery(
+		query, 
+		architectureList,
+		channelList,
+		confinementsList,
+		fieldsList,
+		privateBool,
+		publisher_id,
+	)
+
+	if len(entries.Errors) > 0 {
+		el.ExtendProtoError(entries.Errors)
+		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		return 
+	}
+
+	for _, entry := range entries.Entries {
+		pub := h.AccountClient.GetAccountByID(entry.GetPublisherId())
+		if len(pub.Errors) > 0 {
+			el.ExtendProtoError(entries.Errors)
+			c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+			return
+		}
+
+		// GetLatestRevisionByTrackAndChannel is invoked with defaults
+		lastRev := h.StoreClient.GetLatestRevisionByTrackAndChannel(
+			entry.SnapName,
+			"",
+			"",
+		)
+		if len(lastRev.Errors) > 0 {
+			el.ExtendProtoError(lastRev.Errors)
+			c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+			return
+		}
+
+		result.Results = append(
+			result.Results,
+			model.FindSnapResult{
+				Name: entry.SnapName,
+				SnapID: entry.Id,
+				Snap: model.Snap{
+					SnapID: entry.Id,
+					Title: entry.SnapName,
+					Summary: entry.Summary,
+					Description: entry.Description,
+					Publisher: model.Publisher{
+						ID: entry.PublisherId,
+						DisplayName: pub.DisplayName,
+						Username: pub.Username,
+						Validation: pub.Validation,
+					},
+				},
+				Revision: model.SnapRevision{
+					Base: entry.Base,
+					Channel: "stable",
+					Confinement: entry.Confinement,
+					Revision: int(lastRev.SequenceNumber),
+					Version: entry.Version,
+					Status: entry.Status,
+					Download: model.Download{
+						Size: &lastRev.Size,
+					},
+				},
+			},
+		)
+	}
+
+	// Snap Find fails the content-type is `application/json;charset=utf-8`
+	c.Header("Content-Type", "application/json")
+	c.JSON(200, result)
 }
 
 func (h *Handler) RegisterSnapName(c *gin.Context) {

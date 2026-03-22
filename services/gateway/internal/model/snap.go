@@ -14,8 +14,21 @@ type RequestStoreDeviceNonceResponse struct {
 	Nonce string `json:"nonce"`
 }
 
-type FindSnapsRequest struct {
-	Name string `json:"name"`
+type FindSnapResponse struct {
+	Results []FindSnapResult `json:"results"`
+}
+
+func NewFindSnapResponse() *FindSnapResponse {
+	return &FindSnapResponse{
+		Results: make([]FindSnapResult, 0),
+	}
+}
+
+type FindSnapResult struct {
+	Name     string       `json:"name"`
+	SnapID   string       `json:"snap-id"`
+	Snap     Snap         `json:"snap"`
+	Revision SnapRevision `json:"revision"`
 }
 
 type RegisterSnapNameRequest struct {
@@ -98,6 +111,11 @@ type RefreshSnap struct {
 	Base          string     `json:"base,omitempty"`
 }
 
+type Category struct {
+	Featured bool   `json:"featured"`
+	Name     string `json:"name"`
+}
+
 type Download struct {
 	URL      *string `json:"url,omitempty"`
 	Sha3_384 *string `json:"sha3-384,omitempty"`
@@ -106,11 +124,17 @@ type Download struct {
 
 // SnapRevision represents a snap revision in the store
 type SnapRevision struct {
+	Base          string   `json:"base,omitempty"`
+	Channel       string   `json:"channel,omitempty"`
+	CommonIds     []string `json:"common-ids,omitempty"`
+	Confinement   string   `json:"confinement,omitempty"`
 	Revision      int      `json:"revision"`
 	Version       string   `json:"version"`
 	Status        string   `json:"status"`
 	Architectures []string `json:"architectures"`
 	Channels      []string `json:"channels"`
+	Download      Download `json:"download,omitempty"`
+	Type          string   `json:"type,omitempty"`
 }
 
 // SnapComment represents a comment in the context of an under-review or revoked name
@@ -128,7 +152,8 @@ type SnapComment struct {
 
 // Snap represents a snap owned or collaborated on by the user
 type Snap struct {
-	Status          string         `json:"status"`
+	Categories      []Category     `json:"categories,omitempty"`
+	Status          string         `json:"status,omitempty"`
 	Price           float64        `json:"price,omitempty"`
 	Since           time.Time      `json:"since"`
 	SnapID          string         `json:"snap-id"`
@@ -138,6 +163,30 @@ type Snap struct {
 	Publisher       Publisher      `json:"publisher"`
 	LatestComments  []SnapComment  `json:"latest_comments"`
 	LatestRevisions []SnapRevision `json:"latest_revisions"`
+	Contact         any            `json:"contact"`
+	Description     string         `json:"description"`
+	License         string         `json:"license"`
+	Links           Links          `json:"links"`
+	Media           []Media        `json:"media"`
+	Prices          any            `json:"prices"` // TODO: Construct prices in many currencies based on stored price field.
+	Summary         string         `json:"summary"`
+	Title           string         `json:"title"`
+	Website         string         `json:"website"`
+}
+
+type Links struct {
+	Contact   []string `json:"contact"`
+	Donations []string `json:"donations"`
+	Issues    []string `json:"issues"`
+	Source    []string `json:"source"`
+	Website   []string `json:"website"`
+}
+
+type Media struct {
+	Height int    `json:"height"`
+	Type   string `json:"type"`
+	URL    string `json:"url"`
+	Width  int    `json:"width"`
 }
 
 // Store represents a store object accessible by the user
