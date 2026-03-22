@@ -543,7 +543,15 @@ func TestFindSnaps(t *testing.T) {
 		Entries: nil,
 		Errors: nil,
 	}
-	mockStoreClient.On("GetEntriesByQuery", mock.Anything).
+	mockStoreClient.On("GetEntriesByQuery",
+			mock.AnythingOfType("string"),
+			mock.AnythingOfType("[]string"),
+			mock.AnythingOfType("[]string"),
+			mock.AnythingOfType("[]string"),
+			mock.AnythingOfType("[]string"),
+			mock.AnythingOfType("bool"),
+			mock.AnythingOfType("string"),
+		).
 		Return(mockResp).
 		Once()
 	handler := &Handler{BaseHandler: util.NewBaseHandler(
