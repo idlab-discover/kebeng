@@ -159,7 +159,7 @@ func (h *Handler) FindSnaps(c *gin.Context) {
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
-	confinementsList := strings.Split(confinement, "")
+	confinementsList := strings.Split(confinement, ",")
 
 	query, queryIsPresent := c.GetQuery("q")
 	if !queryIsPresent {
