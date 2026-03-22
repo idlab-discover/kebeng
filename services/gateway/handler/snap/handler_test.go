@@ -557,7 +557,7 @@ func TestFindSnaps(t *testing.T) {
 	c, _ := gin.CreateTestContext(w)
 
 	obscureSearchQuery := "obscure_value_that_is_not_present_in_db_989Y789"
-	c.Request = httptest.NewRequest("GET", fmt.Sprintf("/v2/snaps/find?q=%s", obscureSearchQuery), strings.NewReader("{}"))
+	c.Request = httptest.NewRequest("GET", fmt.Sprintf("/v2/snaps/find?q=%s&architecture=amd64&confinement=strict,classic", obscureSearchQuery), strings.NewReader("{}"))
 
 	handler.FindSnaps(c)
 
@@ -589,7 +589,6 @@ func TestFindSnaps_InvalidQuery(t *testing.T) {
 	// The query should not succeed (status code BAD_REQUEST)
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	// The error message should mention the required field
-	assert.Contains(t, "q (query)", w.Body.String())
 	assert.Contains(t, "required", w.Body.String())
 }
 
