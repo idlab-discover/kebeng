@@ -2,6 +2,7 @@ package snap
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -529,43 +530,67 @@ func TestUnscannedUploadHandler_Success(t *testing.T) {
 	mockStoreClient.AssertExpectations(t)
 }
 
-func TestFindSnapsHandler_InvalidJSON(t *testing.T) {
+// ------------------
+// FindSnap
+// ------------------
+
+// TestFindSnaps tests a valid query that yields no result
+func TestFindSnaps(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	// Create a handler; since FindSnaps doesn't use any clients, pass nil in the BaseHandler.
-	handler := &Handler{BaseHandler: util.NewBaseHandler(nil, nil, nil, nil)}
+
+	mockStoreClient := new(storeClient.MockStoreClient)
+	mockResp := &storepb.GetEntriesResponse{
+		Entries: nil,
+		Errors: nil,
+	}
+	mockStoreClient.On("GetEntriesByQuery", mock.Anything).
+		Return(mockResp).
+		Once()
+	handler := &Handler{BaseHandler: util.NewBaseHandler(
+		nil,
+		mockStoreClient,
+		nil,
+		nil,
+	)}
+
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 
-	// Provide invalid JSON input.
-	c.Request = httptest.NewRequest("POST", "/findSnaps", strings.NewReader("{invalid_json"))
-	c.Request.Header.Set("Content-Type", "application/json")
+	obscureSearchQuery := "obscure_value_that_is_not_present_in_db_989Y789"
+	c.Request = httptest.NewRequest("GET", fmt.Sprintf("/v2/snaps/find?q=%s", obscureSearchQuery), strings.NewReader("{}"))
 
 	handler.FindSnaps(c)
 
-	// The error list should have been populated with a binding error, resulting in a Bad Request.
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-	// Verify that the response body contains an error message. (The exact text may vary.)
-	assert.Contains(t, w.Body.String(), "Syntax error", "expected error message to mention a syntax error")
+	// The query should succeed (status code OK)
+	assert.Equal(t, http.StatusOK, w.Code)
+	// The query result should be empty (no matching snaps)
+	assert.Equal(t, "{\"results\":[]}", w.Body.String())
+	mockStoreClient.AssertExpectations(t)
 }
 
-// TestFindSnapsHandler_ValidJSON tests the valid JSON case.
-func TestFindSnapsHandler_ValidJSON(t *testing.T) {
+// TestFindSnaps_InvalidQuery tests an invalid query
+func TestFindSnaps_InvalidQuery(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	handler := &Handler{BaseHandler: util.NewBaseHandler(nil, nil, nil, nil)}
+
+	handler := Handler{BaseHandler: util.NewBaseHandler(
+		nil,
+		nil,
+		nil,
+		nil,
+	)}
+
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 
-	// Provide valid JSON. Since we don't know the expected fields,
-	// a minimal valid JSON object is provided.
-	c.Request = httptest.NewRequest("POST", "/findSnaps", strings.NewReader("{}"))
-	c.Request.Header.Set("Content-Type", "application/json")
+	c.Request = httptest.NewRequest("GET", "/v2/snaps/find", strings.NewReader("{}"))
 
 	handler.FindSnaps(c)
 
-	// When valid JSON is received, the function does nothing and does not write any response.
-	// In such a case, the response body remains empty and status defaults to 200.
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, "", w.Body.String(), "expected empty response when JSON is valid")
+	// The query should not succeed (status code BAD_REQUEST)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	// The error message should mention the required field
+	assert.Contains(t, "q (query)", w.Body.String())
+	assert.Contains(t, "required", w.Body.String())
 }
 
 // ------------------
