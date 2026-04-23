@@ -47,30 +47,56 @@ type SnapBuildAssertionRequest struct {
 }
 
 type RefreshSnapRequest struct {
-	Context []struct {
-		SnapID          string `json:"snap-id"`
-		InstanceKey     string `json:"instance-key"`
-		Revision        int    `json:"revision"`
-		TrackingChannel string `json:"tracking-channel"`
-		Epoch           struct {
-			Read  []int `json:"read"`
-			Write []int `json:"write"`
-		} `json:"epoch"`
-		RefreshedDate string `json:"refreshed-date"`
-	} `json:"context"`
-	Actions []*Action `json:"actions"`
-	Fields  []string  `json:"fields"`
+	Context             []*Context     `json:"context"`
+	Actions             []*Action      `json:"actions"`
+	Fields              []string       `json:"fields"`
+	AssertionMaxFormats map[string]int `json:"assertion-max-formats,omitempty"`
+}
+
+type Context struct {
+	SnapID           string     `json:"snap-id"`
+	InstanceKey      string     `json:"instance-key"`
+	Revision         int        `json:"revision"`
+	TrackingChannel  string     `json:"tracking-channel"`
+	Epoch            Epoch      `json:"epoch"`
+	RefreshedDate    *time.Time `json:"refreshed-date,omitempty"`
+	IgnoreValidation bool       `json:"ignore-validation,omitempty"`
+	CohortKey        string     `json:"cohort-key,omitempty"`
 }
 
 type Action struct {
-	Action      string `json:"action"`
-	InstanceKey string `json:"instance-key"`
-	Name        string `json:"name"`
-	Channel     string `json:"channel"`
-	Epoch       *struct {
-		Read  []int `json:"read"`
-		Write []int `json:"write"`
-	} `json:"epoch"`
+	Action           string     `json:"action"`
+	InstanceKey      string     `json:"instance-key,omitempty"`
+	Name             string     `json:"name,omitempty"`
+	SnapID           string     `json:"snap-id"`
+	Channel          string     `json:"channel,omitempty"`
+	Revision         int        `json:"revision,omitempty"`
+	CohortKey        string     `json:"cohort-key,omitempty"`
+	IgnoreValidation bool       `json:"ignore-validation,omitempty"`
+	Epoch            Epoch      `json:"epoch,omitempty"`
+	Key              string     `json:"key,omitempty"`
+	Assertions       []any      `json:"assertions,omitempty"`
+	ValidationSets   [][]string `json:"validation-sets,omitempty"`
+}
+
+type Epoch struct {
+	Read  []uint32 `json:"read"`
+	Write []uint32 `json:"write"`
+}
+
+type RefreshSnapResults struct {
+	Results []*RefreshSnapResult `json:"results"`
+}
+
+type RefreshSnapResult struct {
+	Result              string       `json:"result,omitempty"`
+	InstanceKey         string       `json:"instance-key,omitempty"`
+	SnapId              string       `json:"snap-id,omitempty"`
+	CohortKey           string       `json:"cohort-key,omitempty"`
+	Name                string       `json:"name,omitempty"`
+	Snap                *RefreshSnap `json:"snap,omitempty"`
+	Key                 string       `json:"key"`
+	AssertionStreamURLs []string     `json:"assertion-stream-urls"`
 }
 
 type SnapBuildAssertionResp struct {
@@ -84,18 +110,6 @@ type SnapBuildAssertionResp struct {
 	Revision        string           `json:"revision"`
 	Type            string           `json:"type"`
 	Errors          cerror.ErrorList `json:"error_list"`
-}
-
-type RefreshSnapResponses struct {
-	Responses []*RefreshSnapResult `json:"results"`
-}
-
-type RefreshSnapResult struct {
-	Result      string       `json:"result,omitempty"`
-	InstanceKey string       `json:"instance-key,omitempty"`
-	SnapId      string       `json:"snap-id,omitempty"`
-	Name        string       `json:"name,omitempty"`
-	Snap        *RefreshSnap `json:"snap,omitempty"`
 }
 
 type RefreshSnap struct {

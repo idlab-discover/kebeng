@@ -46,27 +46,37 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 		return
 	}
 
-	var resp model.RefreshSnapResponses
+	var resp model.RefreshSnapResults
+
 	for _, action := range req.Actions {
 		switch action.Action {
 		case "download":
-			res, cerr := h.refreshSnapDownload(action, el)
+			res, cerr := h.refreshInstallOrDownload(action, el)
 			if cerr != nil {
 				c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 				return
 			}
-			result := "download"
-			res.Result = result
-			resp.Responses = append(resp.Responses, res)
-		case "install": // same as download just different result value, for now
-			res, cerr := h.refreshSnapDownload(action, el)
+			res.Result = "download"
+			resp.Results = append(resp.Results, res)
+
+		case "install":
+			res, cerr := h.refreshInstallOrDownload(action, el)
 			if cerr != nil {
 				c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 				return
 			}
-			result := "install"
-			res.Result = result
-			resp.Responses = append(resp.Responses, res)
+			res.Result = "install"
+			resp.Results = append(resp.Results, res)
+
+		case "fetch-assertions":
+			resp.Results = append(resp.Results, &model.RefreshSnapResult{
+				Key: action.Key,
+				// WARN: haven't yet been able to catch a network packet where the AssertionStreamURLs field not empty.
+				// Not immediately able to deduct its function from the snapd source code either.
+				AssertionStreamURLs: make([]string, 0),
+				Result: "fetch-assertions",
+			})
+
 		default:
 			el.Add(cerror.NotImplemented, "Action not implemented")
 			c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
@@ -77,7 +87,7 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
-func (h *Handler) refreshSnapDownload(action *model.Action, el *cerror.ErrorList) (*model.RefreshSnapResult, *cerror.CustomError) {
+func (h *Handler) refreshInstallOrDownload(action *model.Action, el *cerror.ErrorList) (*model.RefreshSnapResult, *cerror.CustomError) {
 	var res model.RefreshSnapResult
 	snapEntry, latestRevision := h.getLatestRevisionByEntryName(el, action.Name, action.Channel)
 	if el.HasError() {
@@ -166,7 +176,7 @@ func (h *Handler) FindSnaps(c *gin.Context) {
 		// TODO: The snap store itself does support a `snap find` invocation without query
 		// But for this it returns "featured" snaps, which we don't mark in our database yet
 		// For now we indicate query as required
-		el.Add(cerror.BadRequest, "q (query) is required")	
+		el.Add(cerror.BadRequest, "q (query) is required")
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
@@ -188,7 +198,7 @@ func (h *Handler) FindSnaps(c *gin.Context) {
 	}
 
 	publisher_id := ""
-	if (emailIsPresent) {
+	if emailIsPresent {
 		acc := h.AccountClient.GetAccountByEmail(email.(string))
 		if len(acc.Errors) > 0 {
 			el.ExtendProtoError(acc.Errors)
@@ -200,7 +210,7 @@ func (h *Handler) FindSnaps(c *gin.Context) {
 	}
 
 	entries := h.StoreClient.GetEntriesByQuery(
-		query, 
+		query,
 		architectureList,
 		channelList,
 		confinementsList,
@@ -212,7 +222,7 @@ func (h *Handler) FindSnaps(c *gin.Context) {
 	if len(entries.Errors) > 0 {
 		el.ExtendProtoError(entries.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
-		return 
+		return
 	}
 
 	for _, entry := range entries.Entries {
@@ -238,27 +248,27 @@ func (h *Handler) FindSnaps(c *gin.Context) {
 		result.Results = append(
 			result.Results,
 			model.FindSnapResult{
-				Name: entry.SnapName,
+				Name:   entry.SnapName,
 				SnapID: entry.Id,
 				Snap: model.Snap{
-					SnapID: entry.Id,
-					Title: entry.SnapName,
-					Summary: entry.Summary,
+					SnapID:      entry.Id,
+					Title:       entry.SnapName,
+					Summary:     entry.Summary,
 					Description: entry.Description,
 					Publisher: model.Publisher{
-						ID: entry.PublisherId,
+						ID:          entry.PublisherId,
 						DisplayName: pub.DisplayName,
-						Username: pub.Username,
-						Validation: pub.Validation,
+						Username:    pub.Username,
+						Validation:  pub.Validation,
 					},
 				},
 				Revision: model.SnapRevision{
-					Base: entry.Base,
-					Channel: "stable",
+					Base:        entry.Base,
+					Channel:     "stable",
 					Confinement: entry.Confinement,
-					Revision: int(lastRev.SequenceNumber),
-					Version: entry.Version,
-					Status: entry.Status,
+					Revision:    int(lastRev.SequenceNumber),
+					Version:     entry.Version,
+					Status:      entry.Status,
 					Download: model.Download{
 						Size: &lastRev.Size,
 					},
