@@ -10,6 +10,7 @@ service StoreService {
     rpc RegisterSnapName(RegisterSnapNameRequest) returns (RegisterSnapNameResponse);
     rpc GetRevisions(GetRevisionsRequest) returns (GetRevisionsResponse);
     rpc GetEntries(GetEntriesRequest) returns (GetEntriesResponse);
+    rpc GetEntryById(GetEntryRequest) returns (GetEntryResponse);
     rpc GetEntriesByAccountId(GetEntriesByAccountIdRequest) returns (GetEntriesResponse);
     rpc GetEntriesByQuery(GetEntriesByQueryRequest) returns (GetEntriesResponse);
     rpc GetRevisionsByEntryIds(GetRevisionsByEntryIdRequests) returns (GetRevisionsByEntryIdResponses);

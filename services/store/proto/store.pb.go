@@ -3134,13 +3134,14 @@ const file_services_store_proto_store_proto_rawDesc = "" +
 	"\n" +
 	"deleted_at\x18\x13 \x01(\v2\x1a.google.protobuf.TimestampH\x00R\tdeletedAt\x88\x01\x01\x12$\n" +
 	"\x06errors\x18\x14 \x03(\v2\f.proto.ErrorR\x06errorsB\r\n" +
-	"\v_deleted_at2\x8d\n" +
+	"\v_deleted_at2\xce\n" +
 	"\n" +
 	"\fStoreService\x12S\n" +
 	"\x10RegisterSnapName\x12\x1e.store.RegisterSnapNameRequest\x1a\x1f.store.RegisterSnapNameResponse\x12G\n" +
 	"\fGetRevisions\x12\x1a.store.GetRevisionsRequest\x1a\x1b.store.GetRevisionsResponse\x12A\n" +
 	"\n" +
-	"GetEntries\x12\x18.store.GetEntriesRequest\x1a\x19.store.GetEntriesResponse\x12W\n" +
+	"GetEntries\x12\x18.store.GetEntriesRequest\x1a\x19.store.GetEntriesResponse\x12?\n" +
+	"\fGetEntryById\x12\x16.store.GetEntryRequest\x1a\x17.store.GetEntryResponse\x12W\n" +
 	"\x15GetEntriesByAccountId\x12#.store.GetEntriesByAccountIdRequest\x1a\x19.store.GetEntriesResponse\x12O\n" +
 	"\x11GetEntriesByQuery\x12\x1f.store.GetEntriesByQueryRequest\x1a\x19.store.GetEntriesResponse\x12e\n" +
 	"\x16GetRevisionsByEntryIds\x12$.store.GetRevisionsByEntryIdRequests\x1a%.store.GetRevisionsByEntryIdResponses\x12a\n" +
@@ -3253,35 +3254,37 @@ var file_services_store_proto_store_proto_depIdxs = []int32{
 	0,  // 40: store.StoreService.RegisterSnapName:input_type -> store.RegisterSnapNameRequest
 	8,  // 41: store.StoreService.GetRevisions:input_type -> store.GetRevisionsRequest
 	4,  // 42: store.StoreService.GetEntries:input_type -> store.GetEntriesRequest
-	10, // 43: store.StoreService.GetEntriesByAccountId:input_type -> store.GetEntriesByAccountIdRequest
-	11, // 44: store.StoreService.GetEntriesByQuery:input_type -> store.GetEntriesByQueryRequest
-	13, // 45: store.StoreService.GetRevisionsByEntryIds:input_type -> store.GetRevisionsByEntryIdRequests
-	16, // 46: store.StoreService.GetLatestRevisionByTrackAndChannel:input_type -> store.GetLatestRevisionRequest
-	18, // 47: store.StoreService.SnapDownload:input_type -> store.SnapDownloadRequest
-	23, // 48: store.StoreService.UnscannedUpload:input_type -> store.UnscannedUploadRequest
-	26, // 49: store.StoreService.AddUpload:input_type -> store.AddUploadRequest
-	28, // 50: store.StoreService.GetUploadStatus:input_type -> store.GetUploadStatusRequest
-	30, // 51: store.StoreService.AddRevision:input_type -> store.AddRevisionRequest
-	32, // 52: store.StoreService.GetObjectCustomMetadata:input_type -> store.GetObjectCustomMetadataRequest
-	34, // 53: store.StoreService.UpdateUploadStatus:input_type -> store.UpdateUploadStatusRequest
-	36, // 54: store.StoreService.UpdateSnapEntryWithMetadata:input_type -> store.UpdateSnapEntryWithMetadataRequest
-	1,  // 55: store.StoreService.RegisterSnapName:output_type -> store.RegisterSnapNameResponse
-	9,  // 56: store.StoreService.GetRevisions:output_type -> store.GetRevisionsResponse
-	5,  // 57: store.StoreService.GetEntries:output_type -> store.GetEntriesResponse
-	5,  // 58: store.StoreService.GetEntriesByAccountId:output_type -> store.GetEntriesResponse
-	5,  // 59: store.StoreService.GetEntriesByQuery:output_type -> store.GetEntriesResponse
-	15, // 60: store.StoreService.GetRevisionsByEntryIds:output_type -> store.GetRevisionsByEntryIdResponses
-	7,  // 61: store.StoreService.GetLatestRevisionByTrackAndChannel:output_type -> store.GetRevisionResponse
-	20, // 62: store.StoreService.SnapDownload:output_type -> store.SnapDownloadResponse
-	25, // 63: store.StoreService.UnscannedUpload:output_type -> store.UnscannedUploadCompleteResponse
-	27, // 64: store.StoreService.AddUpload:output_type -> store.AddUploadResponse
-	29, // 65: store.StoreService.GetUploadStatus:output_type -> store.GetUploadStatusResponse
-	31, // 66: store.StoreService.AddRevision:output_type -> store.AddRevisionResponse
-	33, // 67: store.StoreService.GetObjectCustomMetadata:output_type -> store.GetObjectCustomMetadataResponse
-	35, // 68: store.StoreService.UpdateUploadStatus:output_type -> store.UpdateUploadStatusResponse
-	37, // 69: store.StoreService.UpdateSnapEntryWithMetadata:output_type -> store.UpdateEntryResponse
-	55, // [55:70] is the sub-list for method output_type
-	40, // [40:55] is the sub-list for method input_type
+	2,  // 43: store.StoreService.GetEntryById:input_type -> store.GetEntryRequest
+	10, // 44: store.StoreService.GetEntriesByAccountId:input_type -> store.GetEntriesByAccountIdRequest
+	11, // 45: store.StoreService.GetEntriesByQuery:input_type -> store.GetEntriesByQueryRequest
+	13, // 46: store.StoreService.GetRevisionsByEntryIds:input_type -> store.GetRevisionsByEntryIdRequests
+	16, // 47: store.StoreService.GetLatestRevisionByTrackAndChannel:input_type -> store.GetLatestRevisionRequest
+	18, // 48: store.StoreService.SnapDownload:input_type -> store.SnapDownloadRequest
+	23, // 49: store.StoreService.UnscannedUpload:input_type -> store.UnscannedUploadRequest
+	26, // 50: store.StoreService.AddUpload:input_type -> store.AddUploadRequest
+	28, // 51: store.StoreService.GetUploadStatus:input_type -> store.GetUploadStatusRequest
+	30, // 52: store.StoreService.AddRevision:input_type -> store.AddRevisionRequest
+	32, // 53: store.StoreService.GetObjectCustomMetadata:input_type -> store.GetObjectCustomMetadataRequest
+	34, // 54: store.StoreService.UpdateUploadStatus:input_type -> store.UpdateUploadStatusRequest
+	36, // 55: store.StoreService.UpdateSnapEntryWithMetadata:input_type -> store.UpdateSnapEntryWithMetadataRequest
+	1,  // 56: store.StoreService.RegisterSnapName:output_type -> store.RegisterSnapNameResponse
+	9,  // 57: store.StoreService.GetRevisions:output_type -> store.GetRevisionsResponse
+	5,  // 58: store.StoreService.GetEntries:output_type -> store.GetEntriesResponse
+	3,  // 59: store.StoreService.GetEntryById:output_type -> store.GetEntryResponse
+	5,  // 60: store.StoreService.GetEntriesByAccountId:output_type -> store.GetEntriesResponse
+	5,  // 61: store.StoreService.GetEntriesByQuery:output_type -> store.GetEntriesResponse
+	15, // 62: store.StoreService.GetRevisionsByEntryIds:output_type -> store.GetRevisionsByEntryIdResponses
+	7,  // 63: store.StoreService.GetLatestRevisionByTrackAndChannel:output_type -> store.GetRevisionResponse
+	20, // 64: store.StoreService.SnapDownload:output_type -> store.SnapDownloadResponse
+	25, // 65: store.StoreService.UnscannedUpload:output_type -> store.UnscannedUploadCompleteResponse
+	27, // 66: store.StoreService.AddUpload:output_type -> store.AddUploadResponse
+	29, // 67: store.StoreService.GetUploadStatus:output_type -> store.GetUploadStatusResponse
+	31, // 68: store.StoreService.AddRevision:output_type -> store.AddRevisionResponse
+	33, // 69: store.StoreService.GetObjectCustomMetadata:output_type -> store.GetObjectCustomMetadataResponse
+	35, // 70: store.StoreService.UpdateUploadStatus:output_type -> store.UpdateUploadStatusResponse
+	37, // 71: store.StoreService.UpdateSnapEntryWithMetadata:output_type -> store.UpdateEntryResponse
+	56, // [56:72] is the sub-list for method output_type
+	40, // [40:56] is the sub-list for method input_type
 	40, // [40:40] is the sub-list for extension type_name
 	40, // [40:40] is the sub-list for extension extendee
 	0,  // [0:40] is the sub-list for field type_name

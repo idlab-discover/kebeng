@@ -64,6 +64,15 @@ func (m *MockStoreClient) GetEntries(entries *proto.GetEntriesRequest) *proto.Ge
 	return nil
 }
 
+// GetEntrById mocks the GetEntryById function.
+func (m *MockStoreClient) GetEntryById(req *proto.GetEntryRequest) *proto.GetEntryResponse {
+	args := m.Called(req)
+	if resp, ok := args.Get(0).(*proto.GetEntryResponse); ok {
+		return resp
+	}
+	return nil
+}
+
 // GetRevisions mocks the GetRevisions function.
 func (m *MockStoreClient) GetRevisions(revisions *proto.GetRevisionsRequest) *proto.GetRevisionsResponse {
 	args := m.Called(revisions)

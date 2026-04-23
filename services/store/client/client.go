@@ -30,6 +30,7 @@ type StoreClientInterface interface {
 	Close()
 	RegisterSnapName(snapName string, snapType string, confinement string, base string, isPrivate bool, status string, price float64, storeName string, iconUrl string, dryRun bool, accountId uuid.UUID) *proto.RegisterSnapNameResponse
 	GetEntries(entries *proto.GetEntriesRequest) *proto.GetEntriesResponse
+	GetEntryById(req *proto.GetEntryRequest) *proto.GetEntryResponse
 	GetRevisions(revisions *proto.GetRevisionsRequest) *proto.GetRevisionsResponse
 	GetEntriesByAccountID(accountID string) *proto.GetEntriesResponse
 	GetEntriesByQuery(query string, architectureList []string, channelList []string, confinementsList []string, fieldsList []string, private bool, publisherId string) *proto.GetEntriesResponse
@@ -135,6 +136,19 @@ func (c *StoreClient) GetEntries(entries *proto.GetEntriesRequest) *proto.GetEnt
 				Code:    cerror.InternalServerError,
 				Message: err.Error()},
 			},
+		}
+	}
+	return resp
+}
+
+func (c *StoreClient) GetEntryById(req *proto.GetEntryRequest) *proto.GetEntryResponse {
+	resp, err := c.client.GetEntryById(context.Background(), req)
+	if err != nil {
+		resp = &proto.GetEntryResponse{
+			Errors: []*cerrorpb.Error{{
+				Code: cerror.InternalServerError,
+				Message: err.Error(),
+			}},
 		}
 	}
 	return resp
