@@ -46,6 +46,16 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 		return
 	}
 
+	// TODO: make refresh cohort aware!
+	// We need to:
+	// - Add a cohort database
+	// - Add logic to the Store service to save a new cohort and generate its key
+	// - Add something like "getLatestSnapRevisionByCohort" that is based on exiting getLatest... funcs
+	// - Use the cohort keys in functions where it makes sense
+	// Within the database, a cohort should keep track of:
+	// - when it was created (we need to be able to calculate 90-day intervals)
+	// - what snaps are part of the cohort (perhaps reduncant? Snapd only passes cohort-key for snaps where it is relevant, however `snap info` may still rely on this info also being stored within the store)
+
 	var resp model.RefreshSnapResults
 
 	for _, action := range req.Actions {
@@ -195,6 +205,10 @@ func (h *Handler) refreshRefresh(action *model.Action, el *cerror.ErrorList) (*m
 			ID:       publisher.Id,
 		},
 		Download: &model.Download{
+			// FIX: Add deltas! helper function DeltaBetween(snap A, snap B)
+			// Returns delta, or error if delta failed / not viable
+			// Note that an error in delta calculation must not mean that the update is not possible,
+			// The client can still download the entire snap.
 			URL:      &downloadUrl,
 			Sha3_384: &hexSum,
 			Size:     &latestRevision.Size,
