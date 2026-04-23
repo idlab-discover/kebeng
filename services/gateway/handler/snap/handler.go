@@ -74,8 +74,18 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 				// WARN: haven't yet been able to catch a network packet where the AssertionStreamURLs field not empty.
 				// Not immediately able to deduct its function from the snapd source code either.
 				AssertionStreamURLs: make([]string, 0),
-				Result: "fetch-assertions",
+				Result:              "fetch-assertions",
 			})
+
+		case "refresh":
+			res, cerr := h.refreshRefresh(action, el)
+			if cerr != nil {
+				c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+				return
+			}
+
+			res.Result = "refresh"
+			resp.Results = append(resp.Results, res)
 
 		default:
 			el.Add(cerror.NotImplemented, "Action not implemented")
@@ -133,6 +143,69 @@ func (h *Handler) refreshInstallOrDownload(action *model.Action, el *cerror.Erro
 		Type:        snapEntry.Type,
 		Base:        snapEntry.Base,
 	}
+	return &res, nil
+}
+
+func (h *Handler) refreshRefresh(action *model.Action, el *cerror.ErrorList) (*model.RefreshSnapResult, *cerror.CustomError) {
+	// The workflow differs slightly from refreshInstallOrDownload: in this endpoint we only recieve the snap-id, not name.
+	// Depending on the Snap, we may also need to add deltas
+
+	var res model.RefreshSnapResult
+
+	entry := h.StoreClient.GetEntryById(&storepb.GetEntryRequest{
+		Id: &action.SnapID,
+	})
+
+	if len(entry.Errors) > 0 {
+		el.ExtendProtoError(entry.Errors)
+		res.Result = "error"
+		return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("store error: %v", entry.Errors))
+	}
+
+	publisher := h.AccountClient.GetAccountByID(entry.PublisherId)
+	if len(publisher.Errors) > 0 {
+		el.ExtendProtoError(publisher.Errors)
+		res.Result = "error"
+		return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("account error: %v", publisher.Errors))
+	}
+
+	_, latestRevision := h.getLatestRevisionByEntryName(el, entry.SnapName)
+	if el.HasError() {
+		return nil, cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("latest revision not found by name: %s", action.Name))
+	}
+
+	downloadUrl := fmt.Sprintf("%s/download/%s", h.Config.StoreUrl, latestRevision.Id)
+
+	raw, err := base64.RawURLEncoding.DecodeString(latestRevision.Sha3_384Encoded)
+	if err != nil {
+		el.Add(cerror.InternalServerError, fmt.Sprintf("error decoding sha3_384: %s", err.Error()))
+	}
+
+	hexSum := hex.EncodeToString(raw)
+
+	res.InstanceKey = action.InstanceKey
+	res.SnapId = entry.Id
+	res.Name = entry.SnapName
+	res.Snap = &model.RefreshSnap{
+		Architectures: latestRevision.Architectures,
+		SnapId:        entry.Id,
+		Name:          entry.SnapName,
+		Publisher: &model.Publisher{
+			Username: publisher.Username,
+			ID:       publisher.Id,
+		},
+		Download: &model.Download{
+			URL:      &downloadUrl,
+			Sha3_384: &hexSum,
+			Size:     &latestRevision.Size,
+		},
+		Version:     latestRevision.Version,
+		Revision:    latestRevision.SequenceNumber,
+		Confinement: entry.Confinement,
+		Type:        entry.Type,
+		Base:        entry.Base,
+	}
+
 	return &res, nil
 }
 
@@ -666,7 +739,16 @@ func (h *Handler) getLatestRevisionByEntryName(el *cerror.ErrorList, entryName s
 		if isChannel(channelAndTrack[0]) {
 			channel = channelAndTrack[0]
 		} else {
-			track = channelAndTrack[0]
+			splitChannelAndTrack := strings.Split(channelAndTrack[0], "/")
+			if len(splitChannelAndTrack) == 1 {
+				track = splitChannelAndTrack[0]
+			} else if len(splitChannelAndTrack) == 2 || len(splitChannelAndTrack) == 3{
+				channel = splitChannelAndTrack[0]
+				track = splitChannelAndTrack[1]
+			} else {
+				el.Add(cerror.InternalServerError, fmt.Sprintf("could not deduce track, risk and branch from given channel %s", channelAndTrack[0]))
+			return nil, nil
+			}
 		}
 	default: // len >= 2; we only use the first two.
 		a, b := channelAndTrack[0], channelAndTrack[1]
