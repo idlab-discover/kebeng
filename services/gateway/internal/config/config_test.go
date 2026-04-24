@@ -161,7 +161,7 @@ store_url: ""
 	assert.Contains(t, err.Error(), "store_url is required")
 }
 
-func TestLoadConfig_Success(t *testing.T) {
+func TestLoadConfig_MissingCohortSigningKey(t *testing.T) {
 	content := `
 debug_mode: false
 account_service_host: "localhost"
@@ -186,6 +186,37 @@ store_name: "example-store"
 	viper.Reset()
 
 	cfg, err := LoadConfig()
+	assert.Nil(t, cfg)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "cohort_signing_key is required")
+}
+
+func TestLoadConfig_Success(t *testing.T) {
+	content := `
+debug_mode: false
+account_service_host: "localhost"
+account_service_port: 8080
+store_service_host: "localhost"
+store_service_port: 8081
+assertion_service_host: "localhost"
+assertion_service_port: 8082
+macaroon:
+  root_key: "some-root-key"
+  root_id: "some-root-id"
+  root_location: "some-root-location"
+  discharge_key: "some-discharge-key"
+  third_party_caveat_id: "some-third-party-caveat-id"
+  third_party_location: "some-third-party-location"
+store_url: "https://store.example.com"
+store_name: "example-store"
+cohort_signing_key: "example_key"
+`
+	tmpFile := createTempConfigFile(t, content)
+	os.Setenv("CONFIG_FILE_PATH", tmpFile)
+	defer os.Unsetenv("CONFIG_FILE_PATH")
+	viper.Reset()
+
+	cfg, err := LoadConfig()
 	assert.NoError(t, err)
 	assert.NotNil(t, cfg)
 	// Verify a few fields.
@@ -198,4 +229,5 @@ store_name: "example-store"
 	assert.Equal(t, "some-discharge-key", cfg.MacaroonConfig.DischargeKey)
 	assert.Equal(t, "https://store.example.com", cfg.StoreUrl)
 	assert.Equal(t, "example-store", cfg.StoreName)
+	assert.Equal(t, "example_key", cfg.CohortSigningKey)
 }

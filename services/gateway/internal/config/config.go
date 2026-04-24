@@ -34,6 +34,8 @@ type Config struct {
 	StoreUrl  string `mapstructure:"store_url" yaml:"store_url"`
 	StoreName string `mapstructure:"store_name" yaml:"store_name"`
 
+	CohortSigningKey string `mapstructure:"cohort_signing_key" yaml:"cohort_signing_key"`
+
 	Monitoring bool `mapstructure:"monitoring" yaml:"monitoring"`
 
 	TestMode           bool   `mapstructure:"test_mode" yaml:"test_mode"`
@@ -135,6 +137,10 @@ func (c *Config) checkConfig() error {
 
 	if c.StoreName == "" {
 		errs = append(errs, "store_name is required")
+	}
+
+	if c.CohortSigningKey == "" {
+		errs = append(errs, "cohort siging key is required")
 	}
 
 	// Test mode settings
