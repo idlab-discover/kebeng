@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -222,4 +223,36 @@ type SnapPushRequest struct {
 
 type UnscannedUploadRequest struct {
 	Data string `json:"data"`
+}
+
+type CreateCohortsRequest struct {
+	SnapNames []string `json:"snaps"`
+}
+
+type CreateCohortsResult struct {
+	CohortKeys map[string]string `json:"cohort-keys"`
+}
+
+// CohortKey: A CohortKey consists of the following fields (in order):
+// Version SnapID CreatedAt Signature
+// A CohortKey is sent base64 encoded to the client. It is not stored server-side; all information
+// to understand and validate a CohortKey is contained within the key.
+// Example:
+//   Key Version     Snap ID            CreatedAt(Unix Timestamp)                 Signature
+//      v               v                       v                                     v
+//      1 iCEzvDZMvRrIWd5XLxgff6Tc6Zx20aeO 1777020308 09aef5c41697e06c50b715288cf9efa67b45df3a5494a4a8ca1452ad7fe03878
+//
+// What is sent to client:
+//                                                  Base64 encoding of the above string
+//                                                                   v
+// MSBpQ0V6dkRaTXZScklXZDVYTHhnZmY2VGM2WngyMGFlTyAxNzc3MDIwMzA4IDA5YWVmNWM0MTY5N2UwNmM1MGI3MTUyODhjZjllZmE2N2I0NWRmM2E1NDk0YTRhOGNhMTQ1MmFkN2ZlMDM4Nzg=
+type CohortKey struct {
+	Version   uint8
+	SnapName    string
+	CreatedAt time.Time
+	Signature string
+}
+
+func (ck *CohortKey) ToString() string {
+	return fmt.Sprintf("%d %s %d %s", ck.Version, ck.SnapName, ck.CreatedAt.Unix(), ck.Signature)
 }
