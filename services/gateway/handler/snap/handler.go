@@ -53,18 +53,6 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 		return
 	}
 
-	// TODO: make refresh cohort aware!
-	// We need to:
-	// - Add a cohort database
-	// - Add logic to the Store service to save a new cohort and generate its key
-	// - Add something like "getLatestSnapRevisionByCohort" that is based on exiting getLatest... funcs
-	// - Use the cohort keys in functions where it makes sense
-	// Within the database, a cohort should keep track of:
-	// - when it was created (we need to be able to calculate 90-day intervals)
-	// - what snaps are part of the cohort (perhaps reduncant? Snapd only passes cohort-key for snaps where it is relevant, however `snap info` may still rely on this info also being stored within the store)
-	// Scrap the above, when snaps are removed from a cohort, the store is not informed of this: it appears the store is unaware of what Snaps are part of a cohort and a cohort is probably not stored within the store at all
-	// The cohort key itself is encoded useful data by which relevant actions are deducted
-
 	var resp model.RefreshSnapResults
 
 	for _, action := range req.Actions {
