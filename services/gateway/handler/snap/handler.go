@@ -7,7 +7,9 @@ import (
 	"io"
 	"net/http"
 	"slices"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/idlab-discover/kebeng/services/gateway/internal/model"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/util"
@@ -666,6 +668,28 @@ func (h *Handler) GetUploadStatus(c *gin.Context) {
 	})
 }
 
+func (h *Handler) CreateCohorts(c *gin.Context) {
+	el := cerror.NewErrorList()
+
+	var req model.CreateCohortsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		el.Add(cerror.BadRequest, cerror.FormatBindError(err))
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+
+	logrus.Printf("Cohort generation requested for snaps: \n")
+	for _, snap := range req.SnapNames {
+		logrus.Println(snap)
+	}
+
+	// TODO: Check if each of the Snaps requested for the cohorts exists. If not -> return general 404
+	// If they do exist, generate a valid and signed cohort key for each and return it in the reply as a base64 encoded string
+
+	c.Status(http.StatusNotImplemented)	
+	return
+}
+
 // ########################## HELPER FUNCTIONS ##########################
 
 // download helper function that just downloads a snap nothing else
@@ -794,4 +818,32 @@ func isChannel(s string) bool {
 	// List of allowed channels.
 	allowedChannels := []string{"stable", "candidate", "beta", "edge"}
 	return slices.Contains(allowedChannels, s)
+}
+
+func cohortKeyFromString(s string) (*model.CohortKey, error) {
+	var res model.CohortKey
+
+	// NOTE: If future version of cohort keys are introduced
+	parts := strings.Split(s, " ")
+	if len(parts) != 4 {
+		return nil, fmt.Errorf("The presented string \"%s\" is not a valid cohort key representation", s)
+	}
+
+	if version, err := strconv.ParseUint(parts[0], 10, 8); err != nil {
+		return nil, fmt.Errorf("Could not parse \"%s\" into valid cohort version", parts[0])
+	} else {
+		res.Version = uint8(version)
+	}
+
+	res.SnapName = parts[1]
+
+	if unixTime, err := strconv.ParseInt(parts[2], 10, 64); err != nil {
+		return nil, fmt.Errorf("Could not represent \"%s\" as a valid unix timestamp.", parts[2])
+	} else {
+		res.CreatedAt = time.Unix(unixTime, 0)
+	}
+
+	res.Signature = parts[3]
+
+	return &res, nil
 }
