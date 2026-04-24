@@ -1,6 +1,8 @@
 package snap
 
 import (
+	"crypto"
+	"crypto/hmac"
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
@@ -11,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/idlab-discover/kebeng/services/gateway/internal/config"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/model"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/util"
 
@@ -20,6 +23,8 @@ import (
 	storepb "github.com/idlab-discover/kebeng/services/store/proto"
 	"github.com/sirupsen/logrus"
 )
+
+var cfg config.Config
 
 type Handler struct {
 	*util.BaseHandler
@@ -672,21 +677,44 @@ func (h *Handler) CreateCohorts(c *gin.Context) {
 	el := cerror.NewErrorList()
 
 	var req model.CreateCohortsRequest
+	var res model.CreateCohortsResult
+	res.CohortKeys = make(map[string]string)
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		el.Add(cerror.BadRequest, cerror.FormatBindError(err))
 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
 		return
 	}
 
-	logrus.Printf("Cohort generation requested for snaps: \n")
-	for _, snap := range req.SnapNames {
-		logrus.Println(snap)
+	var getEntryRequests storepb.GetEntriesRequest
+	for _, snapname := range req.SnapNames {
+		getEntryRequests.Entries = append(getEntryRequests.Entries, &storepb.GetEntryRequest{
+			Name: &snapname,
+		})
 	}
 
-	// TODO: Check if each of the Snaps requested for the cohorts exists. If not -> return general 404
-	// If they do exist, generate a valid and signed cohort key for each and return it in the reply as a base64 encoded string
+	getEntriesResponse := h.StoreClient.GetEntries(&getEntryRequests)
+	if len(getEntriesResponse.Errors) > 0 {
+		el.ExtendProtoError(getEntriesResponse.Errors)
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
 
-	c.Status(http.StatusNotImplemented)	
+	for _, entry := range getEntriesResponse.Entries {
+		ckey := model.CohortKey{
+			Version:   1,
+			SnapID:    entry.Id,
+			CreatedAt: time.Now(),
+		}
+		signedCkey, err := signCohortKey(ckey)
+		if err != nil {
+			el.Add(cerror.InternalServerError, fmt.Sprintf("Failure generating cohort key signature"))
+			c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		}
+		res.CohortKeys[entry.SnapName] = base64.StdEncoding.EncodeToString([]byte(cohortKeyToString(signedCkey)))
+	}
+
+	c.JSON(http.StatusOK, res)
 	return
 }
 
@@ -782,12 +810,12 @@ func (h *Handler) getLatestRevisionByEntryName(el *cerror.ErrorList, entryName s
 			splitChannelAndTrack := strings.Split(channelAndTrack[0], "/")
 			if len(splitChannelAndTrack) == 1 {
 				track = splitChannelAndTrack[0]
-			} else if len(splitChannelAndTrack) == 2 || len(splitChannelAndTrack) == 3{
+			} else if len(splitChannelAndTrack) == 2 || len(splitChannelAndTrack) == 3 {
 				channel = splitChannelAndTrack[0]
 				track = splitChannelAndTrack[1]
 			} else {
 				el.Add(cerror.InternalServerError, fmt.Sprintf("could not deduce track, risk and branch from given channel %s", channelAndTrack[0]))
-			return nil, nil
+				return nil, nil
 			}
 		}
 	default: // len >= 2; we only use the first two.
@@ -820,6 +848,10 @@ func isChannel(s string) bool {
 	return slices.Contains(allowedChannels, s)
 }
 
+func cohortKeyToString(ck *model.CohortKey) string {
+	return fmt.Sprintf("%d %s %d %s", ck.Version, ck.SnapID, ck.CreatedAt.Unix(), ck.Signature)
+}
+
 func cohortKeyFromString(s string) (*model.CohortKey, error) {
 	var res model.CohortKey
 
@@ -835,7 +867,7 @@ func cohortKeyFromString(s string) (*model.CohortKey, error) {
 		res.Version = uint8(version)
 	}
 
-	res.SnapName = parts[1]
+	res.SnapID = parts[1]
 
 	if unixTime, err := strconv.ParseInt(parts[2], 10, 64); err != nil {
 		return nil, fmt.Errorf("Could not represent \"%s\" as a valid unix timestamp.", parts[2])
@@ -846,4 +878,42 @@ func cohortKeyFromString(s string) (*model.CohortKey, error) {
 	res.Signature = parts[3]
 
 	return &res, nil
+}
+
+func signCohortKey(ckey model.CohortKey) (*model.CohortKey, error) {
+	mac := hmac.New(crypto.SHA1.New, []byte(cfg.CohortSigningKey))
+	versionByteArray := make([]byte, 0)
+	versionByteArray = append(versionByteArray, ckey.Version)
+	_, err := mac.Write(versionByteArray)
+	if err != nil {
+		return nil, err
+	}
+	_, err = mac.Write([]byte(ckey.SnapID))
+	if err != nil {
+		return nil, err
+	}
+
+	signature := mac.Sum(nil)
+	ckey.Signature = hex.EncodeToString(signature)
+	return &ckey, nil
+}
+
+func verifyCohortKey(ckey model.CohortKey) (bool, error) {
+	if ckey.Signature == "" {
+		return false, fmt.Errorf("an unsigned cohort key cannot be verified")
+	}
+	signedCkey, err := signCohortKey(ckey)
+	if err != nil {
+		return false, err
+	}
+	return ckey.Signature == signedCkey.Signature, nil
+}
+
+func init() {
+	conf, err := config.LoadConfig()
+	if err != nil {
+		panic("Config loading failed") // TODO: better way to handle than a panic?
+	}
+	cfg = *conf
+
 }
