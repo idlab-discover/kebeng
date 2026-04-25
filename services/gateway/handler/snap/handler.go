@@ -699,7 +699,7 @@ func (h *Handler) CreateCohorts(c *gin.Context) {
 			el.Add(cerror.InternalServerError, fmt.Sprintf("Failure generating cohort key signature"))
 			c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
 		}
-		res.CohortKeys[entry.SnapName] = base64.StdEncoding.EncodeToString([]byte(cohortKeyToString(signedCkey)))
+		res.CohortKeys[entry.SnapName] = cohortKeyToString(signedCkey)
 	}
 
 	c.JSON(http.StatusOK, res)
@@ -837,10 +837,17 @@ func isChannel(s string) bool {
 }
 
 func cohortKeyToString(ck *model.CohortKey) string {
-	return fmt.Sprintf("%d %s %d %s", ck.Version, ck.SnapID, ck.CreatedAt.Unix(), ck.Signature)
+	cKey := fmt.Sprintf("%d %s %d %s", ck.Version, ck.SnapID, ck.CreatedAt.Unix(), ck.Signature)
+	return base64.StdEncoding.EncodeToString([]byte(cKey))
 }
 
-func cohortKeyFromString(s string) (*model.CohortKey, error) {
+func cohortKeyFromString(e string) (*model.CohortKey, error) {
+
+	b, err := base64.StdEncoding.DecodeString(e)
+	s := string(b)
+	if err != nil {
+		return nil, fmt.Errorf("Could not base64 decode cohort key")
+	}
 	var res model.CohortKey
 
 	// NOTE: If future version of cohort keys are introduced
