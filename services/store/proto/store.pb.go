@@ -596,6 +596,58 @@ func (x *GetRevisionRequest) GetSequence() uint32 {
 	return 0
 }
 
+type GetLatestRevisionBeforeDateByIdRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Date          *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=date,proto3" json:"date,omitempty"`
+	Id            string                 `protobuf:"bytes,2,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetLatestRevisionBeforeDateByIdRequest) Reset() {
+	*x = GetLatestRevisionBeforeDateByIdRequest{}
+	mi := &file_services_store_proto_store_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetLatestRevisionBeforeDateByIdRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetLatestRevisionBeforeDateByIdRequest) ProtoMessage() {}
+
+func (x *GetLatestRevisionBeforeDateByIdRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_services_store_proto_store_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetLatestRevisionBeforeDateByIdRequest.ProtoReflect.Descriptor instead.
+func (*GetLatestRevisionBeforeDateByIdRequest) Descriptor() ([]byte, []int) {
+	return file_services_store_proto_store_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *GetLatestRevisionBeforeDateByIdRequest) GetDate() *timestamppb.Timestamp {
+	if x != nil {
+		return x.Date
+	}
+	return nil
+}
+
+func (x *GetLatestRevisionBeforeDateByIdRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
 type GetRevisionResponse struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
 	Id                     string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -621,7 +673,7 @@ type GetRevisionResponse struct {
 
 func (x *GetRevisionResponse) Reset() {
 	*x = GetRevisionResponse{}
-	mi := &file_services_store_proto_store_proto_msgTypes[7]
+	mi := &file_services_store_proto_store_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -633,7 +685,7 @@ func (x *GetRevisionResponse) String() string {
 func (*GetRevisionResponse) ProtoMessage() {}
 
 func (x *GetRevisionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_services_store_proto_store_proto_msgTypes[7]
+	mi := &file_services_store_proto_store_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -646,7 +698,7 @@ func (x *GetRevisionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRevisionResponse.ProtoReflect.Descriptor instead.
 func (*GetRevisionResponse) Descriptor() ([]byte, []int) {
-	return file_services_store_proto_store_proto_rawDescGZIP(), []int{7}
+	return file_services_store_proto_store_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *GetRevisionResponse) GetId() string {
@@ -777,7 +829,7 @@ type GetRevisionsRequest struct {
 
 func (x *GetRevisionsRequest) Reset() {
 	*x = GetRevisionsRequest{}
-	mi := &file_services_store_proto_store_proto_msgTypes[8]
+	mi := &file_services_store_proto_store_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -789,7 +841,7 @@ func (x *GetRevisionsRequest) String() string {
 func (*GetRevisionsRequest) ProtoMessage() {}
 
 func (x *GetRevisionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_store_proto_store_proto_msgTypes[8]
+	mi := &file_services_store_proto_store_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -802,7 +854,7 @@ func (x *GetRevisionsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRevisionsRequest.ProtoReflect.Descriptor instead.
 func (*GetRevisionsRequest) Descriptor() ([]byte, []int) {
-	return file_services_store_proto_store_proto_rawDescGZIP(), []int{8}
+	return file_services_store_proto_store_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *GetRevisionsRequest) GetRevisions() []*GetRevisionRequest {
@@ -822,7 +874,7 @@ type GetRevisionsResponse struct {
 
 func (x *GetRevisionsResponse) Reset() {
 	*x = GetRevisionsResponse{}
-	mi := &file_services_store_proto_store_proto_msgTypes[9]
+	mi := &file_services_store_proto_store_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -834,7 +886,7 @@ func (x *GetRevisionsResponse) String() string {
 func (*GetRevisionsResponse) ProtoMessage() {}
 
 func (x *GetRevisionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_services_store_proto_store_proto_msgTypes[9]
+	mi := &file_services_store_proto_store_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -847,7 +899,7 @@ func (x *GetRevisionsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRevisionsResponse.ProtoReflect.Descriptor instead.
 func (*GetRevisionsResponse) Descriptor() ([]byte, []int) {
-	return file_services_store_proto_store_proto_rawDescGZIP(), []int{9}
+	return file_services_store_proto_store_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *GetRevisionsResponse) GetRevisions() []*GetRevisionResponse {
@@ -873,7 +925,7 @@ type GetEntriesByAccountIdRequest struct {
 
 func (x *GetEntriesByAccountIdRequest) Reset() {
 	*x = GetEntriesByAccountIdRequest{}
-	mi := &file_services_store_proto_store_proto_msgTypes[10]
+	mi := &file_services_store_proto_store_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -885,7 +937,7 @@ func (x *GetEntriesByAccountIdRequest) String() string {
 func (*GetEntriesByAccountIdRequest) ProtoMessage() {}
 
 func (x *GetEntriesByAccountIdRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_store_proto_store_proto_msgTypes[10]
+	mi := &file_services_store_proto_store_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -898,7 +950,7 @@ func (x *GetEntriesByAccountIdRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetEntriesByAccountIdRequest.ProtoReflect.Descriptor instead.
 func (*GetEntriesByAccountIdRequest) Descriptor() ([]byte, []int) {
-	return file_services_store_proto_store_proto_rawDescGZIP(), []int{10}
+	return file_services_store_proto_store_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *GetEntriesByAccountIdRequest) GetAccountId() string {
@@ -923,7 +975,7 @@ type GetEntriesByQueryRequest struct {
 
 func (x *GetEntriesByQueryRequest) Reset() {
 	*x = GetEntriesByQueryRequest{}
-	mi := &file_services_store_proto_store_proto_msgTypes[11]
+	mi := &file_services_store_proto_store_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -935,7 +987,7 @@ func (x *GetEntriesByQueryRequest) String() string {
 func (*GetEntriesByQueryRequest) ProtoMessage() {}
 
 func (x *GetEntriesByQueryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_store_proto_store_proto_msgTypes[11]
+	mi := &file_services_store_proto_store_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -948,7 +1000,7 @@ func (x *GetEntriesByQueryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetEntriesByQueryRequest.ProtoReflect.Descriptor instead.
 func (*GetEntriesByQueryRequest) Descriptor() ([]byte, []int) {
-	return file_services_store_proto_store_proto_rawDescGZIP(), []int{11}
+	return file_services_store_proto_store_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *GetEntriesByQueryRequest) GetQuery() string {
@@ -1009,7 +1061,7 @@ type GetRevisionsByEntryIdRequest struct {
 
 func (x *GetRevisionsByEntryIdRequest) Reset() {
 	*x = GetRevisionsByEntryIdRequest{}
-	mi := &file_services_store_proto_store_proto_msgTypes[12]
+	mi := &file_services_store_proto_store_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1021,7 +1073,7 @@ func (x *GetRevisionsByEntryIdRequest) String() string {
 func (*GetRevisionsByEntryIdRequest) ProtoMessage() {}
 
 func (x *GetRevisionsByEntryIdRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_store_proto_store_proto_msgTypes[12]
+	mi := &file_services_store_proto_store_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1034,7 +1086,7 @@ func (x *GetRevisionsByEntryIdRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRevisionsByEntryIdRequest.ProtoReflect.Descriptor instead.
 func (*GetRevisionsByEntryIdRequest) Descriptor() ([]byte, []int) {
-	return file_services_store_proto_store_proto_rawDescGZIP(), []int{12}
+	return file_services_store_proto_store_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *GetRevisionsByEntryIdRequest) GetEntryId() string {
@@ -1053,7 +1105,7 @@ type GetRevisionsByEntryIdRequests struct {
 
 func (x *GetRevisionsByEntryIdRequests) Reset() {
 	*x = GetRevisionsByEntryIdRequests{}
-	mi := &file_services_store_proto_store_proto_msgTypes[13]
+	mi := &file_services_store_proto_store_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1065,7 +1117,7 @@ func (x *GetRevisionsByEntryIdRequests) String() string {
 func (*GetRevisionsByEntryIdRequests) ProtoMessage() {}
 
 func (x *GetRevisionsByEntryIdRequests) ProtoReflect() protoreflect.Message {
-	mi := &file_services_store_proto_store_proto_msgTypes[13]
+	mi := &file_services_store_proto_store_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1078,7 +1130,7 @@ func (x *GetRevisionsByEntryIdRequests) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRevisionsByEntryIdRequests.ProtoReflect.Descriptor instead.
 func (*GetRevisionsByEntryIdRequests) Descriptor() ([]byte, []int) {
-	return file_services_store_proto_store_proto_rawDescGZIP(), []int{13}
+	return file_services_store_proto_store_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *GetRevisionsByEntryIdRequests) GetRequests() []*GetRevisionsByEntryIdRequest {
@@ -1099,7 +1151,7 @@ type GetRevisionsByEntryIdResponse struct {
 
 func (x *GetRevisionsByEntryIdResponse) Reset() {
 	*x = GetRevisionsByEntryIdResponse{}
-	mi := &file_services_store_proto_store_proto_msgTypes[14]
+	mi := &file_services_store_proto_store_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1111,7 +1163,7 @@ func (x *GetRevisionsByEntryIdResponse) String() string {
 func (*GetRevisionsByEntryIdResponse) ProtoMessage() {}
 
 func (x *GetRevisionsByEntryIdResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_services_store_proto_store_proto_msgTypes[14]
+	mi := &file_services_store_proto_store_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1124,7 +1176,7 @@ func (x *GetRevisionsByEntryIdResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRevisionsByEntryIdResponse.ProtoReflect.Descriptor instead.
 func (*GetRevisionsByEntryIdResponse) Descriptor() ([]byte, []int) {
-	return file_services_store_proto_store_proto_rawDescGZIP(), []int{14}
+	return file_services_store_proto_store_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *GetRevisionsByEntryIdResponse) GetEntryId() string {
@@ -1158,7 +1210,7 @@ type GetRevisionsByEntryIdResponses struct {
 
 func (x *GetRevisionsByEntryIdResponses) Reset() {
 	*x = GetRevisionsByEntryIdResponses{}
-	mi := &file_services_store_proto_store_proto_msgTypes[15]
+	mi := &file_services_store_proto_store_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1170,7 +1222,7 @@ func (x *GetRevisionsByEntryIdResponses) String() string {
 func (*GetRevisionsByEntryIdResponses) ProtoMessage() {}
 
 func (x *GetRevisionsByEntryIdResponses) ProtoReflect() protoreflect.Message {
-	mi := &file_services_store_proto_store_proto_msgTypes[15]
+	mi := &file_services_store_proto_store_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1183,7 +1235,7 @@ func (x *GetRevisionsByEntryIdResponses) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRevisionsByEntryIdResponses.ProtoReflect.Descriptor instead.
 func (*GetRevisionsByEntryIdResponses) Descriptor() ([]byte, []int) {
-	return file_services_store_proto_store_proto_rawDescGZIP(), []int{15}
+	return file_services_store_proto_store_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *GetRevisionsByEntryIdResponses) GetResponses() []*GetRevisionsByEntryIdResponse {
@@ -1211,7 +1263,7 @@ type GetLatestRevisionRequest struct {
 
 func (x *GetLatestRevisionRequest) Reset() {
 	*x = GetLatestRevisionRequest{}
-	mi := &file_services_store_proto_store_proto_msgTypes[16]
+	mi := &file_services_store_proto_store_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1223,7 +1275,7 @@ func (x *GetLatestRevisionRequest) String() string {
 func (*GetLatestRevisionRequest) ProtoMessage() {}
 
 func (x *GetLatestRevisionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_store_proto_store_proto_msgTypes[16]
+	mi := &file_services_store_proto_store_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1236,7 +1288,7 @@ func (x *GetLatestRevisionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetLatestRevisionRequest.ProtoReflect.Descriptor instead.
 func (*GetLatestRevisionRequest) Descriptor() ([]byte, []int) {
-	return file_services_store_proto_store_proto_rawDescGZIP(), []int{16}
+	return file_services_store_proto_store_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *GetLatestRevisionRequest) GetSnapName() string {
@@ -1269,7 +1321,7 @@ type DataChunk struct {
 
 func (x *DataChunk) Reset() {
 	*x = DataChunk{}
-	mi := &file_services_store_proto_store_proto_msgTypes[17]
+	mi := &file_services_store_proto_store_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1281,7 +1333,7 @@ func (x *DataChunk) String() string {
 func (*DataChunk) ProtoMessage() {}
 
 func (x *DataChunk) ProtoReflect() protoreflect.Message {
-	mi := &file_services_store_proto_store_proto_msgTypes[17]
+	mi := &file_services_store_proto_store_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1294,7 +1346,7 @@ func (x *DataChunk) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DataChunk.ProtoReflect.Descriptor instead.
 func (*DataChunk) Descriptor() ([]byte, []int) {
-	return file_services_store_proto_store_proto_rawDescGZIP(), []int{17}
+	return file_services_store_proto_store_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *DataChunk) GetChunk() []byte {
@@ -1314,7 +1366,7 @@ type SnapDownloadRequest struct {
 
 func (x *SnapDownloadRequest) Reset() {
 	*x = SnapDownloadRequest{}
-	mi := &file_services_store_proto_store_proto_msgTypes[18]
+	mi := &file_services_store_proto_store_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1326,7 +1378,7 @@ func (x *SnapDownloadRequest) String() string {
 func (*SnapDownloadRequest) ProtoMessage() {}
 
 func (x *SnapDownloadRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_store_proto_store_proto_msgTypes[18]
+	mi := &file_services_store_proto_store_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1339,7 +1391,7 @@ func (x *SnapDownloadRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SnapDownloadRequest.ProtoReflect.Descriptor instead.
 func (*SnapDownloadRequest) Descriptor() ([]byte, []int) {
-	return file_services_store_proto_store_proto_rawDescGZIP(), []int{18}
+	return file_services_store_proto_store_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *SnapDownloadRequest) GetRevisionId() string {
@@ -1358,7 +1410,7 @@ type InitialDownloadResponse struct {
 
 func (x *InitialDownloadResponse) Reset() {
 	*x = InitialDownloadResponse{}
-	mi := &file_services_store_proto_store_proto_msgTypes[19]
+	mi := &file_services_store_proto_store_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1370,7 +1422,7 @@ func (x *InitialDownloadResponse) String() string {
 func (*InitialDownloadResponse) ProtoMessage() {}
 
 func (x *InitialDownloadResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_services_store_proto_store_proto_msgTypes[19]
+	mi := &file_services_store_proto_store_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1383,7 +1435,7 @@ func (x *InitialDownloadResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InitialDownloadResponse.ProtoReflect.Descriptor instead.
 func (*InitialDownloadResponse) Descriptor() ([]byte, []int) {
-	return file_services_store_proto_store_proto_rawDescGZIP(), []int{19}
+	return file_services_store_proto_store_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *InitialDownloadResponse) GetRevision() *GetRevisionResponse {
@@ -1407,7 +1459,7 @@ type SnapDownloadResponse struct {
 
 func (x *SnapDownloadResponse) Reset() {
 	*x = SnapDownloadResponse{}
-	mi := &file_services_store_proto_store_proto_msgTypes[20]
+	mi := &file_services_store_proto_store_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1419,7 +1471,7 @@ func (x *SnapDownloadResponse) String() string {
 func (*SnapDownloadResponse) ProtoMessage() {}
 
 func (x *SnapDownloadResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_services_store_proto_store_proto_msgTypes[20]
+	mi := &file_services_store_proto_store_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1432,7 +1484,7 @@ func (x *SnapDownloadResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SnapDownloadResponse.ProtoReflect.Descriptor instead.
 func (*SnapDownloadResponse) Descriptor() ([]byte, []int) {
-	return file_services_store_proto_store_proto_rawDescGZIP(), []int{20}
+	return file_services_store_proto_store_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *SnapDownloadResponse) GetPayload() isSnapDownloadResponse_Payload {
@@ -1494,7 +1546,7 @@ type SnapDownloadCompleteResponse struct {
 
 func (x *SnapDownloadCompleteResponse) Reset() {
 	*x = SnapDownloadCompleteResponse{}
-	mi := &file_services_store_proto_store_proto_msgTypes[21]
+	mi := &file_services_store_proto_store_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1506,7 +1558,7 @@ func (x *SnapDownloadCompleteResponse) String() string {
 func (*SnapDownloadCompleteResponse) ProtoMessage() {}
 
 func (x *SnapDownloadCompleteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_services_store_proto_store_proto_msgTypes[21]
+	mi := &file_services_store_proto_store_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1519,7 +1571,7 @@ func (x *SnapDownloadCompleteResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SnapDownloadCompleteResponse.ProtoReflect.Descriptor instead.
 func (*SnapDownloadCompleteResponse) Descriptor() ([]byte, []int) {
-	return file_services_store_proto_store_proto_rawDescGZIP(), []int{21}
+	return file_services_store_proto_store_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *SnapDownloadCompleteResponse) GetRevision() *GetRevisionResponse {
@@ -1556,7 +1608,7 @@ type SnapPushRequest struct {
 
 func (x *SnapPushRequest) Reset() {
 	*x = SnapPushRequest{}
-	mi := &file_services_store_proto_store_proto_msgTypes[22]
+	mi := &file_services_store_proto_store_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1568,7 +1620,7 @@ func (x *SnapPushRequest) String() string {
 func (*SnapPushRequest) ProtoMessage() {}
 
 func (x *SnapPushRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_store_proto_store_proto_msgTypes[22]
+	mi := &file_services_store_proto_store_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1581,7 +1633,7 @@ func (x *SnapPushRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SnapPushRequest.ProtoReflect.Descriptor instead.
 func (*SnapPushRequest) Descriptor() ([]byte, []int) {
-	return file_services_store_proto_store_proto_rawDescGZIP(), []int{22}
+	return file_services_store_proto_store_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *SnapPushRequest) GetSnapId() string {
@@ -1633,7 +1685,7 @@ type UnscannedUploadRequest struct {
 
 func (x *UnscannedUploadRequest) Reset() {
 	*x = UnscannedUploadRequest{}
-	mi := &file_services_store_proto_store_proto_msgTypes[23]
+	mi := &file_services_store_proto_store_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1645,7 +1697,7 @@ func (x *UnscannedUploadRequest) String() string {
 func (*UnscannedUploadRequest) ProtoMessage() {}
 
 func (x *UnscannedUploadRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_store_proto_store_proto_msgTypes[23]
+	mi := &file_services_store_proto_store_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1658,7 +1710,7 @@ func (x *UnscannedUploadRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UnscannedUploadRequest.ProtoReflect.Descriptor instead.
 func (*UnscannedUploadRequest) Descriptor() ([]byte, []int) {
-	return file_services_store_proto_store_proto_rawDescGZIP(), []int{23}
+	return file_services_store_proto_store_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *UnscannedUploadRequest) GetPayload() isUnscannedUploadRequest_Payload {
@@ -1718,7 +1770,7 @@ type InitialUnscannedUploadRequest struct {
 
 func (x *InitialUnscannedUploadRequest) Reset() {
 	*x = InitialUnscannedUploadRequest{}
-	mi := &file_services_store_proto_store_proto_msgTypes[24]
+	mi := &file_services_store_proto_store_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1730,7 +1782,7 @@ func (x *InitialUnscannedUploadRequest) String() string {
 func (*InitialUnscannedUploadRequest) ProtoMessage() {}
 
 func (x *InitialUnscannedUploadRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_store_proto_store_proto_msgTypes[24]
+	mi := &file_services_store_proto_store_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1743,7 +1795,7 @@ func (x *InitialUnscannedUploadRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InitialUnscannedUploadRequest.ProtoReflect.Descriptor instead.
 func (*InitialUnscannedUploadRequest) Descriptor() ([]byte, []int) {
-	return file_services_store_proto_store_proto_rawDescGZIP(), []int{24}
+	return file_services_store_proto_store_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *InitialUnscannedUploadRequest) GetEntryName() string {
@@ -1764,7 +1816,7 @@ type UnscannedUploadCompleteResponse struct {
 
 func (x *UnscannedUploadCompleteResponse) Reset() {
 	*x = UnscannedUploadCompleteResponse{}
-	mi := &file_services_store_proto_store_proto_msgTypes[25]
+	mi := &file_services_store_proto_store_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1776,7 +1828,7 @@ func (x *UnscannedUploadCompleteResponse) String() string {
 func (*UnscannedUploadCompleteResponse) ProtoMessage() {}
 
 func (x *UnscannedUploadCompleteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_services_store_proto_store_proto_msgTypes[25]
+	mi := &file_services_store_proto_store_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1789,7 +1841,7 @@ func (x *UnscannedUploadCompleteResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UnscannedUploadCompleteResponse.ProtoReflect.Descriptor instead.
 func (*UnscannedUploadCompleteResponse) Descriptor() ([]byte, []int) {
-	return file_services_store_proto_store_proto_rawDescGZIP(), []int{25}
+	return file_services_store_proto_store_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *UnscannedUploadCompleteResponse) GetTempFileName() string {
@@ -1827,7 +1879,7 @@ type AddUploadRequest struct {
 
 func (x *AddUploadRequest) Reset() {
 	*x = AddUploadRequest{}
-	mi := &file_services_store_proto_store_proto_msgTypes[26]
+	mi := &file_services_store_proto_store_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1839,7 +1891,7 @@ func (x *AddUploadRequest) String() string {
 func (*AddUploadRequest) ProtoMessage() {}
 
 func (x *AddUploadRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_store_proto_store_proto_msgTypes[26]
+	mi := &file_services_store_proto_store_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1852,7 +1904,7 @@ func (x *AddUploadRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddUploadRequest.ProtoReflect.Descriptor instead.
 func (*AddUploadRequest) Descriptor() ([]byte, []int) {
-	return file_services_store_proto_store_proto_rawDescGZIP(), []int{26}
+	return file_services_store_proto_store_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *AddUploadRequest) GetSnapName() string {
@@ -1910,7 +1962,7 @@ type AddUploadResponse struct {
 
 func (x *AddUploadResponse) Reset() {
 	*x = AddUploadResponse{}
-	mi := &file_services_store_proto_store_proto_msgTypes[27]
+	mi := &file_services_store_proto_store_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1922,7 +1974,7 @@ func (x *AddUploadResponse) String() string {
 func (*AddUploadResponse) ProtoMessage() {}
 
 func (x *AddUploadResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_services_store_proto_store_proto_msgTypes[27]
+	mi := &file_services_store_proto_store_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1935,7 +1987,7 @@ func (x *AddUploadResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddUploadResponse.ProtoReflect.Descriptor instead.
 func (*AddUploadResponse) Descriptor() ([]byte, []int) {
-	return file_services_store_proto_store_proto_rawDescGZIP(), []int{27}
+	return file_services_store_proto_store_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *AddUploadResponse) GetId() string {
@@ -1982,7 +2034,7 @@ type GetUploadStatusRequest struct {
 
 func (x *GetUploadStatusRequest) Reset() {
 	*x = GetUploadStatusRequest{}
-	mi := &file_services_store_proto_store_proto_msgTypes[28]
+	mi := &file_services_store_proto_store_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1994,7 +2046,7 @@ func (x *GetUploadStatusRequest) String() string {
 func (*GetUploadStatusRequest) ProtoMessage() {}
 
 func (x *GetUploadStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_store_proto_store_proto_msgTypes[28]
+	mi := &file_services_store_proto_store_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2007,7 +2059,7 @@ func (x *GetUploadStatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUploadStatusRequest.ProtoReflect.Descriptor instead.
 func (*GetUploadStatusRequest) Descriptor() ([]byte, []int) {
-	return file_services_store_proto_store_proto_rawDescGZIP(), []int{28}
+	return file_services_store_proto_store_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *GetUploadStatusRequest) GetUploadId() string {
@@ -2029,7 +2081,7 @@ type GetUploadStatusResponse struct {
 
 func (x *GetUploadStatusResponse) Reset() {
 	*x = GetUploadStatusResponse{}
-	mi := &file_services_store_proto_store_proto_msgTypes[29]
+	mi := &file_services_store_proto_store_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2041,7 +2093,7 @@ func (x *GetUploadStatusResponse) String() string {
 func (*GetUploadStatusResponse) ProtoMessage() {}
 
 func (x *GetUploadStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_services_store_proto_store_proto_msgTypes[29]
+	mi := &file_services_store_proto_store_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2054,7 +2106,7 @@ func (x *GetUploadStatusResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUploadStatusResponse.ProtoReflect.Descriptor instead.
 func (*GetUploadStatusResponse) Descriptor() ([]byte, []int) {
-	return file_services_store_proto_store_proto_rawDescGZIP(), []int{29}
+	return file_services_store_proto_store_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *GetUploadStatusResponse) GetUploadId() string {
@@ -2099,7 +2151,7 @@ type AddRevisionRequest struct {
 
 func (x *AddRevisionRequest) Reset() {
 	*x = AddRevisionRequest{}
-	mi := &file_services_store_proto_store_proto_msgTypes[30]
+	mi := &file_services_store_proto_store_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2111,7 +2163,7 @@ func (x *AddRevisionRequest) String() string {
 func (*AddRevisionRequest) ProtoMessage() {}
 
 func (x *AddRevisionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_store_proto_store_proto_msgTypes[30]
+	mi := &file_services_store_proto_store_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2124,7 +2176,7 @@ func (x *AddRevisionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddRevisionRequest.ProtoReflect.Descriptor instead.
 func (*AddRevisionRequest) Descriptor() ([]byte, []int) {
-	return file_services_store_proto_store_proto_rawDescGZIP(), []int{30}
+	return file_services_store_proto_store_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *AddRevisionRequest) GetSnapName() string {
@@ -2182,7 +2234,7 @@ type AddRevisionResponse struct {
 
 func (x *AddRevisionResponse) Reset() {
 	*x = AddRevisionResponse{}
-	mi := &file_services_store_proto_store_proto_msgTypes[31]
+	mi := &file_services_store_proto_store_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2194,7 +2246,7 @@ func (x *AddRevisionResponse) String() string {
 func (*AddRevisionResponse) ProtoMessage() {}
 
 func (x *AddRevisionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_services_store_proto_store_proto_msgTypes[31]
+	mi := &file_services_store_proto_store_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2207,7 +2259,7 @@ func (x *AddRevisionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddRevisionResponse.ProtoReflect.Descriptor instead.
 func (*AddRevisionResponse) Descriptor() ([]byte, []int) {
-	return file_services_store_proto_store_proto_rawDescGZIP(), []int{31}
+	return file_services_store_proto_store_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *AddRevisionResponse) GetId() string {
@@ -2255,7 +2307,7 @@ type GetObjectCustomMetadataRequest struct {
 
 func (x *GetObjectCustomMetadataRequest) Reset() {
 	*x = GetObjectCustomMetadataRequest{}
-	mi := &file_services_store_proto_store_proto_msgTypes[32]
+	mi := &file_services_store_proto_store_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2267,7 +2319,7 @@ func (x *GetObjectCustomMetadataRequest) String() string {
 func (*GetObjectCustomMetadataRequest) ProtoMessage() {}
 
 func (x *GetObjectCustomMetadataRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_store_proto_store_proto_msgTypes[32]
+	mi := &file_services_store_proto_store_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2280,7 +2332,7 @@ func (x *GetObjectCustomMetadataRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetObjectCustomMetadataRequest.ProtoReflect.Descriptor instead.
 func (*GetObjectCustomMetadataRequest) Descriptor() ([]byte, []int) {
-	return file_services_store_proto_store_proto_rawDescGZIP(), []int{32}
+	return file_services_store_proto_store_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *GetObjectCustomMetadataRequest) GetBucket() string {
@@ -2319,7 +2371,7 @@ type GetObjectCustomMetadataResponse struct {
 
 func (x *GetObjectCustomMetadataResponse) Reset() {
 	*x = GetObjectCustomMetadataResponse{}
-	mi := &file_services_store_proto_store_proto_msgTypes[33]
+	mi := &file_services_store_proto_store_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2331,7 +2383,7 @@ func (x *GetObjectCustomMetadataResponse) String() string {
 func (*GetObjectCustomMetadataResponse) ProtoMessage() {}
 
 func (x *GetObjectCustomMetadataResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_services_store_proto_store_proto_msgTypes[33]
+	mi := &file_services_store_proto_store_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2344,7 +2396,7 @@ func (x *GetObjectCustomMetadataResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetObjectCustomMetadataResponse.ProtoReflect.Descriptor instead.
 func (*GetObjectCustomMetadataResponse) Descriptor() ([]byte, []int) {
-	return file_services_store_proto_store_proto_rawDescGZIP(), []int{33}
+	return file_services_store_proto_store_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *GetObjectCustomMetadataResponse) GetSha3_384Encoded() string {
@@ -2457,7 +2509,7 @@ type UpdateUploadStatusRequest struct {
 
 func (x *UpdateUploadStatusRequest) Reset() {
 	*x = UpdateUploadStatusRequest{}
-	mi := &file_services_store_proto_store_proto_msgTypes[34]
+	mi := &file_services_store_proto_store_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2469,7 +2521,7 @@ func (x *UpdateUploadStatusRequest) String() string {
 func (*UpdateUploadStatusRequest) ProtoMessage() {}
 
 func (x *UpdateUploadStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_store_proto_store_proto_msgTypes[34]
+	mi := &file_services_store_proto_store_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2482,7 +2534,7 @@ func (x *UpdateUploadStatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateUploadStatusRequest.ProtoReflect.Descriptor instead.
 func (*UpdateUploadStatusRequest) Descriptor() ([]byte, []int) {
-	return file_services_store_proto_store_proto_rawDescGZIP(), []int{34}
+	return file_services_store_proto_store_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *UpdateUploadStatusRequest) GetUploadId() string {
@@ -2524,7 +2576,7 @@ type UpdateUploadStatusResponse struct {
 
 func (x *UpdateUploadStatusResponse) Reset() {
 	*x = UpdateUploadStatusResponse{}
-	mi := &file_services_store_proto_store_proto_msgTypes[35]
+	mi := &file_services_store_proto_store_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2536,7 +2588,7 @@ func (x *UpdateUploadStatusResponse) String() string {
 func (*UpdateUploadStatusResponse) ProtoMessage() {}
 
 func (x *UpdateUploadStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_services_store_proto_store_proto_msgTypes[35]
+	mi := &file_services_store_proto_store_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2549,7 +2601,7 @@ func (x *UpdateUploadStatusResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateUploadStatusResponse.ProtoReflect.Descriptor instead.
 func (*UpdateUploadStatusResponse) Descriptor() ([]byte, []int) {
-	return file_services_store_proto_store_proto_rawDescGZIP(), []int{35}
+	return file_services_store_proto_store_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *UpdateUploadStatusResponse) GetUploadId() string {
@@ -2591,7 +2643,7 @@ type UpdateSnapEntryWithMetadataRequest struct {
 
 func (x *UpdateSnapEntryWithMetadataRequest) Reset() {
 	*x = UpdateSnapEntryWithMetadataRequest{}
-	mi := &file_services_store_proto_store_proto_msgTypes[36]
+	mi := &file_services_store_proto_store_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2603,7 +2655,7 @@ func (x *UpdateSnapEntryWithMetadataRequest) String() string {
 func (*UpdateSnapEntryWithMetadataRequest) ProtoMessage() {}
 
 func (x *UpdateSnapEntryWithMetadataRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_store_proto_store_proto_msgTypes[36]
+	mi := &file_services_store_proto_store_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2616,7 +2668,7 @@ func (x *UpdateSnapEntryWithMetadataRequest) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use UpdateSnapEntryWithMetadataRequest.ProtoReflect.Descriptor instead.
 func (*UpdateSnapEntryWithMetadataRequest) Descriptor() ([]byte, []int) {
-	return file_services_store_proto_store_proto_rawDescGZIP(), []int{36}
+	return file_services_store_proto_store_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *UpdateSnapEntryWithMetadataRequest) GetEntryId() string {
@@ -2717,7 +2769,7 @@ type UpdateEntryResponse struct {
 
 func (x *UpdateEntryResponse) Reset() {
 	*x = UpdateEntryResponse{}
-	mi := &file_services_store_proto_store_proto_msgTypes[37]
+	mi := &file_services_store_proto_store_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2729,7 +2781,7 @@ func (x *UpdateEntryResponse) String() string {
 func (*UpdateEntryResponse) ProtoMessage() {}
 
 func (x *UpdateEntryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_services_store_proto_store_proto_msgTypes[37]
+	mi := &file_services_store_proto_store_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2742,7 +2794,7 @@ func (x *UpdateEntryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateEntryResponse.ProtoReflect.Descriptor instead.
 func (*UpdateEntryResponse) Descriptor() ([]byte, []int) {
-	return file_services_store_proto_store_proto_rawDescGZIP(), []int{37}
+	return file_services_store_proto_store_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *UpdateEntryResponse) GetEntryId() string {
@@ -2941,7 +2993,10 @@ const file_services_store_proto_store_proto_rawDesc = "" +
 	"\x12GetRevisionRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
 	"\tsnap_name\x18\x02 \x01(\tR\bsnapName\x12\x1a\n" +
-	"\bsequence\x18\x03 \x01(\rR\bsequence\"\x98\x05\n" +
+	"\bsequence\x18\x03 \x01(\rR\bsequence\"h\n" +
+	"&GetLatestRevisionBeforeDateByIdRequest\x12.\n" +
+	"\x04date\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\x04date\x12\x0e\n" +
+	"\x02id\x18\x02 \x01(\tR\x02id\"\x98\x05\n" +
 	"\x13GetRevisionResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x129\n" +
 	"\n" +
@@ -3134,8 +3189,7 @@ const file_services_store_proto_store_proto_rawDesc = "" +
 	"\n" +
 	"deleted_at\x18\x13 \x01(\v2\x1a.google.protobuf.TimestampH\x00R\tdeletedAt\x88\x01\x01\x12$\n" +
 	"\x06errors\x18\x14 \x03(\v2\f.proto.ErrorR\x06errorsB\r\n" +
-	"\v_deleted_at2\xce\n" +
-	"\n" +
+	"\v_deleted_at2\xbc\v\n" +
 	"\fStoreService\x12S\n" +
 	"\x10RegisterSnapName\x12\x1e.store.RegisterSnapNameRequest\x1a\x1f.store.RegisterSnapNameResponse\x12G\n" +
 	"\fGetRevisions\x12\x1a.store.GetRevisionsRequest\x1a\x1b.store.GetRevisionsResponse\x12A\n" +
@@ -3144,7 +3198,8 @@ const file_services_store_proto_store_proto_rawDesc = "" +
 	"\fGetEntryById\x12\x16.store.GetEntryRequest\x1a\x17.store.GetEntryResponse\x12W\n" +
 	"\x15GetEntriesByAccountId\x12#.store.GetEntriesByAccountIdRequest\x1a\x19.store.GetEntriesResponse\x12O\n" +
 	"\x11GetEntriesByQuery\x12\x1f.store.GetEntriesByQueryRequest\x1a\x19.store.GetEntriesResponse\x12e\n" +
-	"\x16GetRevisionsByEntryIds\x12$.store.GetRevisionsByEntryIdRequests\x1a%.store.GetRevisionsByEntryIdResponses\x12a\n" +
+	"\x16GetRevisionsByEntryIds\x12$.store.GetRevisionsByEntryIdRequests\x1a%.store.GetRevisionsByEntryIdResponses\x12l\n" +
+	"\x1fGetLatestRevisionBeforeDateById\x12-.store.GetLatestRevisionBeforeDateByIdRequest\x1a\x1a.store.GetRevisionResponse\x12a\n" +
 	"\"GetLatestRevisionByTrackAndChannel\x12\x1f.store.GetLatestRevisionRequest\x1a\x1a.store.GetRevisionResponse\x12I\n" +
 	"\fSnapDownload\x12\x1a.store.SnapDownloadRequest\x1a\x1b.store.SnapDownloadResponse0\x01\x12Z\n" +
 	"\x0fUnscannedUpload\x12\x1d.store.UnscannedUploadRequest\x1a&.store.UnscannedUploadCompleteResponse(\x01\x12>\n" +
@@ -3167,127 +3222,131 @@ func file_services_store_proto_store_proto_rawDescGZIP() []byte {
 	return file_services_store_proto_store_proto_rawDescData
 }
 
-var file_services_store_proto_store_proto_msgTypes = make([]protoimpl.MessageInfo, 38)
+var file_services_store_proto_store_proto_msgTypes = make([]protoimpl.MessageInfo, 39)
 var file_services_store_proto_store_proto_goTypes = []any{
-	(*RegisterSnapNameRequest)(nil),            // 0: store.RegisterSnapNameRequest
-	(*RegisterSnapNameResponse)(nil),           // 1: store.RegisterSnapNameResponse
-	(*GetEntryRequest)(nil),                    // 2: store.GetEntryRequest
-	(*GetEntryResponse)(nil),                   // 3: store.GetEntryResponse
-	(*GetEntriesRequest)(nil),                  // 4: store.GetEntriesRequest
-	(*GetEntriesResponse)(nil),                 // 5: store.GetEntriesResponse
-	(*GetRevisionRequest)(nil),                 // 6: store.GetRevisionRequest
-	(*GetRevisionResponse)(nil),                // 7: store.GetRevisionResponse
-	(*GetRevisionsRequest)(nil),                // 8: store.GetRevisionsRequest
-	(*GetRevisionsResponse)(nil),               // 9: store.GetRevisionsResponse
-	(*GetEntriesByAccountIdRequest)(nil),       // 10: store.GetEntriesByAccountIdRequest
-	(*GetEntriesByQueryRequest)(nil),           // 11: store.GetEntriesByQueryRequest
-	(*GetRevisionsByEntryIdRequest)(nil),       // 12: store.GetRevisionsByEntryIdRequest
-	(*GetRevisionsByEntryIdRequests)(nil),      // 13: store.GetRevisionsByEntryIdRequests
-	(*GetRevisionsByEntryIdResponse)(nil),      // 14: store.GetRevisionsByEntryIdResponse
-	(*GetRevisionsByEntryIdResponses)(nil),     // 15: store.GetRevisionsByEntryIdResponses
-	(*GetLatestRevisionRequest)(nil),           // 16: store.GetLatestRevisionRequest
-	(*DataChunk)(nil),                          // 17: store.DataChunk
-	(*SnapDownloadRequest)(nil),                // 18: store.SnapDownloadRequest
-	(*InitialDownloadResponse)(nil),            // 19: store.InitialDownloadResponse
-	(*SnapDownloadResponse)(nil),               // 20: store.SnapDownloadResponse
-	(*SnapDownloadCompleteResponse)(nil),       // 21: store.SnapDownloadCompleteResponse
-	(*SnapPushRequest)(nil),                    // 22: store.SnapPushRequest
-	(*UnscannedUploadRequest)(nil),             // 23: store.UnscannedUploadRequest
-	(*InitialUnscannedUploadRequest)(nil),      // 24: store.InitialUnscannedUploadRequest
-	(*UnscannedUploadCompleteResponse)(nil),    // 25: store.UnscannedUploadCompleteResponse
-	(*AddUploadRequest)(nil),                   // 26: store.AddUploadRequest
-	(*AddUploadResponse)(nil),                  // 27: store.AddUploadResponse
-	(*GetUploadStatusRequest)(nil),             // 28: store.GetUploadStatusRequest
-	(*GetUploadStatusResponse)(nil),            // 29: store.GetUploadStatusResponse
-	(*AddRevisionRequest)(nil),                 // 30: store.AddRevisionRequest
-	(*AddRevisionResponse)(nil),                // 31: store.AddRevisionResponse
-	(*GetObjectCustomMetadataRequest)(nil),     // 32: store.GetObjectCustomMetadataRequest
-	(*GetObjectCustomMetadataResponse)(nil),    // 33: store.GetObjectCustomMetadataResponse
-	(*UpdateUploadStatusRequest)(nil),          // 34: store.UpdateUploadStatusRequest
-	(*UpdateUploadStatusResponse)(nil),         // 35: store.UpdateUploadStatusResponse
-	(*UpdateSnapEntryWithMetadataRequest)(nil), // 36: store.UpdateSnapEntryWithMetadataRequest
-	(*UpdateEntryResponse)(nil),                // 37: store.UpdateEntryResponse
-	(*proto.Error)(nil),                        // 38: proto.Error
-	(*timestamppb.Timestamp)(nil),              // 39: google.protobuf.Timestamp
+	(*RegisterSnapNameRequest)(nil),                // 0: store.RegisterSnapNameRequest
+	(*RegisterSnapNameResponse)(nil),               // 1: store.RegisterSnapNameResponse
+	(*GetEntryRequest)(nil),                        // 2: store.GetEntryRequest
+	(*GetEntryResponse)(nil),                       // 3: store.GetEntryResponse
+	(*GetEntriesRequest)(nil),                      // 4: store.GetEntriesRequest
+	(*GetEntriesResponse)(nil),                     // 5: store.GetEntriesResponse
+	(*GetRevisionRequest)(nil),                     // 6: store.GetRevisionRequest
+	(*GetLatestRevisionBeforeDateByIdRequest)(nil), // 7: store.GetLatestRevisionBeforeDateByIdRequest
+	(*GetRevisionResponse)(nil),                    // 8: store.GetRevisionResponse
+	(*GetRevisionsRequest)(nil),                    // 9: store.GetRevisionsRequest
+	(*GetRevisionsResponse)(nil),                   // 10: store.GetRevisionsResponse
+	(*GetEntriesByAccountIdRequest)(nil),           // 11: store.GetEntriesByAccountIdRequest
+	(*GetEntriesByQueryRequest)(nil),               // 12: store.GetEntriesByQueryRequest
+	(*GetRevisionsByEntryIdRequest)(nil),           // 13: store.GetRevisionsByEntryIdRequest
+	(*GetRevisionsByEntryIdRequests)(nil),          // 14: store.GetRevisionsByEntryIdRequests
+	(*GetRevisionsByEntryIdResponse)(nil),          // 15: store.GetRevisionsByEntryIdResponse
+	(*GetRevisionsByEntryIdResponses)(nil),         // 16: store.GetRevisionsByEntryIdResponses
+	(*GetLatestRevisionRequest)(nil),               // 17: store.GetLatestRevisionRequest
+	(*DataChunk)(nil),                              // 18: store.DataChunk
+	(*SnapDownloadRequest)(nil),                    // 19: store.SnapDownloadRequest
+	(*InitialDownloadResponse)(nil),                // 20: store.InitialDownloadResponse
+	(*SnapDownloadResponse)(nil),                   // 21: store.SnapDownloadResponse
+	(*SnapDownloadCompleteResponse)(nil),           // 22: store.SnapDownloadCompleteResponse
+	(*SnapPushRequest)(nil),                        // 23: store.SnapPushRequest
+	(*UnscannedUploadRequest)(nil),                 // 24: store.UnscannedUploadRequest
+	(*InitialUnscannedUploadRequest)(nil),          // 25: store.InitialUnscannedUploadRequest
+	(*UnscannedUploadCompleteResponse)(nil),        // 26: store.UnscannedUploadCompleteResponse
+	(*AddUploadRequest)(nil),                       // 27: store.AddUploadRequest
+	(*AddUploadResponse)(nil),                      // 28: store.AddUploadResponse
+	(*GetUploadStatusRequest)(nil),                 // 29: store.GetUploadStatusRequest
+	(*GetUploadStatusResponse)(nil),                // 30: store.GetUploadStatusResponse
+	(*AddRevisionRequest)(nil),                     // 31: store.AddRevisionRequest
+	(*AddRevisionResponse)(nil),                    // 32: store.AddRevisionResponse
+	(*GetObjectCustomMetadataRequest)(nil),         // 33: store.GetObjectCustomMetadataRequest
+	(*GetObjectCustomMetadataResponse)(nil),        // 34: store.GetObjectCustomMetadataResponse
+	(*UpdateUploadStatusRequest)(nil),              // 35: store.UpdateUploadStatusRequest
+	(*UpdateUploadStatusResponse)(nil),             // 36: store.UpdateUploadStatusResponse
+	(*UpdateSnapEntryWithMetadataRequest)(nil),     // 37: store.UpdateSnapEntryWithMetadataRequest
+	(*UpdateEntryResponse)(nil),                    // 38: store.UpdateEntryResponse
+	(*proto.Error)(nil),                            // 39: proto.Error
+	(*timestamppb.Timestamp)(nil),                  // 40: google.protobuf.Timestamp
 }
 var file_services_store_proto_store_proto_depIdxs = []int32{
-	38, // 0: store.RegisterSnapNameResponse.errors:type_name -> proto.Error
-	39, // 1: store.GetEntryResponse.since:type_name -> google.protobuf.Timestamp
-	7,  // 2: store.GetEntryResponse.revisions:type_name -> store.GetRevisionResponse
-	38, // 3: store.GetEntryResponse.errors:type_name -> proto.Error
+	39, // 0: store.RegisterSnapNameResponse.errors:type_name -> proto.Error
+	40, // 1: store.GetEntryResponse.since:type_name -> google.protobuf.Timestamp
+	8,  // 2: store.GetEntryResponse.revisions:type_name -> store.GetRevisionResponse
+	39, // 3: store.GetEntryResponse.errors:type_name -> proto.Error
 	2,  // 4: store.GetEntriesRequest.entries:type_name -> store.GetEntryRequest
 	3,  // 5: store.GetEntriesResponse.entries:type_name -> store.GetEntryResponse
-	38, // 6: store.GetEntriesResponse.errors:type_name -> proto.Error
-	39, // 7: store.GetRevisionResponse.created_at:type_name -> google.protobuf.Timestamp
-	39, // 8: store.GetRevisionResponse.updated_at:type_name -> google.protobuf.Timestamp
-	39, // 9: store.GetRevisionResponse.deleted_at:type_name -> google.protobuf.Timestamp
-	38, // 10: store.GetRevisionResponse.errors:type_name -> proto.Error
-	6,  // 11: store.GetRevisionsRequest.revisions:type_name -> store.GetRevisionRequest
-	7,  // 12: store.GetRevisionsResponse.revisions:type_name -> store.GetRevisionResponse
-	38, // 13: store.GetRevisionsResponse.errors:type_name -> proto.Error
-	12, // 14: store.GetRevisionsByEntryIdRequests.requests:type_name -> store.GetRevisionsByEntryIdRequest
-	7,  // 15: store.GetRevisionsByEntryIdResponse.revisions:type_name -> store.GetRevisionResponse
-	38, // 16: store.GetRevisionsByEntryIdResponse.errors:type_name -> proto.Error
-	14, // 17: store.GetRevisionsByEntryIdResponses.responses:type_name -> store.GetRevisionsByEntryIdResponse
-	38, // 18: store.GetRevisionsByEntryIdResponses.errors:type_name -> proto.Error
-	7,  // 19: store.InitialDownloadResponse.revision:type_name -> store.GetRevisionResponse
-	19, // 20: store.SnapDownloadResponse.initial:type_name -> store.InitialDownloadResponse
-	17, // 21: store.SnapDownloadResponse.data:type_name -> store.DataChunk
-	38, // 22: store.SnapDownloadResponse.errors:type_name -> proto.Error
-	7,  // 23: store.SnapDownloadCompleteResponse.revision:type_name -> store.GetRevisionResponse
-	38, // 24: store.SnapDownloadCompleteResponse.errors:type_name -> proto.Error
-	24, // 25: store.UnscannedUploadRequest.initial:type_name -> store.InitialUnscannedUploadRequest
-	17, // 26: store.UnscannedUploadRequest.data:type_name -> store.DataChunk
-	38, // 27: store.UnscannedUploadRequest.errors:type_name -> proto.Error
-	38, // 28: store.UnscannedUploadCompleteResponse.errors:type_name -> proto.Error
-	38, // 29: store.AddUploadResponse.errors:type_name -> proto.Error
-	38, // 30: store.GetUploadStatusResponse.errors:type_name -> proto.Error
-	38, // 31: store.AddRevisionResponse.errors:type_name -> proto.Error
-	38, // 32: store.GetObjectCustomMetadataResponse.errors:type_name -> proto.Error
-	38, // 33: store.UpdateUploadStatusRequest.errors:type_name -> proto.Error
-	38, // 34: store.UpdateUploadStatusResponse.errors:type_name -> proto.Error
-	38, // 35: store.UpdateSnapEntryWithMetadataRequest.errors:type_name -> proto.Error
-	39, // 36: store.UpdateEntryResponse.created_at:type_name -> google.protobuf.Timestamp
-	39, // 37: store.UpdateEntryResponse.updated_at:type_name -> google.protobuf.Timestamp
-	39, // 38: store.UpdateEntryResponse.deleted_at:type_name -> google.protobuf.Timestamp
-	38, // 39: store.UpdateEntryResponse.errors:type_name -> proto.Error
-	0,  // 40: store.StoreService.RegisterSnapName:input_type -> store.RegisterSnapNameRequest
-	8,  // 41: store.StoreService.GetRevisions:input_type -> store.GetRevisionsRequest
-	4,  // 42: store.StoreService.GetEntries:input_type -> store.GetEntriesRequest
-	2,  // 43: store.StoreService.GetEntryById:input_type -> store.GetEntryRequest
-	10, // 44: store.StoreService.GetEntriesByAccountId:input_type -> store.GetEntriesByAccountIdRequest
-	11, // 45: store.StoreService.GetEntriesByQuery:input_type -> store.GetEntriesByQueryRequest
-	13, // 46: store.StoreService.GetRevisionsByEntryIds:input_type -> store.GetRevisionsByEntryIdRequests
-	16, // 47: store.StoreService.GetLatestRevisionByTrackAndChannel:input_type -> store.GetLatestRevisionRequest
-	18, // 48: store.StoreService.SnapDownload:input_type -> store.SnapDownloadRequest
-	23, // 49: store.StoreService.UnscannedUpload:input_type -> store.UnscannedUploadRequest
-	26, // 50: store.StoreService.AddUpload:input_type -> store.AddUploadRequest
-	28, // 51: store.StoreService.GetUploadStatus:input_type -> store.GetUploadStatusRequest
-	30, // 52: store.StoreService.AddRevision:input_type -> store.AddRevisionRequest
-	32, // 53: store.StoreService.GetObjectCustomMetadata:input_type -> store.GetObjectCustomMetadataRequest
-	34, // 54: store.StoreService.UpdateUploadStatus:input_type -> store.UpdateUploadStatusRequest
-	36, // 55: store.StoreService.UpdateSnapEntryWithMetadata:input_type -> store.UpdateSnapEntryWithMetadataRequest
-	1,  // 56: store.StoreService.RegisterSnapName:output_type -> store.RegisterSnapNameResponse
-	9,  // 57: store.StoreService.GetRevisions:output_type -> store.GetRevisionsResponse
-	5,  // 58: store.StoreService.GetEntries:output_type -> store.GetEntriesResponse
-	3,  // 59: store.StoreService.GetEntryById:output_type -> store.GetEntryResponse
-	5,  // 60: store.StoreService.GetEntriesByAccountId:output_type -> store.GetEntriesResponse
-	5,  // 61: store.StoreService.GetEntriesByQuery:output_type -> store.GetEntriesResponse
-	15, // 62: store.StoreService.GetRevisionsByEntryIds:output_type -> store.GetRevisionsByEntryIdResponses
-	7,  // 63: store.StoreService.GetLatestRevisionByTrackAndChannel:output_type -> store.GetRevisionResponse
-	20, // 64: store.StoreService.SnapDownload:output_type -> store.SnapDownloadResponse
-	25, // 65: store.StoreService.UnscannedUpload:output_type -> store.UnscannedUploadCompleteResponse
-	27, // 66: store.StoreService.AddUpload:output_type -> store.AddUploadResponse
-	29, // 67: store.StoreService.GetUploadStatus:output_type -> store.GetUploadStatusResponse
-	31, // 68: store.StoreService.AddRevision:output_type -> store.AddRevisionResponse
-	33, // 69: store.StoreService.GetObjectCustomMetadata:output_type -> store.GetObjectCustomMetadataResponse
-	35, // 70: store.StoreService.UpdateUploadStatus:output_type -> store.UpdateUploadStatusResponse
-	37, // 71: store.StoreService.UpdateSnapEntryWithMetadata:output_type -> store.UpdateEntryResponse
-	56, // [56:72] is the sub-list for method output_type
-	40, // [40:56] is the sub-list for method input_type
-	40, // [40:40] is the sub-list for extension type_name
-	40, // [40:40] is the sub-list for extension extendee
-	0,  // [0:40] is the sub-list for field type_name
+	39, // 6: store.GetEntriesResponse.errors:type_name -> proto.Error
+	40, // 7: store.GetLatestRevisionBeforeDateByIdRequest.date:type_name -> google.protobuf.Timestamp
+	40, // 8: store.GetRevisionResponse.created_at:type_name -> google.protobuf.Timestamp
+	40, // 9: store.GetRevisionResponse.updated_at:type_name -> google.protobuf.Timestamp
+	40, // 10: store.GetRevisionResponse.deleted_at:type_name -> google.protobuf.Timestamp
+	39, // 11: store.GetRevisionResponse.errors:type_name -> proto.Error
+	6,  // 12: store.GetRevisionsRequest.revisions:type_name -> store.GetRevisionRequest
+	8,  // 13: store.GetRevisionsResponse.revisions:type_name -> store.GetRevisionResponse
+	39, // 14: store.GetRevisionsResponse.errors:type_name -> proto.Error
+	13, // 15: store.GetRevisionsByEntryIdRequests.requests:type_name -> store.GetRevisionsByEntryIdRequest
+	8,  // 16: store.GetRevisionsByEntryIdResponse.revisions:type_name -> store.GetRevisionResponse
+	39, // 17: store.GetRevisionsByEntryIdResponse.errors:type_name -> proto.Error
+	15, // 18: store.GetRevisionsByEntryIdResponses.responses:type_name -> store.GetRevisionsByEntryIdResponse
+	39, // 19: store.GetRevisionsByEntryIdResponses.errors:type_name -> proto.Error
+	8,  // 20: store.InitialDownloadResponse.revision:type_name -> store.GetRevisionResponse
+	20, // 21: store.SnapDownloadResponse.initial:type_name -> store.InitialDownloadResponse
+	18, // 22: store.SnapDownloadResponse.data:type_name -> store.DataChunk
+	39, // 23: store.SnapDownloadResponse.errors:type_name -> proto.Error
+	8,  // 24: store.SnapDownloadCompleteResponse.revision:type_name -> store.GetRevisionResponse
+	39, // 25: store.SnapDownloadCompleteResponse.errors:type_name -> proto.Error
+	25, // 26: store.UnscannedUploadRequest.initial:type_name -> store.InitialUnscannedUploadRequest
+	18, // 27: store.UnscannedUploadRequest.data:type_name -> store.DataChunk
+	39, // 28: store.UnscannedUploadRequest.errors:type_name -> proto.Error
+	39, // 29: store.UnscannedUploadCompleteResponse.errors:type_name -> proto.Error
+	39, // 30: store.AddUploadResponse.errors:type_name -> proto.Error
+	39, // 31: store.GetUploadStatusResponse.errors:type_name -> proto.Error
+	39, // 32: store.AddRevisionResponse.errors:type_name -> proto.Error
+	39, // 33: store.GetObjectCustomMetadataResponse.errors:type_name -> proto.Error
+	39, // 34: store.UpdateUploadStatusRequest.errors:type_name -> proto.Error
+	39, // 35: store.UpdateUploadStatusResponse.errors:type_name -> proto.Error
+	39, // 36: store.UpdateSnapEntryWithMetadataRequest.errors:type_name -> proto.Error
+	40, // 37: store.UpdateEntryResponse.created_at:type_name -> google.protobuf.Timestamp
+	40, // 38: store.UpdateEntryResponse.updated_at:type_name -> google.protobuf.Timestamp
+	40, // 39: store.UpdateEntryResponse.deleted_at:type_name -> google.protobuf.Timestamp
+	39, // 40: store.UpdateEntryResponse.errors:type_name -> proto.Error
+	0,  // 41: store.StoreService.RegisterSnapName:input_type -> store.RegisterSnapNameRequest
+	9,  // 42: store.StoreService.GetRevisions:input_type -> store.GetRevisionsRequest
+	4,  // 43: store.StoreService.GetEntries:input_type -> store.GetEntriesRequest
+	2,  // 44: store.StoreService.GetEntryById:input_type -> store.GetEntryRequest
+	11, // 45: store.StoreService.GetEntriesByAccountId:input_type -> store.GetEntriesByAccountIdRequest
+	12, // 46: store.StoreService.GetEntriesByQuery:input_type -> store.GetEntriesByQueryRequest
+	14, // 47: store.StoreService.GetRevisionsByEntryIds:input_type -> store.GetRevisionsByEntryIdRequests
+	7,  // 48: store.StoreService.GetLatestRevisionBeforeDateById:input_type -> store.GetLatestRevisionBeforeDateByIdRequest
+	17, // 49: store.StoreService.GetLatestRevisionByTrackAndChannel:input_type -> store.GetLatestRevisionRequest
+	19, // 50: store.StoreService.SnapDownload:input_type -> store.SnapDownloadRequest
+	24, // 51: store.StoreService.UnscannedUpload:input_type -> store.UnscannedUploadRequest
+	27, // 52: store.StoreService.AddUpload:input_type -> store.AddUploadRequest
+	29, // 53: store.StoreService.GetUploadStatus:input_type -> store.GetUploadStatusRequest
+	31, // 54: store.StoreService.AddRevision:input_type -> store.AddRevisionRequest
+	33, // 55: store.StoreService.GetObjectCustomMetadata:input_type -> store.GetObjectCustomMetadataRequest
+	35, // 56: store.StoreService.UpdateUploadStatus:input_type -> store.UpdateUploadStatusRequest
+	37, // 57: store.StoreService.UpdateSnapEntryWithMetadata:input_type -> store.UpdateSnapEntryWithMetadataRequest
+	1,  // 58: store.StoreService.RegisterSnapName:output_type -> store.RegisterSnapNameResponse
+	10, // 59: store.StoreService.GetRevisions:output_type -> store.GetRevisionsResponse
+	5,  // 60: store.StoreService.GetEntries:output_type -> store.GetEntriesResponse
+	3,  // 61: store.StoreService.GetEntryById:output_type -> store.GetEntryResponse
+	5,  // 62: store.StoreService.GetEntriesByAccountId:output_type -> store.GetEntriesResponse
+	5,  // 63: store.StoreService.GetEntriesByQuery:output_type -> store.GetEntriesResponse
+	16, // 64: store.StoreService.GetRevisionsByEntryIds:output_type -> store.GetRevisionsByEntryIdResponses
+	8,  // 65: store.StoreService.GetLatestRevisionBeforeDateById:output_type -> store.GetRevisionResponse
+	8,  // 66: store.StoreService.GetLatestRevisionByTrackAndChannel:output_type -> store.GetRevisionResponse
+	21, // 67: store.StoreService.SnapDownload:output_type -> store.SnapDownloadResponse
+	26, // 68: store.StoreService.UnscannedUpload:output_type -> store.UnscannedUploadCompleteResponse
+	28, // 69: store.StoreService.AddUpload:output_type -> store.AddUploadResponse
+	30, // 70: store.StoreService.GetUploadStatus:output_type -> store.GetUploadStatusResponse
+	32, // 71: store.StoreService.AddRevision:output_type -> store.AddRevisionResponse
+	34, // 72: store.StoreService.GetObjectCustomMetadata:output_type -> store.GetObjectCustomMetadataResponse
+	36, // 73: store.StoreService.UpdateUploadStatus:output_type -> store.UpdateUploadStatusResponse
+	38, // 74: store.StoreService.UpdateSnapEntryWithMetadata:output_type -> store.UpdateEntryResponse
+	58, // [58:75] is the sub-list for method output_type
+	41, // [41:58] is the sub-list for method input_type
+	41, // [41:41] is the sub-list for extension type_name
+	41, // [41:41] is the sub-list for extension extendee
+	0,  // [0:41] is the sub-list for field type_name
 }
 
 func init() { file_services_store_proto_store_proto_init() }
@@ -3296,23 +3355,23 @@ func file_services_store_proto_store_proto_init() {
 		return
 	}
 	file_services_store_proto_store_proto_msgTypes[2].OneofWrappers = []any{}
-	file_services_store_proto_store_proto_msgTypes[7].OneofWrappers = []any{}
-	file_services_store_proto_store_proto_msgTypes[20].OneofWrappers = []any{
+	file_services_store_proto_store_proto_msgTypes[8].OneofWrappers = []any{}
+	file_services_store_proto_store_proto_msgTypes[21].OneofWrappers = []any{
 		(*SnapDownloadResponse_Initial)(nil),
 		(*SnapDownloadResponse_Data)(nil),
 	}
-	file_services_store_proto_store_proto_msgTypes[23].OneofWrappers = []any{
+	file_services_store_proto_store_proto_msgTypes[24].OneofWrappers = []any{
 		(*UnscannedUploadRequest_Initial)(nil),
 		(*UnscannedUploadRequest_Data)(nil),
 	}
-	file_services_store_proto_store_proto_msgTypes[37].OneofWrappers = []any{}
+	file_services_store_proto_store_proto_msgTypes[38].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_services_store_proto_store_proto_rawDesc), len(file_services_store_proto_store_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   38,
+			NumMessages:   39,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

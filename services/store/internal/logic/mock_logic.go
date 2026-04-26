@@ -119,6 +119,14 @@ func (m *MockStoreServiceClient) GetRevisionsByEntryIds(ctx context.Context, in 
 	return args.Get(0).(*proto.GetRevisionsByEntryIdResponses), nil
 }
 
+func (m *MockStoreServiceClient) GetLatestRevisionBeforeDateById(ctx context.Context, req *proto.GetLatestRevisionBeforeDateByIdRequest, opts ... grpc.CallOption) (*proto.GetRevisionResponse, error) {
+	args := m.Called(ctx, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*proto.GetRevisionResponse), nil
+}
+
 func (m *MockStoreServiceClient) GetRevisionByNameAndSequence(ctx context.Context, in *proto.GetRevisionRequest, opts ...grpc.CallOption) (*proto.GetRevisionResponse, error) {
 	args := m.Called(ctx, in)
 	resp := args.Get(0)

@@ -26,6 +26,7 @@ const (
 	StoreService_GetEntriesByAccountId_FullMethodName              = "/store.StoreService/GetEntriesByAccountId"
 	StoreService_GetEntriesByQuery_FullMethodName                  = "/store.StoreService/GetEntriesByQuery"
 	StoreService_GetRevisionsByEntryIds_FullMethodName             = "/store.StoreService/GetRevisionsByEntryIds"
+	StoreService_GetLatestRevisionBeforeDateById_FullMethodName    = "/store.StoreService/GetLatestRevisionBeforeDateById"
 	StoreService_GetLatestRevisionByTrackAndChannel_FullMethodName = "/store.StoreService/GetLatestRevisionByTrackAndChannel"
 	StoreService_SnapDownload_FullMethodName                       = "/store.StoreService/SnapDownload"
 	StoreService_UnscannedUpload_FullMethodName                    = "/store.StoreService/UnscannedUpload"
@@ -48,6 +49,7 @@ type StoreServiceClient interface {
 	GetEntriesByAccountId(ctx context.Context, in *GetEntriesByAccountIdRequest, opts ...grpc.CallOption) (*GetEntriesResponse, error)
 	GetEntriesByQuery(ctx context.Context, in *GetEntriesByQueryRequest, opts ...grpc.CallOption) (*GetEntriesResponse, error)
 	GetRevisionsByEntryIds(ctx context.Context, in *GetRevisionsByEntryIdRequests, opts ...grpc.CallOption) (*GetRevisionsByEntryIdResponses, error)
+	GetLatestRevisionBeforeDateById(ctx context.Context, in *GetLatestRevisionBeforeDateByIdRequest, opts ...grpc.CallOption) (*GetRevisionResponse, error)
 	GetLatestRevisionByTrackAndChannel(ctx context.Context, in *GetLatestRevisionRequest, opts ...grpc.CallOption) (*GetRevisionResponse, error)
 	SnapDownload(ctx context.Context, in *SnapDownloadRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SnapDownloadResponse], error)
 	UnscannedUpload(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[UnscannedUploadRequest, UnscannedUploadCompleteResponse], error)
@@ -131,6 +133,16 @@ func (c *storeServiceClient) GetRevisionsByEntryIds(ctx context.Context, in *Get
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetRevisionsByEntryIdResponses)
 	err := c.cc.Invoke(ctx, StoreService_GetRevisionsByEntryIds_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *storeServiceClient) GetLatestRevisionBeforeDateById(ctx context.Context, in *GetLatestRevisionBeforeDateByIdRequest, opts ...grpc.CallOption) (*GetRevisionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetRevisionResponse)
+	err := c.cc.Invoke(ctx, StoreService_GetLatestRevisionBeforeDateById_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -250,6 +262,7 @@ type StoreServiceServer interface {
 	GetEntriesByAccountId(context.Context, *GetEntriesByAccountIdRequest) (*GetEntriesResponse, error)
 	GetEntriesByQuery(context.Context, *GetEntriesByQueryRequest) (*GetEntriesResponse, error)
 	GetRevisionsByEntryIds(context.Context, *GetRevisionsByEntryIdRequests) (*GetRevisionsByEntryIdResponses, error)
+	GetLatestRevisionBeforeDateById(context.Context, *GetLatestRevisionBeforeDateByIdRequest) (*GetRevisionResponse, error)
 	GetLatestRevisionByTrackAndChannel(context.Context, *GetLatestRevisionRequest) (*GetRevisionResponse, error)
 	SnapDownload(*SnapDownloadRequest, grpc.ServerStreamingServer[SnapDownloadResponse]) error
 	UnscannedUpload(grpc.ClientStreamingServer[UnscannedUploadRequest, UnscannedUploadCompleteResponse]) error
@@ -289,6 +302,9 @@ func (UnimplementedStoreServiceServer) GetEntriesByQuery(context.Context, *GetEn
 }
 func (UnimplementedStoreServiceServer) GetRevisionsByEntryIds(context.Context, *GetRevisionsByEntryIdRequests) (*GetRevisionsByEntryIdResponses, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetRevisionsByEntryIds not implemented")
+}
+func (UnimplementedStoreServiceServer) GetLatestRevisionBeforeDateById(context.Context, *GetLatestRevisionBeforeDateByIdRequest) (*GetRevisionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetLatestRevisionBeforeDateById not implemented")
 }
 func (UnimplementedStoreServiceServer) GetLatestRevisionByTrackAndChannel(context.Context, *GetLatestRevisionRequest) (*GetRevisionResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetLatestRevisionByTrackAndChannel not implemented")
@@ -460,6 +476,24 @@ func _StoreService_GetRevisionsByEntryIds_Handler(srv interface{}, ctx context.C
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(StoreServiceServer).GetRevisionsByEntryIds(ctx, req.(*GetRevisionsByEntryIdRequests))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _StoreService_GetLatestRevisionBeforeDateById_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLatestRevisionBeforeDateByIdRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StoreServiceServer).GetLatestRevisionBeforeDateById(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StoreService_GetLatestRevisionBeforeDateById_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StoreServiceServer).GetLatestRevisionBeforeDateById(ctx, req.(*GetLatestRevisionBeforeDateByIdRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -642,6 +676,10 @@ var StoreService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetRevisionsByEntryIds",
 			Handler:    _StoreService_GetRevisionsByEntryIds_Handler,
+		},
+		{
+			MethodName: "GetLatestRevisionBeforeDateById",
+			Handler:    _StoreService_GetLatestRevisionBeforeDateById_Handler,
 		},
 		{
 			MethodName: "GetLatestRevisionByTrackAndChannel",

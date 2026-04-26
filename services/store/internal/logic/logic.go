@@ -338,34 +338,52 @@ func (s *StoreLogic) GetRevisions(ctx context.Context, req *proto.GetRevisionsRe
 	return &proto.GetRevisionsResponse{Revisions: foundRevisions, Errors: el.ConvertToProtoErrorList()}, nil
 }
 
+func (s *StoreLogic) GetLatestRevisionBeforeDateById(ctx context.Context, req *proto.GetLatestRevisionBeforeDateByIdRequest) (*proto.GetRevisionResponse, error) {
+	el := cerror.NewErrorList()
+
+	if req.Id == "" {
+		cerr := cerror.NewCustomError(cerror.MissingField, "snap id is required")
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.GetRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	revision, cerr := s.repo.GetLatestRevisionBeforeDateById(req.Date.AsTime(), req.Id, el)
+	if cerr != nil {
+		return &proto.GetRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+	
+	return convertRevisionToProto(revision), nil
+}
+
 // GetRevisionByNameAndSequence returns a single revision by snap name and sequence number
-func (s *StoreLogic) GetRevisionByNameAndSequence(ctx context.Context, req *proto.GetRevisionRequest) (*proto.GetRevisionResponse, *cerror.CustomError) {
+func (s *StoreLogic) GetRevisionByNameAndSequence(ctx context.Context, req *proto.GetRevisionRequest) (*proto.GetRevisionResponse, error) {
 	el := cerror.NewErrorList()
 
 	if req.SnapName == "" {
 		cerr := cerror.NewCustomError(cerror.MissingField, "snap name is required")
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
-		return &proto.GetRevisionResponse{Errors: el.ConvertToProtoErrorList()}, cerr
+		return &proto.GetRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
 
 	if req.Sequence == 0 {
 		cerr := cerror.NewCustomError(cerror.MissingField, "sequence is required")
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
-		return &proto.GetRevisionResponse{Errors: el.ConvertToProtoErrorList()}, cerr
+		return &proto.GetRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
 
 	entry, cerr := s.repo.GetEntryByName(req.SnapName, nil, el)
 	if cerr != nil {
 		// Already logged in GetEntryByName (repository)
-		return &proto.GetRevisionResponse{Errors: el.ConvertToProtoErrorList()}, cerr
+		return &proto.GetRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
 
 	rev, cerr := s.repo.GetRevisionByNameAndSequence(entry.Name, req.Sequence, el)
 	if cerr != nil {
 		// Already logged in GetRevisionByNameAndSequence (repository)
-		return &proto.GetRevisionResponse{Errors: el.ConvertToProtoErrorList()}, cerr
+		return &proto.GetRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
 
 	return convertRevisionToProto(rev), nil

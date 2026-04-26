@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"time"
+
 	"github.com/idlab-discover/kebeng/services/store/internal/model"
 
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
@@ -154,6 +156,15 @@ func (m *MockSnapsRepository) GetRevisionsByEntryId(entryId uuid.UUID, el *cerro
 }
 
 func (m *MockSnapsRepository) GetRevisionById(id uuid.UUID, el *cerror.ErrorList) (*model.SnapRevision, *cerror.CustomError) {
+	args := m.Called(id, el)
+	if args.Get(0) != nil {
+		return args.Get(0).(*model.SnapRevision), nil
+	}
+	el.Add(cerror.InternalServerError, "")
+	return nil, args.Get(1).(*cerror.CustomError)
+}
+
+func (m *MockSnapsRepository) GetLatestRevisionBeforeDateById(date time.Time, id string, el *cerror.ErrorList) (*model.SnapRevision, *cerror.CustomError) {
 	args := m.Called(id, el)
 	if args.Get(0) != nil {
 		return args.Get(0).(*model.SnapRevision), nil

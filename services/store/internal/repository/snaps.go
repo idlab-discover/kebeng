@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
@@ -40,6 +41,7 @@ type ISnapsRepository interface {
 	GetPreloadAssociations(entry *model.SnapEntry, preloadAssociations *[]string, errorList *cerror.ErrorList) *cerror.CustomError
 	GetRevisionsByEntryId(entryId uuid.UUID, errorList *cerror.ErrorList) ([]*model.SnapRevision, *cerror.CustomError)
 	GetRevisionById(id uuid.UUID, errorList *cerror.ErrorList) (*model.SnapRevision, *cerror.CustomError)
+	GetLatestRevisionBeforeDateById(date time.Time, id string, el *cerror.ErrorList) (*model.SnapRevision, *cerror.CustomError)
 	GetRevisionByNameAndSequence(name string, sequence uint32, errorList *cerror.ErrorList) (*model.SnapRevision, *cerror.CustomError)
 	GetRevisionBySHA(SHA3_384_encoded string, errorList *cerror.ErrorList) (*model.SnapRevision, *cerror.CustomError)
 	GetTrackByEntryIdAndName(entryId uuid.UUID, trackName string, errorList *cerror.ErrorList) (*model.SnapTrack, *cerror.CustomError)
@@ -486,6 +488,28 @@ func (sp *SnapsRepository) GetRevisionById(id uuid.UUID, el *cerror.ErrorList) (
 	err := sp.db.Get(&revision, query, id)
 	if err != nil {
 		cerr := cerror.ConvertError(err, fmt.Sprintf("error getting revision with id = '%s'", id.String()))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return nil, cerr
+	}
+
+	return &revision, nil
+}
+
+func (sp *SnapsRepository) GetLatestRevisionBeforeDateById(date time.Time, id string, el *cerror.ErrorList) (*model.SnapRevision, *cerror.CustomError) {
+	var revision model.SnapRevision
+	query := `
+		SELECT *
+		FROM revision
+		WHERE id = $1
+		AND created_at < $2
+		ORDER BY created_at DESC
+		LIMIT 1
+	`
+
+	err := sp.db.Get(&revision, query, id, date)
+	if err != nil {
+		cerr := cerror.ConvertError(err, fmt.Sprintf("error getting revision for id = '%s' and before date '%v'", id, date))
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
 		return nil, cerr
