@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"io"
+	"time"
 
 	"github.com/idlab-discover/kebeng/services/store/client/model"
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
@@ -119,6 +120,14 @@ func (m *MockStoreClient) GetRevisionsByEntryIds(entryIds *proto.GetRevisionsByE
 // GetLatestRevisionByTrackAndChannel mocks the GetLatestRevisionByTrackAndChannel function.
 func (m *MockStoreClient) GetLatestRevisionByTrackAndChannel(snapName, track, channel string) *proto.GetRevisionResponse {
 	args := m.Called(snapName, track, channel)
+	if resp, ok := args.Get(0).(*proto.GetRevisionResponse); ok {
+		return resp
+	}
+	return nil
+}
+
+func (m *MockStoreClient) GetLatestRevisionBeforeDateById(date time.Time, id string) *proto.GetRevisionResponse {
+	args := m.Called(date, id)
 	if resp, ok := args.Get(0).(*proto.GetRevisionResponse); ok {
 		return resp
 	}

@@ -18,6 +18,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -36,6 +37,7 @@ type StoreClientInterface interface {
 	GetEntriesByQuery(query string, architectureList []string, channelList []string, confinementsList []string, fieldsList []string, private bool, publisherId string) *proto.GetEntriesResponse
 	GetRevisionsByEntryIds(entryIds *proto.GetRevisionsByEntryIdRequests) *proto.GetRevisionsByEntryIdResponses
 	GetLatestRevisionByTrackAndChannel(snapName, track, channel string) *proto.GetRevisionResponse
+	GetLatestRevisionBeforeDateById(date time.Time, id string) *proto.GetRevisionResponse
 	SnapDownloadStream(revisionId string) (proto.StoreService_SnapDownloadClient, error)
 	UnscannedUpload(ctx context.Context, snapFile io.Reader) *proto.UnscannedUploadCompleteResponse
 	AddUpload(entryId uuid.UUID, accountId uuid.UUID, snapName string, status string, unscannedFileName string, revision uint32) *proto.AddUploadResponse
@@ -248,6 +250,38 @@ func (c *StoreClient) GetLatestRevisionByTrackAndChannel(snapName, track, channe
 				Message: err.Error()},
 			},
 		}
+	}
+	return resp
+}
+
+func (c *StoreClient) GetLatestRevisionBeforeDateById(date time.Time, id string) *proto.GetRevisionResponse {
+	if id == "" {
+		return &proto.GetRevisionResponse{
+			Errors: []*cerrorpb.Error{
+				{
+					Code: cerror.MissingField,
+					Message: "snap id is required",
+				},
+			},
+		}
+	}
+
+	req := &proto.GetLatestRevisionBeforeDateByIdRequest{
+		Date:  timestamppb.New(date),
+		Id: id,
+	}
+
+	resp, err := c.client.GetLatestRevisionBeforeDateById(context.Background(), req)
+	if err != nil {
+		resp = &proto.GetRevisionResponse{
+			Errors: []*cerrorpb.Error{
+				{
+					Code: cerror.InternalServerError,
+					Message: err.Error(),
+				},
+			},
+		}
+
 	}
 	return resp
 }

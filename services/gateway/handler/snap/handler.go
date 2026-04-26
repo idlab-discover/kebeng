@@ -106,6 +106,29 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 
 func (h *Handler) refreshInstallOrDownload(action *model.Action, el *cerror.ErrorList) (*model.RefreshSnapResult, *cerror.CustomError) {
 	var res model.RefreshSnapResult
+
+	if action.CohortKey != "" {
+		ckey, err := cohortKeyFromString(action.CohortKey)
+		if err != nil {
+			return nil, cerror.NewCustomError(cerror.BadRequest, fmt.Sprintf("cohort key error: %s", err.Error()))
+		}
+
+		valid, err := verifyCohortKey(*ckey)
+		if err != nil {
+			return nil, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("could not verify cohort key: %s", err.Error()))
+		}
+
+		if !valid {
+			return nil, cerror.NewCustomError(cerror.InvalidField, "cohort key is not valid")
+		}
+
+		// TODO: Write function to find largest K elem integers where
+		// CreatedAt + k * 90 < today
+		h.StoreClient.GetLatestRevisionBeforeDateById(ckey.CreatedAt, ckey.SnapID)
+
+	}
+
+
 	snapEntry, latestRevision := h.getLatestRevisionByEntryName(el, action.Name, action.Channel)
 	if el.HasError() {
 		return nil, cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("latest revision not found by name: %s", action.Name))
