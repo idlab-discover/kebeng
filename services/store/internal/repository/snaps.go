@@ -509,9 +509,8 @@ func (sp *SnapsRepository) GetLatestRevisionBeforeDateById(date time.Time, id st
 
 	err := sp.db.Get(&revision, query, id, date)
 	if err != nil {
-		cerr := cerror.ConvertError(err, fmt.Sprintf("error getting revision for id = '%s' and before date '%v'", id, date))
-		logrus.Error(cerr)
-		el.AddCustomError(cerr)
+		cerr := cerror.ConvertError(err)
+		el.Add(cerror.ResourceNotFound, fmt.Sprintf("Could not find snap with id = %s before %d", id, date.Unix()))
 		return nil, cerr
 	}
 

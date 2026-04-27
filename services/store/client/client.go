@@ -276,7 +276,7 @@ func (c *StoreClient) GetLatestRevisionBeforeDateById(date time.Time, id string)
 		resp = &proto.GetRevisionResponse{
 			Errors: []*cerrorpb.Error{
 				{
-					Code: cerror.InternalServerError,
+					Code: cerror.ResourceNotFound,
 					Message: err.Error(),
 				},
 			},

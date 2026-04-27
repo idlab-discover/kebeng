@@ -160,13 +160,9 @@ func (h *Handler) refreshInstallOrDownload(action *model.Action, el *cerror.Erro
 		}
 
 		// Find the closest 90-day milestone based on the cohort creation date
-
-		const ninetyDaysF = 90 * 24
-		elapsed := time.Since(ckey.CreatedAt) // WARN: Assumption: createdAt < now, negative values wouldn't work
-		k := int(elapsed / time.Duration(ninetyDaysF))
-		closestMilestone := ckey.CreatedAt.Add(time.Duration(k * ninetyDaysF))
-
+		closestMilestone := getMostRecent90DayMilestone(ckey.CreatedAt)
 		revision = h.StoreClient.GetLatestRevisionBeforeDateById(closestMilestone, entry.Id)
+
 		if len(revision.Errors) > 0 {
 			res.Result = "error"
 			return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("error getting revision: %v", revision.Errors))
@@ -238,9 +234,46 @@ func (h *Handler) refreshRefresh(action *model.Action, el *cerror.ErrorList) (*m
 		return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("account error: %v", publisher.Errors))
 	}
 
-	_, latestRevision := h.getLatestRevisionByEntryName(el, entry.SnapName)
-	if el.HasError() {
-		return nil, cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("latest revision not found by name: %s", action.Name))
+	var latestRevision *storepb.GetRevisionResponse
+
+	if action.CohortKey != "" {
+		ckey, err := cohortKeyFromString(action.CohortKey)
+		if err != nil {
+			res.Result = "error"
+			return &res, cerror.NewCustomError(cerror.BadRequest, err.Error())
+		}
+
+		valid, err := verifyCohortKey(*ckey)
+		if err != nil {
+			res.Result = "error"
+			return &res, cerror.NewCustomError(cerror.InternalServerError, err.Error())
+		}
+
+		if !valid {
+			res.Result = "error"
+			return &res, cerror.NewCustomError(cerror.BadRequest, "invalid cohort key provided")
+		}
+
+		if entry.Id != ckey.SnapID {
+			res.Result = "error"
+			return &res, cerror.NewCustomError(cerror.BadRequest, "the provided cohort key does not apply to the provided snap")
+		}
+
+		closestMilestone := getMostRecent90DayMilestone(ckey.CreatedAt.UTC())
+		logrus.Infof("Cohort Key CreatedAt is %v", ckey.CreatedAt)
+		logrus.Infof("Cohort Key Milestone is %v", closestMilestone)
+		latestRevision = h.StoreClient.GetLatestRevisionBeforeDateById(closestMilestone, entry.Id)
+
+		if len(latestRevision.Errors) > 0 {
+			res.Result = "error"
+			return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("error getting revision: %v", latestRevision.Errors))
+		}
+	} else {
+		_, latestRevision = h.getLatestRevisionByEntryName(el, entry.SnapName)
+
+		if el.HasError() {
+			return nil, cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("latest revision not found by name: %s", action.Name))
+		}
 	}
 
 	downloadUrl := fmt.Sprintf("%s/download/%s", h.Config.StoreUrl, latestRevision.Id)
@@ -973,4 +1006,12 @@ func init() {
 	}
 	cfg = *conf
 
+}
+
+// getMostRecent90DayMilestone calculates the closest 90-day window starting point since a date
+func getMostRecent90DayMilestone(origin time.Time) time.Time {
+    const ninetyDays = 90 * 24 * time.Hour
+    elapsed := time.Since(origin)
+    k := int(elapsed / ninetyDays)
+    return origin.Add(time.Duration(k) * ninetyDays)
 }
