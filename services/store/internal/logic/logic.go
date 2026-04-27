@@ -542,7 +542,6 @@ func (s *StoreLogic) SnapDownload(req *proto.SnapDownloadRequest, stream proto.S
 	const chunkSize = 64 * 1024
 	buffer := make([]byte, chunkSize)
 
-	// TODO: add snapName to Revision
 	protoRevision := convertRevisionToProto(revision)
 
 	// send the initial message with revision metadata.
