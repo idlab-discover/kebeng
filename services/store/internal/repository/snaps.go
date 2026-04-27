@@ -25,6 +25,7 @@ type ISnapsRepository interface {
 	AddTrack(entryId uuid.UUID, trackName string, errorList *cerror.ErrorList) (*model.SnapTrack, *cerror.CustomError)
 	AddUpload(entryId uuid.UUID, accountId uuid.UUID, snapName string, status string, unscannedFileName string, revision uint32, errorList *cerror.ErrorList) (*model.SnapUpload, *cerror.CustomError)
 	RegisterSnap(snapName string, snapType string, confinement string, base string, isPrivate bool, status string, price float64, storeName string, iconURL string, accountId uuid.UUID, errorList *cerror.ErrorList) (*model.SnapEntry, *cerror.CustomError)
+	AddDelta(sourceRevisionID, targetRevisionID uuid.UUID, minioFilePath string, size uint64, sha3_384_encoded string, el *cerror.ErrorList) (*model.SnapDelta, *cerror.CustomError)
 
 	// READ
 	GetAllSnapEntries(errorList *cerror.ErrorList) (*[]model.SnapEntry, *cerror.CustomError)
@@ -48,6 +49,7 @@ type ISnapsRepository interface {
 	GetTracksByEntryId(snapId uuid.UUID, errorList *cerror.ErrorList) ([]*model.SnapTrack, *cerror.CustomError)
 	GetTrackById(id uuid.UUID, errorList *cerror.ErrorList) (*model.SnapTrack, *cerror.CustomError)
 	GetUploadById(id uuid.UUID, errorList *cerror.ErrorList) (*model.SnapUpload, *cerror.CustomError)
+	GetDeltaByRevisionPair(sourceRevisionID, targetRevisionID uuid.UUID, el *cerror.ErrorList) (*model.SnapDelta, *cerror.CustomError)
 
 	// UPDATE
 	UpdateUploadStatus(uploadId uuid.UUID, status string, revision uint32, errorList *cerror.ErrorList) *cerror.CustomError
@@ -177,6 +179,33 @@ func (sp *SnapsRepository) AddUpload(entryId uuid.UUID, accountId uuid.UUID, sna
 	}
 
 	return &upload, nil
+}
+
+func (sp *SnapsRepository) AddDelta(sourceRevisionID, targetRevisionID uuid.UUID, minioFilePath string, size uint64, sha3_384_encoded string, el *cerror.ErrorList) (*model.SnapDelta, *cerror.CustomError) {
+	snapDelta := model.SnapDelta{
+		SourceRevisionID: sourceRevisionID,
+		TargetRevisionID: targetRevisionID,
+		MinioFilePath:    minioFilePath,
+		Size:             size,
+		SHA3_384_Encoded: sha3_384_encoded,
+	}
+
+	query := `
+		INSERT INTO snap_deltas (source_revision_id, target_revision_id, minio_file_path, size, sha3_384_encoded)
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT (source_revision_id, target_revision_id) DO NOTHING
+		RETURNING id
+	`
+
+	err := sp.db.Get(&snapDelta.ID, query, snapDelta.SourceRevisionID, snapDelta.TargetRevisionID, snapDelta.MinioFilePath, snapDelta.Size, snapDelta.SHA3_384_Encoded)
+	if err != nil {
+		cerr := cerror.ConvertError(err, fmt.Sprintf("error adding snap delta for revision source = '%s' and target revision = '%s'", sourceRevisionID.String(), targetRevisionID.String()))
+
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return nil, cerr
+	}
+	return &snapDelta, nil
 }
 
 // QUESTION: maybe we can just internaly call this AddEntry -> clearer name?
@@ -712,6 +741,25 @@ func (sp *SnapsRepository) GetUploadById(id uuid.UUID, el *cerror.ErrorList) (*m
 	}
 
 	return &upload, nil
+}
+
+func (sp *SnapsRepository) GetDeltaByRevisionPair(sourceRevisionID, targetRevisionID uuid.UUID, el *cerror.ErrorList) (*model.SnapDelta, *cerror.CustomError) {
+	var delta model.SnapDelta
+	query := `
+		SELECT *
+		FROM snap_deltas
+		WHERE source_revision_id = $1
+		AND target_revision_id = $2
+	`
+
+	err := sp.db.Get(&delta, query, sourceRevisionID, targetRevisionID)
+	if err != nil {
+		cerr := cerror.ConvertError(err, fmt.Sprintf("error getting snap delta with source revision = '%s' and target revision = '%s'", sourceRevisionID, targetRevisionID))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return nil, cerr
+	}
+	return &delta, nil
 }
 
 // ============ UPDATE =============

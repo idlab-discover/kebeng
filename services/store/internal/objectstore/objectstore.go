@@ -37,6 +37,7 @@ type IObjectStore interface {
 	Move(sourceBucket, destinationBucket, objectName string, newObjectName string) error
 	GetObjectCustomMetadata(bucket string, objectName string) (*model.Metadata, error)
 	DeleteFileFromBucket(bucket string, filePath string) *cerror.CustomError
+	SaveDeltaToBucket(bucket, filePath string, content io.Reader, size uint64) (string, error)
 }
 
 type ObjectStore struct {
@@ -89,6 +90,33 @@ func (obs *ObjectStore) Move(sourceBucket, destinationBucket, objectName, newObj
 	}
 
 	return nil
+}
+
+func (obs *ObjectStore) SaveDeltaToBucket(bucket, filePath string, content io.Reader, size uint64) (string, error) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	exists, err := obs.MinioClient.BucketExists(ctx, bucket)
+	if err != nil {
+		logrus.Errorf("error checking if bucket %s exists, err: %v", bucket, err)
+		return "", err
+	}
+	if !exists {
+		if err := obs.MinioClient.MakeBucket(ctx, bucket, minio.MakeBucketOptions{}); err != nil {
+			logrus.Errorf("error creating bucket %s, err: %v", bucket, err)
+			return "", err
+		}
+	}
+
+	_, err = obs.MinioClient.PutObject(ctx, bucket, filePath, content, int64(size), minio.PutObjectOptions{
+		ContentType: "application/octet-stream",
+	})
+	if err != nil {
+		logrus.Errorf("error uploading delta to bucket %s, file path: %s, err: %v", bucket, filePath, err)
+		return "", err
+	}
+
+	return filePath, nil
 }
 
 func (obs *ObjectStore) SaveFileToBucket(bucket string, filePath string, sha3_384_encoded string, name string, version string, summary string, description string, confinement string, base string, grade string, architectures, refreshControl []string, plugs model.Plugs, slots model.Slots) (*model.Metadata, error) {

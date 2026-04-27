@@ -158,5 +158,15 @@ type SnapMeta struct {
 	RefreshControl []string       `yaml:"refresh-control"`
 }
 
+type SnapDelta struct {
+	ID               uuid.UUID `json:"id" db:"id"`
+	CreatedAt        time.Time `json:"created_at" db:"created_at"`
+	SourceRevisionID uuid.UUID `json:"source_revision_id" db:"source_revision_id"`
+	TargetRevisionID uuid.UUID `json:"target_revision_id" db:"target_revision_id"`
+	MinioFilePath    string    `json:"minio_file_path" db:"minio_file_path"`
+	Size             uint64    `json:"size" db:"size"`
+	SHA3_384_Encoded string    `json:"sha3_384_encoded" db:"sha3_384_encoded"`
+}
+
 type Plugs map[string]map[string]interface{}
 type Slots map[string]map[string]interface{}

@@ -75,6 +75,15 @@ func (m *MockSnapsRepository) RegisterSnap(snapName string, snapType string, con
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
+func (m *MockSnapsRepository) AddDelta(sourceRevisionID, targetRevisionID uuid.UUID, minioFilePath string, size uint64, sha3_384_encoded string, el *cerror.ErrorList) (*model.SnapDelta, *cerror.CustomError) {
+	args := m.Called(sourceRevisionID, targetRevisionID, minioFilePath, size, sha3_384_encoded, el)
+	if args.Get(0) != nil {
+		return args.Get(0).(*model.SnapDelta), nil
+	}
+	el.Add(cerror.InternalServerError, "")
+	return nil, args.Get(1).(*cerror.CustomError)
+}
+
 // READ
 func (m *MockSnapsRepository) GetAllSnapEntries(el *cerror.ErrorList) (*[]model.SnapEntry, *cerror.CustomError) {
 	args := m.Called(el)
@@ -267,6 +276,15 @@ func (m *MockSnapsRepository) GetChannelByTrackIdAndName(trackId uuid.UUID, chan
 	args := m.Called(trackId, channelName, el)
 	if args.Get(0) != nil {
 		return args.Get(0).(*model.SnapChannel), nil
+	}
+	el.Add(cerror.InternalServerError, "")
+	return nil, args.Get(1).(*cerror.CustomError)
+}
+
+func (m *MockSnapsRepository) GetDeltaByRevisionPair(sourceRevisionID, targetRevisionID uuid.UUID, el *cerror.ErrorList) (*model.SnapDelta, *cerror.CustomError) {
+	args := m.Called(sourceRevisionID, targetRevisionID, el)
+	if args.Get(0) != nil {
+		return args.Get(0).(*model.SnapDelta), nil
 	}
 	el.Add(cerror.InternalServerError, "")
 	return nil, args.Get(1).(*cerror.CustomError)
