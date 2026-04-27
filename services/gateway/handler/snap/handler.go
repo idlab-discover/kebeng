@@ -70,6 +70,7 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 			res, cerr := h.refreshInstallOrDownload(action, el)
 			if cerr != nil {
 				c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+				logrus.Errorf("error installing snap: %v", cerr)
 				return
 			}
 			res.Result = "install"
@@ -106,45 +107,80 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 
 func (h *Handler) refreshInstallOrDownload(action *model.Action, el *cerror.ErrorList) (*model.RefreshSnapResult, *cerror.CustomError) {
 	var res model.RefreshSnapResult
+	var revision *storepb.GetRevisionResponse
+
+	entries := h.StoreClient.GetEntries(&storepb.GetEntriesRequest{
+		Entries: []*storepb.GetEntryRequest{
+			&storepb.GetEntryRequest{
+				Name: &action.Name,
+			},
+		},
+	})
+
+	if len(entries.Errors) > 0 {
+		el.ExtendProtoError(entries.Errors)
+		res.Result = "error"
+		return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("error getting snap entry: %v", entries.Errors))
+	}
+
+	if len(entries.Entries) < 1 {
+		res.Result = "error"
+		return &res, cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("snap not found"))
+	}
+
+	entry := entries.Entries[0]
+
+	pub := h.AccountClient.GetAccountByID(entry.PublisherId)
+	if len(pub.Errors) > 0 {
+		res.Result = "error"
+		return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("error occurred fetching publisher"))
+	}
 
 	if action.CohortKey != "" {
 		ckey, err := cohortKeyFromString(action.CohortKey)
 		if err != nil {
-			return nil, cerror.NewCustomError(cerror.BadRequest, fmt.Sprintf("cohort key error: %s", err.Error()))
+			res.Result = "error"
+			return &res, cerror.NewCustomError(cerror.BadRequest, err.Error())
 		}
 
 		valid, err := verifyCohortKey(*ckey)
 		if err != nil {
-			return nil, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("could not verify cohort key: %s", err.Error()))
+			res.Result = "error"
+			return &res, cerror.NewCustomError(cerror.InternalServerError, err.Error())
 		}
 
 		if !valid {
-			return nil, cerror.NewCustomError(cerror.InvalidField, "cohort key is not valid")
+			res.Result = "error"
+			return &res, cerror.NewCustomError(cerror.BadRequest, "invalid cohort key provided")
 		}
 
-		// TODO: Write function to find largest K elem integers where
-		// CreatedAt + k * 90 < today
-		h.StoreClient.GetLatestRevisionBeforeDateById(ckey.CreatedAt, ckey.SnapID)
+		if entry.Id != ckey.SnapID {
+			res.Result = "error"
+			return &res, cerror.NewCustomError(cerror.BadRequest, "the provided cohort key does not apply to the provided snap")
+		}
 
+		// Find the closest 90-day milestone based on the cohort creation date
+
+		const ninetyDaysF = 90 * 24
+		elapsed := time.Since(ckey.CreatedAt) // WARN: Assumption: createdAt < now, negative values wouldn't work
+		k := int(elapsed / time.Duration(ninetyDaysF))
+		closestMilestone := ckey.CreatedAt.Add(time.Duration(k * ninetyDaysF))
+
+		revision = h.StoreClient.GetLatestRevisionBeforeDateById(closestMilestone, entry.Id)
+		if len(revision.Errors) > 0 {
+			res.Result = "error"
+			return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("error getting revision: %v", revision.Errors))
+		}
+	} else {
+		_, revision = h.getLatestRevisionByEntryName(el, entry.SnapName)
+		if el.HasError() {
+			return nil, cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("latest revision not found by name: %s", action.Name))
+		}
 	}
 
+	downloadUrl := fmt.Sprintf("%s/download/%s", h.Config.StoreUrl, revision.Id)
 
-	snapEntry, latestRevision := h.getLatestRevisionByEntryName(el, action.Name, action.Channel)
-	if el.HasError() {
-		return nil, cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("latest revision not found by name: %s", action.Name))
-	}
-
-	// if publisher not found we should error this is not safe if we don't know who published it
-	publisher := h.AccountClient.GetAccountByID(snapEntry.PublisherId)
-	if len(publisher.Errors) > 0 {
-		el.ExtendProtoError(publisher.Errors)
-		res.Result = "error"
-		return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("account error: %v", publisher.Errors))
-	}
-
-	downloadUrl := fmt.Sprintf("%s/download/%s", h.Config.StoreUrl, latestRevision.Id)
-
-	raw, err := base64.RawURLEncoding.DecodeString(latestRevision.Sha3_384Encoded)
+	raw, err := base64.RawURLEncoding.DecodeString(revision.Sha3_384Encoded)
 	if err != nil {
 		el.Add(cerror.InternalServerError, fmt.Sprintf("error decoding sha3_384: %s", err.Error()))
 	}
@@ -152,29 +188,114 @@ func (h *Handler) refreshInstallOrDownload(action *model.Action, el *cerror.Erro
 	hexSum := hex.EncodeToString(raw)
 
 	res.InstanceKey = action.InstanceKey
-	res.SnapId = snapEntry.Id
-	res.Name = snapEntry.SnapName
+	res.SnapId = entry.Id
+	res.Name = entry.SnapName
 	res.Snap = &model.RefreshSnap{
-		Architectures: latestRevision.Architectures,
-		SnapId:        snapEntry.Id,
-		Name:          snapEntry.SnapName,
+		Architectures: revision.Architectures,
+		SnapId:        entry.Id,
+		Name:          entry.SnapName,
 		Publisher: &model.Publisher{
-			Username: publisher.Username,
-			ID:       publisher.Id,
+			ID:          pub.Id,
+			DisplayName: pub.DisplayName,
+			Username:    pub.Username,
+			Validation:  pub.Validation,
 		},
 		Download: &model.Download{
 			URL:      &downloadUrl,
 			Sha3_384: &hexSum,
-			Size:     &latestRevision.Size,
+			Size:     &revision.Size,
 		},
-		Version:     latestRevision.Version,
-		Revision:    latestRevision.SequenceNumber,
-		Confinement: snapEntry.Confinement,
-		Type:        snapEntry.Type,
-		Base:        snapEntry.Base,
+		Version:     revision.Version,
+		Revision:    revision.SequenceNumber,
+		Confinement: entry.Confinement,
+		Type:        entry.Type,
+		Base:        entry.Base,
 	}
+
 	return &res, nil
 }
+
+// func (h *Handler) refreshInstallOrDownload(action *model.Action, el *cerror.ErrorList) (*model.RefreshSnapResult, *cerror.CustomError) {
+// 	var res model.RefreshSnapResult
+//
+// 	snapEntry, latestRevision := h.getLatestRevisionByEntryName(el, action.Name, action.Channel)
+// 	if el.HasError() {
+// 		return nil, cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("latest revision not found by name: %s", action.Name))
+// 	}
+//
+// 	// if publisher not found we should error this is not safe if we don't know who published it
+// 	publisher := h.AccountClient.GetAccountByID(snapEntry.PublisherId)
+// 	if len(publisher.Errors) > 0 {
+// 		el.ExtendProtoError(publisher.Errors)
+// 		res.Result = "error"
+// 		return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("account error: %v", publisher.Errors))
+// 	}
+//
+// 	// TODO: This function needs some restructuring.
+// 	// Now we fetch the snapEntry and most recent revision
+// 	// And after that we see if a cohort key was passed and we overwrite those revision details if found.
+// 	// It would definitely be better if we just fetch the entry, see if there is a cohort key or not and
+// 	// based on that we fetch our revision
+// 	if action.CohortKey != "" {
+// 		ckey, err := cohortKeyFromString(action.CohortKey)
+// 		if err != nil {
+// 			return nil, cerror.NewCustomError(cerror.BadRequest, fmt.Sprintf("cohort key error: %s", err.Error()))
+// 		}
+//
+// 		valid, err := verifyCohortKey(*ckey)
+// 		if err != nil {
+// 			return nil, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("could not verify cohort key: %s", err.Error()))
+// 		}
+//
+// 		if !valid {
+// 			return nil, cerror.NewCustomError(cerror.InvalidField, "cohort key is not valid")
+// 		}
+//
+// 		// TODO: Write function to find largest K elem integers where
+// 		// CreatedAt + k * 90 < today
+// 		rev := h.StoreClient.GetLatestRevisionBeforeDateById(ckey.CreatedAt, ckey.SnapID)
+// 		if len(rev.Errors) > 0 {
+// 			el.ExtendProtoError(rev.Errors)
+// 			res.Result = "error"
+// 			return &res, cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("could not find cohort snap revision", rev.Errors))
+// 		}
+//
+// 		latestRevision = rev
+// 	}
+//
+// 	downloadUrl := fmt.Sprintf("%s/download/%s", h.Config.StoreUrl, latestRevision.Id)
+//
+// 	raw, err := base64.RawURLEncoding.DecodeString(latestRevision.Sha3_384Encoded)
+// 	if err != nil {
+// 		el.Add(cerror.InternalServerError, fmt.Sprintf("error decoding sha3_384: %s", err.Error()))
+// 	}
+//
+// 	hexSum := hex.EncodeToString(raw)
+//
+// 	res.InstanceKey = action.InstanceKey
+// 	res.SnapId = snapEntry.Id
+// 	res.Name = snapEntry.SnapName
+// 	res.Snap = &model.RefreshSnap{
+// 		Architectures: latestRevision.Architectures,
+// 		SnapId:        snapEntry.Id,
+// 		Name:          snapEntry.SnapName,
+// 		Publisher: &model.Publisher{
+// 			Username: publisher.Username,
+// 			ID:       publisher.Id,
+// 		},
+// 		Download: &model.Download{
+// 			URL:      &downloadUrl,
+// 			Sha3_384: &hexSum,
+// 			Size:     &latestRevision.Size,
+// 		},
+// 		Version:     latestRevision.Version,
+// 		Revision:    latestRevision.SequenceNumber,
+// 		Confinement: snapEntry.Confinement,
+// 		Type:        snapEntry.Type,
+// 		Base:        snapEntry.Base,
+// 	}
+// 	return &res, nil
+// }
 
 func (h *Handler) refreshRefresh(action *model.Action, el *cerror.ErrorList) (*model.RefreshSnapResult, *cerror.CustomError) {
 	// The workflow differs slightly from refreshInstallOrDownload: in this endpoint we only recieve the snap-id, not name.

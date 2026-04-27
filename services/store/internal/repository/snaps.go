@@ -501,7 +501,7 @@ func (sp *SnapsRepository) GetLatestRevisionBeforeDateById(date time.Time, id st
 	query := `
 		SELECT *
 		FROM revision
-		WHERE id = $1
+		WHERE entry_id = $1
 		AND created_at < $2
 		ORDER BY created_at DESC
 		LIMIT 1
