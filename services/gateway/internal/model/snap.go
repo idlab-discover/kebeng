@@ -134,6 +134,16 @@ type Download struct {
 	URL      *string `json:"url,omitempty"`
 	Sha3_384 *string `json:"sha3-384,omitempty"`
 	Size     *uint64 `json:"size,omitempty"`
+	Deltas   []Delta `json:"deltas,omitempty"`
+}
+
+type Delta struct {
+	Format   string `json:"format"`
+	Sha3_384 string `json:"sha3-384"`
+	Size     uint64 `json:"size"`
+	Source   uint64 `json:"source"`
+	Target   uint64 `json:"target"`
+	URL      string `json:"url"`
 }
 
 // SnapRevision represents a snap revision in the store
