@@ -54,7 +54,7 @@ WORKDIR /workspace/services/gateway
 RUN go build -modfile go.dev.mod -o gateway ./main.go
 
 WORKDIR /workspace/services/store
-RUN apt-get update && apt-get install -y squashfs-tools
+RUN apt-get update && apt-get install -y squashfs-tools xdelta3
 RUN go build -modfile go.dev.mod -o store-service ./main.go
 RUN ["cp", "-r", "/workspace/services/store/internal/migrations", "/workspace/services/store/migrations"]
 

@@ -9,7 +9,7 @@ RUN go build -o /bin/store-service ./main.go
 FROM golang:1.22
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y squashfs-tools
+RUN apt-get update && apt-get install -y squashfs-tools xdelta3
 
 COPY --from=builder /bin/store-service /app/store-service
 COPY --from=builder /app/config.yaml /app/config.yaml
