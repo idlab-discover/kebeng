@@ -39,6 +39,7 @@ type StoreClientInterface interface {
 	GetLatestRevisionByTrackAndChannel(snapName, track, channel string) *proto.GetRevisionResponse
 	GetLatestRevisionBeforeDateById(date time.Time, id string) *proto.GetRevisionResponse
 	SnapDownloadStream(revisionId string) (proto.StoreService_SnapDownloadClient, error)
+	DeltaDownloadStream(snapName, deltaName string) (proto.StoreService_DeltaDownloadClient, error)
 	UnscannedUpload(ctx context.Context, snapFile io.Reader) *proto.UnscannedUploadCompleteResponse
 	AddUpload(entryId uuid.UUID, accountId uuid.UUID, snapName string, status string, unscannedFileName string, revision uint32) *proto.AddUploadResponse
 	GetUploadStatus(uploadId string) *proto.GetUploadStatusResponse
@@ -375,6 +376,14 @@ func (c *StoreClient) SnapDownloadStream(revisionId string) (proto.StoreService_
 		RevisionId: revisionId,
 	}
 	return c.client.SnapDownload(context.Background(), req)
+}
+
+func (c *StoreClient) DeltaDownloadStream(snapName, deltaName string) (proto.StoreService_DeltaDownloadClient, error) {
+	req := &proto.DeltaDownloadRequest{
+		SnapName: snapName,
+		DeltaName: deltaName,
+	}
+	return c.client.DeltaDownload(context.Background(), req)
 }
 
 func (c *StoreClient) GetUploadStatus(uploadId string) *proto.GetUploadStatusResponse {

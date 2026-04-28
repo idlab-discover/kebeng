@@ -586,6 +586,85 @@ func (s *StoreLogic) SnapDownload(req *proto.SnapDownloadRequest, stream proto.S
 	return nil
 }
 
+func (s *StoreLogic) DeltaDownload(req *proto.DeltaDownloadRequest, stream proto.StoreService_DeltaDownloadServer) error {
+	el := cerror.NewErrorList()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	if req.SnapName == "" {
+		cerr := cerror.NewCustomError(cerror.MissingField, "snap name is required")
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return stream.Send(&proto.DeltaDownloadResponse{Errors: el.ConvertToProtoErrorList()})
+	}
+	if req.DeltaName== "" {
+		cerr := cerror.NewCustomError(cerror.MissingField, "delta name is required")
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return stream.Send(&proto.DeltaDownloadResponse{Errors: el.ConvertToProtoErrorList()})
+	}
+
+	minioFilePath := fmt.Sprintf("%s/%s", req.SnapName, req.DeltaName)
+	delta, cerr := s.repo.GetDeltaByMinioFilePath(minioFilePath, el)
+	if cerr != nil {
+		logrus.Error(cerr)
+		return stream.Send(&proto.DeltaDownloadResponse{Errors: el.ConvertToProtoErrorList()})
+	}
+
+	deltaFileReader, err := s.obs.GetDeltaFileReader(ctx, minioFilePath)
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to get delta file reader: %v", err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return stream.Send(&proto.DeltaDownloadResponse{Errors: el.ConvertToProtoErrorList()})
+	}
+	defer func() {
+		if err := deltaFileReader.Close(); err != nil {
+			logrus.Error("failed to close file reader: ", err)
+		}
+	}()
+
+	if err := stream.Send(&proto.DeltaDownloadResponse{
+		Payload: &proto.DeltaDownloadResponse_Initial{
+			Initial: &proto.InitialDeltaDownloadResponse{
+				Size: uint64(delta.Size),
+				Sha3_384Encoded: delta.SHA3_384_Encoded,
+				MinioFilePath: delta.MinioFilePath,
+			},
+		},
+	}); err != nil {
+		logrus.Error("failed to send initial delta download response: ", err)
+		return err
+	}
+
+	const chunkSize = 64 * 1024
+	buffer := make([]byte, chunkSize)
+
+	for {
+		n, err := deltaFileReader.Read(buffer)
+		if n > 0 {
+			if err := stream.Send(&proto.DeltaDownloadResponse{
+				Payload: &proto.DeltaDownloadResponse_Data{
+					Data: &proto.DataChunk{
+						Chunk: buffer[:n],
+					},
+				},
+			}); err != nil {
+				logrus.Error("failed to send delta data chunk: ", err)
+				return err
+			}
+		}
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			logrus.Error("failed to read delta file: ", err)
+			return err
+		}
+	}
+	return nil
+}
+
 func (s *StoreLogic) AddUpload(ctx context.Context, req *proto.AddUploadRequest) (*proto.AddUploadResponse, error) {
 	el := cerror.NewErrorList()
 

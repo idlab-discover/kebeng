@@ -38,6 +38,7 @@ type IObjectStore interface {
 	GetObjectCustomMetadata(bucket string, objectName string) (*model.Metadata, error)
 	DeleteFileFromBucket(bucket string, filePath string) *cerror.CustomError
 	SaveDeltaToBucket(bucket, filePath string, content io.Reader, size uint64) (string, error)
+	GetDeltaFileReader(ctx context.Context, filePath string) (io.ReadCloser, error)
 }
 
 type ObjectStore struct {
@@ -59,6 +60,18 @@ func (obs *ObjectStore) GetSnapFileReader(ctx context.Context, filePath string) 
 	objectPtr, err := obs.MinioClient.GetObject(ctx, "snaps", filePath, minio.GetObjectOptions{})
 	if err != nil {
 		logrus.Errorf("error getting object from bucket 'snaps', file path: %s, err: %v", filePath, err)
+		return nil, err
+	}
+
+	return objectPtr, nil
+}
+
+func (obs *ObjectStore) GetDeltaFileReader(ctx context.Context, filePath string) (io.ReadCloser, error) {
+	logrus.Infof("Getting delta file reader for file path: %s", filePath)
+
+	objectPtr, err := obs.MinioClient.GetObject(ctx, "deltas", filePath, minio.GetObjectOptions{})
+	if err != nil {
+		logrus.Errorf("error getting object from bucket 'deltas' file path: '%s', error: '%s'", filePath, err.Error())
 		return nil, err
 	}
 

@@ -140,6 +140,11 @@ func (m *MockStoreClient) SnapDownloadStream(revisionId string) (proto.StoreServ
 	return args.Get(0).(proto.StoreService_SnapDownloadClient), args.Error(1)
 }
 
+func (m *MockStoreClient) DeltaDownloadStream(snapName, deltaName string) (proto.StoreService_DeltaDownloadClient, error) {
+	args := m.Called(snapName, deltaName)
+	return args.Get(0).(proto.StoreService_DeltaDownloadClient), args.Error(1)
+}
+
 // UnscannedUpload mocks the UnscannedUpload function.
 func (m *MockStoreClient) UnscannedUpload(ctx context.Context, snapFile io.Reader) *proto.UnscannedUploadCompleteResponse {
 	args := m.Called(snapFile)

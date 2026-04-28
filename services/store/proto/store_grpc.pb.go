@@ -29,6 +29,7 @@ const (
 	StoreService_GetLatestRevisionBeforeDateById_FullMethodName    = "/store.StoreService/GetLatestRevisionBeforeDateById"
 	StoreService_GetLatestRevisionByTrackAndChannel_FullMethodName = "/store.StoreService/GetLatestRevisionByTrackAndChannel"
 	StoreService_SnapDownload_FullMethodName                       = "/store.StoreService/SnapDownload"
+	StoreService_DeltaDownload_FullMethodName                      = "/store.StoreService/DeltaDownload"
 	StoreService_UnscannedUpload_FullMethodName                    = "/store.StoreService/UnscannedUpload"
 	StoreService_AddUpload_FullMethodName                          = "/store.StoreService/AddUpload"
 	StoreService_GetUploadStatus_FullMethodName                    = "/store.StoreService/GetUploadStatus"
@@ -52,6 +53,7 @@ type StoreServiceClient interface {
 	GetLatestRevisionBeforeDateById(ctx context.Context, in *GetLatestRevisionBeforeDateByIdRequest, opts ...grpc.CallOption) (*GetRevisionResponse, error)
 	GetLatestRevisionByTrackAndChannel(ctx context.Context, in *GetLatestRevisionRequest, opts ...grpc.CallOption) (*GetRevisionResponse, error)
 	SnapDownload(ctx context.Context, in *SnapDownloadRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SnapDownloadResponse], error)
+	DeltaDownload(ctx context.Context, in *DeltaDownloadRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[DeltaDownloadResponse], error)
 	UnscannedUpload(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[UnscannedUploadRequest, UnscannedUploadCompleteResponse], error)
 	AddUpload(ctx context.Context, in *AddUploadRequest, opts ...grpc.CallOption) (*AddUploadResponse, error)
 	GetUploadStatus(ctx context.Context, in *GetUploadStatusRequest, opts ...grpc.CallOption) (*GetUploadStatusResponse, error)
@@ -178,9 +180,28 @@ func (c *storeServiceClient) SnapDownload(ctx context.Context, in *SnapDownloadR
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type StoreService_SnapDownloadClient = grpc.ServerStreamingClient[SnapDownloadResponse]
 
+func (c *storeServiceClient) DeltaDownload(ctx context.Context, in *DeltaDownloadRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[DeltaDownloadResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &StoreService_ServiceDesc.Streams[1], StoreService_DeltaDownload_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[DeltaDownloadRequest, DeltaDownloadResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type StoreService_DeltaDownloadClient = grpc.ServerStreamingClient[DeltaDownloadResponse]
+
 func (c *storeServiceClient) UnscannedUpload(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[UnscannedUploadRequest, UnscannedUploadCompleteResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &StoreService_ServiceDesc.Streams[1], StoreService_UnscannedUpload_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &StoreService_ServiceDesc.Streams[2], StoreService_UnscannedUpload_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -265,6 +286,7 @@ type StoreServiceServer interface {
 	GetLatestRevisionBeforeDateById(context.Context, *GetLatestRevisionBeforeDateByIdRequest) (*GetRevisionResponse, error)
 	GetLatestRevisionByTrackAndChannel(context.Context, *GetLatestRevisionRequest) (*GetRevisionResponse, error)
 	SnapDownload(*SnapDownloadRequest, grpc.ServerStreamingServer[SnapDownloadResponse]) error
+	DeltaDownload(*DeltaDownloadRequest, grpc.ServerStreamingServer[DeltaDownloadResponse]) error
 	UnscannedUpload(grpc.ClientStreamingServer[UnscannedUploadRequest, UnscannedUploadCompleteResponse]) error
 	AddUpload(context.Context, *AddUploadRequest) (*AddUploadResponse, error)
 	GetUploadStatus(context.Context, *GetUploadStatusRequest) (*GetUploadStatusResponse, error)
@@ -311,6 +333,9 @@ func (UnimplementedStoreServiceServer) GetLatestRevisionByTrackAndChannel(contex
 }
 func (UnimplementedStoreServiceServer) SnapDownload(*SnapDownloadRequest, grpc.ServerStreamingServer[SnapDownloadResponse]) error {
 	return status.Error(codes.Unimplemented, "method SnapDownload not implemented")
+}
+func (UnimplementedStoreServiceServer) DeltaDownload(*DeltaDownloadRequest, grpc.ServerStreamingServer[DeltaDownloadResponse]) error {
+	return status.Error(codes.Unimplemented, "method DeltaDownload not implemented")
 }
 func (UnimplementedStoreServiceServer) UnscannedUpload(grpc.ClientStreamingServer[UnscannedUploadRequest, UnscannedUploadCompleteResponse]) error {
 	return status.Error(codes.Unimplemented, "method UnscannedUpload not implemented")
@@ -527,6 +552,17 @@ func _StoreService_SnapDownload_Handler(srv interface{}, stream grpc.ServerStrea
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type StoreService_SnapDownloadServer = grpc.ServerStreamingServer[SnapDownloadResponse]
 
+func _StoreService_DeltaDownload_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(DeltaDownloadRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(StoreServiceServer).DeltaDownload(m, &grpc.GenericServerStream[DeltaDownloadRequest, DeltaDownloadResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type StoreService_DeltaDownloadServer = grpc.ServerStreamingServer[DeltaDownloadResponse]
+
 func _StoreService_UnscannedUpload_Handler(srv interface{}, stream grpc.ServerStream) error {
 	return srv.(StoreServiceServer).UnscannedUpload(&grpc.GenericServerStream[UnscannedUploadRequest, UnscannedUploadCompleteResponse]{ServerStream: stream})
 }
@@ -714,6 +750,11 @@ var StoreService_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "SnapDownload",
 			Handler:       _StoreService_SnapDownload_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "DeltaDownload",
+			Handler:       _StoreService_DeltaDownload_Handler,
 			ServerStreams: true,
 		},
 		{

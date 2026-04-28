@@ -290,6 +290,15 @@ func (m *MockSnapsRepository) GetDeltaByRevisionPair(sourceRevisionID, targetRev
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
+func (m *MockSnapsRepository) GetDeltaByMinioFilePath(minioFilePath string, el *cerror.ErrorList) (*model.SnapDelta, *cerror.CustomError) {
+	args := m.Called(minioFilePath, el)
+	if args.Get(0) != nil {
+		return args.Get(0).(*model.SnapDelta), nil
+	}
+	el.Add(cerror.InternalServerError, "")
+	return nil, args.Get(1).(*cerror.CustomError)
+}
+
 // UPDATE
 
 func (m *MockSnapsRepository) UpdateUploadStatus(uploadId uuid.UUID, status string, revision uint32, el *cerror.ErrorList) *cerror.CustomError {

@@ -17,6 +17,7 @@ service StoreService {
     rpc GetLatestRevisionBeforeDateById(GetLatestRevisionBeforeDateByIdRequest) returns (GetRevisionResponse);
     rpc GetLatestRevisionByTrackAndChannel(GetLatestRevisionRequest) returns (GetRevisionResponse);
     rpc SnapDownload(SnapDownloadRequest) returns (stream SnapDownloadResponse);
+    rpc DeltaDownload(DeltaDownloadRequest) returns (stream DeltaDownloadResponse);
     rpc UnscannedUpload(stream UnscannedUploadRequest) returns (UnscannedUploadCompleteResponse);
     rpc AddUpload(AddUploadRequest) returns (AddUploadResponse);
     rpc GetUploadStatus(GetUploadStatusRequest) returns (GetUploadStatusResponse);
@@ -194,6 +195,25 @@ message SnapDownloadCompleteResponse {
     GetRevisionResponse revision = 1;
     bytes data = 2;
     repeated proto.Error errors = 3;
+}
+
+message DeltaDownloadRequest {
+  string snap_name = 1;
+  string delta_name = 2;
+}
+
+message DeltaDownloadResponse {
+  oneof payload {
+    InitialDeltaDownloadResponse initial = 1;
+    DataChunk data = 2;
+  }
+  repeated proto.Error errors = 3;
+}
+
+message InitialDeltaDownloadResponse {
+  uint64 size = 1;
+  string sha3_384_encoded = 2;
+  string minio_file_path = 3;
 }
 
 // ####################### END DOWNLOAD #######################

@@ -50,6 +50,7 @@ type ISnapsRepository interface {
 	GetTrackById(id uuid.UUID, errorList *cerror.ErrorList) (*model.SnapTrack, *cerror.CustomError)
 	GetUploadById(id uuid.UUID, errorList *cerror.ErrorList) (*model.SnapUpload, *cerror.CustomError)
 	GetDeltaByRevisionPair(sourceRevisionID, targetRevisionID uuid.UUID, el *cerror.ErrorList) (*model.SnapDelta, *cerror.CustomError)
+	GetDeltaByMinioFilePath(minioFilePath string, el *cerror.ErrorList) (*model.SnapDelta, *cerror.CustomError)
 
 	// UPDATE
 	UpdateUploadStatus(uploadId uuid.UUID, status string, revision uint32, errorList *cerror.ErrorList) *cerror.CustomError
@@ -755,6 +756,23 @@ func (sp *SnapsRepository) GetDeltaByRevisionPair(sourceRevisionID, targetRevisi
 	err := sp.db.Get(&delta, query, sourceRevisionID, targetRevisionID)
 	if err != nil {
 		cerr := cerror.ConvertError(err, fmt.Sprintf("error getting snap delta with source revision = '%s' and target revision = '%s'", sourceRevisionID, targetRevisionID))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return nil, cerr
+	}
+	return &delta, nil
+}
+
+func (sp *SnapsRepository) GetDeltaByMinioFilePath(minioFilePath string, el *cerror.ErrorList) (*model.SnapDelta, *cerror.CustomError) {
+	var delta model.SnapDelta
+	query := `
+		SELECT *
+		FROM snap_deltas
+		WHERE minio_file_path = $1
+	`
+	err := sp.db.Get(&delta, query, minioFilePath)
+	if err != nil {
+		cerr := cerror.ConvertError(err, fmt.Sprintf("error getting snap delta with minio_file_path = '%s'", minioFilePath))
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
 		return nil, cerr

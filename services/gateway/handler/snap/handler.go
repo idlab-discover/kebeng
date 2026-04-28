@@ -801,6 +801,23 @@ func (h *Handler) CreateCohorts(c *gin.Context) {
 	return
 }
 
+func (h *Handler) DownloadDelta(c *gin.Context) {
+	el := cerror.NewErrorList()
+	snapName := c.Param("snap-name")
+	deltaName := c.Param("delta-name")
+	if snapName == "" {
+		el.Add(cerror.BadRequest, "snap name is required")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+	if deltaName == "" {
+		el.Add(cerror.BadRequest, "delta name is required")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+	h.downloadDelta(c, snapName, deltaName, el)
+}
+
 // ########################## HELPER FUNCTIONS ##########################
 
 // download helper function that just downloads a snap nothing else
@@ -857,6 +874,67 @@ func (h *Handler) downloadSnap(c *gin.Context, revisionId string, el *cerror.Err
 			}
 		}
 	}
+}
+
+func (h *Handler) downloadDelta(c *gin.Context, snapName string, deltaName string, el *cerror.ErrorList) {
+	if snapName == "" {
+		el.Add(cerror.BadRequest, "snap name is required")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+	if deltaName == "" {
+		el.Add(cerror.BadRequest, "delta name is required")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+
+	stream, err := h.StoreClient.DeltaDownloadStream(snapName, deltaName)
+	if err != nil {
+		el.Add(cerror.InternalServerError, err.Error())
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+	defer func() {
+		err := stream.CloseSend()
+		if err != nil {
+			logrus.Errorf("failed to close stream: %v", err)
+		}
+	}()
+
+	c.Writer.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, deltaName))
+	c.Writer.Header().Set("Content-Type", "application/octet-stream")
+	c.Writer.WriteHeader(http.StatusOK)
+
+	for {
+		resp, err := stream.Recv()
+		switch {
+		case err == io.EOF:
+			return
+		case err != nil:
+			logrus.Errorf("download stream error: %v", err)
+			return
+		}
+
+		if resp == nil {
+			logrus.Errorf("download stream returned nil resp")
+			return
+		}
+		if len(resp.Errors) > 0 {
+			logrus.Errorf("failed while reading downloadstream: %+v", resp.Errors)
+			return
+		}
+
+		if data := resp.GetData(); data != nil {
+			if _, writeErr := c.Writer.Write(data.Chunk); writeErr != nil {
+				logrus.Errorf("write to HTTP client failed: %v", writeErr)
+				return
+			}
+			if f, ok := c.Writer.(http.Flusher); ok {
+				f.Flush()
+			}
+		}
+	}
+
 }
 
 func (h *Handler) getLatestRevisionByEntryName(el *cerror.ErrorList, entryName string, channelAndTrack ...string) (*storepb.GetEntryResponse, *storepb.GetRevisionResponse) {
