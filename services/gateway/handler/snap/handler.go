@@ -106,26 +106,11 @@ func (h *Handler) refreshInstallOrDownload(action *model.Action, el *cerror.Erro
 	var res model.RefreshSnapResult
 	var revision *storepb.GetRevisionResponse
 
-	entries := h.StoreClient.GetEntries(&storepb.GetEntriesRequest{
-		Entries: []*storepb.GetEntryRequest{
-			&storepb.GetEntryRequest{
-				Name: &action.Name,
-			},
-		},
-	})
-
-	if len(entries.Errors) > 0 {
-		el.ExtendProtoError(entries.Errors)
+	entry, latestRevision := h.getLatestRevisionByEntryName(el, action.Name, action.Channel)
+	if el.HasError() || entry == nil {
 		res.Result = "error"
-		return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("error getting snap entry: %v", entries.Errors))
+		return &res, cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("snap not found: %s", action.Name))
 	}
-
-	if len(entries.Entries) < 1 {
-		res.Result = "error"
-		return &res, cerror.NewCustomError(cerror.ResourceNotFound, "snap not found")
-	}
-
-	entry := entries.Entries[0]
 
 	pub := h.AccountClient.GetAccountByID(entry.PublisherId)
 	if len(pub.Errors) > 0 {
@@ -165,10 +150,10 @@ func (h *Handler) refreshInstallOrDownload(action *model.Action, el *cerror.Erro
 			return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("error getting revision: %v", revision.Errors))
 		}
 	} else {
-		_, revision = h.getLatestRevisionByEntryName(el, entry.SnapName)
-		if el.HasError() {
-			return nil, cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("latest revision not found by name: %s", action.Name))
+		if latestRevision == nil || el.HasError() {
+			return nil, cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("latest revision not found for: %s", action.Name))
 		}
+		revision = latestRevision
 	}
 
 	downloadUrl := fmt.Sprintf("%s/download/%s", h.Config.StoreUrl, revision.Id)
