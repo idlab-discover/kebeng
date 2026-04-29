@@ -86,7 +86,7 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 			})
 
 		case "refresh":
-			res, cerr := h.refreshRefresh(action, el)
+			res, cerr := h.refreshRefresh(action, req.Context, el)
 			if cerr != nil {
 				c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
 				return
@@ -211,7 +211,7 @@ func (h *Handler) refreshInstallOrDownload(action *model.Action, el *cerror.Erro
 	return &res, nil
 }
 
-func (h *Handler) refreshRefresh(action *model.Action, el *cerror.ErrorList) (*model.RefreshSnapResult, *cerror.CustomError) {
+func (h *Handler) refreshRefresh(action *model.Action, context []*model.Context, el *cerror.ErrorList) (*model.RefreshSnapResult, *cerror.CustomError) {
 	// The workflow differs slightly from refreshInstallOrDownload: in this endpoint we only recieve the snap-id, not name.
 	// Depending on the Snap, we may also need to add deltas
 
@@ -283,6 +283,8 @@ func (h *Handler) refreshRefresh(action *model.Action, el *cerror.ErrorList) (*m
 		el.Add(cerror.InternalServerError, fmt.Sprintf("error decoding sha3_384: %s", err.Error()))
 	}
 
+	deltas := make([]model.Delta, 0)
+
 	hexSum := hex.EncodeToString(raw)
 
 	res.InstanceKey = action.InstanceKey
@@ -297,10 +299,7 @@ func (h *Handler) refreshRefresh(action *model.Action, el *cerror.ErrorList) (*m
 			ID:       publisher.Id,
 		},
 		Download: &model.Download{
-			// FIX: Add deltas! helper function DeltaBetween(snap A, snap B)
-			// Returns delta, or error if delta failed / not viable
-			// Note that an error in delta calculation must not mean that the update is not possible,
-			// The client can still download the entire snap.
+			Deltas:   deltas,
 			URL:      &downloadUrl,
 			Sha3_384: &hexSum,
 			Size:     &latestRevision.Size,
@@ -1088,8 +1087,8 @@ func init() {
 
 // getMostRecent90DayMilestone calculates the closest 90-day window starting point since a date
 func getMostRecent90DayMilestone(origin time.Time) time.Time {
-    const ninetyDays = 90 * 24 * time.Hour
-    elapsed := time.Since(origin)
-    k := int(elapsed / ninetyDays)
-    return origin.Add(time.Duration(k) * ninetyDays)
+	const ninetyDays = 90 * 24 * time.Hour
+	elapsed := time.Since(origin)
+	k := int(elapsed / ninetyDays)
+	return origin.Add(time.Duration(k) * ninetyDays)
 }
