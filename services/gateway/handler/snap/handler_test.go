@@ -296,8 +296,8 @@ func TestRefreshInstallOrDownload_CohortKey(t *testing.T) {
 			"action": "download",
 			"name": "snap1",
 			"channel": "stable",
-			"instance_key": "instance-123",
-			"cohort_key": "%s"
+			"instance-key": "instance-123",
+			"cohort-key": "%s"
 		}]
 	}`, cohortKeyStr)
 	c.Request = httptest.NewRequest("POST", "/refreshSnap", bytes.NewBufferString(reqJSON))
