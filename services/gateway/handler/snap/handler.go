@@ -285,6 +285,58 @@ func (h *Handler) refreshRefresh(action *model.Action, context []*model.Context,
 
 	deltas := make([]model.Delta, 0)
 
+	// What revision does the client have right now?
+	for _, c := range context {
+		if c.SnapID == entry.Id {
+			userRevision := h.StoreClient.GetRevisionByNameAndSequence(entry.SnapName, uint32(c.Revision))
+			if len(userRevision.Errors) > 0 {
+				res.Result = "error"
+				return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("error getting revision: %v", userRevision.Errors))
+			}
+			if latestRevision.SequenceNumber-userRevision.SequenceNumber != 1 {
+				// NOTE: Delta saving
+				// Currently, we only store deltas for steps of 1 revision at a time
+				// Bigger steps can be ignored for now
+				break
+			}
+
+			// TODO:
+			// dinfo, err := h.StoreClient.GetDeltaByRevisionPair(userRevision.Id, latestRevision.Id)
+			// if (len .... errors ....)  0 {}
+			// SHA = dinfo.Sha...
+
+			userRevisionId, erra := uuid.Parse(userRevision.Id)
+			latestRevisionId, errb := uuid.Parse(latestRevision.Id)
+			if erra != nil || errb != nil {
+				res.Result = "error"
+				return &res, cerror.NewCustomError(cerror.BadRequest, fmt.Sprintf("Unable to parse source and target revision IDs to uuids: %v, %v", erra, errb))
+			}
+			deltaInfo := h.StoreClient.GetDeltaByRevisionPair(userRevisionId, latestRevisionId, el)
+			if len(deltaInfo.Errors) > 0 {
+				res.Result = "error"
+				return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("error getting delta details: %v", deltaInfo.Errors))
+			}
+
+			deltaRaw, err := base64.RawURLEncoding.DecodeString(deltaInfo.Sha3_384Encoded)
+			if err != nil {
+				el.Add(cerror.InternalServerError, fmt.Sprintf("error decoding sha3_384: %s", err.Error()))
+			}
+
+			deltaHexSum := hex.EncodeToString(deltaRaw)
+
+			deltas = append(deltas, model.Delta{
+				Format:   "xdelta3", // NOTE: we only support this type, canonical has more
+				Sha3_384: deltaHexSum,
+				Size:     latestRevision.Size,
+				Source:   uint64(userRevision.SequenceNumber),
+				Target:   uint64(latestRevision.SequenceNumber),
+				URL:      fmt.Sprintf("%s/download-delta/%s/%d-%d.xdelta3", h.Config.StoreUrl, entry.SnapName, userRevision.SequenceNumber, latestRevision.SequenceNumber),
+			})
+
+			break
+		}
+	}
+
 	hexSum := hex.EncodeToString(raw)
 
 	res.InstanceKey = action.InstanceKey

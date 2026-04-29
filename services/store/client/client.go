@@ -48,6 +48,7 @@ type StoreClientInterface interface {
 	UpdateUploadStatus(uploadId string, status string, revision uint32, el *cerror.ErrorList) *proto.UpdateUploadStatusResponse
 	UpdateSnapEntryWithMetadata(snapEntryId uuid.UUID, metadata *model.Metadata) *proto.UpdateEntryResponse
 	GetDeltaByRevisionPair(sourceRevesionId, targetRevisionId uuid.UUID, el *cerror.ErrorList) *proto.GetDeltaResponse
+	GetRevisionByNameAndSequence(name string, sequence uint32) *proto.GetRevisionResponse
 }
 
 var _ StoreClientInterface = (*StoreClient)(nil)
@@ -150,7 +151,7 @@ func (c *StoreClient) GetEntryById(req *proto.GetEntryRequest) *proto.GetEntryRe
 	if err != nil {
 		resp = &proto.GetEntryResponse{
 			Errors: []*cerrorpb.Error{{
-				Code: cerror.InternalServerError,
+				Code:    cerror.InternalServerError,
 				Message: err.Error(),
 			}},
 		}
@@ -187,19 +188,19 @@ func (c *StoreClient) GetEntriesByAccountID(accountID string) *proto.GetEntriesR
 
 func (c *StoreClient) GetEntriesByQuery(query string, architectureList []string, channelList []string, confinementsList []string, fieldsList []string, private bool, publisherId string) *proto.GetEntriesResponse {
 	req := &proto.GetEntriesByQueryRequest{
-		Query: query,
+		Query:            query,
 		ArchitectureList: architectureList,
-		ChannelList: channelList,
+		ChannelList:      channelList,
 		ConfinementsList: confinementsList,
-		FieldsList: fieldsList,
-		PublisherId: publisherId,
-		Private: private,
+		FieldsList:       fieldsList,
+		PublisherId:      publisherId,
+		Private:          private,
 	}
 	resp, err := c.client.GetEntriesByQuery(context.Background(), req)
 	if err != nil {
 		resp = &proto.GetEntriesResponse{
 			Errors: []*cerrorpb.Error{{
-				Code: cerror.InternalServerError,
+				Code:    cerror.InternalServerError,
 				Message: err.Error(),
 			}},
 		}
@@ -261,7 +262,7 @@ func (c *StoreClient) GetLatestRevisionBeforeDateById(date time.Time, id string)
 		return &proto.GetRevisionResponse{
 			Errors: []*cerrorpb.Error{
 				{
-					Code: cerror.MissingField,
+					Code:    cerror.MissingField,
 					Message: "snap id is required",
 				},
 			},
@@ -269,8 +270,8 @@ func (c *StoreClient) GetLatestRevisionBeforeDateById(date time.Time, id string)
 	}
 
 	req := &proto.GetLatestRevisionBeforeDateByIdRequest{
-		Date:  timestamppb.New(date),
-		Id: id,
+		Date: timestamppb.New(date),
+		Id:   id,
 	}
 
 	resp, err := c.client.GetLatestRevisionBeforeDateById(context.Background(), req)
@@ -278,7 +279,46 @@ func (c *StoreClient) GetLatestRevisionBeforeDateById(date time.Time, id string)
 		resp = &proto.GetRevisionResponse{
 			Errors: []*cerrorpb.Error{
 				{
-					Code: cerror.ResourceNotFound,
+					Code:    cerror.ResourceNotFound,
+					Message: err.Error(),
+				},
+			},
+		}
+
+	}
+	return resp
+}
+
+func (c *StoreClient) GetRevisionByNameAndSequence(name string, sequence uint32) *proto.GetRevisionResponse {
+	if name == "" {
+		return &proto.GetRevisionResponse{
+			Errors: []*cerrorpb.Error{
+				{
+					Code:    cerror.BadRequest,
+					Message: "name must be provided",
+				},
+			},
+		}
+	}
+	if sequence < 1 {
+		return &proto.GetRevisionResponse{
+			Errors: []*cerrorpb.Error{
+				{
+					Code:    cerror.BadRequest,
+					Message: "a sequence number is equal or greater than 1",
+				},
+			},
+		}
+	}
+	resp, err := c.client.GetRevisionByNameAndSequence(context.Background(), &proto.GetRevisionRequest{
+		SnapName: name,
+		Sequence: sequence,
+	})
+	if err != nil {
+		return &proto.GetRevisionResponse{
+			Errors: []*cerrorpb.Error{
+				{
+					Code:    cerror.ResourceNotFound,
 					Message: err.Error(),
 				},
 			},
@@ -381,7 +421,7 @@ func (c *StoreClient) SnapDownloadStream(revisionId string) (proto.StoreService_
 
 func (c *StoreClient) DeltaDownloadStream(snapName, deltaName string) (proto.StoreService_DeltaDownloadClient, error) {
 	req := &proto.DeltaDownloadRequest{
-		SnapName: snapName,
+		SnapName:  snapName,
 		DeltaName: deltaName,
 	}
 	return c.client.DeltaDownload(context.Background(), req)
@@ -526,7 +566,7 @@ func (c *StoreClient) GetDeltaByRevisionPair(sourceRevesionId, targetRevisionId 
 	if err != nil {
 		resp = &proto.GetDeltaResponse{
 			Errors: []*cerrorpb.Error{{
-				Code: cerror.InternalServerError,
+				Code:    cerror.InternalServerError,
 				Message: err.Error(),
 			}},
 		}

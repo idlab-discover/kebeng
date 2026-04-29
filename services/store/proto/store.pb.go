@@ -3559,7 +3559,7 @@ const file_services_store_proto_store_proto_rawDesc = "" +
 	"\n" +
 	"deleted_at\x18\x13 \x01(\v2\x1a.google.protobuf.TimestampH\x00R\tdeletedAt\x88\x01\x01\x12$\n" +
 	"\x06errors\x18\x14 \x03(\v2\f.proto.ErrorR\x06errorsB\r\n" +
-	"\v_deleted_at2\xe3\f\n" +
+	"\v_deleted_at2\xba\r\n" +
 	"\fStoreService\x12S\n" +
 	"\x10RegisterSnapName\x12\x1e.store.RegisterSnapNameRequest\x1a\x1f.store.RegisterSnapNameResponse\x12G\n" +
 	"\fGetRevisions\x12\x1a.store.GetRevisionsRequest\x1a\x1b.store.GetRevisionsResponse\x12A\n" +
@@ -3580,7 +3580,8 @@ const file_services_store_proto_store_proto_rawDesc = "" +
 	"\x17GetObjectCustomMetadata\x12%.store.GetObjectCustomMetadataRequest\x1a&.store.GetObjectCustomMetadataResponse\x12Y\n" +
 	"\x12UpdateUploadStatus\x12 .store.UpdateUploadStatusRequest\x1a!.store.UpdateUploadStatusResponse\x12d\n" +
 	"\x1bUpdateSnapEntryWithMetadata\x12).store.UpdateSnapEntryWithMetadataRequest\x1a\x1a.store.UpdateEntryResponse\x12W\n" +
-	"\x16GetDeltaByRevisionPair\x12$.store.GetDeltaByRevisionPairRequest\x1a\x17.store.GetDeltaResponseB=Z;github.com/idlab-discover/kebeng/services/store/proto;storeb\x06proto3"
+	"\x16GetDeltaByRevisionPair\x12$.store.GetDeltaByRevisionPairRequest\x1a\x17.store.GetDeltaResponse\x12U\n" +
+	"\x1cGetRevisionByNameAndSequence\x12\x19.store.GetRevisionRequest\x1a\x1a.store.GetRevisionResponseB=Z;github.com/idlab-discover/kebeng/services/store/proto;storeb\x06proto3"
 
 var (
 	file_services_store_proto_store_proto_rawDescOnce sync.Once
@@ -3708,27 +3709,29 @@ var file_services_store_proto_store_proto_depIdxs = []int32{
 	40, // 61: store.StoreService.UpdateUploadStatus:input_type -> store.UpdateUploadStatusRequest
 	42, // 62: store.StoreService.UpdateSnapEntryWithMetadata:input_type -> store.UpdateSnapEntryWithMetadataRequest
 	18, // 63: store.StoreService.GetDeltaByRevisionPair:input_type -> store.GetDeltaByRevisionPairRequest
-	1,  // 64: store.StoreService.RegisterSnapName:output_type -> store.RegisterSnapNameResponse
-	10, // 65: store.StoreService.GetRevisions:output_type -> store.GetRevisionsResponse
-	5,  // 66: store.StoreService.GetEntries:output_type -> store.GetEntriesResponse
-	3,  // 67: store.StoreService.GetEntryById:output_type -> store.GetEntryResponse
-	5,  // 68: store.StoreService.GetEntriesByAccountId:output_type -> store.GetEntriesResponse
-	5,  // 69: store.StoreService.GetEntriesByQuery:output_type -> store.GetEntriesResponse
-	16, // 70: store.StoreService.GetRevisionsByEntryIds:output_type -> store.GetRevisionsByEntryIdResponses
-	8,  // 71: store.StoreService.GetLatestRevisionBeforeDateById:output_type -> store.GetRevisionResponse
-	8,  // 72: store.StoreService.GetLatestRevisionByTrackAndChannel:output_type -> store.GetRevisionResponse
-	23, // 73: store.StoreService.SnapDownload:output_type -> store.SnapDownloadResponse
-	26, // 74: store.StoreService.DeltaDownload:output_type -> store.DeltaDownloadResponse
-	31, // 75: store.StoreService.UnscannedUpload:output_type -> store.UnscannedUploadCompleteResponse
-	33, // 76: store.StoreService.AddUpload:output_type -> store.AddUploadResponse
-	35, // 77: store.StoreService.GetUploadStatus:output_type -> store.GetUploadStatusResponse
-	37, // 78: store.StoreService.AddRevision:output_type -> store.AddRevisionResponse
-	39, // 79: store.StoreService.GetObjectCustomMetadata:output_type -> store.GetObjectCustomMetadataResponse
-	41, // 80: store.StoreService.UpdateUploadStatus:output_type -> store.UpdateUploadStatusResponse
-	43, // 81: store.StoreService.UpdateSnapEntryWithMetadata:output_type -> store.UpdateEntryResponse
-	19, // 82: store.StoreService.GetDeltaByRevisionPair:output_type -> store.GetDeltaResponse
-	64, // [64:83] is the sub-list for method output_type
-	45, // [45:64] is the sub-list for method input_type
+	6,  // 64: store.StoreService.GetRevisionByNameAndSequence:input_type -> store.GetRevisionRequest
+	1,  // 65: store.StoreService.RegisterSnapName:output_type -> store.RegisterSnapNameResponse
+	10, // 66: store.StoreService.GetRevisions:output_type -> store.GetRevisionsResponse
+	5,  // 67: store.StoreService.GetEntries:output_type -> store.GetEntriesResponse
+	3,  // 68: store.StoreService.GetEntryById:output_type -> store.GetEntryResponse
+	5,  // 69: store.StoreService.GetEntriesByAccountId:output_type -> store.GetEntriesResponse
+	5,  // 70: store.StoreService.GetEntriesByQuery:output_type -> store.GetEntriesResponse
+	16, // 71: store.StoreService.GetRevisionsByEntryIds:output_type -> store.GetRevisionsByEntryIdResponses
+	8,  // 72: store.StoreService.GetLatestRevisionBeforeDateById:output_type -> store.GetRevisionResponse
+	8,  // 73: store.StoreService.GetLatestRevisionByTrackAndChannel:output_type -> store.GetRevisionResponse
+	23, // 74: store.StoreService.SnapDownload:output_type -> store.SnapDownloadResponse
+	26, // 75: store.StoreService.DeltaDownload:output_type -> store.DeltaDownloadResponse
+	31, // 76: store.StoreService.UnscannedUpload:output_type -> store.UnscannedUploadCompleteResponse
+	33, // 77: store.StoreService.AddUpload:output_type -> store.AddUploadResponse
+	35, // 78: store.StoreService.GetUploadStatus:output_type -> store.GetUploadStatusResponse
+	37, // 79: store.StoreService.AddRevision:output_type -> store.AddRevisionResponse
+	39, // 80: store.StoreService.GetObjectCustomMetadata:output_type -> store.GetObjectCustomMetadataResponse
+	41, // 81: store.StoreService.UpdateUploadStatus:output_type -> store.UpdateUploadStatusResponse
+	43, // 82: store.StoreService.UpdateSnapEntryWithMetadata:output_type -> store.UpdateEntryResponse
+	19, // 83: store.StoreService.GetDeltaByRevisionPair:output_type -> store.GetDeltaResponse
+	8,  // 84: store.StoreService.GetRevisionByNameAndSequence:output_type -> store.GetRevisionResponse
+	65, // [65:85] is the sub-list for method output_type
+	45, // [45:65] is the sub-list for method input_type
 	45, // [45:45] is the sub-list for extension type_name
 	45, // [45:45] is the sub-list for extension extendee
 	0,  // [0:45] is the sub-list for field type_name

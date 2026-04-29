@@ -210,6 +210,16 @@ func (m *MockStoreClient) GetDeltaByRevisionPair(sourceRevesionId, targetRevisio
 	}
 	return nil
 }
+
+func (m *MockStoreClient) GetRevisionByNameAndSequence(name string, sequence uint32) *proto.GetRevisionResponse {
+	args := m.Called(name, sequence)
+	if resp, ok := args.Get(0).(*proto.GetRevisionResponse); ok {
+		return resp
+	}
+	return nil
+}
+
+
 // MockSnapDownloadClient fakes the gRPC client‐stream returned by SnapDownloadStream.
 type MockSnapDownloadClient struct {
 	mock.Mock

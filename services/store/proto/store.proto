@@ -26,6 +26,7 @@ service StoreService {
     rpc UpdateUploadStatus(UpdateUploadStatusRequest) returns (UpdateUploadStatusResponse);
     rpc UpdateSnapEntryWithMetadata(UpdateSnapEntryWithMetadataRequest) returns (UpdateEntryResponse);
     rpc GetDeltaByRevisionPair(GetDeltaByRevisionPairRequest) returns (GetDeltaResponse);
+    rpc GetRevisionByNameAndSequence(GetRevisionRequest) returns (GetRevisionResponse);
 }
 
 message RegisterSnapNameRequest {
