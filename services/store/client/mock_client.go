@@ -203,6 +203,13 @@ func (m *MockStoreClient) UpdateSnapEntryWithMetadata(entryId uuid.UUID, metadat
 	return nil
 }
 
+func (m *MockStoreClient) GetDeltaByRevisionPair(sourceRevesionId, targetRevisionId uuid.UUID, el *cerror.ErrorList) *proto.GetDeltaResponse {
+	args := m.Called(sourceRevesionId, targetRevisionId, el)
+	if resp, ok := args.Get(0).(*proto.GetDeltaResponse); ok {
+		return resp
+	}
+	return nil
+}
 // MockSnapDownloadClient fakes the gRPC client‐stream returned by SnapDownloadStream.
 type MockSnapDownloadClient struct {
 	mock.Mock

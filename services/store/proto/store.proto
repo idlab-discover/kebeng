@@ -25,6 +25,7 @@ service StoreService {
     rpc GetObjectCustomMetadata(GetObjectCustomMetadataRequest) returns (GetObjectCustomMetadataResponse);
     rpc UpdateUploadStatus(UpdateUploadStatusRequest) returns (UpdateUploadStatusResponse);
     rpc UpdateSnapEntryWithMetadata(UpdateSnapEntryWithMetadataRequest) returns (UpdateEntryResponse);
+    rpc GetDeltaByRevisionPair(GetDeltaByRevisionPairRequest) returns (GetDeltaResponse);
 }
 
 message RegisterSnapNameRequest {
@@ -164,6 +165,22 @@ message GetLatestRevisionRequest {
     string snap_name = 1;
     string track = 2;
     string channel = 3;
+}
+
+message GetDeltaByRevisionPairRequest {
+  string source_revision_id = 1;
+  string target_revision_id = 2;
+}
+
+message GetDeltaResponse {
+  string id = 1;
+  string source_revision_id = 2;
+  string target_revision_id = 3;
+  string minio_file_path = 4;
+  uint64 size = 5;
+  string sha3_384_encoded = 6;
+
+  repeated proto.Error errors = 7;
 }
 
 // ################### STREAMING #######################

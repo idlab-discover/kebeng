@@ -216,3 +216,11 @@ func (m *MockStoreServiceClient) UpdateSnapEntryWithMetadata(ctx context.Context
 	}
 	return args.Get(0).(*proto.UpdateEntryResponse), nil
 }
+
+func (m *MockStoreServiceClient) GetDeltaByRevisionPair(ctx context.Context, req *proto.GetDeltaByRevisionPairRequest) (*proto.GetDeltaResponse, error) {
+	args := m.Called(ctx, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*proto.GetDeltaResponse), nil
+}

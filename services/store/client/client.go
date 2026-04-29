@@ -47,6 +47,7 @@ type StoreClientInterface interface {
 	GetObjectCustomMetadata(bucket string, objectKey string) *model.Metadata
 	UpdateUploadStatus(uploadId string, status string, revision uint32, el *cerror.ErrorList) *proto.UpdateUploadStatusResponse
 	UpdateSnapEntryWithMetadata(snapEntryId uuid.UUID, metadata *model.Metadata) *proto.UpdateEntryResponse
+	GetDeltaByRevisionPair(sourceRevesionId, targetRevisionId uuid.UUID, el *cerror.ErrorList) *proto.GetDeltaResponse
 }
 
 var _ StoreClientInterface = (*StoreClient)(nil)
@@ -512,6 +513,22 @@ func (c *StoreClient) UpdateSnapEntryWithMetadata(snapEntryId uuid.UUID, metadat
 				Code:    cerror.InternalServerError,
 				Message: err.Error()},
 			},
+		}
+	}
+	return resp
+}
+
+func (c *StoreClient) GetDeltaByRevisionPair(sourceRevesionId, targetRevisionId uuid.UUID, el *cerror.ErrorList) *proto.GetDeltaResponse {
+	resp, err := c.client.GetDeltaByRevisionPair(context.Background(), &proto.GetDeltaByRevisionPairRequest{
+		SourceRevisionId: sourceRevesionId.String(),
+		TargetRevisionId: targetRevisionId.String(),
+	})
+	if err != nil {
+		resp = &proto.GetDeltaResponse{
+			Errors: []*cerrorpb.Error{{
+				Code: cerror.InternalServerError,
+				Message: err.Error(),
+			}},
 		}
 	}
 	return resp

@@ -1127,6 +1127,48 @@ func (s *StoreLogic) UpdateSnapEntryWithMetadata(ctx context.Context, req *proto
 
 }
 
+func (s *StoreLogic) GetDeltaByRevisionPair(ctx context.Context, req *proto.GetDeltaByRevisionPairRequest) (*proto.GetDeltaResponse, error) {
+	el := cerror.NewErrorList()
+
+	if req.SourceRevisionId == "" || req.TargetRevisionId == ""{
+		cerr := cerror.NewCustomError(cerror.MissingField, "revision id is required")
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.GetDeltaResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	sourceRevisionUuid, err := uuid.Parse(req.SourceRevisionId)
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.BadRequest, "source revision id could not be parsed to uuid")
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.GetDeltaResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	targetRevisionUuid, err := uuid.Parse(req.TargetRevisionId)
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.BadRequest, "target revision id could not be parsed to uuid")
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.GetDeltaResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	delta, cerr := s.repo.GetDeltaByRevisionPair(sourceRevisionUuid, targetRevisionUuid, el)
+
+	if cerr != nil {
+		return &proto.GetDeltaResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+	
+	return &proto.GetDeltaResponse{
+		Id: delta.ID.String(),
+		SourceRevisionId: delta.SourceRevisionID.String(),
+		TargetRevisionId: delta.TargetRevisionID.String(),
+		MinioFilePath: delta.MinioFilePath,
+		Size: delta.Size,
+		Sha3_384Encoded: delta.SHA3_384_Encoded,
+	}, nil
+}
+
 // ################# HELPERS #################
 
 func (s *StoreLogic) generateAndStoreDelta(ctx context.Context, source, target *model.SnapRevision) error {

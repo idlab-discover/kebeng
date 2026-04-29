@@ -37,6 +37,7 @@ const (
 	StoreService_GetObjectCustomMetadata_FullMethodName            = "/store.StoreService/GetObjectCustomMetadata"
 	StoreService_UpdateUploadStatus_FullMethodName                 = "/store.StoreService/UpdateUploadStatus"
 	StoreService_UpdateSnapEntryWithMetadata_FullMethodName        = "/store.StoreService/UpdateSnapEntryWithMetadata"
+	StoreService_GetDeltaByRevisionPair_FullMethodName             = "/store.StoreService/GetDeltaByRevisionPair"
 )
 
 // StoreServiceClient is the client API for StoreService service.
@@ -61,6 +62,7 @@ type StoreServiceClient interface {
 	GetObjectCustomMetadata(ctx context.Context, in *GetObjectCustomMetadataRequest, opts ...grpc.CallOption) (*GetObjectCustomMetadataResponse, error)
 	UpdateUploadStatus(ctx context.Context, in *UpdateUploadStatusRequest, opts ...grpc.CallOption) (*UpdateUploadStatusResponse, error)
 	UpdateSnapEntryWithMetadata(ctx context.Context, in *UpdateSnapEntryWithMetadataRequest, opts ...grpc.CallOption) (*UpdateEntryResponse, error)
+	GetDeltaByRevisionPair(ctx context.Context, in *GetDeltaByRevisionPairRequest, opts ...grpc.CallOption) (*GetDeltaResponse, error)
 }
 
 type storeServiceClient struct {
@@ -272,6 +274,16 @@ func (c *storeServiceClient) UpdateSnapEntryWithMetadata(ctx context.Context, in
 	return out, nil
 }
 
+func (c *storeServiceClient) GetDeltaByRevisionPair(ctx context.Context, in *GetDeltaByRevisionPairRequest, opts ...grpc.CallOption) (*GetDeltaResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetDeltaResponse)
+	err := c.cc.Invoke(ctx, StoreService_GetDeltaByRevisionPair_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // StoreServiceServer is the server API for StoreService service.
 // All implementations must embed UnimplementedStoreServiceServer
 // for forward compatibility.
@@ -294,6 +306,7 @@ type StoreServiceServer interface {
 	GetObjectCustomMetadata(context.Context, *GetObjectCustomMetadataRequest) (*GetObjectCustomMetadataResponse, error)
 	UpdateUploadStatus(context.Context, *UpdateUploadStatusRequest) (*UpdateUploadStatusResponse, error)
 	UpdateSnapEntryWithMetadata(context.Context, *UpdateSnapEntryWithMetadataRequest) (*UpdateEntryResponse, error)
+	GetDeltaByRevisionPair(context.Context, *GetDeltaByRevisionPairRequest) (*GetDeltaResponse, error)
 	mustEmbedUnimplementedStoreServiceServer()
 }
 
@@ -357,6 +370,9 @@ func (UnimplementedStoreServiceServer) UpdateUploadStatus(context.Context, *Upda
 }
 func (UnimplementedStoreServiceServer) UpdateSnapEntryWithMetadata(context.Context, *UpdateSnapEntryWithMetadataRequest) (*UpdateEntryResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateSnapEntryWithMetadata not implemented")
+}
+func (UnimplementedStoreServiceServer) GetDeltaByRevisionPair(context.Context, *GetDeltaByRevisionPairRequest) (*GetDeltaResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetDeltaByRevisionPair not implemented")
 }
 func (UnimplementedStoreServiceServer) mustEmbedUnimplementedStoreServiceServer() {}
 func (UnimplementedStoreServiceServer) testEmbeddedByValue()                      {}
@@ -678,6 +694,24 @@ func _StoreService_UpdateSnapEntryWithMetadata_Handler(srv interface{}, ctx cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _StoreService_GetDeltaByRevisionPair_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDeltaByRevisionPairRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StoreServiceServer).GetDeltaByRevisionPair(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StoreService_GetDeltaByRevisionPair_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StoreServiceServer).GetDeltaByRevisionPair(ctx, req.(*GetDeltaByRevisionPairRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // StoreService_ServiceDesc is the grpc.ServiceDesc for StoreService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -744,6 +778,10 @@ var StoreService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateSnapEntryWithMetadata",
 			Handler:    _StoreService_UpdateSnapEntryWithMetadata_Handler,
+		},
+		{
+			MethodName: "GetDeltaByRevisionPair",
+			Handler:    _StoreService_GetDeltaByRevisionPair_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
