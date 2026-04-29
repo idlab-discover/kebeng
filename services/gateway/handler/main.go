@@ -73,6 +73,12 @@ func (h *Handler) SetupEndpoints(r *gin.Engine) {
 
 	r.POST("/dev/api/acl/", h.authHandler.GenerateMacaroon)
 	r.POST("/dev/api/acl/verify/", h.authHandler.VerifyMacaroon) //TODO: implement correctly too many unknows of what has to be included and what not, need good source
+
+	// ********** COHORTS ********
+	r.POST("/v2/cohorts", h.snapHandler.CreateCohorts)
+
+	// ********** DELTAS **********
+	r.GET("/download-delta/:snap-name/:delta-name", h.snapHandler.DownloadDelta)
 }
 
 func (h *Handler) SetupEndpointsWithMonitoring(r *gin.Engine) {
@@ -109,5 +115,11 @@ func (h *Handler) SetupEndpointsWithMonitoring(r *gin.Engine) {
 
 	r.POST("/dev/api/acl/", monitoring.Wrapper("GenerateMacaroon", h.authHandler.GenerateMacaroon))
 	r.POST("/dev/api/acl/verify/", monitoring.Wrapper("VerifyMacaroon", h.authHandler.VerifyMacaroon))
+
+	// ********** COHORTS ********
+	r.POST("/v2/cohorts", monitoring.Wrapper("CreateCohorts", h.snapHandler.CreateCohorts))
+
+	// ********** DELTAS **********
+	r.GET("/download-delta/:snap-name/:delta-name", monitoring.Wrapper("DownloadDelta", h.snapHandler.DownloadDelta))
 
 }

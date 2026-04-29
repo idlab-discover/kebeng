@@ -126,7 +126,7 @@ func (s *AssertionService) AddAccountKeyAssertion(ctx context.Context, req *prot
 		return &proto.AccountKeyAssertionResponse{
 			Errors: el.ConvertToProtoErrorList(),
 		}, nil
-	} else if cerr.GetCode() == cerror.ResourceNotFound {
+	} else if cerr != nil && cerr.GetCode() == cerror.ResourceNotFound {
 		// remove ResourceNotFound since its not a real error in this case
 		el.RemoveErrorWithCode(cerror.ResourceNotFound)
 		sequenceNumber = 1
@@ -247,7 +247,7 @@ func (s *AssertionService) AddSnapDeclarationAssertion(ctx context.Context, req 
 		return &proto.SnapDeclarationAssertionResponse{
 			Errors: el.ConvertToProtoErrorList(),
 		}, nil
-	} else if cerr.GetCode() == cerror.ResourceNotFound {
+	} else if cerr != nil && cerr.GetCode() == cerror.ResourceNotFound {
 		// remove ResourceNotFound since its not a real error in this case
 		el.RemoveErrorWithCode(cerror.ResourceNotFound)
 		sequenceNumber = 1
@@ -406,7 +406,7 @@ func (s *AssertionService) AddAccountAssertion(ctx context.Context, req *proto.A
 		return &proto.AccountAssertionResponse{
 			Errors: el.ConvertToProtoErrorList(),
 		}, nil
-	} else if cerr.GetCode() == cerror.ResourceNotFound {
+	} else if cerr != nil && cerr.GetCode() == cerror.ResourceNotFound {
 		// remove ResourceNotFound since its not a real error in this case
 		el.RemoveErrorWithCode(cerror.ResourceNotFound)
 		sequenceNumber = 1

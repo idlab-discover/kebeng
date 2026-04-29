@@ -18,6 +18,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -30,12 +31,15 @@ type StoreClientInterface interface {
 	Close()
 	RegisterSnapName(snapName string, snapType string, confinement string, base string, isPrivate bool, status string, price float64, storeName string, iconUrl string, dryRun bool, accountId uuid.UUID) *proto.RegisterSnapNameResponse
 	GetEntries(entries *proto.GetEntriesRequest) *proto.GetEntriesResponse
+	GetEntryById(req *proto.GetEntryRequest) *proto.GetEntryResponse
 	GetRevisions(revisions *proto.GetRevisionsRequest) *proto.GetRevisionsResponse
 	GetEntriesByAccountID(accountID string) *proto.GetEntriesResponse
 	GetEntriesByQuery(query string, architectureList []string, channelList []string, confinementsList []string, fieldsList []string, private bool, publisherId string) *proto.GetEntriesResponse
 	GetRevisionsByEntryIds(entryIds *proto.GetRevisionsByEntryIdRequests) *proto.GetRevisionsByEntryIdResponses
 	GetLatestRevisionByTrackAndChannel(snapName, track, channel string) *proto.GetRevisionResponse
+	GetLatestRevisionBeforeDateById(date time.Time, id string) *proto.GetRevisionResponse
 	SnapDownloadStream(revisionId string) (proto.StoreService_SnapDownloadClient, error)
+	DeltaDownloadStream(snapName, deltaName string) (proto.StoreService_DeltaDownloadClient, error)
 	UnscannedUpload(ctx context.Context, snapFile io.Reader) *proto.UnscannedUploadCompleteResponse
 	AddUpload(entryId uuid.UUID, accountId uuid.UUID, snapName string, status string, unscannedFileName string, revision uint32) *proto.AddUploadResponse
 	GetUploadStatus(uploadId string) *proto.GetUploadStatusResponse
@@ -43,6 +47,8 @@ type StoreClientInterface interface {
 	GetObjectCustomMetadata(bucket string, objectKey string) *model.Metadata
 	UpdateUploadStatus(uploadId string, status string, revision uint32, el *cerror.ErrorList) *proto.UpdateUploadStatusResponse
 	UpdateSnapEntryWithMetadata(snapEntryId uuid.UUID, metadata *model.Metadata) *proto.UpdateEntryResponse
+	GetDeltaByRevisionPair(sourceRevesionId, targetRevisionId uuid.UUID, el *cerror.ErrorList) *proto.GetDeltaResponse
+	GetRevisionByNameAndSequence(name string, sequence uint32) *proto.GetRevisionResponse
 }
 
 var _ StoreClientInterface = (*StoreClient)(nil)
@@ -140,6 +146,19 @@ func (c *StoreClient) GetEntries(entries *proto.GetEntriesRequest) *proto.GetEnt
 	return resp
 }
 
+func (c *StoreClient) GetEntryById(req *proto.GetEntryRequest) *proto.GetEntryResponse {
+	resp, err := c.client.GetEntryById(context.Background(), req)
+	if err != nil {
+		resp = &proto.GetEntryResponse{
+			Errors: []*cerrorpb.Error{{
+				Code:    cerror.InternalServerError,
+				Message: err.Error(),
+			}},
+		}
+	}
+	return resp
+}
+
 func (c *StoreClient) GetRevisions(revisions *proto.GetRevisionsRequest) *proto.GetRevisionsResponse {
 	resp, err := c.client.GetRevisions(context.Background(), revisions)
 	if err != nil {
@@ -169,19 +188,19 @@ func (c *StoreClient) GetEntriesByAccountID(accountID string) *proto.GetEntriesR
 
 func (c *StoreClient) GetEntriesByQuery(query string, architectureList []string, channelList []string, confinementsList []string, fieldsList []string, private bool, publisherId string) *proto.GetEntriesResponse {
 	req := &proto.GetEntriesByQueryRequest{
-		Query: query,
+		Query:            query,
 		ArchitectureList: architectureList,
-		ChannelList: channelList,
+		ChannelList:      channelList,
 		ConfinementsList: confinementsList,
-		FieldsList: fieldsList,
-		PublisherId: publisherId,
-		Private: private,
+		FieldsList:       fieldsList,
+		PublisherId:      publisherId,
+		Private:          private,
 	}
 	resp, err := c.client.GetEntriesByQuery(context.Background(), req)
 	if err != nil {
 		resp = &proto.GetEntriesResponse{
 			Errors: []*cerrorpb.Error{{
-				Code: cerror.InternalServerError,
+				Code:    cerror.InternalServerError,
 				Message: err.Error(),
 			}},
 		}
@@ -234,6 +253,77 @@ func (c *StoreClient) GetLatestRevisionByTrackAndChannel(snapName, track, channe
 				Message: err.Error()},
 			},
 		}
+	}
+	return resp
+}
+
+func (c *StoreClient) GetLatestRevisionBeforeDateById(date time.Time, id string) *proto.GetRevisionResponse {
+	if id == "" {
+		return &proto.GetRevisionResponse{
+			Errors: []*cerrorpb.Error{
+				{
+					Code:    cerror.MissingField,
+					Message: "snap id is required",
+				},
+			},
+		}
+	}
+
+	req := &proto.GetLatestRevisionBeforeDateByIdRequest{
+		Date: timestamppb.New(date),
+		Id:   id,
+	}
+
+	resp, err := c.client.GetLatestRevisionBeforeDateById(context.Background(), req)
+	if err != nil {
+		resp = &proto.GetRevisionResponse{
+			Errors: []*cerrorpb.Error{
+				{
+					Code:    cerror.ResourceNotFound,
+					Message: err.Error(),
+				},
+			},
+		}
+
+	}
+	return resp
+}
+
+func (c *StoreClient) GetRevisionByNameAndSequence(name string, sequence uint32) *proto.GetRevisionResponse {
+	if name == "" {
+		return &proto.GetRevisionResponse{
+			Errors: []*cerrorpb.Error{
+				{
+					Code:    cerror.BadRequest,
+					Message: "name must be provided",
+				},
+			},
+		}
+	}
+	if sequence < 1 {
+		return &proto.GetRevisionResponse{
+			Errors: []*cerrorpb.Error{
+				{
+					Code:    cerror.BadRequest,
+					Message: "a sequence number is equal or greater than 1",
+				},
+			},
+		}
+	}
+	resp, err := c.client.GetRevisionByNameAndSequence(context.Background(), &proto.GetRevisionRequest{
+		SnapName: name,
+		Sequence: sequence,
+	})
+	if err != nil {
+		return &proto.GetRevisionResponse{
+			Errors: []*cerrorpb.Error{
+				{
+					Code:    cerror.ResourceNotFound,
+					Message: err.Error(),
+				},
+			},
+		}
+
 	}
 	return resp
 }
@@ -327,6 +417,14 @@ func (c *StoreClient) SnapDownloadStream(revisionId string) (proto.StoreService_
 		RevisionId: revisionId,
 	}
 	return c.client.SnapDownload(context.Background(), req)
+}
+
+func (c *StoreClient) DeltaDownloadStream(snapName, deltaName string) (proto.StoreService_DeltaDownloadClient, error) {
+	req := &proto.DeltaDownloadRequest{
+		SnapName:  snapName,
+		DeltaName: deltaName,
+	}
+	return c.client.DeltaDownload(context.Background(), req)
 }
 
 func (c *StoreClient) GetUploadStatus(uploadId string) *proto.GetUploadStatusResponse {
@@ -455,6 +553,22 @@ func (c *StoreClient) UpdateSnapEntryWithMetadata(snapEntryId uuid.UUID, metadat
 				Code:    cerror.InternalServerError,
 				Message: err.Error()},
 			},
+		}
+	}
+	return resp
+}
+
+func (c *StoreClient) GetDeltaByRevisionPair(sourceRevesionId, targetRevisionId uuid.UUID, el *cerror.ErrorList) *proto.GetDeltaResponse {
+	resp, err := c.client.GetDeltaByRevisionPair(context.Background(), &proto.GetDeltaByRevisionPairRequest{
+		SourceRevisionId: sourceRevesionId.String(),
+		TargetRevisionId: targetRevisionId.String(),
+	})
+	if err != nil {
+		resp = &proto.GetDeltaResponse{
+			Errors: []*cerrorpb.Error{{
+				Code:    cerror.InternalServerError,
+				Message: err.Error(),
+			}},
 		}
 	}
 	return resp

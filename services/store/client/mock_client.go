@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"io"
+	"time"
 
 	"github.com/idlab-discover/kebeng/services/store/client/model"
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
@@ -64,6 +65,15 @@ func (m *MockStoreClient) GetEntries(entries *proto.GetEntriesRequest) *proto.Ge
 	return nil
 }
 
+// GetEntrById mocks the GetEntryById function.
+func (m *MockStoreClient) GetEntryById(req *proto.GetEntryRequest) *proto.GetEntryResponse {
+	args := m.Called(req)
+	if resp, ok := args.Get(0).(*proto.GetEntryResponse); ok {
+		return resp
+	}
+	return nil
+}
+
 // GetRevisions mocks the GetRevisions function.
 func (m *MockStoreClient) GetRevisions(revisions *proto.GetRevisionsRequest) *proto.GetRevisionsResponse {
 	args := m.Called(revisions)
@@ -116,10 +126,23 @@ func (m *MockStoreClient) GetLatestRevisionByTrackAndChannel(snapName, track, ch
 	return nil
 }
 
+func (m *MockStoreClient) GetLatestRevisionBeforeDateById(date time.Time, id string) *proto.GetRevisionResponse {
+	args := m.Called(date, id)
+	if resp, ok := args.Get(0).(*proto.GetRevisionResponse); ok {
+		return resp
+	}
+	return nil
+}
+
 // SnapDownload mocks the SnapDownload function.
 func (m *MockStoreClient) SnapDownloadStream(revisionId string) (proto.StoreService_SnapDownloadClient, error) {
 	args := m.Called(revisionId)
 	return args.Get(0).(proto.StoreService_SnapDownloadClient), args.Error(1)
+}
+
+func (m *MockStoreClient) DeltaDownloadStream(snapName, deltaName string) (proto.StoreService_DeltaDownloadClient, error) {
+	args := m.Called(snapName, deltaName)
+	return args.Get(0).(proto.StoreService_DeltaDownloadClient), args.Error(1)
 }
 
 // UnscannedUpload mocks the UnscannedUpload function.
@@ -179,6 +202,23 @@ func (m *MockStoreClient) UpdateSnapEntryWithMetadata(entryId uuid.UUID, metadat
 	}
 	return nil
 }
+
+func (m *MockStoreClient) GetDeltaByRevisionPair(sourceRevesionId, targetRevisionId uuid.UUID, el *cerror.ErrorList) *proto.GetDeltaResponse {
+	args := m.Called(sourceRevesionId, targetRevisionId, el)
+	if resp, ok := args.Get(0).(*proto.GetDeltaResponse); ok {
+		return resp
+	}
+	return nil
+}
+
+func (m *MockStoreClient) GetRevisionByNameAndSequence(name string, sequence uint32) *proto.GetRevisionResponse {
+	args := m.Called(name, sequence)
+	if resp, ok := args.Get(0).(*proto.GetRevisionResponse); ok {
+		return resp
+	}
+	return nil
+}
+
 
 // MockSnapDownloadClient fakes the gRPC client‐stream returned by SnapDownloadStream.
 type MockSnapDownloadClient struct {

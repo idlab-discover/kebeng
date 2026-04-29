@@ -47,30 +47,56 @@ type SnapBuildAssertionRequest struct {
 }
 
 type RefreshSnapRequest struct {
-	Context []struct {
-		SnapID          string `json:"snap-id"`
-		InstanceKey     string `json:"instance-key"`
-		Revision        int    `json:"revision"`
-		TrackingChannel string `json:"tracking-channel"`
-		Epoch           struct {
-			Read  []int `json:"read"`
-			Write []int `json:"write"`
-		} `json:"epoch"`
-		RefreshedDate string `json:"refreshed-date"`
-	} `json:"context"`
-	Actions []*Action `json:"actions"`
-	Fields  []string  `json:"fields"`
+	Context             []*Context     `json:"context"`
+	Actions             []*Action      `json:"actions"`
+	Fields              []string       `json:"fields"`
+	AssertionMaxFormats map[string]int `json:"assertion-max-formats,omitempty"`
+}
+
+type Context struct {
+	SnapID           string     `json:"snap-id"`
+	InstanceKey      string     `json:"instance-key"`
+	Revision         int        `json:"revision"`
+	TrackingChannel  string     `json:"tracking-channel"`
+	Epoch            Epoch      `json:"epoch"`
+	RefreshedDate    *time.Time `json:"refreshed-date,omitempty"`
+	IgnoreValidation bool       `json:"ignore-validation,omitempty"`
+	CohortKey        string     `json:"cohort-key,omitempty"`
 }
 
 type Action struct {
-	Action      string `json:"action"`
-	InstanceKey string `json:"instance-key"`
-	Name        string `json:"name"`
-	Channel     string `json:"channel"`
-	Epoch       *struct {
-		Read  []int `json:"read"`
-		Write []int `json:"write"`
-	} `json:"epoch"`
+	Action           string     `json:"action"`
+	InstanceKey      string     `json:"instance-key,omitempty"`
+	Name             string     `json:"name,omitempty"`
+	SnapID           string     `json:"snap-id"`
+	Channel          string     `json:"channel,omitempty"`
+	Revision         int        `json:"revision,omitempty"`
+	CohortKey        string     `json:"cohort-key,omitempty"`
+	IgnoreValidation bool       `json:"ignore-validation,omitempty"`
+	Epoch            Epoch      `json:"epoch,omitempty"`
+	Key              string     `json:"key,omitempty"`
+	Assertions       []any      `json:"assertions,omitempty"`
+	ValidationSets   [][]string `json:"validation-sets,omitempty"`
+}
+
+type Epoch struct {
+	Read  []uint32 `json:"read"`
+	Write []uint32 `json:"write"`
+}
+
+type RefreshSnapResults struct {
+	Results []*RefreshSnapResult `json:"results"`
+}
+
+type RefreshSnapResult struct {
+	Result              string       `json:"result,omitempty"`
+	InstanceKey         string       `json:"instance-key,omitempty"`
+	SnapId              string       `json:"snap-id,omitempty"`
+	CohortKey           string       `json:"cohort-key,omitempty"`
+	Name                string       `json:"name,omitempty"`
+	Snap                *RefreshSnap `json:"snap,omitempty"`
+	Key                 string       `json:"key"`
+	AssertionStreamURLs []string     `json:"assertion-stream-urls"`
 }
 
 type SnapBuildAssertionResp struct {
@@ -84,18 +110,6 @@ type SnapBuildAssertionResp struct {
 	Revision        string           `json:"revision"`
 	Type            string           `json:"type"`
 	Errors          cerror.ErrorList `json:"error_list"`
-}
-
-type RefreshSnapResponses struct {
-	Responses []*RefreshSnapResult `json:"results"`
-}
-
-type RefreshSnapResult struct {
-	Result      string       `json:"result,omitempty"`
-	InstanceKey string       `json:"instance-key,omitempty"`
-	SnapId      string       `json:"snap-id,omitempty"`
-	Name        string       `json:"name,omitempty"`
-	Snap        *RefreshSnap `json:"snap,omitempty"`
 }
 
 type RefreshSnap struct {
@@ -120,6 +134,16 @@ type Download struct {
 	URL      *string `json:"url,omitempty"`
 	Sha3_384 *string `json:"sha3-384,omitempty"`
 	Size     *uint64 `json:"size,omitempty"`
+	Deltas   []Delta `json:"deltas,omitempty"`
+}
+
+type Delta struct {
+	Format   string `json:"format"`
+	Sha3_384 string `json:"sha3-384"`
+	Size     uint64 `json:"size"`
+	Source   uint64 `json:"source"`
+	Target   uint64 `json:"target"`
+	URL      string `json:"url"`
 }
 
 // SnapRevision represents a snap revision in the store
@@ -208,4 +232,35 @@ type SnapPushRequest struct {
 
 type UnscannedUploadRequest struct {
 	Data string `json:"data"`
+}
+
+type CreateCohortsRequest struct {
+	SnapNames []string `json:"snaps"`
+}
+
+type CreateCohortsResult struct {
+	CohortKeys map[string]string `json:"cohort-keys"`
+}
+
+// CohortKey: A CohortKey consists of the following fields (in order):
+// Version SnapID CreatedAt Signature
+// A CohortKey is sent base64 encoded to the client. It is not stored server-side; all information
+// to understand and validate a CohortKey is contained within the key.
+// Example:
+//
+//	Key Version     Snap ID            CreatedAt(Unix Timestamp)                 Signature
+//	   v               v                       v                                     v
+//	   1 iCEzvDZMvRrIWd5XLxgff6Tc6Zx20aeO 1777020308 09aef5c41697e06c50b715288cf9efa67b45df3a5494a4a8ca1452ad7fe03878
+//
+// What is sent to client:
+//
+//	Base64 encoding of the above string
+//	                 v
+//
+// MSBpQ0V6dkRaTXZScklXZDVYTHhnZmY2VGM2WngyMGFlTyAxNzc3MDIwMzA4IDA5YWVmNWM0MTY5N2UwNmM1MGI3MTUyODhjZjllZmE2N2I0NWRmM2E1NDk0YTRhOGNhMTQ1MmFkN2ZlMDM4Nzg=
+type CohortKey struct {
+	Version   uint8
+	SnapID    string
+	CreatedAt time.Time
+	Signature string
 }

@@ -23,6 +23,11 @@ type MockUnscannedUploadClient struct {
 	grpc.ClientStream
 }
 
+type MockDeltaUploadClient struct {
+	mock.Mock
+	grpc.ClientStream
+}
+
 func (m *MockSnapDownloadClient) Recv() (*proto.SnapDownloadResponse, error) {
 	args := m.Called()
 	if resp := args.Get(0); resp != nil {
@@ -119,6 +124,14 @@ func (m *MockStoreServiceClient) GetRevisionsByEntryIds(ctx context.Context, in 
 	return args.Get(0).(*proto.GetRevisionsByEntryIdResponses), nil
 }
 
+func (m *MockStoreServiceClient) GetLatestRevisionBeforeDateById(ctx context.Context, req *proto.GetLatestRevisionBeforeDateByIdRequest, opts ... grpc.CallOption) (*proto.GetRevisionResponse, error) {
+	args := m.Called(ctx, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*proto.GetRevisionResponse), nil
+}
+
 func (m *MockStoreServiceClient) GetRevisionByNameAndSequence(ctx context.Context, in *proto.GetRevisionRequest, opts ...grpc.CallOption) (*proto.GetRevisionResponse, error) {
 	args := m.Called(ctx, in)
 	resp := args.Get(0)
@@ -169,6 +182,14 @@ func (m *MockStoreServiceClient) SnapDownload(ctx context.Context, in *proto.Sna
 	return args.Get(0).(proto.StoreService_SnapDownloadClient), args.Error(1)
 }
 
+func (m *MockStoreServiceClient) DeltaDownload(ctx context.Context, req *proto.DeltaDownloadRequest, opts ...grpc.CallOption) (proto.StoreService_DeltaDownloadClient, error) {
+	args := m.Called(req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(proto.StoreService_DeltaDownloadClient), args.Error(1)
+}
+
 func (m *MockStoreServiceClient) GetUploadStatus(ctx context.Context, in *proto.GetUploadStatusRequest, opts ...grpc.CallOption) (*proto.GetUploadStatusResponse, error) {
 	args := m.Called(ctx, in)
 	if args.Get(0) == nil {
@@ -207,4 +228,12 @@ func (m *MockStoreServiceClient) UpdateSnapEntryWithMetadata(ctx context.Context
 		return nil, args.Error(1)
 	}
 	return args.Get(0).(*proto.UpdateEntryResponse), nil
+}
+
+func (m *MockStoreServiceClient) GetDeltaByRevisionPair(ctx context.Context, req *proto.GetDeltaByRevisionPairRequest, opts ...grpc.CallOption) (*proto.GetDeltaResponse, error) {
+	args := m.Called(ctx, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*proto.GetDeltaResponse), nil
 }

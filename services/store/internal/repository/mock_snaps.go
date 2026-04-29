@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"time"
+
 	"github.com/idlab-discover/kebeng/services/store/internal/model"
 
 	proto "github.com/idlab-discover/kebeng/services/store/proto"
@@ -68,6 +70,15 @@ func (m *MockSnapsRepository) RegisterSnap(snapName string, snapType string, con
 	args := m.Called(snapName, snapType, confinement, base, isPrivate, status, price, storeName, iconURL, accountId, el)
 	if args.Get(0) != nil {
 		return args.Get(0).(*model.SnapEntry), nil
+	}
+	el.Add(cerror.InternalServerError, "")
+	return nil, args.Get(1).(*cerror.CustomError)
+}
+
+func (m *MockSnapsRepository) AddDelta(sourceRevisionID, targetRevisionID uuid.UUID, minioFilePath string, size uint64, sha3_384_encoded string, el *cerror.ErrorList) (*model.SnapDelta, *cerror.CustomError) {
+	args := m.Called(sourceRevisionID, targetRevisionID, minioFilePath, size, sha3_384_encoded, el)
+	if args.Get(0) != nil {
+		return args.Get(0).(*model.SnapDelta), nil
 	}
 	el.Add(cerror.InternalServerError, "")
 	return nil, args.Get(1).(*cerror.CustomError)
@@ -154,6 +165,15 @@ func (m *MockSnapsRepository) GetRevisionsByEntryId(entryId uuid.UUID, el *cerro
 }
 
 func (m *MockSnapsRepository) GetRevisionById(id uuid.UUID, el *cerror.ErrorList) (*model.SnapRevision, *cerror.CustomError) {
+	args := m.Called(id, el)
+	if args.Get(0) != nil {
+		return args.Get(0).(*model.SnapRevision), nil
+	}
+	el.Add(cerror.InternalServerError, "")
+	return nil, args.Get(1).(*cerror.CustomError)
+}
+
+func (m *MockSnapsRepository) GetLatestRevisionBeforeDateById(date time.Time, id string, el *cerror.ErrorList) (*model.SnapRevision, *cerror.CustomError) {
 	args := m.Called(id, el)
 	if args.Get(0) != nil {
 		return args.Get(0).(*model.SnapRevision), nil
@@ -256,6 +276,24 @@ func (m *MockSnapsRepository) GetChannelByTrackIdAndName(trackId uuid.UUID, chan
 	args := m.Called(trackId, channelName, el)
 	if args.Get(0) != nil {
 		return args.Get(0).(*model.SnapChannel), nil
+	}
+	el.Add(cerror.InternalServerError, "")
+	return nil, args.Get(1).(*cerror.CustomError)
+}
+
+func (m *MockSnapsRepository) GetDeltaByRevisionPair(sourceRevisionID, targetRevisionID uuid.UUID, el *cerror.ErrorList) (*model.SnapDelta, *cerror.CustomError) {
+	args := m.Called(sourceRevisionID, targetRevisionID, el)
+	if args.Get(0) != nil {
+		return args.Get(0).(*model.SnapDelta), nil
+	}
+	el.Add(cerror.InternalServerError, "")
+	return nil, args.Get(1).(*cerror.CustomError)
+}
+
+func (m *MockSnapsRepository) GetDeltaByMinioFilePath(minioFilePath string, el *cerror.ErrorList) (*model.SnapDelta, *cerror.CustomError) {
+	args := m.Called(minioFilePath, el)
+	if args.Get(0) != nil {
+		return args.Get(0).(*model.SnapDelta), nil
 	}
 	el.Add(cerror.InternalServerError, "")
 	return nil, args.Get(1).(*cerror.CustomError)

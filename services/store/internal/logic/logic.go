@@ -338,34 +338,52 @@ func (s *StoreLogic) GetRevisions(ctx context.Context, req *proto.GetRevisionsRe
 	return &proto.GetRevisionsResponse{Revisions: foundRevisions, Errors: el.ConvertToProtoErrorList()}, nil
 }
 
+func (s *StoreLogic) GetLatestRevisionBeforeDateById(ctx context.Context, req *proto.GetLatestRevisionBeforeDateByIdRequest) (*proto.GetRevisionResponse, error) {
+	el := cerror.NewErrorList()
+
+	if req.Id == "" {
+		cerr := cerror.NewCustomError(cerror.MissingField, "snap id is required")
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.GetRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	revision, cerr := s.repo.GetLatestRevisionBeforeDateById(req.Date.AsTime(), req.Id, el)
+	if cerr != nil {
+		return &proto.GetRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+	
+	return convertRevisionToProto(revision), nil
+}
+
 // GetRevisionByNameAndSequence returns a single revision by snap name and sequence number
-func (s *StoreLogic) GetRevisionByNameAndSequence(ctx context.Context, req *proto.GetRevisionRequest) (*proto.GetRevisionResponse, *cerror.CustomError) {
+func (s *StoreLogic) GetRevisionByNameAndSequence(ctx context.Context, req *proto.GetRevisionRequest) (*proto.GetRevisionResponse, error) {
 	el := cerror.NewErrorList()
 
 	if req.SnapName == "" {
 		cerr := cerror.NewCustomError(cerror.MissingField, "snap name is required")
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
-		return &proto.GetRevisionResponse{Errors: el.ConvertToProtoErrorList()}, cerr
+		return &proto.GetRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
 
 	if req.Sequence == 0 {
 		cerr := cerror.NewCustomError(cerror.MissingField, "sequence is required")
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
-		return &proto.GetRevisionResponse{Errors: el.ConvertToProtoErrorList()}, cerr
+		return &proto.GetRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
 
 	entry, cerr := s.repo.GetEntryByName(req.SnapName, nil, el)
 	if cerr != nil {
 		// Already logged in GetEntryByName (repository)
-		return &proto.GetRevisionResponse{Errors: el.ConvertToProtoErrorList()}, cerr
+		return &proto.GetRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
 
 	rev, cerr := s.repo.GetRevisionByNameAndSequence(entry.Name, req.Sequence, el)
 	if cerr != nil {
 		// Already logged in GetRevisionByNameAndSequence (repository)
-		return &proto.GetRevisionResponse{Errors: el.ConvertToProtoErrorList()}, cerr
+		return &proto.GetRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
 
 	return convertRevisionToProto(rev), nil
@@ -524,7 +542,6 @@ func (s *StoreLogic) SnapDownload(req *proto.SnapDownloadRequest, stream proto.S
 	const chunkSize = 64 * 1024
 	buffer := make([]byte, chunkSize)
 
-	// TODO: add snapName to Revision
 	protoRevision := convertRevisionToProto(revision)
 
 	// send the initial message with revision metadata.
@@ -563,6 +580,85 @@ func (s *StoreLogic) SnapDownload(req *proto.SnapDownloadRequest, stream proto.S
 		// only check error down here since io.EOF is not an error and it can return some bytes and io.EOF at the same time, we would miss the last few bytes
 		if err != nil {
 			logrus.Error("failed to read snap file: ", err)
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *StoreLogic) DeltaDownload(req *proto.DeltaDownloadRequest, stream proto.StoreService_DeltaDownloadServer) error {
+	el := cerror.NewErrorList()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	if req.SnapName == "" {
+		cerr := cerror.NewCustomError(cerror.MissingField, "snap name is required")
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return stream.Send(&proto.DeltaDownloadResponse{Errors: el.ConvertToProtoErrorList()})
+	}
+	if req.DeltaName== "" {
+		cerr := cerror.NewCustomError(cerror.MissingField, "delta name is required")
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return stream.Send(&proto.DeltaDownloadResponse{Errors: el.ConvertToProtoErrorList()})
+	}
+
+	minioFilePath := fmt.Sprintf("%s/%s", req.SnapName, req.DeltaName)
+	delta, cerr := s.repo.GetDeltaByMinioFilePath(minioFilePath, el)
+	if cerr != nil {
+		logrus.Error(cerr)
+		return stream.Send(&proto.DeltaDownloadResponse{Errors: el.ConvertToProtoErrorList()})
+	}
+
+	deltaFileReader, err := s.obs.GetDeltaFileReader(ctx, minioFilePath)
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to get delta file reader: %v", err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return stream.Send(&proto.DeltaDownloadResponse{Errors: el.ConvertToProtoErrorList()})
+	}
+	defer func() {
+		if err := deltaFileReader.Close(); err != nil {
+			logrus.Error("failed to close file reader: ", err)
+		}
+	}()
+
+	if err := stream.Send(&proto.DeltaDownloadResponse{
+		Payload: &proto.DeltaDownloadResponse_Initial{
+			Initial: &proto.InitialDeltaDownloadResponse{
+				Size: uint64(delta.Size),
+				Sha3_384Encoded: delta.SHA3_384_Encoded,
+				MinioFilePath: delta.MinioFilePath,
+			},
+		},
+	}); err != nil {
+		logrus.Error("failed to send initial delta download response: ", err)
+		return err
+	}
+
+	const chunkSize = 64 * 1024
+	buffer := make([]byte, chunkSize)
+
+	for {
+		n, err := deltaFileReader.Read(buffer)
+		if n > 0 {
+			if err := stream.Send(&proto.DeltaDownloadResponse{
+				Payload: &proto.DeltaDownloadResponse_Data{
+					Data: &proto.DataChunk{
+						Chunk: buffer[:n],
+					},
+				},
+			}); err != nil {
+				logrus.Error("failed to send delta data chunk: ", err)
+				return err
+			}
+		}
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			logrus.Error("failed to read delta file: ", err)
 			return err
 		}
 	}
@@ -853,6 +949,8 @@ func (s *StoreLogic) AddRevision(ctx context.Context, req *proto.AddRevisionRequ
 	// Parse the tracks and channels
 	tracksAndChannels := parseTracksAndChannels(req.TracksAndChannels)
 
+	var newRevision *model.SnapRevision
+
 	// Create the revisions for the tracks and channels
 	for track, channels := range tracksAndChannels {
 		for _, channel := range channels {
@@ -894,7 +992,7 @@ func (s *StoreLogic) AddRevision(ctx context.Context, req *proto.AddRevisionRequ
 			}
 
 			// Create the revision
-			_, cerr = s.repo.AddRevision(entry.ID, trackResp.ID, channelResp.ID, req.SnapName, req.Size, sequenceNumber, req.Architectures, req.Sha3_384Encoded, minioFilePath, el)
+			newRevision, cerr = s.repo.AddRevision(entry.ID, trackResp.ID, channelResp.ID, req.SnapName, req.Size, sequenceNumber, req.Architectures, req.Sha3_384Encoded, minioFilePath, el)
 			if cerr != nil {
 				// Already logged in AddRevision (repository)
 				return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
@@ -909,6 +1007,12 @@ func (s *StoreLogic) AddRevision(ctx context.Context, req *proto.AddRevisionRequ
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
 		return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	if lastRevision != nil && newRevision != nil {
+		if err := s.generateAndStoreDelta(ctx, lastRevision, newRevision); err != nil {
+			logrus.Warnf("dleta generation failed for %s rev %d -> %d: %v", req.SnapName, lastRevision.SequenceNumber, newRevision.SequenceNumber, err)
+		}
 	}
 
 	return &proto.AddRevisionResponse{
@@ -1023,7 +1127,144 @@ func (s *StoreLogic) UpdateSnapEntryWithMetadata(ctx context.Context, req *proto
 
 }
 
+func (s *StoreLogic) GetDeltaByRevisionPair(ctx context.Context, req *proto.GetDeltaByRevisionPairRequest) (*proto.GetDeltaResponse, error) {
+	el := cerror.NewErrorList()
+
+	if req.SourceRevisionId == "" || req.TargetRevisionId == ""{
+		cerr := cerror.NewCustomError(cerror.MissingField, "revision id is required")
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.GetDeltaResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	sourceRevisionUuid, err := uuid.Parse(req.SourceRevisionId)
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.BadRequest, "source revision id could not be parsed to uuid")
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.GetDeltaResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	targetRevisionUuid, err := uuid.Parse(req.TargetRevisionId)
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.BadRequest, "target revision id could not be parsed to uuid")
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.GetDeltaResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	delta, cerr := s.repo.GetDeltaByRevisionPair(sourceRevisionUuid, targetRevisionUuid, el)
+
+	if cerr != nil {
+		return &proto.GetDeltaResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+	
+	return &proto.GetDeltaResponse{
+		Id: delta.ID.String(),
+		SourceRevisionId: delta.SourceRevisionID.String(),
+		TargetRevisionId: delta.TargetRevisionID.String(),
+		MinioFilePath: delta.MinioFilePath,
+		Size: delta.Size,
+		Sha3_384Encoded: delta.SHA3_384_Encoded,
+	}, nil
+}
+
 // ################# HELPERS #################
+
+func (s *StoreLogic) generateAndStoreDelta(ctx context.Context, source, target *model.SnapRevision) error {
+	el := cerror.NewErrorList()
+
+	existing, cerr := s.repo.GetDeltaByRevisionPair(source.ID, target.ID, el)
+	if cerr == nil && existing != nil {
+		logrus.Infof("delta already exists for %s rev %d -> %d, skipping", source.SnapName, source.SequenceNumber, target.SequenceNumber)
+		return nil
+	}
+
+	// Source file needs to have random access for xdelta3 to function: temporary download is required unfortunately
+	srcReader, err := s.obs.GetSnapFileReader(ctx, source.MinioFilePath)
+
+	if err != nil {
+		return fmt.Errorf("failed to open source snap: %v", err)
+	}
+	srcTmp, err := os.CreateTemp(os.TempDir(), "snap-delta-src-*.snap")
+	if err != nil {
+		srcReader.Close()
+		return fmt.Errorf("failed to create source temp file: %v", err)
+	}
+	defer os.Remove(srcTmp.Name())
+	defer srcTmp.Close()
+
+	if _, err := io.Copy(srcTmp, srcReader); err != nil {
+		srcReader.Close()
+		return fmt.Errorf("failed to download source snap: %v", err)
+	}
+	srcReader.Close()
+
+	if _, err = srcTmp.Seek(0, io.SeekStart); err != nil {
+		return fmt.Errorf("failed to seek source temp file: %v", err)
+	}
+
+	// Target snap can be streamed directly into xdelta3 stdin, this doesn't need a temp download
+	tgtReader, err := s.obs.GetSnapFileReader(ctx, target.MinioFilePath)
+	if err != nil {
+		return fmt.Errorf("failed to open target snap: %v", err)
+	}
+	defer tgtReader.Close()
+
+	// Temporarily store patch output (xdelta3)
+	patchTmp, err := os.CreateTemp(os.TempDir(), "snap-delta-patch-*.xdelta3")
+	if err != nil {
+		return fmt.Errorf("failed to create patch temp file: %v", err)
+	}
+	defer os.Remove(patchTmp.Name())
+	defer patchTmp.Close()
+
+	// xdelta3 output can be immediately hashed
+	hasher := sha3.New384()
+
+	cmd := exec.CommandContext(
+		ctx,
+		"xdelta3", "-e", "-f", "-S", "none",
+		"-s", srcTmp.Name(),
+		"-",
+	)
+
+	cmd.Stdin = tgtReader
+	cmd.Stdout = io.MultiWriter(patchTmp, hasher) // compute hash in tandem
+	var stderr strings.Builder
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("xdelta3 failed for %s rev %d -> %d: %v with stderr '%s'", source.SnapName, source.SequenceNumber, target.SequenceNumber, err, stderr.String())
+	}
+
+	sha3Encoded := base64.RawURLEncoding.EncodeToString(hasher.Sum(nil))
+
+	patchInfo, err := patchTmp.Stat()
+	if err != nil {
+		return fmt.Errorf("failed to stat patch file %v", err)
+	}
+	size := patchInfo.Size()
+
+	if _, err = patchTmp.Seek(0, io.SeekStart); err != nil {
+		return fmt.Errorf("failed to seek patch file found for upload: %v", err)
+	}
+	minioFilePath := fmt.Sprintf("%s/%d-%d.xdelta3", source.SnapName, source.SequenceNumber, target.SequenceNumber)
+
+	if _, err := s.obs.SaveDeltaToBucket("deltas", minioFilePath, patchTmp, uint64(size)); err != nil {
+		return fmt.Errorf("failed to upload delta to MinIO: %v", err)
+	}
+
+	_, cerr = s.repo.AddDelta(source.ID, target.ID, minioFilePath, uint64(size), sha3Encoded, el)
+	if cerr != nil {
+		return fmt.Errorf("failed to record delta in database: %v", cerr.GetMessage())
+	}
+
+	logrus.Infof("delta stored for %s rev %d -> %d: %d bytes at %s", source.SnapName, source.SequenceNumber, target.SequenceNumber, size, minioFilePath)
+
+	return nil
+
+}
 
 func (s *StoreLogic) getObjectStoreFilePath(revisionID string, el *cerror.ErrorList) (string, *model.SnapRevision, *cerror.CustomError) {
 	parsedRevisionId, err := uuid.Parse(revisionID)

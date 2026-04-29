@@ -22,6 +22,8 @@ macaroon:
 store_url: "http://localhost:8080"
 store_name: "example_store"
 
+cohort_signing_key: "example_key"
+
 test_data_folder_path: "/workspace/services/gateway/test-data"
 
 monitoring: true

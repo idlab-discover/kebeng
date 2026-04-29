@@ -9,8 +9,10 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/idlab-discover/kebeng/services/gateway/internal/config"
+	"github.com/idlab-discover/kebeng/services/gateway/internal/model"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/util"
 
 	"github.com/gin-gonic/gin"
@@ -234,6 +236,76 @@ func TestRefreshSnapHandler_DownloadAction_NoLatestRevision(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, w.Code)
 	// Expect to see the result "download" in the response JSON.
 	assert.Contains(t, w.Body.String(), "latest revision not found")
+	mockStoreClient.AssertExpectations(t)
+	mockAccClient.AssertExpectations(t)
+}
+
+func TestRefreshInstallOrDownload_CohortKey(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	mockStoreClient := new(storeClient.MockStoreClient)
+	mockAccClient := new(accClient.MockAccountClient)
+
+	dummyEntry := &storepb.GetEntryResponse{
+		Id:          "entry1",
+		SnapName:    "snap1",
+		PublisherId: "pub1",
+		Confinement: "strict",
+		Type:        "app",
+		Base:        "core20",
+	}
+	dummyRev := &storepb.GetRevisionResponse{
+		Id:              "rev1",
+		Architectures:   []string{"amd64"},
+		Sha3_384Encoded: "c2hhMzg0aGFzaA",
+		Size:            1000,
+		Version:         "v1",
+		SequenceNumber:  1,
+	}
+
+	// getLatestRevisionByEntryName -> GetEntries + GetLatestRevisionByTrackAndChannel
+	mockStoreClient.
+		On("GetEntries", mock.Anything).
+		Return(&storepb.GetEntriesResponse{Entries: []*storepb.GetEntryResponse{dummyEntry}}).Once()
+	mockStoreClient.
+		On("GetLatestRevisionByTrackAndChannel", "snap1", "latest", "stable").
+		Return(dummyRev).Once()
+
+	mockStoreClient.
+		On("GetLatestRevisionBeforeDateById", mock.Anything, "entry1").
+		Return(dummyRev).Once()
+
+	mockAccClient.
+		On("GetAccountByID", "pub1").
+		Return(&accountpb.AccountResponse{Id: "pub1", Username: "publisher"}).Once()
+
+	baseHandler := util.NewBaseHandler(mockAccClient, mockStoreClient, nil, nil)
+	baseHandler.Config = &config.Config{StoreUrl: "https://store.example.com", CohortSigningKey: "test-key"}
+	handler := &Handler{BaseHandler: baseHandler}
+
+	// build a valid signed cohort key for entry1
+	ckey := model.CohortKey{Version: 1, SnapID: "entry1", CreatedAt: time.Now().Add(-24 * time.Hour)}
+	signedKey, err := handler.signCohortKey(ckey)
+	assert.NoError(t, err)
+	cohortKeyStr := cohortKeyToString(signedKey)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	reqJSON := fmt.Sprintf(`{
+		"actions": [{
+			"action": "download",
+			"name": "snap1",
+			"channel": "stable",
+			"instance-key": "instance-123",
+			"cohort-key": "%s"
+		}]
+	}`, cohortKeyStr)
+	c.Request = httptest.NewRequest("POST", "/refreshSnap", bytes.NewBufferString(reqJSON))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	handler.RefreshSnap(c)
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "download")
 	mockStoreClient.AssertExpectations(t)
 	mockAccClient.AssertExpectations(t)
 }

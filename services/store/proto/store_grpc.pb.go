@@ -22,11 +22,14 @@ const (
 	StoreService_RegisterSnapName_FullMethodName                   = "/store.StoreService/RegisterSnapName"
 	StoreService_GetRevisions_FullMethodName                       = "/store.StoreService/GetRevisions"
 	StoreService_GetEntries_FullMethodName                         = "/store.StoreService/GetEntries"
+	StoreService_GetEntryById_FullMethodName                       = "/store.StoreService/GetEntryById"
 	StoreService_GetEntriesByAccountId_FullMethodName              = "/store.StoreService/GetEntriesByAccountId"
 	StoreService_GetEntriesByQuery_FullMethodName                  = "/store.StoreService/GetEntriesByQuery"
 	StoreService_GetRevisionsByEntryIds_FullMethodName             = "/store.StoreService/GetRevisionsByEntryIds"
+	StoreService_GetLatestRevisionBeforeDateById_FullMethodName    = "/store.StoreService/GetLatestRevisionBeforeDateById"
 	StoreService_GetLatestRevisionByTrackAndChannel_FullMethodName = "/store.StoreService/GetLatestRevisionByTrackAndChannel"
 	StoreService_SnapDownload_FullMethodName                       = "/store.StoreService/SnapDownload"
+	StoreService_DeltaDownload_FullMethodName                      = "/store.StoreService/DeltaDownload"
 	StoreService_UnscannedUpload_FullMethodName                    = "/store.StoreService/UnscannedUpload"
 	StoreService_AddUpload_FullMethodName                          = "/store.StoreService/AddUpload"
 	StoreService_GetUploadStatus_FullMethodName                    = "/store.StoreService/GetUploadStatus"
@@ -34,6 +37,8 @@ const (
 	StoreService_GetObjectCustomMetadata_FullMethodName            = "/store.StoreService/GetObjectCustomMetadata"
 	StoreService_UpdateUploadStatus_FullMethodName                 = "/store.StoreService/UpdateUploadStatus"
 	StoreService_UpdateSnapEntryWithMetadata_FullMethodName        = "/store.StoreService/UpdateSnapEntryWithMetadata"
+	StoreService_GetDeltaByRevisionPair_FullMethodName             = "/store.StoreService/GetDeltaByRevisionPair"
+	StoreService_GetRevisionByNameAndSequence_FullMethodName       = "/store.StoreService/GetRevisionByNameAndSequence"
 )
 
 // StoreServiceClient is the client API for StoreService service.
@@ -43,11 +48,14 @@ type StoreServiceClient interface {
 	RegisterSnapName(ctx context.Context, in *RegisterSnapNameRequest, opts ...grpc.CallOption) (*RegisterSnapNameResponse, error)
 	GetRevisions(ctx context.Context, in *GetRevisionsRequest, opts ...grpc.CallOption) (*GetRevisionsResponse, error)
 	GetEntries(ctx context.Context, in *GetEntriesRequest, opts ...grpc.CallOption) (*GetEntriesResponse, error)
+	GetEntryById(ctx context.Context, in *GetEntryRequest, opts ...grpc.CallOption) (*GetEntryResponse, error)
 	GetEntriesByAccountId(ctx context.Context, in *GetEntriesByAccountIdRequest, opts ...grpc.CallOption) (*GetEntriesResponse, error)
 	GetEntriesByQuery(ctx context.Context, in *GetEntriesByQueryRequest, opts ...grpc.CallOption) (*GetEntriesResponse, error)
 	GetRevisionsByEntryIds(ctx context.Context, in *GetRevisionsByEntryIdRequests, opts ...grpc.CallOption) (*GetRevisionsByEntryIdResponses, error)
+	GetLatestRevisionBeforeDateById(ctx context.Context, in *GetLatestRevisionBeforeDateByIdRequest, opts ...grpc.CallOption) (*GetRevisionResponse, error)
 	GetLatestRevisionByTrackAndChannel(ctx context.Context, in *GetLatestRevisionRequest, opts ...grpc.CallOption) (*GetRevisionResponse, error)
 	SnapDownload(ctx context.Context, in *SnapDownloadRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SnapDownloadResponse], error)
+	DeltaDownload(ctx context.Context, in *DeltaDownloadRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[DeltaDownloadResponse], error)
 	UnscannedUpload(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[UnscannedUploadRequest, UnscannedUploadCompleteResponse], error)
 	AddUpload(ctx context.Context, in *AddUploadRequest, opts ...grpc.CallOption) (*AddUploadResponse, error)
 	GetUploadStatus(ctx context.Context, in *GetUploadStatusRequest, opts ...grpc.CallOption) (*GetUploadStatusResponse, error)
@@ -55,6 +63,8 @@ type StoreServiceClient interface {
 	GetObjectCustomMetadata(ctx context.Context, in *GetObjectCustomMetadataRequest, opts ...grpc.CallOption) (*GetObjectCustomMetadataResponse, error)
 	UpdateUploadStatus(ctx context.Context, in *UpdateUploadStatusRequest, opts ...grpc.CallOption) (*UpdateUploadStatusResponse, error)
 	UpdateSnapEntryWithMetadata(ctx context.Context, in *UpdateSnapEntryWithMetadataRequest, opts ...grpc.CallOption) (*UpdateEntryResponse, error)
+	GetDeltaByRevisionPair(ctx context.Context, in *GetDeltaByRevisionPairRequest, opts ...grpc.CallOption) (*GetDeltaResponse, error)
+	GetRevisionByNameAndSequence(ctx context.Context, in *GetRevisionRequest, opts ...grpc.CallOption) (*GetRevisionResponse, error)
 }
 
 type storeServiceClient struct {
@@ -95,6 +105,16 @@ func (c *storeServiceClient) GetEntries(ctx context.Context, in *GetEntriesReque
 	return out, nil
 }
 
+func (c *storeServiceClient) GetEntryById(ctx context.Context, in *GetEntryRequest, opts ...grpc.CallOption) (*GetEntryResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetEntryResponse)
+	err := c.cc.Invoke(ctx, StoreService_GetEntryById_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *storeServiceClient) GetEntriesByAccountId(ctx context.Context, in *GetEntriesByAccountIdRequest, opts ...grpc.CallOption) (*GetEntriesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetEntriesResponse)
@@ -119,6 +139,16 @@ func (c *storeServiceClient) GetRevisionsByEntryIds(ctx context.Context, in *Get
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetRevisionsByEntryIdResponses)
 	err := c.cc.Invoke(ctx, StoreService_GetRevisionsByEntryIds_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *storeServiceClient) GetLatestRevisionBeforeDateById(ctx context.Context, in *GetLatestRevisionBeforeDateByIdRequest, opts ...grpc.CallOption) (*GetRevisionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetRevisionResponse)
+	err := c.cc.Invoke(ctx, StoreService_GetLatestRevisionBeforeDateById_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -154,9 +184,28 @@ func (c *storeServiceClient) SnapDownload(ctx context.Context, in *SnapDownloadR
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type StoreService_SnapDownloadClient = grpc.ServerStreamingClient[SnapDownloadResponse]
 
+func (c *storeServiceClient) DeltaDownload(ctx context.Context, in *DeltaDownloadRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[DeltaDownloadResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &StoreService_ServiceDesc.Streams[1], StoreService_DeltaDownload_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[DeltaDownloadRequest, DeltaDownloadResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type StoreService_DeltaDownloadClient = grpc.ServerStreamingClient[DeltaDownloadResponse]
+
 func (c *storeServiceClient) UnscannedUpload(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[UnscannedUploadRequest, UnscannedUploadCompleteResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &StoreService_ServiceDesc.Streams[1], StoreService_UnscannedUpload_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &StoreService_ServiceDesc.Streams[2], StoreService_UnscannedUpload_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -227,6 +276,26 @@ func (c *storeServiceClient) UpdateSnapEntryWithMetadata(ctx context.Context, in
 	return out, nil
 }
 
+func (c *storeServiceClient) GetDeltaByRevisionPair(ctx context.Context, in *GetDeltaByRevisionPairRequest, opts ...grpc.CallOption) (*GetDeltaResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetDeltaResponse)
+	err := c.cc.Invoke(ctx, StoreService_GetDeltaByRevisionPair_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *storeServiceClient) GetRevisionByNameAndSequence(ctx context.Context, in *GetRevisionRequest, opts ...grpc.CallOption) (*GetRevisionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetRevisionResponse)
+	err := c.cc.Invoke(ctx, StoreService_GetRevisionByNameAndSequence_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // StoreServiceServer is the server API for StoreService service.
 // All implementations must embed UnimplementedStoreServiceServer
 // for forward compatibility.
@@ -234,11 +303,14 @@ type StoreServiceServer interface {
 	RegisterSnapName(context.Context, *RegisterSnapNameRequest) (*RegisterSnapNameResponse, error)
 	GetRevisions(context.Context, *GetRevisionsRequest) (*GetRevisionsResponse, error)
 	GetEntries(context.Context, *GetEntriesRequest) (*GetEntriesResponse, error)
+	GetEntryById(context.Context, *GetEntryRequest) (*GetEntryResponse, error)
 	GetEntriesByAccountId(context.Context, *GetEntriesByAccountIdRequest) (*GetEntriesResponse, error)
 	GetEntriesByQuery(context.Context, *GetEntriesByQueryRequest) (*GetEntriesResponse, error)
 	GetRevisionsByEntryIds(context.Context, *GetRevisionsByEntryIdRequests) (*GetRevisionsByEntryIdResponses, error)
+	GetLatestRevisionBeforeDateById(context.Context, *GetLatestRevisionBeforeDateByIdRequest) (*GetRevisionResponse, error)
 	GetLatestRevisionByTrackAndChannel(context.Context, *GetLatestRevisionRequest) (*GetRevisionResponse, error)
 	SnapDownload(*SnapDownloadRequest, grpc.ServerStreamingServer[SnapDownloadResponse]) error
+	DeltaDownload(*DeltaDownloadRequest, grpc.ServerStreamingServer[DeltaDownloadResponse]) error
 	UnscannedUpload(grpc.ClientStreamingServer[UnscannedUploadRequest, UnscannedUploadCompleteResponse]) error
 	AddUpload(context.Context, *AddUploadRequest) (*AddUploadResponse, error)
 	GetUploadStatus(context.Context, *GetUploadStatusRequest) (*GetUploadStatusResponse, error)
@@ -246,6 +318,8 @@ type StoreServiceServer interface {
 	GetObjectCustomMetadata(context.Context, *GetObjectCustomMetadataRequest) (*GetObjectCustomMetadataResponse, error)
 	UpdateUploadStatus(context.Context, *UpdateUploadStatusRequest) (*UpdateUploadStatusResponse, error)
 	UpdateSnapEntryWithMetadata(context.Context, *UpdateSnapEntryWithMetadataRequest) (*UpdateEntryResponse, error)
+	GetDeltaByRevisionPair(context.Context, *GetDeltaByRevisionPairRequest) (*GetDeltaResponse, error)
+	GetRevisionByNameAndSequence(context.Context, *GetRevisionRequest) (*GetRevisionResponse, error)
 	mustEmbedUnimplementedStoreServiceServer()
 }
 
@@ -265,6 +339,9 @@ func (UnimplementedStoreServiceServer) GetRevisions(context.Context, *GetRevisio
 func (UnimplementedStoreServiceServer) GetEntries(context.Context, *GetEntriesRequest) (*GetEntriesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetEntries not implemented")
 }
+func (UnimplementedStoreServiceServer) GetEntryById(context.Context, *GetEntryRequest) (*GetEntryResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetEntryById not implemented")
+}
 func (UnimplementedStoreServiceServer) GetEntriesByAccountId(context.Context, *GetEntriesByAccountIdRequest) (*GetEntriesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetEntriesByAccountId not implemented")
 }
@@ -274,11 +351,17 @@ func (UnimplementedStoreServiceServer) GetEntriesByQuery(context.Context, *GetEn
 func (UnimplementedStoreServiceServer) GetRevisionsByEntryIds(context.Context, *GetRevisionsByEntryIdRequests) (*GetRevisionsByEntryIdResponses, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetRevisionsByEntryIds not implemented")
 }
+func (UnimplementedStoreServiceServer) GetLatestRevisionBeforeDateById(context.Context, *GetLatestRevisionBeforeDateByIdRequest) (*GetRevisionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetLatestRevisionBeforeDateById not implemented")
+}
 func (UnimplementedStoreServiceServer) GetLatestRevisionByTrackAndChannel(context.Context, *GetLatestRevisionRequest) (*GetRevisionResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetLatestRevisionByTrackAndChannel not implemented")
 }
 func (UnimplementedStoreServiceServer) SnapDownload(*SnapDownloadRequest, grpc.ServerStreamingServer[SnapDownloadResponse]) error {
 	return status.Error(codes.Unimplemented, "method SnapDownload not implemented")
+}
+func (UnimplementedStoreServiceServer) DeltaDownload(*DeltaDownloadRequest, grpc.ServerStreamingServer[DeltaDownloadResponse]) error {
+	return status.Error(codes.Unimplemented, "method DeltaDownload not implemented")
 }
 func (UnimplementedStoreServiceServer) UnscannedUpload(grpc.ClientStreamingServer[UnscannedUploadRequest, UnscannedUploadCompleteResponse]) error {
 	return status.Error(codes.Unimplemented, "method UnscannedUpload not implemented")
@@ -300,6 +383,12 @@ func (UnimplementedStoreServiceServer) UpdateUploadStatus(context.Context, *Upda
 }
 func (UnimplementedStoreServiceServer) UpdateSnapEntryWithMetadata(context.Context, *UpdateSnapEntryWithMetadataRequest) (*UpdateEntryResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateSnapEntryWithMetadata not implemented")
+}
+func (UnimplementedStoreServiceServer) GetDeltaByRevisionPair(context.Context, *GetDeltaByRevisionPairRequest) (*GetDeltaResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetDeltaByRevisionPair not implemented")
+}
+func (UnimplementedStoreServiceServer) GetRevisionByNameAndSequence(context.Context, *GetRevisionRequest) (*GetRevisionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetRevisionByNameAndSequence not implemented")
 }
 func (UnimplementedStoreServiceServer) mustEmbedUnimplementedStoreServiceServer() {}
 func (UnimplementedStoreServiceServer) testEmbeddedByValue()                      {}
@@ -376,6 +465,24 @@ func _StoreService_GetEntries_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _StoreService_GetEntryById_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetEntryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StoreServiceServer).GetEntryById(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StoreService_GetEntryById_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StoreServiceServer).GetEntryById(ctx, req.(*GetEntryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _StoreService_GetEntriesByAccountId_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetEntriesByAccountIdRequest)
 	if err := dec(in); err != nil {
@@ -430,6 +537,24 @@ func _StoreService_GetRevisionsByEntryIds_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _StoreService_GetLatestRevisionBeforeDateById_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLatestRevisionBeforeDateByIdRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StoreServiceServer).GetLatestRevisionBeforeDateById(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StoreService_GetLatestRevisionBeforeDateById_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StoreServiceServer).GetLatestRevisionBeforeDateById(ctx, req.(*GetLatestRevisionBeforeDateByIdRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _StoreService_GetLatestRevisionByTrackAndChannel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetLatestRevisionRequest)
 	if err := dec(in); err != nil {
@@ -458,6 +583,17 @@ func _StoreService_SnapDownload_Handler(srv interface{}, stream grpc.ServerStrea
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type StoreService_SnapDownloadServer = grpc.ServerStreamingServer[SnapDownloadResponse]
+
+func _StoreService_DeltaDownload_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(DeltaDownloadRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(StoreServiceServer).DeltaDownload(m, &grpc.GenericServerStream[DeltaDownloadRequest, DeltaDownloadResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type StoreService_DeltaDownloadServer = grpc.ServerStreamingServer[DeltaDownloadResponse]
 
 func _StoreService_UnscannedUpload_Handler(srv interface{}, stream grpc.ServerStream) error {
 	return srv.(StoreServiceServer).UnscannedUpload(&grpc.GenericServerStream[UnscannedUploadRequest, UnscannedUploadCompleteResponse]{ServerStream: stream})
@@ -574,6 +710,42 @@ func _StoreService_UpdateSnapEntryWithMetadata_Handler(srv interface{}, ctx cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _StoreService_GetDeltaByRevisionPair_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDeltaByRevisionPairRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StoreServiceServer).GetDeltaByRevisionPair(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StoreService_GetDeltaByRevisionPair_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StoreServiceServer).GetDeltaByRevisionPair(ctx, req.(*GetDeltaByRevisionPairRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _StoreService_GetRevisionByNameAndSequence_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetRevisionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StoreServiceServer).GetRevisionByNameAndSequence(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StoreService_GetRevisionByNameAndSequence_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StoreServiceServer).GetRevisionByNameAndSequence(ctx, req.(*GetRevisionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // StoreService_ServiceDesc is the grpc.ServiceDesc for StoreService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -594,6 +766,10 @@ var StoreService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _StoreService_GetEntries_Handler,
 		},
 		{
+			MethodName: "GetEntryById",
+			Handler:    _StoreService_GetEntryById_Handler,
+		},
+		{
 			MethodName: "GetEntriesByAccountId",
 			Handler:    _StoreService_GetEntriesByAccountId_Handler,
 		},
@@ -604,6 +780,10 @@ var StoreService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetRevisionsByEntryIds",
 			Handler:    _StoreService_GetRevisionsByEntryIds_Handler,
+		},
+		{
+			MethodName: "GetLatestRevisionBeforeDateById",
+			Handler:    _StoreService_GetLatestRevisionBeforeDateById_Handler,
 		},
 		{
 			MethodName: "GetLatestRevisionByTrackAndChannel",
@@ -633,11 +813,24 @@ var StoreService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "UpdateSnapEntryWithMetadata",
 			Handler:    _StoreService_UpdateSnapEntryWithMetadata_Handler,
 		},
+		{
+			MethodName: "GetDeltaByRevisionPair",
+			Handler:    _StoreService_GetDeltaByRevisionPair_Handler,
+		},
+		{
+			MethodName: "GetRevisionByNameAndSequence",
+			Handler:    _StoreService_GetRevisionByNameAndSequence_Handler,
+		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "SnapDownload",
 			Handler:       _StoreService_SnapDownload_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "DeltaDownload",
+			Handler:       _StoreService_DeltaDownload_Handler,
 			ServerStreams: true,
 		},
 		{
