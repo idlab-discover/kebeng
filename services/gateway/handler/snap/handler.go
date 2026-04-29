@@ -13,7 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/idlab-discover/kebeng/services/gateway/internal/config"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/model"
 	"github.com/idlab-discover/kebeng/services/gateway/internal/util"
 
@@ -23,8 +22,6 @@ import (
 	storepb "github.com/idlab-discover/kebeng/services/store/proto"
 	"github.com/sirupsen/logrus"
 )
-
-var cfg config.Config
 
 type Handler struct {
 	*util.BaseHandler
@@ -143,7 +140,7 @@ func (h *Handler) refreshInstallOrDownload(action *model.Action, el *cerror.Erro
 			return &res, cerror.NewCustomError(cerror.BadRequest, err.Error())
 		}
 
-		valid, err := verifyCohortKey(*ckey)
+		valid, err := h.verifyCohortKey(*ckey)
 		if err != nil {
 			res.Result = "error"
 			return &res, cerror.NewCustomError(cerror.InternalServerError, err.Error())
@@ -243,7 +240,7 @@ func (h *Handler) refreshRefresh(action *model.Action, context []*model.Context,
 			return &res, cerror.NewCustomError(cerror.BadRequest, err.Error())
 		}
 
-		valid, err := verifyCohortKey(*ckey)
+		valid, err := h.verifyCohortKey(*ckey)
 		if err != nil {
 			res.Result = "error"
 			return &res, cerror.NewCustomError(cerror.InternalServerError, err.Error())
@@ -833,7 +830,7 @@ func (h *Handler) CreateCohorts(c *gin.Context) {
 			SnapID:    entry.Id,
 			CreatedAt: time.Now(),
 		}
-		signedCkey, err := signCohortKey(ckey)
+		signedCkey, err := h.signCohortKey(ckey)
 		if err != nil {
 			el.Add(cerror.InternalServerError, fmt.Sprintf("Failure generating cohort key signature"))
 			c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
@@ -1092,8 +1089,8 @@ func cohortKeyFromString(e string) (*model.CohortKey, error) {
 	return &res, nil
 }
 
-func signCohortKey(ckey model.CohortKey) (*model.CohortKey, error) {
-	mac := hmac.New(crypto.SHA1.New, []byte(cfg.CohortSigningKey))
+func (h *Handler) signCohortKey(ckey model.CohortKey) (*model.CohortKey, error) {
+	mac := hmac.New(crypto.SHA1.New, []byte(h.Config.CohortSigningKey))
 	versionByteArray := make([]byte, 0)
 	versionByteArray = append(versionByteArray, ckey.Version)
 	_, err := mac.Write(versionByteArray)
@@ -1110,24 +1107,15 @@ func signCohortKey(ckey model.CohortKey) (*model.CohortKey, error) {
 	return &ckey, nil
 }
 
-func verifyCohortKey(ckey model.CohortKey) (bool, error) {
+func (h *Handler) verifyCohortKey(ckey model.CohortKey) (bool, error) {
 	if ckey.Signature == "" {
 		return false, fmt.Errorf("an unsigned cohort key cannot be verified")
 	}
-	signedCkey, err := signCohortKey(ckey)
+	signedCkey, err := h.signCohortKey(ckey)
 	if err != nil {
 		return false, err
 	}
 	return ckey.Signature == signedCkey.Signature, nil
-}
-
-func init() {
-	conf, err := config.LoadConfig()
-	if err != nil {
-		panic("Config loading failed") // TODO: better way to handle than a panic?
-	}
-	cfg = *conf
-
 }
 
 // getMostRecent90DayMilestone calculates the closest 90-day window starting point since a date
