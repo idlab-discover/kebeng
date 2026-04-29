@@ -140,7 +140,7 @@ func (c *Config) checkConfig() error {
 	}
 
 	if c.CohortSigningKey == "" {
-		errs = append(errs, "cohort siging key is required")
+		errs = append(errs, "cohort_siging_key is required")
 	}
 
 	// Test mode settings
