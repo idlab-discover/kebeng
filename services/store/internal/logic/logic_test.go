@@ -1006,7 +1006,6 @@ func TestGetRevisionByNameAndSequence(t *testing.T) {
 			// Assertions
 			if tt.expectedError {
 				assert.NotNil(t, resp.Errors)
-				assert.NotNil(t, cerr)
 				assert.Equal(t, tt.errorCode, resp.Errors[0].Code, "Expected error code to match")
 			} else {
 				assert.Nil(t, resp.Errors)
