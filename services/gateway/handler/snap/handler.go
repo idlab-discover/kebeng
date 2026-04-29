@@ -260,8 +260,6 @@ func (h *Handler) refreshRefresh(action *model.Action, context []*model.Context,
 		}
 
 		closestMilestone := getMostRecent90DayMilestone(ckey.CreatedAt.UTC())
-		logrus.Infof("Cohort Key CreatedAt is %v", ckey.CreatedAt)
-		logrus.Infof("Cohort Key Milestone is %v", closestMilestone)
 		latestRevision = h.StoreClient.GetLatestRevisionBeforeDateById(closestMilestone, entry.Id)
 
 		if len(latestRevision.Errors) > 0 {
@@ -299,11 +297,6 @@ func (h *Handler) refreshRefresh(action *model.Action, context []*model.Context,
 				// Bigger steps can be ignored for now
 				break
 			}
-
-			// TODO:
-			// dinfo, err := h.StoreClient.GetDeltaByRevisionPair(userRevision.Id, latestRevision.Id)
-			// if (len .... errors ....)  0 {}
-			// SHA = dinfo.Sha...
 
 			userRevisionId, erra := uuid.Parse(userRevision.Id)
 			latestRevisionId, errb := uuid.Parse(latestRevision.Id)
