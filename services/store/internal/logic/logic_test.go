@@ -1001,7 +1001,7 @@ func TestGetRevisionByNameAndSequence(t *testing.T) {
 			}
 
 			// Call the method under test
-			resp, cerr := service.GetRevisionByNameAndSequence(context.Background(), tt.req)
+			resp, _ := service.GetRevisionByNameAndSequence(context.Background(), tt.req)
 
 			// Assertions
 			if tt.expectedError {
