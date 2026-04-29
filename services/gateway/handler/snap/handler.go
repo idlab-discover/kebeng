@@ -122,7 +122,7 @@ func (h *Handler) refreshInstallOrDownload(action *model.Action, el *cerror.Erro
 
 	if len(entries.Entries) < 1 {
 		res.Result = "error"
-		return &res, cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("snap not found"))
+		return &res, cerror.NewCustomError(cerror.ResourceNotFound, "snap not found")
 	}
 
 	entry := entries.Entries[0]
@@ -130,7 +130,7 @@ func (h *Handler) refreshInstallOrDownload(action *model.Action, el *cerror.Erro
 	pub := h.AccountClient.GetAccountByID(entry.PublisherId)
 	if len(pub.Errors) > 0 {
 		res.Result = "error"
-		return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("error occurred fetching publisher"))
+		return &res, cerror.NewCustomError(cerror.InternalServerError, "error occurred fetching publisher")
 	}
 
 	if action.CohortKey != "" {
@@ -832,14 +832,13 @@ func (h *Handler) CreateCohorts(c *gin.Context) {
 		}
 		signedCkey, err := h.signCohortKey(ckey)
 		if err != nil {
-			el.Add(cerror.InternalServerError, fmt.Sprintf("Failure generating cohort key signature"))
+			el.Add(cerror.InternalServerError, "Failure generating cohort key signature")
 			c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
 		}
 		res.CohortKeys[entry.SnapName] = cohortKeyToString(signedCkey)
 	}
 
 	c.JSON(http.StatusOK, res)
-	return
 }
 
 func (h *Handler) DownloadDelta(c *gin.Context) {
