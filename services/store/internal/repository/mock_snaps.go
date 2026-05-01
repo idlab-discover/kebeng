@@ -75,8 +75,8 @@ func (m *MockSnapsRepository) RegisterSnap(snapName string, snapType string, con
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
-func (m *MockSnapsRepository) AddDelta(sourceRevisionID, targetRevisionID uuid.UUID, minioFilePath string, size uint64, sha3_384_encoded string, el *cerror.ErrorList) (*model.SnapDelta, *cerror.CustomError) {
-	args := m.Called(sourceRevisionID, targetRevisionID, minioFilePath, size, sha3_384_encoded, el)
+func (m *MockSnapsRepository) AddDelta(sourceRevisionID, targetRevisionID uuid.UUID, format, minioFilePath string, size uint64, sha3_384_encoded string, el *cerror.ErrorList) (*model.SnapDelta, *cerror.CustomError) {
+	args := m.Called(sourceRevisionID, targetRevisionID, format, minioFilePath, size, sha3_384_encoded, el)
 	if args.Get(0) != nil {
 		return args.Get(0).(*model.SnapDelta), nil
 	}
@@ -281,8 +281,8 @@ func (m *MockSnapsRepository) GetChannelByTrackIdAndName(trackId uuid.UUID, chan
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
-func (m *MockSnapsRepository) GetDeltaByRevisionPair(sourceRevisionID, targetRevisionID uuid.UUID, el *cerror.ErrorList) (*model.SnapDelta, *cerror.CustomError) {
-	args := m.Called(sourceRevisionID, targetRevisionID, el)
+func (m *MockSnapsRepository) GetDeltaByRevisionPair(sourceRevisionID, targetRevisionID uuid.UUID, format string, el *cerror.ErrorList) (*model.SnapDelta, *cerror.CustomError) {
+	args := m.Called(sourceRevisionID, targetRevisionID, format, el)
 	if args.Get(0) != nil {
 		return args.Get(0).(*model.SnapDelta), nil
 	}
