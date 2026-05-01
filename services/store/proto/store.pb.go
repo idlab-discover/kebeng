@@ -1316,6 +1316,7 @@ type GetDeltaByRevisionPairRequest struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	SourceRevisionId string                 `protobuf:"bytes,1,opt,name=source_revision_id,json=sourceRevisionId,proto3" json:"source_revision_id,omitempty"`
 	TargetRevisionId string                 `protobuf:"bytes,2,opt,name=target_revision_id,json=targetRevisionId,proto3" json:"target_revision_id,omitempty"`
+	Format           string                 `protobuf:"bytes,3,opt,name=format,proto3" json:"format,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -1364,6 +1365,13 @@ func (x *GetDeltaByRevisionPairRequest) GetTargetRevisionId() string {
 	return ""
 }
 
+func (x *GetDeltaByRevisionPairRequest) GetFormat() string {
+	if x != nil {
+		return x.Format
+	}
+	return ""
+}
+
 type GetDeltaResponse struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Id               string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -1372,7 +1380,8 @@ type GetDeltaResponse struct {
 	MinioFilePath    string                 `protobuf:"bytes,4,opt,name=minio_file_path,json=minioFilePath,proto3" json:"minio_file_path,omitempty"`
 	Size             uint64                 `protobuf:"varint,5,opt,name=size,proto3" json:"size,omitempty"`
 	Sha3_384Encoded  string                 `protobuf:"bytes,6,opt,name=sha3_384_encoded,json=sha3384Encoded,proto3" json:"sha3_384_encoded,omitempty"`
-	Errors           []*proto.Error         `protobuf:"bytes,7,rep,name=errors,proto3" json:"errors,omitempty"`
+	Format           string                 `protobuf:"bytes,7,opt,name=format,proto3" json:"format,omitempty"`
+	Errors           []*proto.Error         `protobuf:"bytes,8,rep,name=errors,proto3" json:"errors,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -1445,6 +1454,13 @@ func (x *GetDeltaResponse) GetSize() uint64 {
 func (x *GetDeltaResponse) GetSha3_384Encoded() string {
 	if x != nil {
 		return x.Sha3_384Encoded
+	}
+	return ""
+}
+
+func (x *GetDeltaResponse) GetFormat() string {
+	if x != nil {
+		return x.Format
 	}
 	return ""
 }
@@ -1743,6 +1759,7 @@ type DeltaDownloadRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SnapName      string                 `protobuf:"bytes,1,opt,name=snap_name,json=snapName,proto3" json:"snap_name,omitempty"`
 	DeltaName     string                 `protobuf:"bytes,2,opt,name=delta_name,json=deltaName,proto3" json:"delta_name,omitempty"`
+	Format        string                 `protobuf:"bytes,3,opt,name=format,proto3" json:"format,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1787,6 +1804,13 @@ func (x *DeltaDownloadRequest) GetSnapName() string {
 func (x *DeltaDownloadRequest) GetDeltaName() string {
 	if x != nil {
 		return x.DeltaName
+	}
+	return ""
+}
+
+func (x *DeltaDownloadRequest) GetFormat() string {
+	if x != nil {
+		return x.Format
 	}
 	return ""
 }
@@ -3399,18 +3423,20 @@ const file_services_store_proto_store_proto_rawDesc = "" +
 	"\x18GetLatestRevisionRequest\x12\x1b\n" +
 	"\tsnap_name\x18\x01 \x01(\tR\bsnapName\x12\x14\n" +
 	"\x05track\x18\x02 \x01(\tR\x05track\x12\x18\n" +
-	"\achannel\x18\x03 \x01(\tR\achannel\"{\n" +
+	"\achannel\x18\x03 \x01(\tR\achannel\"\x93\x01\n" +
 	"\x1dGetDeltaByRevisionPairRequest\x12,\n" +
 	"\x12source_revision_id\x18\x01 \x01(\tR\x10sourceRevisionId\x12,\n" +
-	"\x12target_revision_id\x18\x02 \x01(\tR\x10targetRevisionId\"\x8a\x02\n" +
+	"\x12target_revision_id\x18\x02 \x01(\tR\x10targetRevisionId\x12\x16\n" +
+	"\x06format\x18\x03 \x01(\tR\x06format\"\xa2\x02\n" +
 	"\x10GetDeltaResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12,\n" +
 	"\x12source_revision_id\x18\x02 \x01(\tR\x10sourceRevisionId\x12,\n" +
 	"\x12target_revision_id\x18\x03 \x01(\tR\x10targetRevisionId\x12&\n" +
 	"\x0fminio_file_path\x18\x04 \x01(\tR\rminioFilePath\x12\x12\n" +
 	"\x04size\x18\x05 \x01(\x04R\x04size\x12(\n" +
-	"\x10sha3_384_encoded\x18\x06 \x01(\tR\x0esha3384Encoded\x12$\n" +
-	"\x06errors\x18\a \x03(\v2\f.proto.ErrorR\x06errors\"!\n" +
+	"\x10sha3_384_encoded\x18\x06 \x01(\tR\x0esha3384Encoded\x12\x16\n" +
+	"\x06format\x18\a \x01(\tR\x06format\x12$\n" +
+	"\x06errors\x18\b \x03(\v2\f.proto.ErrorR\x06errors\"!\n" +
 	"\tDataChunk\x12\x14\n" +
 	"\x05chunk\x18\x01 \x01(\fR\x05chunk\"6\n" +
 	"\x13SnapDownloadRequest\x12\x1f\n" +
@@ -3426,11 +3452,12 @@ const file_services_store_proto_store_proto_rawDesc = "" +
 	"\x1cSnapDownloadCompleteResponse\x126\n" +
 	"\brevision\x18\x01 \x01(\v2\x1a.store.GetRevisionResponseR\brevision\x12\x12\n" +
 	"\x04data\x18\x02 \x01(\fR\x04data\x12$\n" +
-	"\x06errors\x18\x03 \x03(\v2\f.proto.ErrorR\x06errors\"R\n" +
+	"\x06errors\x18\x03 \x03(\v2\f.proto.ErrorR\x06errors\"j\n" +
 	"\x14DeltaDownloadRequest\x12\x1b\n" +
 	"\tsnap_name\x18\x01 \x01(\tR\bsnapName\x12\x1d\n" +
 	"\n" +
-	"delta_name\x18\x02 \x01(\tR\tdeltaName\"\xb1\x01\n" +
+	"delta_name\x18\x02 \x01(\tR\tdeltaName\x12\x16\n" +
+	"\x06format\x18\x03 \x01(\tR\x06format\"\xb1\x01\n" +
 	"\x15DeltaDownloadResponse\x12?\n" +
 	"\ainitial\x18\x01 \x01(\v2#.store.InitialDeltaDownloadResponseH\x00R\ainitial\x12&\n" +
 	"\x04data\x18\x02 \x01(\v2\x10.store.DataChunkH\x00R\x04data\x12$\n" +
