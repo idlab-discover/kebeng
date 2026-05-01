@@ -195,7 +195,7 @@ func (sp *SnapsRepository) AddDelta(sourceRevisionID, targetRevisionID uuid.UUID
 	query := `
 		INSERT INTO snap_deltas (source_revision_id, target_revision_id, format, minio_file_path, size, sha3_384_encoded)
 		VALUES ($1, $2, $3, $4, $5, $6)
-		ON CONFLICT (source_revision_id, target_revision_id) DO NOTHING
+		ON CONFLICT (source_revision_id, target_revision_id, format) DO NOTHING
 		RETURNING id
 	`
 
