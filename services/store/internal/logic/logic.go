@@ -591,6 +591,12 @@ func (s *StoreLogic) DeltaDownload(req *proto.DeltaDownloadRequest, stream proto
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	if req.Format == "" {
+		cerr := cerror.NewCustomError(cerror.MissingField, "delta format is required")
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return stream.Send(&proto.DeltaDownloadResponse{Errors: el.ConvertToProtoErrorList()})
+	}
 	if req.SnapName == "" {
 		cerr := cerror.NewCustomError(cerror.MissingField, "snap name is required")
 		logrus.Error(cerr)
@@ -604,7 +610,7 @@ func (s *StoreLogic) DeltaDownload(req *proto.DeltaDownloadRequest, stream proto
 		return stream.Send(&proto.DeltaDownloadResponse{Errors: el.ConvertToProtoErrorList()})
 	}
 
-	minioFilePath := fmt.Sprintf("%s/%s", req.SnapName, req.DeltaName)
+	minioFilePath := fmt.Sprintf("%s/%s/%s", req.Format, req.SnapName, req.DeltaName)
 	delta, cerr := s.repo.GetDeltaByMinioFilePath(minioFilePath, el)
 	if cerr != nil {
 		logrus.Error(cerr)
@@ -1010,7 +1016,7 @@ func (s *StoreLogic) AddRevision(ctx context.Context, req *proto.AddRevisionRequ
 	}
 
 	if lastRevision != nil && newRevision != nil {
-		if err := s.generateAndStoreDelta(ctx, lastRevision, newRevision); err != nil {
+		if err := s.generateAndStoreDelta(ctx, lastRevision, newRevision, "xdelta3"); err != nil {
 			logrus.Warnf("dleta generation failed for %s rev %d -> %d: %v", req.SnapName, lastRevision.SequenceNumber, newRevision.SequenceNumber, err)
 		}
 	}
@@ -1129,6 +1135,12 @@ func (s *StoreLogic) UpdateSnapEntryWithMetadata(ctx context.Context, req *proto
 
 func (s *StoreLogic) GetDeltaByRevisionPair(ctx context.Context, req *proto.GetDeltaByRevisionPairRequest) (*proto.GetDeltaResponse, error) {
 	el := cerror.NewErrorList()
+	if req.Format == "" {
+		cerr := cerror.NewCustomError(cerror.MissingField, "delta format is required")
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.GetDeltaResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
 
 	if req.SourceRevisionId == "" || req.TargetRevisionId == ""{
 		cerr := cerror.NewCustomError(cerror.MissingField, "revision id is required")
@@ -1153,7 +1165,7 @@ func (s *StoreLogic) GetDeltaByRevisionPair(ctx context.Context, req *proto.GetD
 		return &proto.GetDeltaResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
 
-	delta, cerr := s.repo.GetDeltaByRevisionPair(sourceRevisionUuid, targetRevisionUuid, el)
+	delta, cerr := s.repo.GetDeltaByRevisionPair(sourceRevisionUuid, targetRevisionUuid, req.Format, el)
 
 	if cerr != nil {
 		return &proto.GetDeltaResponse{Errors: el.ConvertToProtoErrorList()}, nil
@@ -1164,6 +1176,7 @@ func (s *StoreLogic) GetDeltaByRevisionPair(ctx context.Context, req *proto.GetD
 		SourceRevisionId: delta.SourceRevisionID.String(),
 		TargetRevisionId: delta.TargetRevisionID.String(),
 		MinioFilePath: delta.MinioFilePath,
+		Format: delta.Format,
 		Size: delta.Size,
 		Sha3_384Encoded: delta.SHA3_384_Encoded,
 	}, nil
@@ -1171,12 +1184,12 @@ func (s *StoreLogic) GetDeltaByRevisionPair(ctx context.Context, req *proto.GetD
 
 // ################# HELPERS #################
 
-func (s *StoreLogic) generateAndStoreDelta(ctx context.Context, source, target *model.SnapRevision) error {
+func (s *StoreLogic) generateAndStoreDelta(ctx context.Context, source, target *model.SnapRevision, format string) error {
 	el := cerror.NewErrorList()
 
-	existing, cerr := s.repo.GetDeltaByRevisionPair(source.ID, target.ID, el)
+	existing, cerr := s.repo.GetDeltaByRevisionPair(source.ID, target.ID, format, el)
 	if cerr == nil && existing != nil {
-		logrus.Infof("delta already exists for %s rev %d -> %d, skipping", source.SnapName, source.SequenceNumber, target.SequenceNumber)
+		logrus.Infof("delta already exists for %s rev %d -> %d, format %s. skipping", source.SnapName, source.SequenceNumber, target.SequenceNumber, format)
 		return nil
 	}
 
@@ -1249,18 +1262,18 @@ func (s *StoreLogic) generateAndStoreDelta(ctx context.Context, source, target *
 	if _, err = patchTmp.Seek(0, io.SeekStart); err != nil {
 		return fmt.Errorf("failed to seek patch file found for upload: %v", err)
 	}
-	minioFilePath := fmt.Sprintf("%s/%d-%d.xdelta3", source.SnapName, source.SequenceNumber, target.SequenceNumber)
+	minioFilePath := fmt.Sprintf("%s/%s/%d-%d.xdelta3", format, source.SnapName, source.SequenceNumber, target.SequenceNumber)
 
 	if _, err := s.obs.SaveDeltaToBucket("deltas", minioFilePath, patchTmp, uint64(size)); err != nil {
 		return fmt.Errorf("failed to upload delta to MinIO: %v", err)
 	}
 
-	_, cerr = s.repo.AddDelta(source.ID, target.ID, minioFilePath, uint64(size), sha3Encoded, el)
+	_, cerr = s.repo.AddDelta(source.ID, target.ID, format, minioFilePath, uint64(size), sha3Encoded, el)
 	if cerr != nil {
 		return fmt.Errorf("failed to record delta in database: %v", cerr.GetMessage())
 	}
 
-	logrus.Infof("delta stored for %s rev %d -> %d: %d bytes at %s", source.SnapName, source.SequenceNumber, target.SequenceNumber, size, minioFilePath)
+	logrus.Infof("delta stored for %s rev %d -> %d: %d bytes in format %s at %s", source.SnapName, source.SequenceNumber, target.SequenceNumber, size, format, minioFilePath)
 
 	return nil
 

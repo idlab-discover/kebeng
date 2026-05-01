@@ -39,7 +39,7 @@ type StoreClientInterface interface {
 	GetLatestRevisionByTrackAndChannel(snapName, track, channel string) *proto.GetRevisionResponse
 	GetLatestRevisionBeforeDateById(date time.Time, id string) *proto.GetRevisionResponse
 	SnapDownloadStream(revisionId string) (proto.StoreService_SnapDownloadClient, error)
-	DeltaDownloadStream(snapName, deltaName string) (proto.StoreService_DeltaDownloadClient, error)
+	DeltaDownloadStream(snapName, deltaName, format string) (proto.StoreService_DeltaDownloadClient, error)
 	UnscannedUpload(ctx context.Context, snapFile io.Reader) *proto.UnscannedUploadCompleteResponse
 	AddUpload(entryId uuid.UUID, accountId uuid.UUID, snapName string, status string, unscannedFileName string, revision uint32) *proto.AddUploadResponse
 	GetUploadStatus(uploadId string) *proto.GetUploadStatusResponse
@@ -47,7 +47,7 @@ type StoreClientInterface interface {
 	GetObjectCustomMetadata(bucket string, objectKey string) *model.Metadata
 	UpdateUploadStatus(uploadId string, status string, revision uint32, el *cerror.ErrorList) *proto.UpdateUploadStatusResponse
 	UpdateSnapEntryWithMetadata(snapEntryId uuid.UUID, metadata *model.Metadata) *proto.UpdateEntryResponse
-	GetDeltaByRevisionPair(sourceRevesionId, targetRevisionId uuid.UUID, el *cerror.ErrorList) *proto.GetDeltaResponse
+	GetDeltaByRevisionPair(sourceRevesionId, targetRevisionId uuid.UUID, format string, el *cerror.ErrorList) *proto.GetDeltaResponse
 	GetRevisionByNameAndSequence(name string, sequence uint32) *proto.GetRevisionResponse
 }
 
@@ -419,10 +419,11 @@ func (c *StoreClient) SnapDownloadStream(revisionId string) (proto.StoreService_
 	return c.client.SnapDownload(context.Background(), req)
 }
 
-func (c *StoreClient) DeltaDownloadStream(snapName, deltaName string) (proto.StoreService_DeltaDownloadClient, error) {
+func (c *StoreClient) DeltaDownloadStream(snapName, deltaName, format string) (proto.StoreService_DeltaDownloadClient, error) {
 	req := &proto.DeltaDownloadRequest{
 		SnapName:  snapName,
 		DeltaName: deltaName,
+		Format:    format,
 	}
 	return c.client.DeltaDownload(context.Background(), req)
 }
@@ -558,10 +559,11 @@ func (c *StoreClient) UpdateSnapEntryWithMetadata(snapEntryId uuid.UUID, metadat
 	return resp
 }
 
-func (c *StoreClient) GetDeltaByRevisionPair(sourceRevesionId, targetRevisionId uuid.UUID, el *cerror.ErrorList) *proto.GetDeltaResponse {
+func (c *StoreClient) GetDeltaByRevisionPair(sourceRevesionId, targetRevisionId uuid.UUID, format string, el *cerror.ErrorList) *proto.GetDeltaResponse {
 	resp, err := c.client.GetDeltaByRevisionPair(context.Background(), &proto.GetDeltaByRevisionPairRequest{
 		SourceRevisionId: sourceRevesionId.String(),
 		TargetRevisionId: targetRevisionId.String(),
+		Format:           format,
 	})
 	if err != nil {
 		resp = &proto.GetDeltaResponse{

@@ -78,7 +78,7 @@ func (h *Handler) SetupEndpoints(r *gin.Engine) {
 	r.POST("/v2/cohorts", h.snapHandler.CreateCohorts)
 
 	// ********** DELTAS **********
-	r.GET("/download-delta/:snap-name/:delta-name", h.snapHandler.DownloadDelta)
+	r.GET("/download-delta/:delta-format/:snap-name/:delta-name", h.snapHandler.DownloadDelta)
 }
 
 func (h *Handler) SetupEndpointsWithMonitoring(r *gin.Engine) {
@@ -120,6 +120,6 @@ func (h *Handler) SetupEndpointsWithMonitoring(r *gin.Engine) {
 	r.POST("/v2/cohorts", monitoring.Wrapper("CreateCohorts", h.snapHandler.CreateCohorts))
 
 	// ********** DELTAS **********
-	r.GET("/download-delta/:snap-name/:delta-name", monitoring.Wrapper("DownloadDelta", h.snapHandler.DownloadDelta))
+	r.GET("/download-delta/:delta-format/:snap-name/:delta-name", monitoring.Wrapper("DownloadDelta", h.snapHandler.DownloadDelta))
 
 }

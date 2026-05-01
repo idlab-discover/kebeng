@@ -286,7 +286,7 @@ func (h *Handler) refreshRefresh(action *model.Action, context []*model.Context,
 				res.Result = "error"
 				return &res, cerror.NewCustomError(cerror.BadRequest, fmt.Sprintf("Unable to parse source and target revision IDs to uuids: %v, %v", erra, errb))
 			}
-			deltaInfo := h.StoreClient.GetDeltaByRevisionPair(userRevisionId, latestRevisionId, el)
+			deltaInfo := h.StoreClient.GetDeltaByRevisionPair(userRevisionId, latestRevisionId, "xdelta3", el)
 			if len(deltaInfo.Errors) > 0 {
 				res.Result = "error"
 				return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("error getting delta details: %v", deltaInfo.Errors))
@@ -305,7 +305,7 @@ func (h *Handler) refreshRefresh(action *model.Action, context []*model.Context,
 				Size:     latestRevision.Size,
 				Source:   uint64(userRevision.SequenceNumber),
 				Target:   uint64(latestRevision.SequenceNumber),
-				URL:      fmt.Sprintf("%s/download-delta/%s/%d-%d.xdelta3", h.Config.StoreUrl, entry.SnapName, userRevision.SequenceNumber, latestRevision.SequenceNumber),
+				URL:      fmt.Sprintf("%s/download-delta/%s/%s/%d-%d.xdelta3", h.Config.StoreUrl, "xdelta3", entry.SnapName, userRevision.SequenceNumber, latestRevision.SequenceNumber),
 			})
 
 			break
@@ -828,6 +828,7 @@ func (h *Handler) CreateCohorts(c *gin.Context) {
 
 func (h *Handler) DownloadDelta(c *gin.Context) {
 	el := cerror.NewErrorList()
+	deltaFormat := c.Param("delta-format")
 	snapName := c.Param("snap-name")
 	deltaName := c.Param("delta-name")
 	if snapName == "" {
@@ -840,7 +841,7 @@ func (h *Handler) DownloadDelta(c *gin.Context) {
 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
 		return
 	}
-	h.downloadDelta(c, snapName, deltaName, el)
+	h.downloadDelta(c, deltaFormat, snapName, deltaName, el)
 }
 
 // ########################## HELPER FUNCTIONS ##########################
@@ -901,7 +902,7 @@ func (h *Handler) downloadSnap(c *gin.Context, revisionId string, el *cerror.Err
 	}
 }
 
-func (h *Handler) downloadDelta(c *gin.Context, snapName string, deltaName string, el *cerror.ErrorList) {
+func (h *Handler) downloadDelta(c *gin.Context, deltaFormat string, snapName string, deltaName string, el *cerror.ErrorList) {
 	if snapName == "" {
 		el.Add(cerror.BadRequest, "snap name is required")
 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
@@ -913,7 +914,7 @@ func (h *Handler) downloadDelta(c *gin.Context, snapName string, deltaName strin
 		return
 	}
 
-	stream, err := h.StoreClient.DeltaDownloadStream(snapName, deltaName)
+	stream, err := h.StoreClient.DeltaDownloadStream(snapName, deltaName, deltaFormat)
 	if err != nil {
 		el.Add(cerror.InternalServerError, err.Error())
 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
