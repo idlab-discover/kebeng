@@ -4,10 +4,27 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os/exec"
 	"testing"
 )
 
+// ===== TEST SKIPPER =====
+
+// Not every test environment (CI/CD pipelines, automation) have xdelta3 available.
+// We don't want to fail the testing pipeline just because the executable is not there.
+
+// requireXdelta3(t *testint.T) tells testing to skip tests using xdelta3 when xdelta3 is not available
+func requireXdelta3(t *testing.T) {
+	t.Helper()
+	if _, err := exec.LookPath("xdelta3"); err != nil {
+		t.Skip("xdelta3 not found in PATH, skipping integration test")
+	}
+}
+
 // ===== XDELTA3 GENERATOR =====
+
+// TODO: Round-trip-test: two files, delta, apply delta to first file, verify second file is obtained
+// Don't forget to use requireXdelta3, we don't want tests failing due to an uninstalled program in CI/CD
 
 func TestXdelta3GeneratorFormat(t *testing.T) {
 	g := NewXdelta3Generator(context.Background())

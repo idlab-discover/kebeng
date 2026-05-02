@@ -43,7 +43,7 @@ func (g *Xdelta3Generator) Generate(source *os.File, target io.Reader, out io.Wr
 	)
 
 	cmd.Stdin = target
-	
+
 	var written uint64
 	cmd.Stdout = writerCounter{w: out, n: &written}
 
@@ -63,12 +63,12 @@ func (g *Xdelta3Generator) Generate(source *os.File, target io.Reader, out io.Wr
 
 // ===== UTILITIES =======
 type writerCounter struct {
-    w io.Writer
-    n *uint64
+	w io.Writer
+	n *uint64
 }
 
 func (wc writerCounter) Write(p []byte) (int, error) {
-    nn, err := wc.w.Write(p)
-    *wc.n += uint64(nn)
-    return nn, err
+	nn, err := wc.w.Write(p)
+	*wc.n += uint64(nn)
+	return nn, err
 }
