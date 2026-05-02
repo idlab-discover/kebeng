@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
+	"github.com/idlab-discover/kebeng/services/store/internal/delta"
 	"github.com/idlab-discover/kebeng/services/store/internal/model"
 	"github.com/idlab-discover/kebeng/services/store/internal/objectstore"
 	"github.com/idlab-discover/kebeng/services/store/internal/repository"
@@ -352,7 +353,7 @@ func (s *StoreLogic) GetLatestRevisionBeforeDateById(ctx context.Context, req *p
 	if cerr != nil {
 		return &proto.GetRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
-	
+
 	return convertRevisionToProto(revision), nil
 }
 
@@ -603,7 +604,7 @@ func (s *StoreLogic) DeltaDownload(req *proto.DeltaDownloadRequest, stream proto
 		el.AddCustomError(cerr)
 		return stream.Send(&proto.DeltaDownloadResponse{Errors: el.ConvertToProtoErrorList()})
 	}
-	if req.DeltaName== "" {
+	if req.DeltaName == "" {
 		cerr := cerror.NewCustomError(cerror.MissingField, "delta name is required")
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
@@ -633,9 +634,9 @@ func (s *StoreLogic) DeltaDownload(req *proto.DeltaDownloadRequest, stream proto
 	if err := stream.Send(&proto.DeltaDownloadResponse{
 		Payload: &proto.DeltaDownloadResponse_Initial{
 			Initial: &proto.InitialDeltaDownloadResponse{
-				Size: uint64(delta.Size),
+				Size:            uint64(delta.Size),
 				Sha3_384Encoded: delta.SHA3_384_Encoded,
-				MinioFilePath: delta.MinioFilePath,
+				MinioFilePath:   delta.MinioFilePath,
 			},
 		},
 	}); err != nil {
@@ -1142,7 +1143,7 @@ func (s *StoreLogic) GetDeltaByRevisionPair(ctx context.Context, req *proto.GetD
 		return &proto.GetDeltaResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
 
-	if req.SourceRevisionId == "" || req.TargetRevisionId == ""{
+	if req.SourceRevisionId == "" || req.TargetRevisionId == "" {
 		cerr := cerror.NewCustomError(cerror.MissingField, "revision id is required")
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
@@ -1170,15 +1171,15 @@ func (s *StoreLogic) GetDeltaByRevisionPair(ctx context.Context, req *proto.GetD
 	if cerr != nil {
 		return &proto.GetDeltaResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
-	
+
 	return &proto.GetDeltaResponse{
-		Id: delta.ID.String(),
+		Id:               delta.ID.String(),
 		SourceRevisionId: delta.SourceRevisionID.String(),
 		TargetRevisionId: delta.TargetRevisionID.String(),
-		MinioFilePath: delta.MinioFilePath,
-		Format: delta.Format,
-		Size: delta.Size,
-		Sha3_384Encoded: delta.SHA3_384_Encoded,
+		MinioFilePath:    delta.MinioFilePath,
+		Format:           delta.Format,
+		Size:             delta.Size,
+		Sha3_384Encoded:  delta.SHA3_384_Encoded,
 	}, nil
 }
 
@@ -1187,13 +1188,25 @@ func (s *StoreLogic) GetDeltaByRevisionPair(ctx context.Context, req *proto.GetD
 func (s *StoreLogic) generateAndStoreDelta(ctx context.Context, source, target *model.SnapRevision, format string) error {
 	el := cerror.NewErrorList()
 
+	var generator delta.DeltaGenerator
+	switch format {
+	case "xdelta3":
+		generator = delta.NewXdelta3Generator(ctx)
+
+	// case "snap-1-1-xdelta3":
+	//        generator = delta.NewSnap11Xdelta3Generator(ctx)
+
+	default:
+		return fmt.Errorf("unsupported delta format requested for generation: %s", format)
+	}
+
 	existing, cerr := s.repo.GetDeltaByRevisionPair(source.ID, target.ID, format, el)
 	if cerr == nil && existing != nil {
 		logrus.Infof("delta already exists for %s rev %d -> %d, format %s. skipping", source.SnapName, source.SequenceNumber, target.SequenceNumber, format)
 		return nil
 	}
 
-	// Source file needs to have random access for xdelta3 to function: temporary download is required unfortunately
+	// Source file needs to have random access for diff calculators to function: temporary download is required unfortunately
 	srcReader, err := s.obs.GetSnapFileReader(ctx, source.MinioFilePath)
 
 	if err != nil {
@@ -1217,7 +1230,7 @@ func (s *StoreLogic) generateAndStoreDelta(ctx context.Context, source, target *
 		return fmt.Errorf("failed to seek source temp file: %v", err)
 	}
 
-	// Target snap can be streamed directly into xdelta3 stdin, this doesn't need a temp download
+	// Target snap can be streamed directly into generator
 	tgtReader, err := s.obs.GetSnapFileReader(ctx, target.MinioFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to open target snap: %v", err)
@@ -1225,7 +1238,7 @@ func (s *StoreLogic) generateAndStoreDelta(ctx context.Context, source, target *
 	defer tgtReader.Close()
 
 	// Temporarily store patch output (xdelta3)
-	patchTmp, err := os.CreateTemp(os.TempDir(), "snap-delta-patch-*.xdelta3")
+	patchTmp, err := os.CreateTemp(os.TempDir(), "snap-delta-patch-*")
 	if err != nil {
 		return fmt.Errorf("failed to create patch temp file: %v", err)
 	}
@@ -1235,40 +1248,23 @@ func (s *StoreLogic) generateAndStoreDelta(ctx context.Context, source, target *
 	// xdelta3 output can be immediately hashed
 	hasher := sha3.New384()
 
-	cmd := exec.CommandContext(
-		ctx,
-		"xdelta3", "-e", "-f", "-S", "none",
-		"-s", srcTmp.Name(),
-		"-",
-	)
-
-	cmd.Stdin = tgtReader
-	cmd.Stdout = io.MultiWriter(patchTmp, hasher) // compute hash in tandem
-	var stderr strings.Builder
-	cmd.Stderr = &stderr
-
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("xdelta3 failed for %s rev %d -> %d: %v with stderr '%s'", source.SnapName, source.SequenceNumber, target.SequenceNumber, err, stderr.String())
+	// Apply selected DeltaGenerator
+	size, err := generator.Generate(srcTmp, tgtReader, io.MultiWriter(patchTmp, hasher))
+	if err != nil {
+		return fmt.Errorf("delta generation failed (%s) for %s rev %d -> %d: %v", format, source.SnapName, source.SequenceNumber, target.SequenceNumber, err)
 	}
 
 	sha3Encoded := base64.RawURLEncoding.EncodeToString(hasher.Sum(nil))
 
-	patchInfo, err := patchTmp.Stat()
-	if err != nil {
-		return fmt.Errorf("failed to stat patch file %v", err)
-	}
-	size := patchInfo.Size()
-
-	if _, err = patchTmp.Seek(0, io.SeekStart); err != nil {
+	if _, err := patchTmp.Seek(0, io.SeekStart); err != nil {
 		return fmt.Errorf("failed to seek patch file found for upload: %v", err)
 	}
 	minioFilePath := fmt.Sprintf("%s/%s/%d-%d.xdelta3", format, source.SnapName, source.SequenceNumber, target.SequenceNumber)
-
-	if _, err := s.obs.SaveDeltaToBucket("deltas", minioFilePath, patchTmp, uint64(size)); err != nil {
+	if _, err := s.obs.SaveDeltaToBucket("deltas", minioFilePath, patchTmp, size); err != nil {
 		return fmt.Errorf("failed to upload delta to MinIO: %v", err)
 	}
 
-	_, cerr = s.repo.AddDelta(source.ID, target.ID, format, minioFilePath, uint64(size), sha3Encoded, el)
+	_, cerr = s.repo.AddDelta(source.ID, target.ID, format, minioFilePath, size, sha3Encoded, el)
 	if cerr != nil {
 		return fmt.Errorf("failed to record delta in database: %v", cerr.GetMessage())
 	}
@@ -1276,7 +1272,6 @@ func (s *StoreLogic) generateAndStoreDelta(ctx context.Context, source, target *
 	logrus.Infof("delta stored for %s rev %d -> %d: %d bytes in format %s at %s", source.SnapName, source.SequenceNumber, target.SequenceNumber, size, format, minioFilePath)
 
 	return nil
-
 }
 
 func (s *StoreLogic) getObjectStoreFilePath(revisionID string, el *cerror.ErrorList) (string, *model.SnapRevision, *cerror.CustomError) {
