@@ -357,6 +357,16 @@ func (h *Handler) FindSnaps(c *gin.Context) {
 	el := cerror.NewErrorList()
 	result := *model.NewFindSnapResponse()
 
+	query, queryIsPresent := c.GetQuery("q")
+	if !queryIsPresent || query == "" {
+		// Featured snaps are not yet tracked in the database.
+		// Return an empty result
+		// In the future, snap find without query should return a list of featured snap
+		c.Header("Content-Type", "application/json")
+		c.JSON(http.StatusOK, result)
+		return
+	}
+
 	architecture, architectureIsPresent := c.GetQuery("architecture")
 	if !architectureIsPresent {
 		el.Add(cerror.BadRequest, "architecture is required")
@@ -375,16 +385,6 @@ func (h *Handler) FindSnaps(c *gin.Context) {
 		return
 	}
 	confinementsList := strings.Split(confinement, ",")
-
-	query, queryIsPresent := c.GetQuery("q")
-	if !queryIsPresent {
-		// TODO: The snap store itself does support a `snap find` invocation without query
-		// But for this it returns "featured" snaps, which we don't mark in our database yet
-		// For now we indicate query as required
-		el.Add(cerror.BadRequest, "q (query) is required")
-		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
-		return
-	}
 
 	fields, _ := c.GetQuery("fields")
 	fieldsList := strings.Split(fields, ",")
