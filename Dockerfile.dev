@@ -38,14 +38,22 @@ WORKDIR /workspace
 # `go env GOMODCACHE` -> /go/pkg/mod for this golang img ver; copy mod cache from cache layer
 # NOTE: this path may change for more modern golang images
 COPY --from=depcache /go/pkg/mod /go/pkg/mod
+
+# Install system dependencies before copying source so this layer is cached
+# independently of source changes — only reruns if the package list changes
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    squashfs-tools \
+    xdelta3 \
+    && rm -rf /var/lib/apt/lists/*
+
 # We're copying the folders in its entirety here as we want docker to rebuild this layer
 # each time any part of the source changes
 COPY ./services /workspace/services
 COPY ./common /workspace/common
 
 WORKDIR /workspace/services/account
-RUN go build -modfile go.dev.mod -o account-service ./main.go
-RUN ["cp", "-r", "/workspace/services/account/internal/migrations", "/workspace/services/account/migrations"]
+RUN go build -modfile go.dev.mod -o account-service ./main.go && \
+cp -r /workspace/services/account/internal/migrations /workspace/services/account/migrations
 
 WORKDIR /workspace/services/assertion
 RUN go build -modfile go.dev.mod -o assertion-service ./main.go
@@ -54,9 +62,8 @@ WORKDIR /workspace/services/gateway
 RUN go build -modfile go.dev.mod -o gateway ./main.go
 
 WORKDIR /workspace/services/store
-RUN apt-get update && apt-get install -y squashfs-tools xdelta3
-RUN go build -modfile go.dev.mod -o store-service ./main.go
-RUN ["cp", "-r", "/workspace/services/store/internal/migrations", "/workspace/services/store/migrations"]
+RUN go build -modfile go.dev.mod -o store-service ./main.go && \
+cp -r /workspace/services/store/internal/migrations /workspace/services/store/migrations
 
 CMD ["echo", "This is a dummy command, specify the service to run in your `docker run` command or `docker-compose` file."]
 
