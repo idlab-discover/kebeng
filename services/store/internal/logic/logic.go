@@ -1188,10 +1188,10 @@ func (s *StoreLogic) GetDeltaByRevisionPair(ctx context.Context, req *proto.GetD
 func (s *StoreLogic) generateAndStoreDelta(ctx context.Context, source, target *model.SnapRevision, format string) error {
 	el := cerror.NewErrorList()
 
-	var generator delta.DeltaGenerator
+	var deltaHandler delta.DeltaHandler
 	switch format {
 	case "xdelta3":
-		generator = delta.NewXdelta3Generator(ctx)
+		deltaHandler = delta.NewXdelta3Generator(ctx)
 
 	// case "snap-1-1-xdelta3":
 	//        generator = delta.NewSnap11Xdelta3Generator(ctx)
@@ -1249,7 +1249,7 @@ func (s *StoreLogic) generateAndStoreDelta(ctx context.Context, source, target *
 	hasher := sha3.New384()
 
 	// Apply selected DeltaGenerator
-	size, err := generator.Generate(srcTmp, tgtReader, io.MultiWriter(patchTmp, hasher))
+	size, err := deltaHandler.GenerateDelta(srcTmp, tgtReader, io.MultiWriter(patchTmp, hasher))
 	if err != nil {
 		return fmt.Errorf("delta generation failed (%s) for %s rev %d -> %d: %v", format, source.SnapName, source.SequenceNumber, target.SequenceNumber, err)
 	}

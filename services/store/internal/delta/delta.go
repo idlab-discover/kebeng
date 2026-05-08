@@ -17,9 +17,10 @@ import (
 // *os.File for input guarantees random access, io.Reader for target allows simple scanning
 // or if needed a temporary disk file can also be created based on it for random access
 
-type DeltaGenerator interface {
-	Format() string
-	Generate(source *os.File, target io.Reader, out io.Writer) (uint64, error)
+type DeltaHandler interface {
+	DeltaFormat() string
+	GenerateDelta(source *os.File, target io.Reader, out io.Writer) (uint64, error)
+	ApplyDelta(source *os.File, delta *os.File, out io.Writer) (uint64, error)
 }
 
 type Xdelta3Generator struct {
@@ -30,11 +31,11 @@ func NewXdelta3Generator(ctx context.Context) *Xdelta3Generator {
 	return &Xdelta3Generator{ctx}
 }
 
-func (g *Xdelta3Generator) Format() string {
+func (g *Xdelta3Generator) DeltaFormat() string {
 	return "xdelta3"
 }
 
-func (g *Xdelta3Generator) Generate(source *os.File, target io.Reader, out io.Writer) (uint64, error) {
+func (g *Xdelta3Generator) GenerateDelta(source *os.File, target io.Reader, out io.Writer) (uint64, error) {
 	cmd := exec.CommandContext(
 		g.ctx,
 		"xdelta3", "-e", "-f", "-S", "none",
@@ -52,6 +53,31 @@ func (g *Xdelta3Generator) Generate(source *os.File, target io.Reader, out io.Wr
 
 	if err := cmd.Run(); err != nil {
 		return 0, fmt.Errorf("xdelta3 failed: %v (stderr: %s)", err, stderr.String())
+	}
+
+	return written, nil
+}
+
+func (g *Xdelta3Generator) ApplyDelta(source *os.File, delta *os.File, out io.Writer) (uint64, error) {
+	sourcePath := source.Name()
+	deltaPath := delta.Name()
+
+	cmd := exec.CommandContext(
+		g.ctx,
+		"xdelta3", "-d", "-f",
+		"-s", sourcePath,
+		deltaPath,
+		"-",
+	)
+
+	var written uint64
+	cmd.Stdout = writerCounter{w: out, n: &written}
+
+	var stderr strings.Builder
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		return 0, fmt.Errorf("xdelta3 apply failed: %w (stderr: %s)", err, stderr.String())
 	}
 
 	return written, nil

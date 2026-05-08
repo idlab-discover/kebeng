@@ -28,8 +28,8 @@ func requireXdelta3(t *testing.T) {
 
 func TestXdelta3GeneratorFormat(t *testing.T) {
 	g := NewXdelta3Generator(context.Background())
-	if g.Format() != "xdelta3" {
-		t.Errorf("expected format 'xdelta3', got '%s'", g.Format())
+	if g.DeltaFormat() != "xdelta3" {
+		t.Errorf("expected format 'xdelta3', got '%s'", g.DeltaFormat())
 	}
 }
 
