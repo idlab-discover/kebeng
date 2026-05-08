@@ -57,6 +57,7 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 		case "download":
 			res, cerr := h.refreshInstallOrDownload(action, el)
 			if cerr != nil {
+				el.AddCustomError(cerr)
 				c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 				return
 			}
@@ -66,6 +67,7 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 		case "install":
 			res, cerr := h.refreshInstallOrDownload(action, el)
 			if cerr != nil {
+				el.AddCustomError(cerr)
 				c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 				logrus.Errorf("error installing snap: %v", cerr)
 				return
@@ -85,6 +87,7 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 		case "refresh":
 			res, cerr := h.refreshRefresh(action, req.Context, el)
 			if cerr != nil {
+				el.AddCustomError(cerr)
 				c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
 				return
 			}
@@ -148,6 +151,14 @@ func (h *Handler) refreshInstallOrDownload(action *model.Action, el *cerror.Erro
 		if len(revision.Errors) > 0 {
 			res.Result = "error"
 			return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("error getting revision: %v", revision.Errors))
+		}
+
+	} else if action.Revision > 0 {
+		revision = h.StoreClient.GetRevisionByNameAndSequence(action.Name, uint32(action.Revision))
+		if len(revision.Errors) > 0 {
+			el.ExtendProtoError(revision.Errors)
+			res.Result = "error"
+			return &res, cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("revision %d not found for snap %s", action.Revision, action.Name))
 		}
 	} else {
 		if latestRevision == nil || el.HasError() {
@@ -216,7 +227,7 @@ func (h *Handler) refreshRefresh(action *model.Action, context []*model.Context,
 		return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("account error: %v", publisher.Errors))
 	}
 
-	var latestRevision *storepb.GetRevisionResponse
+	var selectedRevision *storepb.GetRevisionResponse
 
 	if action.CohortKey != "" {
 		ckey, err := cohortKeyFromString(action.CohortKey)
@@ -242,23 +253,33 @@ func (h *Handler) refreshRefresh(action *model.Action, context []*model.Context,
 		}
 
 		closestMilestone := getMostRecent90DayMilestone(ckey.CreatedAt.UTC())
-		latestRevision = h.StoreClient.GetLatestRevisionBeforeDateById(closestMilestone, entry.Id)
+		selectedRevision = h.StoreClient.GetLatestRevisionBeforeDateById(closestMilestone, entry.Id)
 
-		if len(latestRevision.Errors) > 0 {
+		if len(selectedRevision.Errors) > 0 {
+			el.ExtendProtoError(selectedRevision.Errors)
 			res.Result = "error"
-			return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("error getting revision: %v", latestRevision.Errors))
+			return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("error getting revision: %v", selectedRevision.Errors))
 		}
 	} else {
-		_, latestRevision = h.getLatestRevisionByEntryName(el, entry.SnapName)
+		if action.Revision > 0 {
+			selectedRevision = h.StoreClient.GetRevisionByNameAndSequence(entry.SnapName, uint32(action.Revision))
+			if len(selectedRevision.Errors) > 0 {
+				el.ExtendProtoError(selectedRevision.Errors)
+				res.Result = "error"
+				return &res, cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("revision %d not found for snap %s", action.Revision, entry.SnapName))
+			}
+		} else {
+			_, selectedRevision = h.getLatestRevisionByEntryName(el, entry.SnapName, action.Channel)
 
-		if el.HasError() {
-			return nil, cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("latest revision not found by name: %s", action.Name))
+			if el.HasError() {
+				return nil, cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("latest revision not found by name: %s", action.Name))
+			}
 		}
 	}
 
-	downloadUrl := fmt.Sprintf("%s/download/%s", h.Config.StoreUrl, latestRevision.Id)
+	downloadUrl := fmt.Sprintf("%s/download/%s", h.Config.StoreUrl, selectedRevision.Id)
 
-	raw, err := base64.RawURLEncoding.DecodeString(latestRevision.Sha3_384Encoded)
+	raw, err := base64.RawURLEncoding.DecodeString(selectedRevision.Sha3_384Encoded)
 	if err != nil {
 		el.Add(cerror.InternalServerError, fmt.Sprintf("error decoding sha3_384: %s", err.Error()))
 	}
@@ -273,7 +294,7 @@ func (h *Handler) refreshRefresh(action *model.Action, context []*model.Context,
 				res.Result = "error"
 				return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("error getting revision: %v", userRevision.Errors))
 			}
-			if latestRevision.SequenceNumber-userRevision.SequenceNumber != 1 {
+			if selectedRevision.SequenceNumber-userRevision.SequenceNumber != 1 {
 				// NOTE: Delta saving
 				// Currently, we only store deltas for steps of 1 revision at a time
 				// Bigger steps can be ignored for now
@@ -281,7 +302,7 @@ func (h *Handler) refreshRefresh(action *model.Action, context []*model.Context,
 			}
 
 			userRevisionId, erra := uuid.Parse(userRevision.Id)
-			latestRevisionId, errb := uuid.Parse(latestRevision.Id)
+			latestRevisionId, errb := uuid.Parse(selectedRevision.Id)
 			if erra != nil || errb != nil {
 				res.Result = "error"
 				return &res, cerror.NewCustomError(cerror.BadRequest, fmt.Sprintf("Unable to parse source and target revision IDs to uuids: %v, %v", erra, errb))
@@ -302,10 +323,10 @@ func (h *Handler) refreshRefresh(action *model.Action, context []*model.Context,
 			deltas = append(deltas, model.Delta{
 				Format:   "xdelta3", // NOTE: we only support this type, canonical has more
 				Sha3_384: deltaHexSum,
-				Size:     latestRevision.Size,
+				Size:     selectedRevision.Size,
 				Source:   uint64(userRevision.SequenceNumber),
-				Target:   uint64(latestRevision.SequenceNumber),
-				URL:      fmt.Sprintf("%s/download-delta/%s/%s/%d-%d.xdelta3", h.Config.StoreUrl, "xdelta3", entry.SnapName, userRevision.SequenceNumber, latestRevision.SequenceNumber),
+				Target:   uint64(selectedRevision.SequenceNumber),
+				URL:      fmt.Sprintf("%s/download-delta/%s/%s/%d-%d.xdelta3", h.Config.StoreUrl, "xdelta3", entry.SnapName, userRevision.SequenceNumber, selectedRevision.SequenceNumber),
 			})
 
 			break
@@ -318,7 +339,7 @@ func (h *Handler) refreshRefresh(action *model.Action, context []*model.Context,
 	res.SnapId = entry.Id
 	res.Name = entry.SnapName
 	res.Snap = &model.RefreshSnap{
-		Architectures: latestRevision.Architectures,
+		Architectures: selectedRevision.Architectures,
 		SnapId:        entry.Id,
 		Name:          entry.SnapName,
 		Publisher: &model.Publisher{
@@ -329,10 +350,10 @@ func (h *Handler) refreshRefresh(action *model.Action, context []*model.Context,
 			Deltas:   deltas,
 			URL:      &downloadUrl,
 			Sha3_384: &hexSum,
-			Size:     &latestRevision.Size,
+			Size:     &selectedRevision.Size,
 		},
-		Version:     latestRevision.Version,
-		Revision:    latestRevision.SequenceNumber,
+		Version:     selectedRevision.Version,
+		Revision:    selectedRevision.SequenceNumber,
 		Confinement: entry.Confinement,
 		Type:        entry.Type,
 		Base:        entry.Base,
@@ -984,7 +1005,7 @@ func (h *Handler) getLatestRevisionByEntryName(el *cerror.ErrorList, entryName s
 	snapEntry := snapEntries.Entries[0]
 
 	track := "latest"
-	channel := "stable"
+	channel := "stable" // Somewhat of a misnomer, is actually "risk", channel is the Whole string
 
 	// Determine track and channel from variadic parameters.
 	switch len(channelAndTrack) {
@@ -995,13 +1016,20 @@ func (h *Handler) getLatestRevisionByEntryName(el *cerror.ErrorList, entryName s
 			channel = channelAndTrack[0]
 		} else {
 			splitChannelAndTrack := strings.Split(channelAndTrack[0], "/")
-			if len(splitChannelAndTrack) == 1 {
+			switch len(splitChannelAndTrack) {
+			case 1:
+				// bare track name with no risk — use default risk
 				track = splitChannelAndTrack[0]
-			} else if len(splitChannelAndTrack) == 2 || len(splitChannelAndTrack) == 3 {
-				channel = splitChannelAndTrack[0]
-				track = splitChannelAndTrack[1]
-			} else {
-				el.Add(cerror.InternalServerError, fmt.Sprintf("could not deduce track, risk and branch from given channel %s", channelAndTrack[0]))
+			case 2:
+				// "latest/stable" => track/risk
+				track = splitChannelAndTrack[0]
+				channel = splitChannelAndTrack[1]
+			case 3:
+				// "latest/stable/fix-123" => track/risk/branch (branch ignored for now)
+				track = splitChannelAndTrack[0]
+				channel = splitChannelAndTrack[1]
+			default:
+				el.Add(cerror.InternalServerError, fmt.Sprintf("could not deduce track and risk from channel string %s", channelAndTrack[0]))
 				return nil, nil
 			}
 		}
