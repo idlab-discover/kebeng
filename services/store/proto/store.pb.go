@@ -1316,6 +1316,7 @@ type GetDeltaByRevisionPairRequest struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	SourceRevisionId string                 `protobuf:"bytes,1,opt,name=source_revision_id,json=sourceRevisionId,proto3" json:"source_revision_id,omitempty"`
 	TargetRevisionId string                 `protobuf:"bytes,2,opt,name=target_revision_id,json=targetRevisionId,proto3" json:"target_revision_id,omitempty"`
+	Format           string                 `protobuf:"bytes,3,opt,name=format,proto3" json:"format,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -1364,6 +1365,13 @@ func (x *GetDeltaByRevisionPairRequest) GetTargetRevisionId() string {
 	return ""
 }
 
+func (x *GetDeltaByRevisionPairRequest) GetFormat() string {
+	if x != nil {
+		return x.Format
+	}
+	return ""
+}
+
 type GetDeltaResponse struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Id               string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -1372,7 +1380,8 @@ type GetDeltaResponse struct {
 	MinioFilePath    string                 `protobuf:"bytes,4,opt,name=minio_file_path,json=minioFilePath,proto3" json:"minio_file_path,omitempty"`
 	Size             uint64                 `protobuf:"varint,5,opt,name=size,proto3" json:"size,omitempty"`
 	Sha3_384Encoded  string                 `protobuf:"bytes,6,opt,name=sha3_384_encoded,json=sha3384Encoded,proto3" json:"sha3_384_encoded,omitempty"`
-	Errors           []*proto.Error         `protobuf:"bytes,7,rep,name=errors,proto3" json:"errors,omitempty"`
+	Format           string                 `protobuf:"bytes,7,opt,name=format,proto3" json:"format,omitempty"`
+	Errors           []*proto.Error         `protobuf:"bytes,8,rep,name=errors,proto3" json:"errors,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -1445,6 +1454,13 @@ func (x *GetDeltaResponse) GetSize() uint64 {
 func (x *GetDeltaResponse) GetSha3_384Encoded() string {
 	if x != nil {
 		return x.Sha3_384Encoded
+	}
+	return ""
+}
+
+func (x *GetDeltaResponse) GetFormat() string {
+	if x != nil {
+		return x.Format
 	}
 	return ""
 }
@@ -1743,6 +1759,7 @@ type DeltaDownloadRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SnapName      string                 `protobuf:"bytes,1,opt,name=snap_name,json=snapName,proto3" json:"snap_name,omitempty"`
 	DeltaName     string                 `protobuf:"bytes,2,opt,name=delta_name,json=deltaName,proto3" json:"delta_name,omitempty"`
+	Format        string                 `protobuf:"bytes,3,opt,name=format,proto3" json:"format,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1787,6 +1804,13 @@ func (x *DeltaDownloadRequest) GetSnapName() string {
 func (x *DeltaDownloadRequest) GetDeltaName() string {
 	if x != nil {
 		return x.DeltaName
+	}
+	return ""
+}
+
+func (x *DeltaDownloadRequest) GetFormat() string {
+	if x != nil {
+		return x.Format
 	}
 	return ""
 }
@@ -3283,6 +3307,166 @@ func (x *UpdateEntryResponse) GetErrors() []*proto.Error {
 	return nil
 }
 
+type ApplyUploadDeltaRequest struct {
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	SnapName             string                 `protobuf:"bytes,1,opt,name=snap_name,json=snapName,proto3" json:"snap_name,omitempty"`
+	BaseRevisionSequence uint32                 `protobuf:"varint,2,opt,name=base_revision_sequence,json=baseRevisionSequence,proto3" json:"base_revision_sequence,omitempty"`
+	DeltaFileName        string                 `protobuf:"bytes,3,opt,name=delta_file_name,json=deltaFileName,proto3" json:"delta_file_name,omitempty"`
+	DeltaSha3_384Encoded string                 `protobuf:"bytes,4,opt,name=delta_sha3_384_encoded,json=deltaSha3384Encoded,proto3" json:"delta_sha3_384_encoded,omitempty"`
+	DeltaFormat          string                 `protobuf:"bytes,5,opt,name=delta_format,json=deltaFormat,proto3" json:"delta_format,omitempty"`
+	TracksAndChannels    []string               `protobuf:"bytes,6,rep,name=tracks_and_channels,json=tracksAndChannels,proto3" json:"tracks_and_channels,omitempty"`
+	TimeoutSeconds       uint32                 `protobuf:"varint,7,opt,name=timeout_seconds,json=timeoutSeconds,proto3" json:"timeout_seconds,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *ApplyUploadDeltaRequest) Reset() {
+	*x = ApplyUploadDeltaRequest{}
+	mi := &file_services_store_proto_store_proto_msgTypes[44]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ApplyUploadDeltaRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ApplyUploadDeltaRequest) ProtoMessage() {}
+
+func (x *ApplyUploadDeltaRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_services_store_proto_store_proto_msgTypes[44]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ApplyUploadDeltaRequest.ProtoReflect.Descriptor instead.
+func (*ApplyUploadDeltaRequest) Descriptor() ([]byte, []int) {
+	return file_services_store_proto_store_proto_rawDescGZIP(), []int{44}
+}
+
+func (x *ApplyUploadDeltaRequest) GetSnapName() string {
+	if x != nil {
+		return x.SnapName
+	}
+	return ""
+}
+
+func (x *ApplyUploadDeltaRequest) GetBaseRevisionSequence() uint32 {
+	if x != nil {
+		return x.BaseRevisionSequence
+	}
+	return 0
+}
+
+func (x *ApplyUploadDeltaRequest) GetDeltaFileName() string {
+	if x != nil {
+		return x.DeltaFileName
+	}
+	return ""
+}
+
+func (x *ApplyUploadDeltaRequest) GetDeltaSha3_384Encoded() string {
+	if x != nil {
+		return x.DeltaSha3_384Encoded
+	}
+	return ""
+}
+
+func (x *ApplyUploadDeltaRequest) GetDeltaFormat() string {
+	if x != nil {
+		return x.DeltaFormat
+	}
+	return ""
+}
+
+func (x *ApplyUploadDeltaRequest) GetTracksAndChannels() []string {
+	if x != nil {
+		return x.TracksAndChannels
+	}
+	return nil
+}
+
+func (x *ApplyUploadDeltaRequest) GetTimeoutSeconds() uint32 {
+	if x != nil {
+		return x.TimeoutSeconds
+	}
+	return 0
+}
+
+type ApplyUploadDeltaResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SnapName      string                 `protobuf:"bytes,1,opt,name=snap_name,json=snapName,proto3" json:"snap_name,omitempty"`
+	Status        string                 `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
+	Revision      uint32                 `protobuf:"varint,3,opt,name=revision,proto3" json:"revision,omitempty"`
+	Errors        []*proto.Error         `protobuf:"bytes,4,rep,name=errors,proto3" json:"errors,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ApplyUploadDeltaResponse) Reset() {
+	*x = ApplyUploadDeltaResponse{}
+	mi := &file_services_store_proto_store_proto_msgTypes[45]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ApplyUploadDeltaResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ApplyUploadDeltaResponse) ProtoMessage() {}
+
+func (x *ApplyUploadDeltaResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_services_store_proto_store_proto_msgTypes[45]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ApplyUploadDeltaResponse.ProtoReflect.Descriptor instead.
+func (*ApplyUploadDeltaResponse) Descriptor() ([]byte, []int) {
+	return file_services_store_proto_store_proto_rawDescGZIP(), []int{45}
+}
+
+func (x *ApplyUploadDeltaResponse) GetSnapName() string {
+	if x != nil {
+		return x.SnapName
+	}
+	return ""
+}
+
+func (x *ApplyUploadDeltaResponse) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *ApplyUploadDeltaResponse) GetRevision() uint32 {
+	if x != nil {
+		return x.Revision
+	}
+	return 0
+}
+
+func (x *ApplyUploadDeltaResponse) GetErrors() []*proto.Error {
+	if x != nil {
+		return x.Errors
+	}
+	return nil
+}
+
 var File_services_store_proto_store_proto protoreflect.FileDescriptor
 
 const file_services_store_proto_store_proto_rawDesc = "" +
@@ -3399,18 +3583,20 @@ const file_services_store_proto_store_proto_rawDesc = "" +
 	"\x18GetLatestRevisionRequest\x12\x1b\n" +
 	"\tsnap_name\x18\x01 \x01(\tR\bsnapName\x12\x14\n" +
 	"\x05track\x18\x02 \x01(\tR\x05track\x12\x18\n" +
-	"\achannel\x18\x03 \x01(\tR\achannel\"{\n" +
+	"\achannel\x18\x03 \x01(\tR\achannel\"\x93\x01\n" +
 	"\x1dGetDeltaByRevisionPairRequest\x12,\n" +
 	"\x12source_revision_id\x18\x01 \x01(\tR\x10sourceRevisionId\x12,\n" +
-	"\x12target_revision_id\x18\x02 \x01(\tR\x10targetRevisionId\"\x8a\x02\n" +
+	"\x12target_revision_id\x18\x02 \x01(\tR\x10targetRevisionId\x12\x16\n" +
+	"\x06format\x18\x03 \x01(\tR\x06format\"\xa2\x02\n" +
 	"\x10GetDeltaResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12,\n" +
 	"\x12source_revision_id\x18\x02 \x01(\tR\x10sourceRevisionId\x12,\n" +
 	"\x12target_revision_id\x18\x03 \x01(\tR\x10targetRevisionId\x12&\n" +
 	"\x0fminio_file_path\x18\x04 \x01(\tR\rminioFilePath\x12\x12\n" +
 	"\x04size\x18\x05 \x01(\x04R\x04size\x12(\n" +
-	"\x10sha3_384_encoded\x18\x06 \x01(\tR\x0esha3384Encoded\x12$\n" +
-	"\x06errors\x18\a \x03(\v2\f.proto.ErrorR\x06errors\"!\n" +
+	"\x10sha3_384_encoded\x18\x06 \x01(\tR\x0esha3384Encoded\x12\x16\n" +
+	"\x06format\x18\a \x01(\tR\x06format\x12$\n" +
+	"\x06errors\x18\b \x03(\v2\f.proto.ErrorR\x06errors\"!\n" +
 	"\tDataChunk\x12\x14\n" +
 	"\x05chunk\x18\x01 \x01(\fR\x05chunk\"6\n" +
 	"\x13SnapDownloadRequest\x12\x1f\n" +
@@ -3426,11 +3612,12 @@ const file_services_store_proto_store_proto_rawDesc = "" +
 	"\x1cSnapDownloadCompleteResponse\x126\n" +
 	"\brevision\x18\x01 \x01(\v2\x1a.store.GetRevisionResponseR\brevision\x12\x12\n" +
 	"\x04data\x18\x02 \x01(\fR\x04data\x12$\n" +
-	"\x06errors\x18\x03 \x03(\v2\f.proto.ErrorR\x06errors\"R\n" +
+	"\x06errors\x18\x03 \x03(\v2\f.proto.ErrorR\x06errors\"j\n" +
 	"\x14DeltaDownloadRequest\x12\x1b\n" +
 	"\tsnap_name\x18\x01 \x01(\tR\bsnapName\x12\x1d\n" +
 	"\n" +
-	"delta_name\x18\x02 \x01(\tR\tdeltaName\"\xb1\x01\n" +
+	"delta_name\x18\x02 \x01(\tR\tdeltaName\x12\x16\n" +
+	"\x06format\x18\x03 \x01(\tR\x06format\"\xb1\x01\n" +
 	"\x15DeltaDownloadResponse\x12?\n" +
 	"\ainitial\x18\x01 \x01(\v2#.store.InitialDeltaDownloadResponseH\x00R\ainitial\x12&\n" +
 	"\x04data\x18\x02 \x01(\v2\x10.store.DataChunkH\x00R\x04data\x12$\n" +
@@ -3559,7 +3746,20 @@ const file_services_store_proto_store_proto_rawDesc = "" +
 	"\n" +
 	"deleted_at\x18\x13 \x01(\v2\x1a.google.protobuf.TimestampH\x00R\tdeletedAt\x88\x01\x01\x12$\n" +
 	"\x06errors\x18\x14 \x03(\v2\f.proto.ErrorR\x06errorsB\r\n" +
-	"\v_deleted_at2\xba\r\n" +
+	"\v_deleted_at\"\xc5\x02\n" +
+	"\x17ApplyUploadDeltaRequest\x12\x1b\n" +
+	"\tsnap_name\x18\x01 \x01(\tR\bsnapName\x124\n" +
+	"\x16base_revision_sequence\x18\x02 \x01(\rR\x14baseRevisionSequence\x12&\n" +
+	"\x0fdelta_file_name\x18\x03 \x01(\tR\rdeltaFileName\x123\n" +
+	"\x16delta_sha3_384_encoded\x18\x04 \x01(\tR\x13deltaSha3384Encoded\x12!\n" +
+	"\fdelta_format\x18\x05 \x01(\tR\vdeltaFormat\x12.\n" +
+	"\x13tracks_and_channels\x18\x06 \x03(\tR\x11tracksAndChannels\x12'\n" +
+	"\x0ftimeout_seconds\x18\a \x01(\rR\x0etimeoutSeconds\"\x91\x01\n" +
+	"\x18ApplyUploadDeltaResponse\x12\x1b\n" +
+	"\tsnap_name\x18\x01 \x01(\tR\bsnapName\x12\x16\n" +
+	"\x06status\x18\x02 \x01(\tR\x06status\x12\x1a\n" +
+	"\brevision\x18\x03 \x01(\rR\brevision\x12$\n" +
+	"\x06errors\x18\x04 \x03(\v2\f.proto.ErrorR\x06errors2\x8f\x0e\n" +
 	"\fStoreService\x12S\n" +
 	"\x10RegisterSnapName\x12\x1e.store.RegisterSnapNameRequest\x1a\x1f.store.RegisterSnapNameResponse\x12G\n" +
 	"\fGetRevisions\x12\x1a.store.GetRevisionsRequest\x1a\x1b.store.GetRevisionsResponse\x12A\n" +
@@ -3581,7 +3781,8 @@ const file_services_store_proto_store_proto_rawDesc = "" +
 	"\x12UpdateUploadStatus\x12 .store.UpdateUploadStatusRequest\x1a!.store.UpdateUploadStatusResponse\x12d\n" +
 	"\x1bUpdateSnapEntryWithMetadata\x12).store.UpdateSnapEntryWithMetadataRequest\x1a\x1a.store.UpdateEntryResponse\x12W\n" +
 	"\x16GetDeltaByRevisionPair\x12$.store.GetDeltaByRevisionPairRequest\x1a\x17.store.GetDeltaResponse\x12U\n" +
-	"\x1cGetRevisionByNameAndSequence\x12\x19.store.GetRevisionRequest\x1a\x1a.store.GetRevisionResponseB=Z;github.com/idlab-discover/kebeng/services/store/proto;storeb\x06proto3"
+	"\x1cGetRevisionByNameAndSequence\x12\x19.store.GetRevisionRequest\x1a\x1a.store.GetRevisionResponse\x12S\n" +
+	"\x10ApplyUploadDelta\x12\x1e.store.ApplyUploadDeltaRequest\x1a\x1f.store.ApplyUploadDeltaResponseB=Z;github.com/idlab-discover/kebeng/services/store/proto;storeb\x06proto3"
 
 var (
 	file_services_store_proto_store_proto_rawDescOnce sync.Once
@@ -3595,7 +3796,7 @@ func file_services_store_proto_store_proto_rawDescGZIP() []byte {
 	return file_services_store_proto_store_proto_rawDescData
 }
 
-var file_services_store_proto_store_proto_msgTypes = make([]protoimpl.MessageInfo, 44)
+var file_services_store_proto_store_proto_msgTypes = make([]protoimpl.MessageInfo, 46)
 var file_services_store_proto_store_proto_goTypes = []any{
 	(*RegisterSnapNameRequest)(nil),                // 0: store.RegisterSnapNameRequest
 	(*RegisterSnapNameResponse)(nil),               // 1: store.RegisterSnapNameResponse
@@ -3641,100 +3842,105 @@ var file_services_store_proto_store_proto_goTypes = []any{
 	(*UpdateUploadStatusResponse)(nil),             // 41: store.UpdateUploadStatusResponse
 	(*UpdateSnapEntryWithMetadataRequest)(nil),     // 42: store.UpdateSnapEntryWithMetadataRequest
 	(*UpdateEntryResponse)(nil),                    // 43: store.UpdateEntryResponse
-	(*proto.Error)(nil),                            // 44: proto.Error
-	(*timestamppb.Timestamp)(nil),                  // 45: google.protobuf.Timestamp
+	(*ApplyUploadDeltaRequest)(nil),                // 44: store.ApplyUploadDeltaRequest
+	(*ApplyUploadDeltaResponse)(nil),               // 45: store.ApplyUploadDeltaResponse
+	(*proto.Error)(nil),                            // 46: proto.Error
+	(*timestamppb.Timestamp)(nil),                  // 47: google.protobuf.Timestamp
 }
 var file_services_store_proto_store_proto_depIdxs = []int32{
-	44, // 0: store.RegisterSnapNameResponse.errors:type_name -> proto.Error
-	45, // 1: store.GetEntryResponse.since:type_name -> google.protobuf.Timestamp
+	46, // 0: store.RegisterSnapNameResponse.errors:type_name -> proto.Error
+	47, // 1: store.GetEntryResponse.since:type_name -> google.protobuf.Timestamp
 	8,  // 2: store.GetEntryResponse.revisions:type_name -> store.GetRevisionResponse
-	44, // 3: store.GetEntryResponse.errors:type_name -> proto.Error
+	46, // 3: store.GetEntryResponse.errors:type_name -> proto.Error
 	2,  // 4: store.GetEntriesRequest.entries:type_name -> store.GetEntryRequest
 	3,  // 5: store.GetEntriesResponse.entries:type_name -> store.GetEntryResponse
-	44, // 6: store.GetEntriesResponse.errors:type_name -> proto.Error
-	45, // 7: store.GetLatestRevisionBeforeDateByIdRequest.date:type_name -> google.protobuf.Timestamp
-	45, // 8: store.GetRevisionResponse.created_at:type_name -> google.protobuf.Timestamp
-	45, // 9: store.GetRevisionResponse.updated_at:type_name -> google.protobuf.Timestamp
-	45, // 10: store.GetRevisionResponse.deleted_at:type_name -> google.protobuf.Timestamp
-	44, // 11: store.GetRevisionResponse.errors:type_name -> proto.Error
+	46, // 6: store.GetEntriesResponse.errors:type_name -> proto.Error
+	47, // 7: store.GetLatestRevisionBeforeDateByIdRequest.date:type_name -> google.protobuf.Timestamp
+	47, // 8: store.GetRevisionResponse.created_at:type_name -> google.protobuf.Timestamp
+	47, // 9: store.GetRevisionResponse.updated_at:type_name -> google.protobuf.Timestamp
+	47, // 10: store.GetRevisionResponse.deleted_at:type_name -> google.protobuf.Timestamp
+	46, // 11: store.GetRevisionResponse.errors:type_name -> proto.Error
 	6,  // 12: store.GetRevisionsRequest.revisions:type_name -> store.GetRevisionRequest
 	8,  // 13: store.GetRevisionsResponse.revisions:type_name -> store.GetRevisionResponse
-	44, // 14: store.GetRevisionsResponse.errors:type_name -> proto.Error
+	46, // 14: store.GetRevisionsResponse.errors:type_name -> proto.Error
 	13, // 15: store.GetRevisionsByEntryIdRequests.requests:type_name -> store.GetRevisionsByEntryIdRequest
 	8,  // 16: store.GetRevisionsByEntryIdResponse.revisions:type_name -> store.GetRevisionResponse
-	44, // 17: store.GetRevisionsByEntryIdResponse.errors:type_name -> proto.Error
+	46, // 17: store.GetRevisionsByEntryIdResponse.errors:type_name -> proto.Error
 	15, // 18: store.GetRevisionsByEntryIdResponses.responses:type_name -> store.GetRevisionsByEntryIdResponse
-	44, // 19: store.GetRevisionsByEntryIdResponses.errors:type_name -> proto.Error
-	44, // 20: store.GetDeltaResponse.errors:type_name -> proto.Error
+	46, // 19: store.GetRevisionsByEntryIdResponses.errors:type_name -> proto.Error
+	46, // 20: store.GetDeltaResponse.errors:type_name -> proto.Error
 	8,  // 21: store.InitialDownloadResponse.revision:type_name -> store.GetRevisionResponse
 	22, // 22: store.SnapDownloadResponse.initial:type_name -> store.InitialDownloadResponse
 	20, // 23: store.SnapDownloadResponse.data:type_name -> store.DataChunk
-	44, // 24: store.SnapDownloadResponse.errors:type_name -> proto.Error
+	46, // 24: store.SnapDownloadResponse.errors:type_name -> proto.Error
 	8,  // 25: store.SnapDownloadCompleteResponse.revision:type_name -> store.GetRevisionResponse
-	44, // 26: store.SnapDownloadCompleteResponse.errors:type_name -> proto.Error
+	46, // 26: store.SnapDownloadCompleteResponse.errors:type_name -> proto.Error
 	27, // 27: store.DeltaDownloadResponse.initial:type_name -> store.InitialDeltaDownloadResponse
 	20, // 28: store.DeltaDownloadResponse.data:type_name -> store.DataChunk
-	44, // 29: store.DeltaDownloadResponse.errors:type_name -> proto.Error
+	46, // 29: store.DeltaDownloadResponse.errors:type_name -> proto.Error
 	30, // 30: store.UnscannedUploadRequest.initial:type_name -> store.InitialUnscannedUploadRequest
 	20, // 31: store.UnscannedUploadRequest.data:type_name -> store.DataChunk
-	44, // 32: store.UnscannedUploadRequest.errors:type_name -> proto.Error
-	44, // 33: store.UnscannedUploadCompleteResponse.errors:type_name -> proto.Error
-	44, // 34: store.AddUploadResponse.errors:type_name -> proto.Error
-	44, // 35: store.GetUploadStatusResponse.errors:type_name -> proto.Error
-	44, // 36: store.AddRevisionResponse.errors:type_name -> proto.Error
-	44, // 37: store.GetObjectCustomMetadataResponse.errors:type_name -> proto.Error
-	44, // 38: store.UpdateUploadStatusRequest.errors:type_name -> proto.Error
-	44, // 39: store.UpdateUploadStatusResponse.errors:type_name -> proto.Error
-	44, // 40: store.UpdateSnapEntryWithMetadataRequest.errors:type_name -> proto.Error
-	45, // 41: store.UpdateEntryResponse.created_at:type_name -> google.protobuf.Timestamp
-	45, // 42: store.UpdateEntryResponse.updated_at:type_name -> google.protobuf.Timestamp
-	45, // 43: store.UpdateEntryResponse.deleted_at:type_name -> google.protobuf.Timestamp
-	44, // 44: store.UpdateEntryResponse.errors:type_name -> proto.Error
-	0,  // 45: store.StoreService.RegisterSnapName:input_type -> store.RegisterSnapNameRequest
-	9,  // 46: store.StoreService.GetRevisions:input_type -> store.GetRevisionsRequest
-	4,  // 47: store.StoreService.GetEntries:input_type -> store.GetEntriesRequest
-	2,  // 48: store.StoreService.GetEntryById:input_type -> store.GetEntryRequest
-	11, // 49: store.StoreService.GetEntriesByAccountId:input_type -> store.GetEntriesByAccountIdRequest
-	12, // 50: store.StoreService.GetEntriesByQuery:input_type -> store.GetEntriesByQueryRequest
-	14, // 51: store.StoreService.GetRevisionsByEntryIds:input_type -> store.GetRevisionsByEntryIdRequests
-	7,  // 52: store.StoreService.GetLatestRevisionBeforeDateById:input_type -> store.GetLatestRevisionBeforeDateByIdRequest
-	17, // 53: store.StoreService.GetLatestRevisionByTrackAndChannel:input_type -> store.GetLatestRevisionRequest
-	21, // 54: store.StoreService.SnapDownload:input_type -> store.SnapDownloadRequest
-	25, // 55: store.StoreService.DeltaDownload:input_type -> store.DeltaDownloadRequest
-	29, // 56: store.StoreService.UnscannedUpload:input_type -> store.UnscannedUploadRequest
-	32, // 57: store.StoreService.AddUpload:input_type -> store.AddUploadRequest
-	34, // 58: store.StoreService.GetUploadStatus:input_type -> store.GetUploadStatusRequest
-	36, // 59: store.StoreService.AddRevision:input_type -> store.AddRevisionRequest
-	38, // 60: store.StoreService.GetObjectCustomMetadata:input_type -> store.GetObjectCustomMetadataRequest
-	40, // 61: store.StoreService.UpdateUploadStatus:input_type -> store.UpdateUploadStatusRequest
-	42, // 62: store.StoreService.UpdateSnapEntryWithMetadata:input_type -> store.UpdateSnapEntryWithMetadataRequest
-	18, // 63: store.StoreService.GetDeltaByRevisionPair:input_type -> store.GetDeltaByRevisionPairRequest
-	6,  // 64: store.StoreService.GetRevisionByNameAndSequence:input_type -> store.GetRevisionRequest
-	1,  // 65: store.StoreService.RegisterSnapName:output_type -> store.RegisterSnapNameResponse
-	10, // 66: store.StoreService.GetRevisions:output_type -> store.GetRevisionsResponse
-	5,  // 67: store.StoreService.GetEntries:output_type -> store.GetEntriesResponse
-	3,  // 68: store.StoreService.GetEntryById:output_type -> store.GetEntryResponse
-	5,  // 69: store.StoreService.GetEntriesByAccountId:output_type -> store.GetEntriesResponse
-	5,  // 70: store.StoreService.GetEntriesByQuery:output_type -> store.GetEntriesResponse
-	16, // 71: store.StoreService.GetRevisionsByEntryIds:output_type -> store.GetRevisionsByEntryIdResponses
-	8,  // 72: store.StoreService.GetLatestRevisionBeforeDateById:output_type -> store.GetRevisionResponse
-	8,  // 73: store.StoreService.GetLatestRevisionByTrackAndChannel:output_type -> store.GetRevisionResponse
-	23, // 74: store.StoreService.SnapDownload:output_type -> store.SnapDownloadResponse
-	26, // 75: store.StoreService.DeltaDownload:output_type -> store.DeltaDownloadResponse
-	31, // 76: store.StoreService.UnscannedUpload:output_type -> store.UnscannedUploadCompleteResponse
-	33, // 77: store.StoreService.AddUpload:output_type -> store.AddUploadResponse
-	35, // 78: store.StoreService.GetUploadStatus:output_type -> store.GetUploadStatusResponse
-	37, // 79: store.StoreService.AddRevision:output_type -> store.AddRevisionResponse
-	39, // 80: store.StoreService.GetObjectCustomMetadata:output_type -> store.GetObjectCustomMetadataResponse
-	41, // 81: store.StoreService.UpdateUploadStatus:output_type -> store.UpdateUploadStatusResponse
-	43, // 82: store.StoreService.UpdateSnapEntryWithMetadata:output_type -> store.UpdateEntryResponse
-	19, // 83: store.StoreService.GetDeltaByRevisionPair:output_type -> store.GetDeltaResponse
-	8,  // 84: store.StoreService.GetRevisionByNameAndSequence:output_type -> store.GetRevisionResponse
-	65, // [65:85] is the sub-list for method output_type
-	45, // [45:65] is the sub-list for method input_type
-	45, // [45:45] is the sub-list for extension type_name
-	45, // [45:45] is the sub-list for extension extendee
-	0,  // [0:45] is the sub-list for field type_name
+	46, // 32: store.UnscannedUploadRequest.errors:type_name -> proto.Error
+	46, // 33: store.UnscannedUploadCompleteResponse.errors:type_name -> proto.Error
+	46, // 34: store.AddUploadResponse.errors:type_name -> proto.Error
+	46, // 35: store.GetUploadStatusResponse.errors:type_name -> proto.Error
+	46, // 36: store.AddRevisionResponse.errors:type_name -> proto.Error
+	46, // 37: store.GetObjectCustomMetadataResponse.errors:type_name -> proto.Error
+	46, // 38: store.UpdateUploadStatusRequest.errors:type_name -> proto.Error
+	46, // 39: store.UpdateUploadStatusResponse.errors:type_name -> proto.Error
+	46, // 40: store.UpdateSnapEntryWithMetadataRequest.errors:type_name -> proto.Error
+	47, // 41: store.UpdateEntryResponse.created_at:type_name -> google.protobuf.Timestamp
+	47, // 42: store.UpdateEntryResponse.updated_at:type_name -> google.protobuf.Timestamp
+	47, // 43: store.UpdateEntryResponse.deleted_at:type_name -> google.protobuf.Timestamp
+	46, // 44: store.UpdateEntryResponse.errors:type_name -> proto.Error
+	46, // 45: store.ApplyUploadDeltaResponse.errors:type_name -> proto.Error
+	0,  // 46: store.StoreService.RegisterSnapName:input_type -> store.RegisterSnapNameRequest
+	9,  // 47: store.StoreService.GetRevisions:input_type -> store.GetRevisionsRequest
+	4,  // 48: store.StoreService.GetEntries:input_type -> store.GetEntriesRequest
+	2,  // 49: store.StoreService.GetEntryById:input_type -> store.GetEntryRequest
+	11, // 50: store.StoreService.GetEntriesByAccountId:input_type -> store.GetEntriesByAccountIdRequest
+	12, // 51: store.StoreService.GetEntriesByQuery:input_type -> store.GetEntriesByQueryRequest
+	14, // 52: store.StoreService.GetRevisionsByEntryIds:input_type -> store.GetRevisionsByEntryIdRequests
+	7,  // 53: store.StoreService.GetLatestRevisionBeforeDateById:input_type -> store.GetLatestRevisionBeforeDateByIdRequest
+	17, // 54: store.StoreService.GetLatestRevisionByTrackAndChannel:input_type -> store.GetLatestRevisionRequest
+	21, // 55: store.StoreService.SnapDownload:input_type -> store.SnapDownloadRequest
+	25, // 56: store.StoreService.DeltaDownload:input_type -> store.DeltaDownloadRequest
+	29, // 57: store.StoreService.UnscannedUpload:input_type -> store.UnscannedUploadRequest
+	32, // 58: store.StoreService.AddUpload:input_type -> store.AddUploadRequest
+	34, // 59: store.StoreService.GetUploadStatus:input_type -> store.GetUploadStatusRequest
+	36, // 60: store.StoreService.AddRevision:input_type -> store.AddRevisionRequest
+	38, // 61: store.StoreService.GetObjectCustomMetadata:input_type -> store.GetObjectCustomMetadataRequest
+	40, // 62: store.StoreService.UpdateUploadStatus:input_type -> store.UpdateUploadStatusRequest
+	42, // 63: store.StoreService.UpdateSnapEntryWithMetadata:input_type -> store.UpdateSnapEntryWithMetadataRequest
+	18, // 64: store.StoreService.GetDeltaByRevisionPair:input_type -> store.GetDeltaByRevisionPairRequest
+	6,  // 65: store.StoreService.GetRevisionByNameAndSequence:input_type -> store.GetRevisionRequest
+	44, // 66: store.StoreService.ApplyUploadDelta:input_type -> store.ApplyUploadDeltaRequest
+	1,  // 67: store.StoreService.RegisterSnapName:output_type -> store.RegisterSnapNameResponse
+	10, // 68: store.StoreService.GetRevisions:output_type -> store.GetRevisionsResponse
+	5,  // 69: store.StoreService.GetEntries:output_type -> store.GetEntriesResponse
+	3,  // 70: store.StoreService.GetEntryById:output_type -> store.GetEntryResponse
+	5,  // 71: store.StoreService.GetEntriesByAccountId:output_type -> store.GetEntriesResponse
+	5,  // 72: store.StoreService.GetEntriesByQuery:output_type -> store.GetEntriesResponse
+	16, // 73: store.StoreService.GetRevisionsByEntryIds:output_type -> store.GetRevisionsByEntryIdResponses
+	8,  // 74: store.StoreService.GetLatestRevisionBeforeDateById:output_type -> store.GetRevisionResponse
+	8,  // 75: store.StoreService.GetLatestRevisionByTrackAndChannel:output_type -> store.GetRevisionResponse
+	23, // 76: store.StoreService.SnapDownload:output_type -> store.SnapDownloadResponse
+	26, // 77: store.StoreService.DeltaDownload:output_type -> store.DeltaDownloadResponse
+	31, // 78: store.StoreService.UnscannedUpload:output_type -> store.UnscannedUploadCompleteResponse
+	33, // 79: store.StoreService.AddUpload:output_type -> store.AddUploadResponse
+	35, // 80: store.StoreService.GetUploadStatus:output_type -> store.GetUploadStatusResponse
+	37, // 81: store.StoreService.AddRevision:output_type -> store.AddRevisionResponse
+	39, // 82: store.StoreService.GetObjectCustomMetadata:output_type -> store.GetObjectCustomMetadataResponse
+	41, // 83: store.StoreService.UpdateUploadStatus:output_type -> store.UpdateUploadStatusResponse
+	43, // 84: store.StoreService.UpdateSnapEntryWithMetadata:output_type -> store.UpdateEntryResponse
+	19, // 85: store.StoreService.GetDeltaByRevisionPair:output_type -> store.GetDeltaResponse
+	8,  // 86: store.StoreService.GetRevisionByNameAndSequence:output_type -> store.GetRevisionResponse
+	45, // 87: store.StoreService.ApplyUploadDelta:output_type -> store.ApplyUploadDeltaResponse
+	67, // [67:88] is the sub-list for method output_type
+	46, // [46:67] is the sub-list for method input_type
+	46, // [46:46] is the sub-list for extension type_name
+	46, // [46:46] is the sub-list for extension extendee
+	0,  // [0:46] is the sub-list for field type_name
 }
 
 func init() { file_services_store_proto_store_proto_init() }
@@ -3763,7 +3969,7 @@ func file_services_store_proto_store_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_services_store_proto_store_proto_rawDesc), len(file_services_store_proto_store_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   44,
+			NumMessages:   46,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

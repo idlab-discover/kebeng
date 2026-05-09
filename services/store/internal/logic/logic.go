@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/idlab-discover/kebeng/services/store/internal/config"
+	"github.com/idlab-discover/kebeng/services/store/internal/delta"
 	"github.com/idlab-discover/kebeng/services/store/internal/model"
 	"github.com/idlab-discover/kebeng/services/store/internal/objectstore"
 	"github.com/idlab-discover/kebeng/services/store/internal/repository"
@@ -352,7 +353,7 @@ func (s *StoreLogic) GetLatestRevisionBeforeDateById(ctx context.Context, req *p
 	if cerr != nil {
 		return &proto.GetRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
-	
+
 	return convertRevisionToProto(revision), nil
 }
 
@@ -591,20 +592,26 @@ func (s *StoreLogic) DeltaDownload(req *proto.DeltaDownloadRequest, stream proto
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	if req.Format == "" {
+		cerr := cerror.NewCustomError(cerror.MissingField, "delta format is required")
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return stream.Send(&proto.DeltaDownloadResponse{Errors: el.ConvertToProtoErrorList()})
+	}
 	if req.SnapName == "" {
 		cerr := cerror.NewCustomError(cerror.MissingField, "snap name is required")
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
 		return stream.Send(&proto.DeltaDownloadResponse{Errors: el.ConvertToProtoErrorList()})
 	}
-	if req.DeltaName== "" {
+	if req.DeltaName == "" {
 		cerr := cerror.NewCustomError(cerror.MissingField, "delta name is required")
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
 		return stream.Send(&proto.DeltaDownloadResponse{Errors: el.ConvertToProtoErrorList()})
 	}
 
-	minioFilePath := fmt.Sprintf("%s/%s", req.SnapName, req.DeltaName)
+	minioFilePath := fmt.Sprintf("%s/%s/%s", req.Format, req.SnapName, req.DeltaName)
 	delta, cerr := s.repo.GetDeltaByMinioFilePath(minioFilePath, el)
 	if cerr != nil {
 		logrus.Error(cerr)
@@ -627,9 +634,9 @@ func (s *StoreLogic) DeltaDownload(req *proto.DeltaDownloadRequest, stream proto
 	if err := stream.Send(&proto.DeltaDownloadResponse{
 		Payload: &proto.DeltaDownloadResponse_Initial{
 			Initial: &proto.InitialDeltaDownloadResponse{
-				Size: uint64(delta.Size),
+				Size:            uint64(delta.Size),
 				Sha3_384Encoded: delta.SHA3_384_Encoded,
-				MinioFilePath: delta.MinioFilePath,
+				MinioFilePath:   delta.MinioFilePath,
 			},
 		},
 	}); err != nil {
@@ -907,115 +914,230 @@ func (s *StoreLogic) AddRevision(ctx context.Context, req *proto.AddRevisionRequ
 		return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
 
-	// Get entry by snapName
-	entry, cerr := s.repo.GetEntryByName(req.SnapName, nil, el)
+	sequenceNumber, cerr := s.processUnscannedSnap(
+		ctx,
+		req.SnapName,
+		req.Sha3_384Encoded,
+		req.Size,
+		req.Architectures,
+		req.TracksAndChannels,
+		req.UnscannedFileName,
+		el,
+	)
+
 	if cerr != nil {
-		// Already logged in GetEntryByName (repository)
 		return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
-	}
-
-	// Check if a revision with the same SHA3_384 already exists -> this means that the uploaded file is the same as one already in the database
-	existingRevision, cerr := s.repo.GetRevisionBySHA(req.Sha3_384Encoded, el)
-	if cerr != nil && cerr.GetCode() != cerror.ResourceNotFound {
-		// Already logged in GetRevisionBySHA (repository))
-		return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
-	}
-	if existingRevision != nil {
-		el.Add(cerror.AlreadyRegistered, fmt.Sprintf("revision with the same SHA3_384 already exists for %s", req.SnapName))
-		// If revision already exists, we don't need to move the file to the `snaps` bucket and we can delete the file from the `unscanned` bucket
-		cerr := s.obs.DeleteFileFromBucket("unscanned", req.UnscannedFileName)
-		if cerr != nil {
-			// Already logged in DeleteFileFromBucket (object store)
-			el.AddCustomError(cerr)
-		}
-		return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
-	}
-
-	// Get the sequence number of the last revision (if there is any)
-	lastRevision, cerr := s.repo.GetLatestRevisionByEntryId(entry.ID, el)
-	if cerr != nil && cerr.GetCode() != cerror.ResourceNotFound {
-		// Already logged in GetLatestRevisionByEntryId (repository)
-		return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
-	}
-	sequenceNumber := uint32(1) // Initialize to 1
-	// If there is a last revision, increment the sequence number
-	if lastRevision != nil {
-		sequenceNumber = lastRevision.SequenceNumber + 1
-	}
-
-	// Get the file path in the object store
-	minioFilePath := s.createObjectStoreFilePath(entry.Name, sequenceNumber)
-
-	// Parse the tracks and channels
-	tracksAndChannels := parseTracksAndChannels(req.TracksAndChannels)
-
-	var newRevision *model.SnapRevision
-
-	// Create the revisions for the tracks and channels
-	for track, channels := range tracksAndChannels {
-		for _, channel := range channels {
-			// Get the track to which the revision will be associated
-			trackResp, cerr := s.repo.GetTrackByEntryIdAndName(entry.ID, track, el)
-			if cerr != nil {
-				// Already logged in GetTracksByEntryIdAndName (repository)
-				return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
-			}
-
-			if trackResp == nil {
-				// If the track is not found, create a new one
-				trackResp, cerr = s.repo.AddTrack(entry.ID, track, el)
-				if cerr != nil {
-					// Already logged in AddTrack (repository)
-					return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
-				}
-				// Add default channels to the new track
-				cerr = s.repo.AddDefaultChannels(trackResp.SnapEntryID, trackResp.ID, el)
-				if cerr != nil {
-					// Already logged in AddDefaultChannels (repository)
-					return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
-				}
-			}
-
-			// Get the channel to which the revision will be associated
-			channelResp, cerr := s.repo.GetChannelByTrackIdAndName(trackResp.ID, channel, el)
-			if cerr != nil && cerr.GetCode() != cerror.ResourceNotFound {
-				// Already logged in GetChannelByTrackIdAndName (repository)
-				return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
-			}
-			// If the channel is not found, create a new one
-			if channelResp == nil {
-				channelResp, cerr = s.repo.AddChannel(entry.ID, trackResp.ID, channel, el)
-				if cerr != nil {
-					// Already logged in AddChannel (repository)
-					return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
-				}
-			}
-
-			// Create the revision
-			newRevision, cerr = s.repo.AddRevision(entry.ID, trackResp.ID, channelResp.ID, req.SnapName, req.Size, sequenceNumber, req.Architectures, req.Sha3_384Encoded, minioFilePath, el)
-			if cerr != nil {
-				// Already logged in AddRevision (repository)
-				return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
-			}
-		}
-	}
-
-	// Move the snap file to the `snap` bucket
-	err := s.obs.Move("unscanned", "snaps", req.UnscannedFileName, minioFilePath)
-	if err != nil {
-		cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to move snap file from `unscanned` to `snaps` bucket: %+v", err))
-		logrus.Error(cerr)
-		el.AddCustomError(cerr)
-		return &proto.AddRevisionResponse{Errors: el.ConvertToProtoErrorList()}, nil
-	}
-
-	if lastRevision != nil && newRevision != nil {
-		if err := s.generateAndStoreDelta(ctx, lastRevision, newRevision); err != nil {
-			logrus.Warnf("dleta generation failed for %s rev %d -> %d: %v", req.SnapName, lastRevision.SequenceNumber, newRevision.SequenceNumber, err)
-		}
 	}
 
 	return &proto.AddRevisionResponse{
+		SnapName: req.SnapName,
+		Status:   "succes",
+		Revision: sequenceNumber,
+	}, nil
+}
+
+func (s *StoreLogic) ApplyUploadDelta(ctx context.Context, req *proto.ApplyUploadDeltaRequest) (*proto.ApplyUploadDeltaResponse, error) {
+	el := cerror.NewErrorList()
+	var deltaHandler delta.DeltaHandler
+
+	timeoutSecs := req.TimeoutSeconds
+	if timeoutSecs <= 0 {
+		// Default to 60 seconds (one minute)
+		timeoutSecs = 60
+	}
+	applyCtx, cancel := context.WithTimeout(ctx, time.Duration(timeoutSecs)*time.Second)
+	defer cancel()
+
+	switch req.DeltaFormat {
+	case "xdelta3":
+		deltaHandler = delta.NewXdelta3Generator(applyCtx)
+	default:
+		cerr := cerror.NewCustomError(cerror.InvalidField, fmt.Sprintf("unsupported delta format: %s", req.DeltaFormat))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.ApplyUploadDeltaResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	var baseRevision *model.SnapRevision
+	if req.BaseRevisionSequence == 0 {
+		entry, cerr := s.repo.GetEntryByName(req.SnapName, nil, el)
+		if cerr != nil {
+			return &proto.ApplyUploadDeltaResponse{Errors: el.ConvertToProtoErrorList()}, nil
+		}
+		baseRevision, cerr = s.repo.GetLatestRevisionByEntryId(entry.ID, el)
+		if cerr != nil {
+			return &proto.ApplyUploadDeltaResponse{Errors: el.ConvertToProtoErrorList()}, nil
+		}
+	} else {
+		var cerr *cerror.CustomError
+		baseRevision, cerr = s.repo.GetRevisionByNameAndSequence(req.SnapName, req.BaseRevisionSequence, el)
+		if cerr != nil {
+			return &proto.ApplyUploadDeltaResponse{Errors: el.ConvertToProtoErrorList()}, nil
+		}
+	}
+
+	deltaReader, err := s.obs.GetFileFromBucket(ctx, "unscanned", req.DeltaFileName)
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to fetch delta from unscanned bucket: %v", err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.ApplyUploadDeltaResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	deltaTmp, err := os.CreateTemp(os.TempDir(), "snap-delta-upload-*.delta")
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to create delta temp file: %v", err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.ApplyUploadDeltaResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+	defer os.Remove(deltaTmp.Name())
+
+	hasher := sha3.New384()
+	if _, err := io.Copy(io.MultiWriter(deltaTmp, hasher), deltaReader); err != nil {
+		cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to write delta temp file: %v", err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.ApplyUploadDeltaResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+	deltaReader.Close()
+
+	actualDeltaSHA := base64.RawURLEncoding.EncodeToString(hasher.Sum(nil))
+	if actualDeltaSHA != req.DeltaSha3_384Encoded {
+		cerr := cerror.NewCustomError(cerror.InvalidField, fmt.Sprintf("delta file checksum mismatch: got %s, expected %s", actualDeltaSHA, req.DeltaSha3_384Encoded))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		if cleanErr := s.obs.DeleteFileFromBucket("unscanned", req.DeltaFileName); cleanErr != nil {
+			logrus.Warnf("failed to clean invalid delta file from unscanned bucket: %v", cleanErr)
+		}
+		return &proto.ApplyUploadDeltaResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	if _, err = deltaTmp.Seek(0, io.SeekStart); err != nil {
+		cerr := cerror.NewCustomError(cerror.InternalServerError, "failed to seek delta temp file")
+		el.AddCustomError(cerr)
+		return &proto.ApplyUploadDeltaResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	baseReader, err := s.obs.GetFileFromBucket(ctx, "snaps", baseRevision.MinioFilePath)
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to fetch base snap: %v", err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.ApplyUploadDeltaResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	baseTmp, err := os.CreateTemp(os.TempDir(), "snap-delta-base-*.snap")
+	if err != nil {
+		baseReader.Close()
+		cerr := cerror.NewCustomError(cerror.InternalServerError, "failed to create base snap temp file")
+		el.AddCustomError(cerr)
+		return &proto.ApplyUploadDeltaResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+	defer os.Remove(baseTmp.Name())
+
+	if _, err := io.Copy(baseTmp, baseReader); err != nil {
+		baseReader.Close()
+		cerr := cerror.NewCustomError(cerror.InternalServerError, "failed to download base snap")
+		el.AddCustomError(cerr)
+		return &proto.ApplyUploadDeltaResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+	baseReader.Close()
+
+	if _, err = baseTmp.Seek(0, io.SeekStart); err != nil {
+		cerr := cerror.NewCustomError(cerror.InternalServerError, "failed to seek base snap temp file")
+		el.AddCustomError(cerr)
+		return &proto.ApplyUploadDeltaResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	resultTmp, err := os.CreateTemp(os.TempDir(), "snap-delta-result-*.snap")
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.InternalServerError, "failed to create result temp file")
+		el.AddCustomError(cerr)
+		return &proto.ApplyUploadDeltaResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+	defer os.Remove(resultTmp.Name())
+
+	resultHasher := sha3.New384()
+
+	_, err = deltaHandler.ApplyDelta(baseTmp, deltaTmp, io.MultiWriter(resultTmp, resultHasher))
+	if err != nil {
+		if cleanErr := s.obs.DeleteFileFromBucket("unscanned", req.DeltaFileName); cleanErr != nil {
+			logrus.Warnf("failed to clean up delta after failed application: %v", cleanErr)
+		}
+
+		if applyCtx.Err() == context.DeadlineExceeded {
+			cerr := cerror.NewCustomError(cerror.FailedToRegister, fmt.Sprintf("delta application timed out after %d seconds for snap %s", timeoutSecs, req.SnapName))
+			logrus.Error(cerr)
+			el.AddCustomError(cerr)
+		} else {
+			cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("delta application failed: %v", err))
+			logrus.Error(cerr)
+			el.AddCustomError(cerr)
+		}
+
+		return &proto.ApplyUploadDeltaResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	resultSHA := base64.RawURLEncoding.EncodeToString(resultHasher.Sum(nil))
+
+	resultInfo, err := resultTmp.Stat()
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.InternalServerError, "failed to stat result snap file")
+		el.AddCustomError(cerr)
+		return &proto.ApplyUploadDeltaResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	if _, err = resultTmp.Seek(0, io.SeekStart); err != nil {
+		cerr := cerror.NewCustomError(cerror.InternalServerError, "failed to seek result snap file")
+		el.AddCustomError(cerr)
+		return &proto.ApplyUploadDeltaResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	snapMeta, err := getSnapMetaFromFile(resultTmp.Name(), os.TempDir())
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.InternalServerError,
+			fmt.Sprintf("failed to extract metadata from result snap: %v", err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.ApplyUploadDeltaResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	metadataMinio, err := s.obs.SaveFileToBucket(
+		"unscanned", resultTmp.Name(),
+		resultSHA, snapMeta.Name, snapMeta.Version,
+		snapMeta.Summary, snapMeta.Description,
+		snapMeta.Confinement, snapMeta.Base, snapMeta.Grade,
+		snapMeta.Architectures, snapMeta.RefreshControl,
+		snapMeta.Plugs, snapMeta.Slots,
+	)
+	if err != nil {
+		cerr := cerror.NewCustomError(cerror.InternalServerError,
+			fmt.Sprintf("failed to save result snap to unscanned bucket: %v", err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.ApplyUploadDeltaResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	if cleanErr := s.obs.DeleteFileFromBucket("unscanned", req.DeltaFileName); cleanErr != nil {
+		logrus.Warnf("failed to clean up applied delta from unscanned bucket: %v", cleanErr)
+	}
+
+	sequenceNumber, cerr := s.processUnscannedSnap(
+		ctx,
+		req.SnapName,
+		resultSHA,
+		uint64(resultInfo.Size()),
+		snapMeta.Architectures,
+		req.TracksAndChannels,
+		metadataMinio.Key,
+		el,
+	)
+	if cerr != nil {
+		return &proto.ApplyUploadDeltaResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
+
+	return &proto.ApplyUploadDeltaResponse{
 		SnapName: req.SnapName,
 		Status:   "success",
 		Revision: sequenceNumber,
@@ -1129,8 +1251,14 @@ func (s *StoreLogic) UpdateSnapEntryWithMetadata(ctx context.Context, req *proto
 
 func (s *StoreLogic) GetDeltaByRevisionPair(ctx context.Context, req *proto.GetDeltaByRevisionPairRequest) (*proto.GetDeltaResponse, error) {
 	el := cerror.NewErrorList()
+	if req.Format == "" {
+		cerr := cerror.NewCustomError(cerror.MissingField, "delta format is required")
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return &proto.GetDeltaResponse{Errors: el.ConvertToProtoErrorList()}, nil
+	}
 
-	if req.SourceRevisionId == "" || req.TargetRevisionId == ""{
+	if req.SourceRevisionId == "" || req.TargetRevisionId == "" {
 		cerr := cerror.NewCustomError(cerror.MissingField, "revision id is required")
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
@@ -1153,34 +1281,47 @@ func (s *StoreLogic) GetDeltaByRevisionPair(ctx context.Context, req *proto.GetD
 		return &proto.GetDeltaResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
 
-	delta, cerr := s.repo.GetDeltaByRevisionPair(sourceRevisionUuid, targetRevisionUuid, el)
+	delta, cerr := s.repo.GetDeltaByRevisionPair(sourceRevisionUuid, targetRevisionUuid, req.Format, el)
 
 	if cerr != nil {
 		return &proto.GetDeltaResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
-	
+
 	return &proto.GetDeltaResponse{
-		Id: delta.ID.String(),
+		Id:               delta.ID.String(),
 		SourceRevisionId: delta.SourceRevisionID.String(),
 		TargetRevisionId: delta.TargetRevisionID.String(),
-		MinioFilePath: delta.MinioFilePath,
-		Size: delta.Size,
-		Sha3_384Encoded: delta.SHA3_384_Encoded,
+		MinioFilePath:    delta.MinioFilePath,
+		Format:           delta.Format,
+		Size:             delta.Size,
+		Sha3_384Encoded:  delta.SHA3_384_Encoded,
 	}, nil
 }
 
 // ################# HELPERS #################
 
-func (s *StoreLogic) generateAndStoreDelta(ctx context.Context, source, target *model.SnapRevision) error {
+func (s *StoreLogic) generateAndStoreDelta(ctx context.Context, source, target *model.SnapRevision, format string) error {
 	el := cerror.NewErrorList()
 
-	existing, cerr := s.repo.GetDeltaByRevisionPair(source.ID, target.ID, el)
+	var deltaHandler delta.DeltaHandler
+	switch format {
+	case "xdelta3":
+		deltaHandler = delta.NewXdelta3Generator(ctx)
+
+	// case "snap-1-1-xdelta3":
+	//        generator = delta.NewSnap11Xdelta3Generator(ctx)
+
+	default:
+		return fmt.Errorf("unsupported delta format requested for generation: %s", format)
+	}
+
+	existing, cerr := s.repo.GetDeltaByRevisionPair(source.ID, target.ID, format, el)
 	if cerr == nil && existing != nil {
-		logrus.Infof("delta already exists for %s rev %d -> %d, skipping", source.SnapName, source.SequenceNumber, target.SequenceNumber)
+		logrus.Infof("delta already exists for %s rev %d -> %d, format %s. skipping", source.SnapName, source.SequenceNumber, target.SequenceNumber, format)
 		return nil
 	}
 
-	// Source file needs to have random access for xdelta3 to function: temporary download is required unfortunately
+	// Source file needs to have random access for diff calculators to function: temporary download is required unfortunately
 	srcReader, err := s.obs.GetSnapFileReader(ctx, source.MinioFilePath)
 
 	if err != nil {
@@ -1204,7 +1345,7 @@ func (s *StoreLogic) generateAndStoreDelta(ctx context.Context, source, target *
 		return fmt.Errorf("failed to seek source temp file: %v", err)
 	}
 
-	// Target snap can be streamed directly into xdelta3 stdin, this doesn't need a temp download
+	// Target snap can be streamed directly into generator
 	tgtReader, err := s.obs.GetSnapFileReader(ctx, target.MinioFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to open target snap: %v", err)
@@ -1212,7 +1353,7 @@ func (s *StoreLogic) generateAndStoreDelta(ctx context.Context, source, target *
 	defer tgtReader.Close()
 
 	// Temporarily store patch output (xdelta3)
-	patchTmp, err := os.CreateTemp(os.TempDir(), "snap-delta-patch-*.xdelta3")
+	patchTmp, err := os.CreateTemp(os.TempDir(), "snap-delta-patch-*")
 	if err != nil {
 		return fmt.Errorf("failed to create patch temp file: %v", err)
 	}
@@ -1222,48 +1363,30 @@ func (s *StoreLogic) generateAndStoreDelta(ctx context.Context, source, target *
 	// xdelta3 output can be immediately hashed
 	hasher := sha3.New384()
 
-	cmd := exec.CommandContext(
-		ctx,
-		"xdelta3", "-e", "-f", "-S", "none",
-		"-s", srcTmp.Name(),
-		"-",
-	)
-
-	cmd.Stdin = tgtReader
-	cmd.Stdout = io.MultiWriter(patchTmp, hasher) // compute hash in tandem
-	var stderr strings.Builder
-	cmd.Stderr = &stderr
-
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("xdelta3 failed for %s rev %d -> %d: %v with stderr '%s'", source.SnapName, source.SequenceNumber, target.SequenceNumber, err, stderr.String())
+	// Apply selected DeltaGenerator
+	size, err := deltaHandler.GenerateDelta(srcTmp, tgtReader, io.MultiWriter(patchTmp, hasher))
+	if err != nil {
+		return fmt.Errorf("delta generation failed (%s) for %s rev %d -> %d: %v", format, source.SnapName, source.SequenceNumber, target.SequenceNumber, err)
 	}
 
 	sha3Encoded := base64.RawURLEncoding.EncodeToString(hasher.Sum(nil))
 
-	patchInfo, err := patchTmp.Stat()
-	if err != nil {
-		return fmt.Errorf("failed to stat patch file %v", err)
-	}
-	size := patchInfo.Size()
-
-	if _, err = patchTmp.Seek(0, io.SeekStart); err != nil {
+	if _, err := patchTmp.Seek(0, io.SeekStart); err != nil {
 		return fmt.Errorf("failed to seek patch file found for upload: %v", err)
 	}
-	minioFilePath := fmt.Sprintf("%s/%d-%d.xdelta3", source.SnapName, source.SequenceNumber, target.SequenceNumber)
-
-	if _, err := s.obs.SaveDeltaToBucket("deltas", minioFilePath, patchTmp, uint64(size)); err != nil {
+	minioFilePath := fmt.Sprintf("%s/%s/%d-%d.xdelta3", format, source.SnapName, source.SequenceNumber, target.SequenceNumber)
+	if _, err := s.obs.SaveDeltaToBucket("deltas", minioFilePath, patchTmp, size); err != nil {
 		return fmt.Errorf("failed to upload delta to MinIO: %v", err)
 	}
 
-	_, cerr = s.repo.AddDelta(source.ID, target.ID, minioFilePath, uint64(size), sha3Encoded, el)
+	_, cerr = s.repo.AddDelta(source.ID, target.ID, format, minioFilePath, size, sha3Encoded, el)
 	if cerr != nil {
 		return fmt.Errorf("failed to record delta in database: %v", cerr.GetMessage())
 	}
 
-	logrus.Infof("delta stored for %s rev %d -> %d: %d bytes at %s", source.SnapName, source.SequenceNumber, target.SequenceNumber, size, minioFilePath)
+	logrus.Infof("delta stored for %s rev %d -> %d: %d bytes in format %s at %s", source.SnapName, source.SequenceNumber, target.SequenceNumber, size, format, minioFilePath)
 
 	return nil
-
 }
 
 func (s *StoreLogic) getObjectStoreFilePath(revisionID string, el *cerror.ErrorList) (string, *model.SnapRevision, *cerror.CustomError) {
@@ -1341,6 +1464,103 @@ func parseTracksAndChannels(tracksAndChannels []string) map[string][]string {
 	}
 
 	return parsed
+}
+
+func (s *StoreLogic) processUnscannedSnap(
+	ctx context.Context,
+	snapName string,
+	sha3_384Encoded string,
+	size uint64,
+	architectures []string,
+	tracksAndChannels []string,
+	unscannedFileName string,
+	el *cerror.ErrorList,
+) (uint32, *cerror.CustomError) {
+
+	entry, cerr := s.repo.GetEntryByName(snapName, nil, el)
+	if cerr != nil {
+		return 0, cerr
+	}
+
+	existingRevision, cerr := s.repo.GetRevisionBySHA(sha3_384Encoded, el)
+	if cerr != nil && cerr.GetCode() != cerror.ResourceNotFound {
+		return 0, cerr
+	}
+	if existingRevision != nil {
+		el.Add(cerror.AlreadyRegistered, fmt.Sprintf("revision with the same SHA3_384 already exists for %s", snapName))
+		cerr := s.obs.DeleteFileFromBucket("unscanned", unscannedFileName)
+		if cerr != nil {
+			el.AddCustomError(cerr)
+			return 0, cerr
+		}
+		return 0, cerror.NewCustomError(cerror.AlreadyRegistered, fmt.Sprintf("revision with the same SHA3_384 already exists for %s", snapName))
+	}
+
+	lastRevision, cerr := s.repo.GetLatestRevisionByEntryId(entry.ID, el)
+	if cerr != nil && cerr.GetCode() != cerror.ResourceNotFound {
+		return 0, cerr
+	}
+
+	sequenceNumber := uint32(1)
+	if lastRevision != nil {
+		sequenceNumber = lastRevision.SequenceNumber + 1
+	}
+
+	minioFilePath := s.createObjectStoreFilePath(entry.Name, sequenceNumber)
+	parsedTracksAndChannels := parseTracksAndChannels(tracksAndChannels)
+
+	var newRevision *model.SnapRevision
+
+	for track, channels := range parsedTracksAndChannels {
+		for _, channel := range channels {
+			trackResp, cerr := s.repo.GetTrackByEntryIdAndName(entry.ID, track, el)
+			if cerr != nil {
+				return 0, cerr
+			}
+			if trackResp == nil {
+				trackResp, cerr := s.repo.AddTrack(entry.ID, track, el)
+				if cerr != nil {
+					return 0, cerr
+				}
+				cerr = s.repo.AddDefaultChannels(trackResp.SnapEntryID, trackResp.ID, el)
+				if cerr != nil {
+					return 0, cerr
+				}
+			}
+
+			channelResp, cerr := s.repo.GetChannelByTrackIdAndName(trackResp.ID, channel, el)
+			if cerr != nil && cerr.GetCode() != cerror.ResourceNotFound {
+				return 0, cerr
+			}
+			if channelResp == nil {
+				channelResp, cerr = s.repo.AddChannel(entry.ID, trackResp.ID, channel, el)
+				if cerr != nil {
+					return 0, cerr
+				}
+			}
+
+			newRevision, cerr = s.repo.AddRevision(entry.ID, trackResp.ID, channelResp.ID, snapName, size, sequenceNumber, architectures, sha3_384Encoded, minioFilePath, el)
+			if cerr != nil {
+				return 0, cerr
+			}
+		}
+	}
+
+	if err := s.obs.Move("unscanned", "snaps", unscannedFileName, minioFilePath); err != nil {
+		cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("failed to move snap to snaps bucket: %v", err))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return 0, cerr
+	}
+
+	if lastRevision != nil && newRevision != nil {
+		if err := s.generateAndStoreDelta(ctx, lastRevision, newRevision, "xdelta3"); err != nil {
+			logrus.Warnf("delta generation failed for %s rev %d -> %d: %v", snapName, lastRevision.SequenceNumber, newRevision.SequenceNumber, err)
+		}
+		// NOTE: Append new delta formats here when implemented
+	}
+
+	return sequenceNumber, nil
 }
 
 // GetSnapMetaFromFile will return SnapMeta from a byte array representing a snap file

@@ -39,6 +39,7 @@ type IObjectStore interface {
 	DeleteFileFromBucket(bucket string, filePath string) *cerror.CustomError
 	SaveDeltaToBucket(bucket, filePath string, content io.Reader, size uint64) (string, error)
 	GetDeltaFileReader(ctx context.Context, filePath string) (io.ReadCloser, error)
+	GetFileFromBucket(ctx context.Context, bucket string, filePath string) (io.ReadCloser, error)
 }
 
 type ObjectStore struct {
@@ -55,23 +56,20 @@ func NewObjectStore(minio *minio.Client, cfg *config.Config) IObjectStore {
 
 // don't forget to close the reader after use
 func (obs *ObjectStore) GetSnapFileReader(ctx context.Context, filePath string) (io.ReadCloser, error) {
-	logrus.Infof("Getting file reader for file path: %s", filePath)
-
-	objectPtr, err := obs.MinioClient.GetObject(ctx, "snaps", filePath, minio.GetObjectOptions{})
-	if err != nil {
-		logrus.Errorf("error getting object from bucket 'snaps', file path: %s, err: %v", filePath, err)
-		return nil, err
-	}
-
-	return objectPtr, nil
+	return obs.GetFileFromBucket(ctx, "snaps", filePath)
 }
 
 func (obs *ObjectStore) GetDeltaFileReader(ctx context.Context, filePath string) (io.ReadCloser, error) {
-	logrus.Infof("Getting delta file reader for file path: %s", filePath)
+	return obs.GetFileFromBucket(ctx, "deltas", filePath)
+}
 
-	objectPtr, err := obs.MinioClient.GetObject(ctx, "deltas", filePath, minio.GetObjectOptions{})
+// GetFileFromBucket returns a reader for any object in a given bucket.
+func (obs *ObjectStore) GetFileFromBucket(ctx context.Context, bucket string, filePath string) (io.ReadCloser, error) {
+	logrus.Infof("Getting file reader for bucket: %s, file path: %s", bucket, filePath)
+
+	objectPtr, err := obs.MinioClient.GetObject(ctx, bucket, filePath, minio.GetObjectOptions{})
 	if err != nil {
-		logrus.Errorf("error getting object from bucket 'deltas' file path: '%s', error: '%s'", filePath, err.Error())
+		logrus.Errorf("error getting object from bucket '%s', file path: '%s', err: %v", bucket, filePath, err)
 		return nil, err
 	}
 
