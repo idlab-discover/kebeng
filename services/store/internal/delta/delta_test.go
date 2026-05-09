@@ -21,6 +21,9 @@ func requireXdelta3(t *testing.T) {
 	}
 }
 
+// Suppress linter warning as xdelta3-based tests aren't implemented yet
+var _ = requireXdelta3
+
 // ===== XDELTA3 GENERATOR =====
 
 // TODO: Round-trip-test: two files, delta, apply delta to first file, verify second file is obtained
@@ -41,8 +44,14 @@ func TestWriterCounter(t *testing.T) {
 		var n uint64
 		wc := writerCounter{w: &buf, n: &n}
 
-		wc.Write([]byte("hello"))
-		wc.Write([]byte("world"))
+		_, err := wc.Write([]byte("hello"))
+		if err != nil {
+			t.Errorf("an unexpected error occurred while writing 'hello': %v", err)
+		}
+		_, _ = wc.Write([]byte("world"))
+		if err != nil {
+			t.Errorf("an unexpected error occurred while writing 'world': %v", err)
+		}
 
 		if n != 10 {
 			t.Errorf("expected 10 bytes counted, got %d", n)
