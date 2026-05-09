@@ -124,7 +124,7 @@ func (m *MockStoreServiceClient) GetRevisionsByEntryIds(ctx context.Context, in 
 	return args.Get(0).(*proto.GetRevisionsByEntryIdResponses), nil
 }
 
-func (m *MockStoreServiceClient) GetLatestRevisionBeforeDateById(ctx context.Context, req *proto.GetLatestRevisionBeforeDateByIdRequest, opts ... grpc.CallOption) (*proto.GetRevisionResponse, error) {
+func (m *MockStoreServiceClient) GetLatestRevisionBeforeDateById(ctx context.Context, req *proto.GetLatestRevisionBeforeDateByIdRequest, opts ...grpc.CallOption) (*proto.GetRevisionResponse, error) {
 	args := m.Called(ctx, req)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -236,4 +236,12 @@ func (m *MockStoreServiceClient) GetDeltaByRevisionPair(ctx context.Context, req
 		return nil, args.Error(1)
 	}
 	return args.Get(0).(*proto.GetDeltaResponse), nil
+}
+
+func (m *MockStoreServiceClient) ApplyUploadDelta(ctx context.Context, req *proto.ApplyUploadDeltaRequest, opts ...grpc.CallOption) (*proto.ApplyUploadDeltaResponse, error) {
+	args := m.Called(ctx, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*proto.ApplyUploadDeltaResponse), nil
 }
