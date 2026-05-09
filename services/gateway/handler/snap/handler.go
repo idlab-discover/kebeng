@@ -27,6 +27,11 @@ type Handler struct {
 	*util.BaseHandler
 }
 
+var supportedDeltaFormats = map[string]bool{
+	"xdelta3": true,
+	// "snap-1-1-xdelta": true,
+}
+
 // TODO: Implement this function properly
 // Right now it's just a placeholder to make sure Snapcraft can be installed in the lxc container
 func (h *Handler) RequestStoreDeviceNonce(c *gin.Context) {
@@ -49,6 +54,8 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
+
+	acceptedDeltaFormat := c.GetHeader("Snap-Accept-Delta-Format")
 
 	var resp model.RefreshSnapResults
 
@@ -85,7 +92,7 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 			})
 
 		case "refresh":
-			res, cerr := h.refreshRefresh(action, req.Context, el)
+			res, cerr := h.refreshRefresh(action, req.Context, acceptedDeltaFormat, el)
 			if cerr != nil {
 				el.AddCustomError(cerr)
 				c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
@@ -204,7 +211,7 @@ func (h *Handler) refreshInstallOrDownload(action *model.Action, el *cerror.Erro
 	return &res, nil
 }
 
-func (h *Handler) refreshRefresh(action *model.Action, context []*model.Context, el *cerror.ErrorList) (*model.RefreshSnapResult, *cerror.CustomError) {
+func (h *Handler) refreshRefresh(action *model.Action, context []*model.Context, acceptedDeltaFormat string, el *cerror.ErrorList) (*model.RefreshSnapResult, *cerror.CustomError) {
 	// The workflow differs slightly from refreshInstallOrDownload: in this endpoint we only recieve the snap-id, not name.
 	// Depending on the Snap, we may also need to add deltas
 
@@ -287,49 +294,51 @@ func (h *Handler) refreshRefresh(action *model.Action, context []*model.Context,
 	deltas := make([]model.Delta, 0)
 
 	// What revision does the client have right now?
-	for _, c := range context {
-		if c.SnapID == entry.Id {
-			userRevision := h.StoreClient.GetRevisionByNameAndSequence(entry.SnapName, uint32(c.Revision))
-			if len(userRevision.Errors) > 0 {
-				res.Result = "error"
-				return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("error getting revision: %v", userRevision.Errors))
-			}
-			if selectedRevision.SequenceNumber-userRevision.SequenceNumber != 1 {
-				// NOTE: Delta saving
-				// Currently, we only store deltas for steps of 1 revision at a time
-				// Bigger steps can be ignored for now
+	if supportedDeltaFormats[acceptedDeltaFormat] {
+		for _, c := range context {
+			if c.SnapID == entry.Id {
+				userRevision := h.StoreClient.GetRevisionByNameAndSequence(entry.SnapName, uint32(c.Revision))
+				if len(userRevision.Errors) > 0 {
+					res.Result = "error"
+					return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("error getting revision: %v", userRevision.Errors))
+				}
+				if selectedRevision.SequenceNumber-userRevision.SequenceNumber != 1 {
+					// NOTE: Delta saving
+					// Currently, we only store deltas for steps of 1 revision at a time
+					// Bigger steps can be ignored for now
+					break
+				}
+
+				userRevisionId, erra := uuid.Parse(userRevision.Id)
+				latestRevisionId, errb := uuid.Parse(selectedRevision.Id)
+				if erra != nil || errb != nil {
+					res.Result = "error"
+					return &res, cerror.NewCustomError(cerror.BadRequest, fmt.Sprintf("Unable to parse source and target revision IDs to uuids: %v, %v", erra, errb))
+				}
+				deltaInfo := h.StoreClient.GetDeltaByRevisionPair(userRevisionId, latestRevisionId, "xdelta3", el)
+				if len(deltaInfo.Errors) > 0 {
+					res.Result = "error"
+					return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("error getting delta details: %v", deltaInfo.Errors))
+				}
+
+				deltaRaw, err := base64.RawURLEncoding.DecodeString(deltaInfo.Sha3_384Encoded)
+				if err != nil {
+					el.Add(cerror.InternalServerError, fmt.Sprintf("error decoding sha3_384: %s", err.Error()))
+				}
+
+				deltaHexSum := hex.EncodeToString(deltaRaw)
+
+				deltas = append(deltas, model.Delta{
+					Format:   acceptedDeltaFormat,
+					Sha3_384: deltaHexSum,
+					Size:     selectedRevision.Size,
+					Source:   uint64(userRevision.SequenceNumber),
+					Target:   uint64(selectedRevision.SequenceNumber),
+					URL:      fmt.Sprintf("%s/download-delta/%s/%s/%d-%d.xdelta3", h.Config.StoreUrl, "xdelta3", entry.SnapName, userRevision.SequenceNumber, selectedRevision.SequenceNumber),
+				})
+
 				break
 			}
-
-			userRevisionId, erra := uuid.Parse(userRevision.Id)
-			latestRevisionId, errb := uuid.Parse(selectedRevision.Id)
-			if erra != nil || errb != nil {
-				res.Result = "error"
-				return &res, cerror.NewCustomError(cerror.BadRequest, fmt.Sprintf("Unable to parse source and target revision IDs to uuids: %v, %v", erra, errb))
-			}
-			deltaInfo := h.StoreClient.GetDeltaByRevisionPair(userRevisionId, latestRevisionId, "xdelta3", el)
-			if len(deltaInfo.Errors) > 0 {
-				res.Result = "error"
-				return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("error getting delta details: %v", deltaInfo.Errors))
-			}
-
-			deltaRaw, err := base64.RawURLEncoding.DecodeString(deltaInfo.Sha3_384Encoded)
-			if err != nil {
-				el.Add(cerror.InternalServerError, fmt.Sprintf("error decoding sha3_384: %s", err.Error()))
-			}
-
-			deltaHexSum := hex.EncodeToString(deltaRaw)
-
-			deltas = append(deltas, model.Delta{
-				Format:   "xdelta3", // NOTE: we only support this type, canonical has more
-				Sha3_384: deltaHexSum,
-				Size:     selectedRevision.Size,
-				Source:   uint64(userRevision.SequenceNumber),
-				Target:   uint64(selectedRevision.SequenceNumber),
-				URL:      fmt.Sprintf("%s/download-delta/%s/%s/%d-%d.xdelta3", h.Config.StoreUrl, "xdelta3", entry.SnapName, userRevision.SequenceNumber, selectedRevision.SequenceNumber),
-			})
-
-			break
 		}
 	}
 
