@@ -648,8 +648,8 @@ func TestFindSnaps(t *testing.T) {
 	mockStoreClient.AssertExpectations(t)
 }
 
-// TestFindSnaps_InvalidQuery tests an invalid query
-func TestFindSnaps_InvalidQuery(t *testing.T) {
+// TestFindSnaps_EmptyQuery tests an empty query
+func TestFindSnaps_EmptyQuery(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	handler := Handler{BaseHandler: util.NewBaseHandler(
@@ -666,10 +666,13 @@ func TestFindSnaps_InvalidQuery(t *testing.T) {
 
 	handler.FindSnaps(c)
 
-	// The query should not succeed (status code BAD_REQUEST)
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-	// The error message should mention the required field
-	assert.Contains(t, w.Body.String(), "required")
+	// The query should succeed
+	assert.Equal(t, http.StatusOK, w.Code)
+	// The body should contain an empty results string (for now)
+	assert.Contains(t, w.Body.String(), "\"results\":[]")
+	
+	// TODO: Once features snaps are tracked, this test should no longer return an empty result set
+	// But a list of top featured snaps
 }
 
 // ------------------
