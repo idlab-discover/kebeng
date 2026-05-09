@@ -1062,13 +1062,20 @@ func (s *StoreLogic) ApplyUploadDelta(ctx context.Context, req *proto.ApplyUploa
 
 	_, err = deltaHandler.ApplyDelta(baseTmp, deltaTmp, io.MultiWriter(resultTmp, resultHasher))
 	if err != nil {
-		cerr := cerror.NewCustomError(cerror.InternalServerError,
-			fmt.Sprintf("delta application failed: %v", err))
-		logrus.Error(cerr)
-		el.AddCustomError(cerr)
 		if cleanErr := s.obs.DeleteFileFromBucket("unscanned", req.DeltaFileName); cleanErr != nil {
 			logrus.Warnf("failed to clean up delta after failed application: %v", cleanErr)
 		}
+
+		if applyCtx.Err() == context.DeadlineExceeded {
+			cerr := cerror.NewCustomError(cerror.FailedToRegister, fmt.Sprintf("delta application timed out after %d seconds for snap %s", timeoutSecs, req.SnapName))
+			logrus.Error(cerr)
+			el.AddCustomError(cerr)
+		} else {
+			cerr := cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("delta application failed: %v", err))
+			logrus.Error(cerr)
+			el.AddCustomError(cerr)
+		}
+
 		return &proto.ApplyUploadDeltaResponse{Errors: el.ConvertToProtoErrorList()}, nil
 	}
 
