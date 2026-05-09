@@ -49,6 +49,7 @@ type StoreClientInterface interface {
 	UpdateSnapEntryWithMetadata(snapEntryId uuid.UUID, metadata *model.Metadata) *proto.UpdateEntryResponse
 	GetDeltaByRevisionPair(sourceRevesionId, targetRevisionId uuid.UUID, format string, el *cerror.ErrorList) *proto.GetDeltaResponse
 	GetRevisionByNameAndSequence(name string, sequence uint32) *proto.GetRevisionResponse
+	ApplyUploadDelta(snapName string, baseRevisionSequence uint32, deltaFileName string, deltaSha3_384Encoded string, format string, tracksAndChannels []string, timeoutSeconds uint32) *proto.ApplyUploadDeltaResponse
 }
 
 var _ StoreClientInterface = (*StoreClient)(nil)
@@ -572,6 +573,25 @@ func (c *StoreClient) GetDeltaByRevisionPair(sourceRevesionId, targetRevisionId 
 				Message: err.Error(),
 			}},
 		}
+	}
+	return resp
+}
+
+func (c *StoreClient) ApplyUploadDelta(snapName string, baseRevisionSequence uint32, deltaFileName, deltaSha3_384Encoded, format string, tracksAndChannels []string, timeoutSeconds uint32) *proto.ApplyUploadDeltaResponse {
+	el := cerror.NewErrorList()
+	req := &proto.ApplyUploadDeltaRequest{
+		SnapName:             snapName,
+		BaseRevisionSequence: baseRevisionSequence,
+		DeltaFileName:        deltaFileName,
+		DeltaSha3_384Encoded: deltaSha3_384Encoded,
+		DeltaFormat:          format,
+		TracksAndChannels:    tracksAndChannels,
+		TimeoutSeconds:       timeoutSeconds,
+	}
+	resp, err := c.client.ApplyUploadDelta(context.Background(), req)
+	if err != nil {
+		el.Add(cerror.InternalServerError, err.Error())
+		return &proto.ApplyUploadDeltaResponse{Errors: el.ConvertToProtoErrorList()}
 	}
 	return resp
 }

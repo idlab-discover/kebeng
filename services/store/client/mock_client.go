@@ -219,6 +219,13 @@ func (m *MockStoreClient) GetRevisionByNameAndSequence(name string, sequence uin
 	return nil
 }
 
+func (m *MockStoreClient) ApplyUploadDelta(snapName string, baseRevisionSequence uint32, deltaFileName, deltaSha3_384Encoded, format string, tracksAndChannels []string, timeoutSeconds uint32) *proto.ApplyUploadDeltaResponse {
+	args := m.Called(snapName, baseRevisionSequence, deltaFileName, deltaSha3_384Encoded, format, tracksAndChannels, timeoutSeconds)
+	if resp, ok := args.Get(0).(*proto.ApplyUploadDeltaResponse); ok {
+		return resp
+	}
+	return nil
+}
 
 // MockSnapDownloadClient fakes the gRPC client‐stream returned by SnapDownloadStream.
 type MockSnapDownloadClient struct {
