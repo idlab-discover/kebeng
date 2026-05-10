@@ -31,17 +31,18 @@ RUN go mod download
 
 
 FROM golang:1.22 AS builder
-WORKDIR /workspace
-# `go env GOMODCACHE` -> /go/pkg/mod for this golang img ver; copy mod cache from cache layer
-# NOTE: this path may change for more modern golang images
-COPY --from=depcache /go/pkg/mod /go/pkg/mod
-
-# Install system dependencies before copying source so this layer is cached
-# independently of source changes — only reruns if the package list changes
+# Install system dependencies before copying source or depcache so this layer is cached
+# independently of source or dependency changes
 RUN apt-get update && apt-get install -y --no-install-recommends \
     squashfs-tools \
     xdelta3 \
     && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace
+
+# `go env GOMODCACHE` -> /go/pkg/mod for this golang img ver; copy mod cache from cache layer
+# NOTE: this path may change for more modern golang images
+COPY --from=depcache /go/pkg/mod /go/pkg/mod
 
 # We're copying the folders in its entirety here as we want docker to rebuild this layer
 # each time any part of the source changes
