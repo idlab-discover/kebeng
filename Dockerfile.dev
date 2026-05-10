@@ -30,9 +30,6 @@ RUN go mod download
 
 
 
-# TODO: Further optimisation:
-# Make a buildstage for each service rather than one big build stage for all of them
-# The advantage is that unchanged services will not have to be re-compiled every time one service is modified
 FROM golang:1.22 AS builder
 WORKDIR /workspace
 # `go env GOMODCACHE` -> /go/pkg/mod for this golang img ver; copy mod cache from cache layer
