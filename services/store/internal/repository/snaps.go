@@ -36,7 +36,7 @@ type ISnapsRepository interface {
 	GetEntriesByAccountId(accountId uuid.UUID, preloadAssociations []string, errorList *cerror.ErrorList) ([]*model.SnapEntry, *cerror.CustomError)
 	GetEntryById(id uuid.UUID, preloadAssociations []string, errorList *cerror.ErrorList) (*model.SnapEntry, *cerror.CustomError)
 	GetEntryByName(name string, preloadAssociations []string, errorList *cerror.ErrorList) (*model.SnapEntry, *cerror.CustomError)
-	GetEntriesByQuery(query string, architectureList []string, confinementsList []string, fieldsList []string, private bool, publisherId string, preloadAssociations []string, errorList *cerror.ErrorList) (*[]model.SnapEntry, *cerror.CustomError)
+	GetEntriesByQuery(query string, architectureList []string, channelList []string, confinementsList []string, fieldsList []string, private bool, publisherId string, preloadAssociations []string, errorList *cerror.ErrorList) (*[]model.SnapEntry, *cerror.CustomError)
 	GetLatestRevisionByEntryId(entryId uuid.UUID, errorList *cerror.ErrorList) (*model.SnapRevision, *cerror.CustomError)
 	GetLatestRevisionByTrackAndChannel(snapName string, track string, channel string, errorList *cerror.ErrorList) (*model.SnapRevision, *cerror.CustomError)
 	GetPreloadAssociations(entry *model.SnapEntry, preloadAssociations *[]string, errorList *cerror.ErrorList) *cerror.CustomError
@@ -186,7 +186,7 @@ func (sp *SnapsRepository) AddDelta(sourceRevisionID, targetRevisionID uuid.UUID
 	snapDelta := model.SnapDelta{
 		SourceRevisionID: sourceRevisionID,
 		TargetRevisionID: targetRevisionID,
-		Format: format,
+		Format:           format,
 		MinioFilePath:    minioFilePath,
 		Size:             size,
 		SHA3_384_Encoded: sha3_384_encoded,
@@ -424,6 +424,7 @@ func (sp *SnapsRepository) GetEntryByName(name string, preloadAssociations []str
 func (sp *SnapsRepository) GetEntriesByQuery(
 	query string,
 	architectureList []string,
+	channelList []string,
 	confinementsList []string,
 	fieldsList []string,
 	private bool,
@@ -463,6 +464,15 @@ func (sp *SnapsRepository) GetEntriesByQuery(
 
 	if len(searchFilters) > 0 {
 		stmt += fmt.Sprintf("AND (%s)", strings.Join(searchFilters, " OR "))
+	}
+
+	if len(channelList) > 0 {
+		placeHolders := make([]string, len(channelList))
+		for idx, ch := range channelList {
+			sqlArgs = append(sqlArgs, ch)
+			placeHolders[idx] = fmt.Sprintf("$%d", len(sqlArgs))
+		}
+		stmt += fmt.Sprintf(" AND EXISTS (SELECT 1 FROM channel WHERE channel.entry_id = entry.id AND channel.name IN (%s))", strings.Join(placeHolders, ", "))
 	}
 
 	err := sp.db.Select(&snapEntries, stmt, sqlArgs...)

@@ -251,6 +251,7 @@ func (s *StoreLogic) GetEntriesByQuery(ctx context.Context, req *proto.GetEntrie
 	snapEntries, cerr := s.repo.GetEntriesByQuery(
 		req.Query,
 		req.ArchitectureList,
+		req.ChannelList,
 		req.ConfinementsList,
 		req.FieldsList,
 		req.Private,

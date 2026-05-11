@@ -142,12 +142,13 @@ func (m *MockSnapsRepository) GetEntryByName(name string, preloadAssociations []
 func (m *MockSnapsRepository) GetEntriesByQuery(
 	query string,
 	architectureList []string,
+	channelList []string,
 	confinementsList []string,
 	fieldsList []string,
 	private bool,
 	publisherId string,
 	preloadAssociations []string, el *cerror.ErrorList) (*[]model.SnapEntry, *cerror.CustomError) {
-	args := m.Called(query, architectureList, confinementsList, fieldsList, private, publisherId, preloadAssociations, el)
+	args := m.Called(query, architectureList, channelList, confinementsList, fieldsList, private, publisherId, preloadAssociations, el)
 	if args.Get(0) != nil {
 		return args.Get(0).(*[]model.SnapEntry), nil
 	}

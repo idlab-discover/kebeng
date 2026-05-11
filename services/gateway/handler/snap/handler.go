@@ -387,6 +387,9 @@ func (h *Handler) FindSnaps(c *gin.Context) {
 	el := cerror.NewErrorList()
 	result := *model.NewFindSnapResponse()
 
+	// Snap Find fails the content-type is `application/json;charset=utf-8`
+	c.Header("Content-Type", "application/json")
+
 	query, queryIsPresent := c.GetQuery("q")
 	if !queryIsPresent || query == "" {
 		// Featured snaps are not yet tracked in the database.
@@ -405,8 +408,14 @@ func (h *Handler) FindSnaps(c *gin.Context) {
 	}
 	architectureList := strings.Split(architecture, ",")
 
-	channel, _ := c.GetQuery("channel")
-	channelList := strings.Split(channel, ",")
+	var channelList []string = make([]string, 0)
+	channel, channelIsPresent := c.GetQuery("channel")
+	if !channelIsPresent {
+		// If no channels are passed by the client the default behaviour is to search for stable and candidate snaps
+		channelList = append(channelList, "stable", "candidate")
+	} else {
+		channelList = strings.Split(channel, ",")
+	}
 
 	confinement, confinementIsPresent := c.GetQuery("confinement")
 	if !confinementIsPresent {
@@ -468,15 +477,38 @@ func (h *Handler) FindSnaps(c *gin.Context) {
 			return
 		}
 
-		// GetLatestRevisionByTrackAndChannel is invoked with defaults
-		lastRev := h.StoreClient.GetLatestRevisionByTrackAndChannel(
-			entry.SnapName,
-			"",
-			"",
-		)
-		if len(lastRev.Errors) > 0 {
-			el.ExtendProtoError(lastRev.Errors)
-			c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		var lastRev *storepb.GetRevisionResponse
+		var revisionFound bool = false
+
+		for _, chnnl := range channelList {
+			thisRev := h.StoreClient.GetLatestRevisionByTrackAndChannel(
+				entry.SnapName,
+				"latest",
+				chnnl,
+			)
+
+			if len(thisRev.Errors) > 0 {
+				el.ExtendProtoError(thisRev.Errors)
+				continue
+			}
+
+			if lastRev == nil || thisRev.SequenceNumber > lastRev.SequenceNumber {
+				revisionFound = true
+				lastRev = thisRev
+			}
+		}
+
+		if !revisionFound && el.HasError() {
+			// 404 - just send empty result with OK
+			// Anything different - send errorlist
+			if el.GetHTTPStatus() == 404 {
+				c.JSON(http.StatusOK, result)
+			} else {
+				c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+			}
+			return
+		} else if !revisionFound {
+			c.JSON(http.StatusOK, result)
 			return
 		}
 
@@ -502,7 +534,7 @@ func (h *Handler) FindSnaps(c *gin.Context) {
 					Channel:     "stable",
 					Confinement: entry.Confinement,
 					Revision:    int(lastRev.SequenceNumber),
-					Version:     entry.Version,
+					Version:     entry.Version, // Misnomer: version should be tied to a rivision, and lastRev.Version should be used. Database currently keeps track of versions incorrectly
 					Status:      entry.Status,
 					Download: model.Download{
 						Size: &lastRev.Size,
@@ -512,8 +544,6 @@ func (h *Handler) FindSnaps(c *gin.Context) {
 		)
 	}
 
-	// Snap Find fails the content-type is `application/json;charset=utf-8`
-	c.Header("Content-Type", "application/json")
 	c.JSON(200, result)
 }
 
