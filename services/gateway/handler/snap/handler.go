@@ -479,7 +479,6 @@ func (h *Handler) FindSnaps(c *gin.Context) {
 		}
 
 		var lastRev *storepb.GetRevisionResponse
-		var revisionFound bool = false
 
 		for _, chnnl := range channelList {
 			thisRev := h.StoreClient.GetLatestRevisionByTrackAndChannel(
@@ -494,12 +493,11 @@ func (h *Handler) FindSnaps(c *gin.Context) {
 			}
 
 			if lastRev == nil || thisRev.SequenceNumber > lastRev.SequenceNumber {
-				revisionFound = true
 				lastRev = thisRev
 			}
 		}
 
-		if !revisionFound && el.HasError() {
+		if lastRev == nil && el.HasError() {
 			// 404 - just send empty result with OK
 			// Anything different - send errorlist
 			if el.GetHTTPStatus() == 404 {
@@ -508,7 +506,7 @@ func (h *Handler) FindSnaps(c *gin.Context) {
 				c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
 			}
 			return
-		} else if !revisionFound {
+		} else if lastRev == nil {
 			c.JSON(http.StatusOK, result)
 			return
 		}
