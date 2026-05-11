@@ -442,7 +442,8 @@ func (h *Handler) FindSnaps(c *gin.Context) {
 	}
 
 	publisher_id := ""
-	if emailIsPresent {
+	// No need to query account service if the query is not for private Snaps
+	if privateBool && emailIsPresent {
 		acc := h.AccountClient.GetAccountByEmail(email.(string))
 		if len(acc.Errors) > 0 {
 			el.ExtendProtoError(acc.Errors)
