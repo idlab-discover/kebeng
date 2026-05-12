@@ -445,8 +445,8 @@ func (sp *SnapsRepository) GetEntriesByQuery(
 
 	stmt := "SELECT * FROM entry WHERE "
 	if private {
-		stmt += fmt.Sprintf("private = true AND account_id = $%d ", len(sqlArgs)+1)
 		sqlArgs = append(sqlArgs, publisherId)
+		stmt += fmt.Sprintf("private = true AND account_id = $%d ", len(sqlArgs))
 	} else {
 		stmt += "private = false "
 	}
