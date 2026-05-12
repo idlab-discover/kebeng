@@ -431,15 +431,25 @@ func (sp *SnapsRepository) GetEntriesByQuery(
 	publisherId string,
 	preloadAssociations []string,
 	el *cerror.ErrorList) (*[]model.SnapEntry, *cerror.CustomError) {
+
 	var snapEntries []model.SnapEntry
+
+	// Map field values to their Kebeng-compatible counterpart
+	safeColumnMap := map[string]string{
+		"title":       "name",
+		"base":        "base",
+		"confinement": "confinement",
+		"description": "description",
+		"summary":     "summary",
+		"type":        "type",
+		"version":     "version",
+		"store":       "store",
+	}
+
+
 	if len(fieldsList) == 0 {
 		return &snapEntries, nil
 	}
-
-	// NOTE: Workaround. snapd searches on the field `title` by default but we don't have a field title
-	// We do have a field name which snapd doesn't use, but is interchangeable with `title`.
-	// This should however be fixed in the DB eventually
-	fieldsList = append(fieldsList, "name")
 
 	sqlArgs := []any{"%" + query + "%"}
 
@@ -452,14 +462,14 @@ func (sp *SnapsRepository) GetEntriesByQuery(
 	}
 
 	var searchFilters []string
-	// TODO: We don't store all the fields snapd may request a query for yet,
-	// For now, we restrict to the fields we do support
-	searchableColumns := []string{"name", "base", "confinement", "description", "summary", "type", "version", "store"}
-
-	for _, col := range searchableColumns {
-		if slices.Contains(fieldsList, col) {
-			searchFilters = append(searchFilters, fmt.Sprintf("%s ILIKE $1", col))
+	for _, col := range fieldsList {
+		safeCol, allowed := safeColumnMap[col]
+		// If a field is unknown to us, don't add it to the query
+		// WARN: This is important shielding
+		if !allowed {
+			continue
 		}
+		searchFilters = append(searchFilters, fmt.Sprintf("%s ILIKE $1", safeCol))
 	}
 
 	if len(searchFilters) > 0 {
