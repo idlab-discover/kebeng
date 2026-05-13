@@ -854,14 +854,14 @@ func (h *Handler) CreateCohorts(c *gin.Context) {
 		return
 	}
 
-	var getEntryRequests storepb.GetEntriesRequest
+	var getEntriesRequest storepb.GetEntriesRequest
 	for _, snapname := range req.SnapNames {
-		getEntryRequests.Entries = append(getEntryRequests.Entries, &storepb.GetEntryRequest{
+		getEntriesRequest.Entries = append(getEntriesRequest.Entries, &storepb.GetEntryRequest{
 			Name: &snapname,
 		})
 	}
 
-	getEntriesResponse := h.StoreClient.GetEntries(&getEntryRequests)
+	getEntriesResponse := h.StoreClient.GetEntries(&getEntriesRequest)
 	if len(getEntriesResponse.Errors) > 0 {
 		el.ExtendProtoError(getEntriesResponse.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
