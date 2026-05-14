@@ -1555,8 +1555,15 @@ func (s *StoreLogic) processUnscannedSnap(
 	}
 
 	if lastRevision != nil && newRevision != nil {
-		if err := s.generateAndStoreDelta(ctx, lastRevision, newRevision, "xdelta3"); err != nil {
-			logrus.Warnf("delta generation failed for %s rev %d -> %d: %v", snapName, lastRevision.SequenceNumber, newRevision.SequenceNumber, err)
+		deltaCtx, deltaCancel := context.WithTimeout(ctx, time.Second*60)
+		defer deltaCancel()
+
+		if err := s.generateAndStoreDelta(deltaCtx, lastRevision, newRevision, "xdelta3"); err != nil {
+			if deltaCtx.Err() == context.DeadlineExceeded {
+				logrus.Warnf("delta generation timed out after 60s for %s rev %d -> %d, skipping", snapName, lastRevision.SequenceNumber, newRevision.SequenceNumber)
+			} else {
+				logrus.Warnf("delta generation failed for %s rev %d -> %d: %v", snapName, lastRevision.SequenceNumber, newRevision.SequenceNumber, err)
+			}
 		}
 		// NOTE: Append new delta formats here when implemented
 	}
