@@ -267,20 +267,18 @@ func (h *Handler) refreshRefresh(action *model.Action, context []*model.Context,
 			res.Result = "error"
 			return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("error getting revision: %v", selectedRevision.Errors))
 		}
+	} else if action.Revision > 0 {
+		selectedRevision = h.StoreClient.GetRevisionByNameAndSequence(entry.SnapName, uint32(action.Revision))
+		if len(selectedRevision.Errors) > 0 {
+			el.ExtendProtoError(selectedRevision.Errors)
+			res.Result = "error"
+			return &res, cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("revision %d not found for snap %s", action.Revision, entry.SnapName))
+		}
 	} else {
-		if action.Revision > 0 {
-			selectedRevision = h.StoreClient.GetRevisionByNameAndSequence(entry.SnapName, uint32(action.Revision))
-			if len(selectedRevision.Errors) > 0 {
-				el.ExtendProtoError(selectedRevision.Errors)
-				res.Result = "error"
-				return &res, cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("revision %d not found for snap %s", action.Revision, entry.SnapName))
-			}
-		} else {
-			_, selectedRevision = h.getLatestRevisionByEntryName(el, entry.SnapName, action.Channel)
+		_, selectedRevision = h.getLatestRevisionByEntryName(el, entry.SnapName, action.Channel)
 
-			if el.HasError() {
-				return nil, cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("latest revision not found by name: %s", action.Name))
-			}
+		if el.HasError() {
+			return nil, cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("latest revision not found by name: %s", action.Name))
 		}
 	}
 
@@ -302,7 +300,7 @@ func (h *Handler) refreshRefresh(action *model.Action, context []*model.Context,
 					res.Result = "error"
 					return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("error getting revision: %v", userRevision.Errors))
 				}
-				if selectedRevision.SequenceNumber-userRevision.SequenceNumber != 1 {
+				if selectedRevision.SequenceNumber - userRevision.SequenceNumber != 1 {
 					// NOTE: Delta saving
 					// Currently, we only store deltas for steps of 1 revision at a time
 					// Bigger steps can be ignored for now
