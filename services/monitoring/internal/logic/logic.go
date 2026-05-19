@@ -256,6 +256,24 @@ func (l *Logic) RegisterNameAndUnscannedUpload(snapName string, reader io.Reader
 	return nil
 }
 
+func (l *Logic) CreateCohorts(snapNames []string) (*model.CreateCohortsResult, error) {
+	url := fmt.Sprintf("%s/v2/cohorts", l.Config.StoreUrl)
+	payload := map[string][]string{"snaps": snapNames}
+	b, _ := json.Marshal(payload)
+
+	respBytes, err := l.doRequest("POST", url, "application/json", bytes.NewReader(b))
+	if err != nil {
+		logrus.Error("CreateCohorts: ", err)
+		return nil, err
+	}
+
+	var out model.CreateCohortsResult
+	if err := json.Unmarshal(respBytes, &out); err != nil {
+		return nil, fmt.Errorf("unmarshal create-cohorts response: %v", err)
+	}
+	return &out, nil
+}
+
 // ================ Helper Functions ================
 
 // doRequest sends an HTTP request, checks for errors, and returns the response body.

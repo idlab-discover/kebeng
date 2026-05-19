@@ -195,3 +195,7 @@ type Store struct {
 	ID    uuid.UUID `json:"id"`
 	Roles []string  `json:"roles"`
 }
+
+type CreateCohortsResult struct {
+	CohortKeys map[string]string `json:"cohort-keys"`
+}

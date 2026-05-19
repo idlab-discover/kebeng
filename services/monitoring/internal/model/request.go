@@ -79,3 +79,7 @@ type SnapDownloadRequest struct {
 	SnapName string `json:"snap_name"`
 	Channel  string `json:"channel"`
 }
+
+type CohortKeysRequest struct {
+	BatchSize int `json:"batch_size" binding:"required,min=1"`
+}
