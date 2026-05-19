@@ -7,6 +7,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/idlab-discover/kebeng/services/monitoring/internal/config"
@@ -270,6 +271,46 @@ func (l *Logic) CreateCohorts(snapNames []string) (*model.CreateCohortsResult, e
 	var out model.CreateCohortsResult
 	if err := json.Unmarshal(respBytes, &out); err != nil {
 		return nil, fmt.Errorf("unmarshal create-cohorts response: %v", err)
+	}
+	return &out, nil
+}
+
+func (l *Logic) FindSnaps(req model.FindSnapsRequest) (*model.FindSnapsResponse, error) {
+	params := url.Values{}
+	if req.Query != "" {
+		params.Set("q", req.Query)
+	}
+
+	for _, field := range req.Fields {
+		params.Add("fields", field)
+	}
+
+	for _, arch := range req.Architectures {
+		params.Add("architecture", arch)
+	}
+
+	for _, ch := range req.Channels {
+		params.Add("channel", ch)
+	}
+
+	for _, conf := range req.Confinements {
+		params.Add("confinement", conf)
+	}
+
+	fullURL := fmt.Sprintf("%s/v2/snaps/find", l.Config.StoreUrl)
+	if len(params) > 0 {
+		fullURL = fmt.Sprintf("%s?%s", fullURL, params.Encode())
+	}
+
+	respBytes, err := l.doRequest("GET", fullURL, "", nil)
+	if err != nil {
+		logrus.Error("FindSnaps:", err)
+		return nil, err
+	}
+
+	var out model.FindSnapsResponse
+	if err := json.Unmarshal(respBytes, &out); err != nil {
+		return nil, fmt.Errorf("unmarshal find-snaps response: %w", err)
 	}
 	return &out, nil
 }

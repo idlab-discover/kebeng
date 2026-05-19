@@ -38,6 +38,7 @@ func (h *Handler) SetupEndpoints(r *gin.Engine) {
 	r.POST("/snapcraft-upload", h.SnapcraftUpload)
 	r.POST("/snapd-download", h.SnapdDownload)
 	r.POST("/cohort-keys", h.CohortKeys)
+	r.POST("/find-snaps", h.FindSnaps)
 }
 
 func (h *Handler) RegisterName(c *gin.Context) {
@@ -310,6 +311,49 @@ func (h *Handler) CohortKeys(c *gin.Context) {
 		return func() error {
 			stop := monitoring.StartMonitoringTimer("create_cohorts")
 			_, err := h.Logic.CreateCohorts(snapNames)
+			stop()
+			return err
+		}
+	})
+}
+
+func (h *Handler) FindSnaps(c *gin.Context) {
+	var req model.FindSnapsRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		logrus.Errorf("failed to bind JSON: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+
+	total, _, concurrentParse := setupQueryParams(c)
+	stamp := time.Now().Format("2006-01-02_15-04-05")
+
+	queryLabel := req.Query
+	if queryLabel == "" {
+		queryLabel = "emptyquery"
+	}
+
+	err := monitoring.InitFileRecorder(
+		fmt.Sprintf(
+			"/var/log/request_duration_%s_%s_%d_%d_%s.csv",
+			"find-snaps", stamp, concurrentParse, total, queryLabel,
+		),
+		5*time.Second,
+		10000,
+	)
+
+	if err != nil {
+		logrus.Errorf("failed to initialize file recorder: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to initialize monitoring"})
+		return
+	}
+	defer monitoring.ShutdownFileRecorder()
+
+	h.performOperation(c, func() SnapOperation {
+		return func() error {
+			stop := monitoring.StartMonitoringTimer("find_snaps")
+			_, err := h.Logic.FindSnaps(req)
 			stop()
 			return err
 		}

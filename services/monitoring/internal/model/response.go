@@ -199,3 +199,12 @@ type Store struct {
 type CreateCohortsResult struct {
 	CohortKeys map[string]string `json:"cohort-keys"`
 }
+
+type FindSnapsResponse struct {
+	Results []FindSnapResult `json:"results"`
+}
+
+type FindSnapResult struct {
+	Name   string `json:"name"`
+	SnapID string `json:"snap-id"`
+}

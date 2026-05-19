@@ -33,7 +33,11 @@ type UnscannedUploadRequest struct {
 }
 
 type FindSnapsRequest struct {
-	Name string `json:"name"`
+	Query         string   `json:"query"`
+	Fields        []string `json:"fields"`
+	Architectures []string `json:"architectures,omitempty"`
+	Channels      []string `json:"channels,omitempty"`
+	Confinements  []string `json:"confinements,omitempty"`
 }
 
 type RegisterSnapNameRequest struct {
