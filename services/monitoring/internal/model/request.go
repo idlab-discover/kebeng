@@ -87,3 +87,13 @@ type SnapDownloadRequest struct {
 type CohortKeysRequest struct {
 	BatchSize int `json:"batch_size" binding:"required,min=1"`
 }
+
+type DeltaUploadRequest struct {
+	SnapName             string   `json:"snap_name" binding:"required"`
+	BaseRevisionSequence uint32   `json:"base_revision_sequence" binding:"required"`
+	DeltaFilePath        string   `json:"delta_file_path" binding:"required"`
+	DeltaSha3_384        string   `json:"delta_sha3_384" binding:"required"`
+	DeltaFormat          string   `json:"delta_format" binding:"required"`
+	TracksAndChannels    []string `json:"tracks_and_channels" binding:"required"`
+	TimeoutSeconds       uint32   `json:"timeout_seconds"`
+}

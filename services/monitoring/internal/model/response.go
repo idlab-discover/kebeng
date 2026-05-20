@@ -208,3 +208,9 @@ type FindSnapResult struct {
 	Name   string `json:"name"`
 	SnapID string `json:"snap-id"`
 }
+
+type DeltaPushResponse struct {
+	SnapName string `json:"snap_name"`
+	Status   string `json:"status"`
+	Revision uint32 `json:"revision"`
+}

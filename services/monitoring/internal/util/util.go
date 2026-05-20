@@ -93,3 +93,11 @@ func ParseAssertion(blob string) map[string]string {
 	}
 	return fields
 }
+
+func DeltaFileReader(path string) (io.ReadCloser, string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, "", fmt.Errorf("opening delta file %s: %v", path, err)
+	}
+	return f, filepath.Base(path), nil
+}

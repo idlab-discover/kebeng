@@ -39,6 +39,7 @@ func (h *Handler) SetupEndpoints(r *gin.Engine) {
 	r.POST("/snapd-download", h.SnapdDownload)
 	r.POST("/cohort-keys", h.CohortKeys)
 	r.POST("/find-snaps", h.FindSnaps)
+	r.POST("/delta-upload", h.DeltaUpload)
 }
 
 func (h *Handler) RegisterName(c *gin.Context) {
@@ -354,6 +355,57 @@ func (h *Handler) FindSnaps(c *gin.Context) {
 		return func() error {
 			stop := monitoring.StartMonitoringTimer("find_snaps")
 			_, err := h.Logic.FindSnaps(req)
+			stop()
+			return err
+		}
+	})
+}
+
+func (h *Handler) DeltaUpload(c *gin.Context) {
+	var req model.DeltaUploadRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		logrus.Errorf("failed to bind JSON: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+
+	if req.TimeoutSeconds == 0 {
+		req.TimeoutSeconds = 60
+	}
+
+	total, _, concurrentParse := setupQueryParams(c)
+	stamp := time.Now().Format("2006-01-02_15-04-05")
+	err := monitoring.InitFileRecorder(
+		fmt.Sprintf("/var/log/request_duration_%s_%s_%d_%d_%s.csv",
+			"delta-upload", stamp, concurrentParse, total, req.SnapName),
+		5*time.Second,
+		10000,
+	)
+	if err != nil {
+		logrus.Errorf("failed to initialize file recorder: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to initialize monitoring"})
+		return
+	}
+	defer monitoring.ShutdownFileRecorder()
+
+	h.performOperation(c, func() SnapOperation {
+		return func() error {
+			rc, fileName, err := util.DeltaFileReader(req.DeltaFilePath)
+			if err != nil {
+				return err
+			}
+			defer rc.Close()
+
+			stop := monitoring.StartMonitoringTimer("delta_unscanned_upload")
+			uploadResp, err := h.Logic.UnscannedUpload(rc, fileName)
+			stop()
+			if err != nil {
+				return fmt.Errorf("unscanned upload of delta: %w", err)
+			}
+
+			stop = monitoring.StartMonitoringTimer("delta_push")
+			_, err = h.Logic.DeltaPush(req, uploadResp.UploadID)
 			stop()
 			return err
 		}
