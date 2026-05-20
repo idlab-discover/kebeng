@@ -341,6 +341,42 @@ func (l *Logic) DeltaPush(req model.DeltaUploadRequest, unscannedFileName string
 	return &out, nil
 }
 
+func (l *Logic) DeltaDownload(snapName, deltaFormat, deltaName string) error {
+
+	url := fmt.Sprintf("%s/download-delta/%s/%s/%s", l.Config.StoreUrl, deltaFormat, snapName, deltaName)
+
+	req, err := http.NewRequest("GET", url, nil)
+
+	if err != nil {
+		return fmt.Errorf("creating GET %s: %w", url, err)
+	}
+
+	req.Header.Set("Authorization", fmt.Sprintf(
+		"Macaroon root=%s, discharge=%s",
+		l.Config.Macaroon, l.Config.Macaroon,
+	))
+
+	resp, err := l.Client.Do(req)
+	if err != nil {
+		logrus.Error("DeltaDownload:", err)
+		return fmt.Errorf("HTTP GET %s error: %w", url, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		buf := make([]byte, 512)
+		n, _ := resp.Body.Read(buf)
+		return fmt.Errorf("bad status %d from %s: %s", resp.StatusCode, url, buf[:n])
+	}
+
+	if _, err := io.Copy(io.Discard, resp.Body); err != nil {
+		logrus.Error("DeltaDownload copy:", err)
+		return fmt.Errorf("reading body from %s: %w", url, err)
+	}
+
+	return nil
+}
+
 // ================ Helper Functions ================
 
 // doRequest sends an HTTP request, checks for errors, and returns the response body.

@@ -97,3 +97,9 @@ type DeltaUploadRequest struct {
 	TracksAndChannels    []string `json:"tracks_and_channels" binding:"required"`
 	TimeoutSeconds       uint32   `json:"timeout_seconds"`
 }
+
+type DeltaDownloadRequest struct {
+	SnapName    string `json:"snap_name" bidning:"required"`
+	DeltaFormat string `json:"delta_format" binding:"required"`
+	DeltaName   string `json:"delta_name" binding:"required"`
+}
