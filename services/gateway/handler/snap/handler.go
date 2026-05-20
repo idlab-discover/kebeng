@@ -300,7 +300,7 @@ func (h *Handler) refreshRefresh(action *model.Action, context []*model.Context,
 					res.Result = "error"
 					return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("error getting revision: %v", userRevision.Errors))
 				}
-				if selectedRevision.SequenceNumber - userRevision.SequenceNumber != 1 {
+				if selectedRevision.SequenceNumber-userRevision.SequenceNumber != 1 {
 					// NOTE: Delta saving
 					// Currently, we only store deltas for steps of 1 revision at a time
 					// Bigger steps can be ignored for now
@@ -899,6 +899,50 @@ func (h *Handler) DownloadDelta(c *gin.Context) {
 		return
 	}
 	h.downloadDelta(c, deltaFormat, snapName, deltaName, el)
+}
+
+// WARN: Temporary implementation to allow testing the flow
+// Actual handling of delta uploads will most likely be different
+// Verify once Canonical implementation can be analyzed!
+func (h *Handler) DeltaPush(c *gin.Context) {
+	email, exists := c.Get("email")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	accountResp := h.AccountClient.GetAccountByEmail(email.(string))
+	if len(accountResp.Errors) > 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Could not resolve account"})
+		return
+	}
+
+	var req model.SnapDeltaPushRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	resp := h.StoreClient.ApplyUploadDelta(
+		req.Name,
+		req.BaseRevisionSequence,
+		req.UnscannedFileName,
+		req.DeltaSha3_385,
+		req.DeltaFormat,
+		req.TracksAndChannels,
+		req.TimeoutSeconds,
+	)
+
+	if len(resp.Errors) > 0 {
+		c.JSON(http.StatusInternalServerError, gin.H{"errors": resp.Errors})
+		return
+	}
+
+	c.JSON(http.StatusOK, model.SnapDeltaPushResponse{
+		SnapName: resp.SnapName,
+		Status:   resp.Status,
+		Revision: resp.Revision,
+	})
 }
 
 // ########################## HELPER FUNCTIONS ##########################

@@ -264,3 +264,21 @@ type CohortKey struct {
 	CreatedAt time.Time
 	Signature string
 }
+
+// NOTE: The below formats are used to enable testing of the ApplyUploadDelta Flow
+// Actual formats for these requests/responses will most likely be different compared to what is defined here
+type SnapDeltaPushRequest struct {
+	Name                 string   `json:"name" binding:"required"`
+	UnscannedFileName    string   `json:"updown_id" binding:"required"`
+	BaseRevisionSequence uint32   `josn:"base_revision_sequence" binding:"required"`
+	DeltaSha3_385        string   `json:"delta_sha3_384" binding:"required"`
+	DeltaFormat          string   `json:"delta_format" binding:"required"`
+	TracksAndChannels    []string `json:"tracks_and_channels" binding:"required"`
+	TimeoutSeconds       uint32   `json:"timeout_seconds"`
+}
+
+type SnapDeltaPushResponse struct {
+	SnapName string `json:"snap_name"`
+	Status   string `json:"status"`
+	Revision uint32 `json:"revision"`
+}

@@ -79,6 +79,7 @@ func (h *Handler) SetupEndpoints(r *gin.Engine) {
 
 	// ********** DELTAS **********
 	r.GET("/download-delta/:delta-format/:snap-name/:delta-name", h.snapHandler.DownloadDelta)
+	authGroup.POST("/snap-delta-push/", h.snapHandler.DeltaPush)
 }
 
 func (h *Handler) SetupEndpointsWithMonitoring(r *gin.Engine) {
@@ -121,5 +122,5 @@ func (h *Handler) SetupEndpointsWithMonitoring(r *gin.Engine) {
 
 	// ********** DELTAS **********
 	r.GET("/download-delta/:delta-format/:snap-name/:delta-name", monitoring.Wrapper("DownloadDelta", h.snapHandler.DownloadDelta))
-
+	authGroup.POST("/snap-delta-push/", monitoring.Wrapper("DeltaPush", h.snapHandler.DeltaPush))
 }
