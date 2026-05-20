@@ -82,6 +82,8 @@ github.com/idlab-discover/kebeng/services/store v0.0.0-20260429205009-ce7d133877
 github.com/idlab-discover/kebeng/services/store v0.0.0-20260429205009-ce7d13387733/go.mod h1:cj/dNIYVsKXF2hoQVvP6voYpvDu7bcmwROdpr1cKWSM=
 github.com/idlab-discover/kebeng/services/store v0.0.0-20260503175840-62ee931edaa9 h1:jYNJjJiyfUYtT8HeWzQbZlsMBSPRZ0NFbKqTnbUoEHM=
 github.com/idlab-discover/kebeng/services/store v0.0.0-20260503175840-62ee931edaa9/go.mod h1:cj/dNIYVsKXF2hoQVvP6voYpvDu7bcmwROdpr1cKWSM=
+github.com/idlab-discover/kebeng/services/store v0.0.0-20260520115554-f166931ce74a h1:n9wVHjKRoP21JcWfY2sUvbdt+jtjuGkgBEc8k9cbUGI=
+github.com/idlab-discover/kebeng/services/store v0.0.0-20260520115554-f166931ce74a/go.mod h1:xHtHAE52HJOBd3sTYffupVjUZwKCXx04iDQZYInevfA=
 github.com/jmoiron/sqlx v1.4.0 h1:1PLqN7S1UYp5t4SrVVnt4nUVNemrDAtxlulVe+Qgm3o=
 github.com/jmoiron/sqlx v1.4.0/go.mod h1:ZrZ7UsYB/weZdl2Bxg6jCRO9c3YHl8r3ahlKmRT4JLY=
 github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnrnM=
