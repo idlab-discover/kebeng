@@ -392,6 +392,11 @@ func (h *Handler) DeltaUpload(c *gin.Context) {
 
 	h.performOperation(c, func() SnapOperation {
 		return func() error {
+			sha, err := util.ComputeSHA3_384(req.DeltaFilePath)
+			if err != nil {
+				return err
+			}
+
 			rc, fileName, err := util.DeltaFileReader(req.DeltaFilePath)
 			if err != nil {
 				return err
@@ -406,7 +411,7 @@ func (h *Handler) DeltaUpload(c *gin.Context) {
 			}
 
 			stop = monitoring.StartMonitoringTimer("delta_push")
-			_, err = h.Logic.DeltaPush(req, uploadResp.UploadID)
+			_, err = h.Logic.DeltaPush(req, uploadResp.UploadID, sha)
 			stop()
 			return err
 		}

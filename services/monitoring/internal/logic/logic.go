@@ -315,13 +315,13 @@ func (l *Logic) FindSnaps(req model.FindSnapsRequest) (*model.FindSnapsResponse,
 	return &out, nil
 }
 
-func (l *Logic) DeltaPush(req model.DeltaUploadRequest, unscannedFileName string) (*model.DeltaPushResponse, error) {
+func (l *Logic) DeltaPush(req model.DeltaUploadRequest, unscannedFileName, sha_3_384 string) (*model.DeltaPushResponse, error) {
 	url := fmt.Sprintf("%s/dev/api/snap-delta-push/", l.Config.StoreUrl)
 	payload := map[string]any{
 		"name":                   req.SnapName,
 		"updown_id":              unscannedFileName,
 		"base_revision_sequence": req.BaseRevisionSequence,
-		"delta_sha3_384":         req.DeltaSha3_384,
+		"delta_sha3_384":         sha_3_384,
 		"delta_format":           req.DeltaFormat,
 		"tracks_and_channels":    req.TracksAndChannels,
 		"timeout_seconds":        req.TimeoutSeconds,

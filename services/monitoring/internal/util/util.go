@@ -3,6 +3,8 @@ package util
 import (
 	"bufio"
 	"crypto/rand"
+	"golang.org/x/crypto/sha3"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"math/big"
@@ -100,4 +102,19 @@ func DeltaFileReader(path string) (io.ReadCloser, string, error) {
 		return nil, "", fmt.Errorf("opening delta file %s: %v", path, err)
 	}
 	return f, filepath.Base(path), nil
+}
+
+func ComputeSHA3_384(path string) (string, error) {
+    f, err := os.Open(path)
+    if err != nil {
+        return "", fmt.Errorf("opening file for SHA computation %s: %w", path, err)
+    }
+    defer f.Close()
+
+    hasher := sha3.New384()
+
+    if _, err := io.Copy(hasher, f); err != nil {
+        return "", fmt.Errorf("hashing file %s: %w", path, err)
+    }
+    return base64.RawURLEncoding.EncodeToString(hasher.Sum(nil)), nil
 }
