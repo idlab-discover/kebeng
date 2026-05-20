@@ -1483,7 +1483,7 @@ func (s *StoreLogic) processUnscannedSnap(
 		return 0, cerr
 	}
 
-	existingRevision, cerr := s.repo.GetRevisionBySHA(sha3_384Encoded, el)
+	existingRevision, cerr := s.repo.GetRevisionBySHAAndEntryId(sha3_384Encoded, entry.ID, el)
 	if cerr != nil && cerr.GetCode() != cerror.ResourceNotFound {
 		return 0, cerr
 	}

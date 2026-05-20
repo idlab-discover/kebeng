@@ -201,6 +201,15 @@ func (m *MockSnapsRepository) GetRevisionBySHA(SHA3_384 string, el *cerror.Error
 	return nil, args.Get(1).(*cerror.CustomError)
 }
 
+func (m *MockSnapsRepository) GetRevisionBySHAAndEntryId(SHA3_384_encoded string, entryId uuid.UUID, el *cerror.ErrorList) (*model.SnapRevision, *cerror.CustomError) {
+	args := m.Called(SHA3_384_encoded, entryId, el)
+	if args.Get(0) != nil {
+		return args.Get(0).(*model.SnapRevision), nil
+	}
+	el.Add(cerror.InternalServerError, "")
+	return nil, args.Get(1).(*cerror.CustomError)
+}
+
 func (m *MockSnapsRepository) GetTracksByEntryId(snapId uuid.UUID, el *cerror.ErrorList) ([]*model.SnapTrack, *cerror.CustomError) {
 	args := m.Called(snapId, el)
 	if args.Get(0) != nil {

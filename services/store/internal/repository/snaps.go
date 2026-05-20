@@ -45,6 +45,7 @@ type ISnapsRepository interface {
 	GetLatestRevisionBeforeDateById(date time.Time, id string, el *cerror.ErrorList) (*model.SnapRevision, *cerror.CustomError)
 	GetRevisionByNameAndSequence(name string, sequence uint32, errorList *cerror.ErrorList) (*model.SnapRevision, *cerror.CustomError)
 	GetRevisionBySHA(SHA3_384_encoded string, errorList *cerror.ErrorList) (*model.SnapRevision, *cerror.CustomError)
+	GetRevisionBySHAAndEntryId(SHA3_384_encoded string, entryId uuid.UUID, el *cerror.ErrorList) (*model.SnapRevision, *cerror.CustomError)
 	GetTrackByEntryIdAndName(entryId uuid.UUID, trackName string, errorList *cerror.ErrorList) (*model.SnapTrack, *cerror.CustomError)
 	GetTracksByEntryId(snapId uuid.UUID, errorList *cerror.ErrorList) ([]*model.SnapTrack, *cerror.CustomError)
 	GetTrackById(id uuid.UUID, errorList *cerror.ErrorList) (*model.SnapTrack, *cerror.CustomError)
@@ -446,7 +447,6 @@ func (sp *SnapsRepository) GetEntriesByQuery(
 		"store":       "store",
 	}
 
-
 	if len(fieldsList) == 0 {
 		return &snapEntries, nil
 	}
@@ -610,6 +610,25 @@ func (sp *SnapsRepository) GetRevisionBySHA(SHA3_384_encoded string, el *cerror.
 	err := sp.db.Get(&revision, query, SHA3_384_encoded)
 	if err != nil {
 		cerr := cerror.ConvertError(err, fmt.Sprintf("error getting revision with sha3_384_encoded = '%s'", SHA3_384_encoded))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return nil, cerr
+	}
+
+	return &revision, nil
+}
+
+func (sp *SnapsRepository) GetRevisionBySHAAndEntryId(SHA3_384_encoded string, entryId uuid.UUID, el *cerror.ErrorList) (*model.SnapRevision, *cerror.CustomError) {
+	var revision model.SnapRevision
+	query := `
+        	SELECT *
+        	FROM revision
+        	WHERE sha3_384_encoded = $1
+        	AND entry_id = $2
+    	`
+	err := sp.db.Get(&revision, query, SHA3_384_encoded, entryId)
+	if err != nil {
+		cerr := cerror.ConvertError(err, fmt.Sprintf("error getting revision with sha3_384_encoded = '%s' for entry '%s'", SHA3_384_encoded, entryId))
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
 		return nil, cerr
