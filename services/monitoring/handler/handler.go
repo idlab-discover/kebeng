@@ -364,7 +364,6 @@ func (h *Handler) FindSnaps(c *gin.Context) {
 
 func (h *Handler) DeltaUpload(c *gin.Context) {
 	var req model.DeltaUploadRequest
-
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logrus.Errorf("failed to bind JSON: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
@@ -390,7 +389,77 @@ func (h *Handler) DeltaUpload(c *gin.Context) {
 	}
 	defer monitoring.ShutdownFileRecorder()
 
+	snapNames := make([]string, 0, total)
+	for i := range total {
+		name := fmt.Sprintf("%s-%s", req.SnapName, uuid.New().String())
+
+		if err := h.Logic.RegisterName(name); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": fmt.Sprintf("provisioning: register failed at %d: %v", i, err),
+			})
+			return
+		}
+		rc, _, err := util.DeltaFileReader(req.BaseSnapFilePath)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": fmt.Sprintf("provisioning: open snap failed at %d: %v", i, err),
+			})
+			return
+		}
+
+		uploadResp, err := h.Logic.UnscannedUpload(rc, name)
+		rc.Close()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": fmt.Sprintf("provisioning: upload failed at %d: %v", i, err),
+			})
+			return
+		}
+
+		pushResp, err := h.Logic.SnapPush(model.SnapPushRequest{
+			Name:              name,
+			UnscannedFileName: uploadResp.UploadID,
+			BinaryFileSize:    uploadResp.Size,
+			Series:            "20",
+		})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": fmt.Sprintf("provisioning: snap push failed at %d: %v", i, err),
+			})
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+		ticker := time.NewTicker(1 * time.Second)
+		processed := false
+		for !processed {
+			select {
+			case <-ctx.Done():
+				ticker.Stop()
+				cancel()
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"error": fmt.Sprintf("provisioning: timed out waiting for snap %s", name),
+				})
+				return
+			case <-ticker.C:
+				status, err := h.Logic.GetUploadStatus(pushResp.UploadID)
+				if err == nil && status.Processed {
+					processed = true
+				}
+			}
+		}
+		ticker.Stop()
+		cancel()
+
+		snapNames = append(snapNames, name)
+		logrus.Infof("provisioned base revision for %s (%d/%d)", name, i+1, total)
+	}
+
+	var nameIdx int64
 	h.performOperation(c, func() SnapOperation {
+		idx := atomic.AddInt64(&nameIdx, 1) - 1
+		name := snapNames[idx%int64(len(snapNames))]
+
 		return func() error {
 			sha, err := util.ComputeSHA3_384(req.DeltaFilePath)
 			if err != nil {
@@ -411,7 +480,7 @@ func (h *Handler) DeltaUpload(c *gin.Context) {
 			}
 
 			stop = monitoring.StartMonitoringTimer("delta_push")
-			_, err = h.Logic.DeltaPush(req, uploadResp.UploadID, sha)
+			_, err = h.Logic.DeltaPush(req, name, uploadResp.UploadID, sha)
 			stop()
 			return err
 		}

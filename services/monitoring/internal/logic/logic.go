@@ -315,28 +315,26 @@ func (l *Logic) FindSnaps(req model.FindSnapsRequest) (*model.FindSnapsResponse,
 	return &out, nil
 }
 
-func (l *Logic) DeltaPush(req model.DeltaUploadRequest, unscannedFileName, sha_3_384 string) (*model.DeltaPushResponse, error) {
+func (l *Logic) DeltaPush(req model.DeltaUploadRequest, snapName string, unscannedFileName string, sha string) (*model.DeltaPushResponse, error) {
 	url := fmt.Sprintf("%s/dev/api/snap-delta-push/", l.Config.StoreUrl)
 	payload := map[string]any{
-		"name":                   req.SnapName,
+		"name":                   snapName,
 		"updown_id":              unscannedFileName,
 		"base_revision_sequence": req.BaseRevisionSequence,
-		"delta_sha3_384":         sha_3_384,
+		"delta_sha3_384":         sha,
 		"delta_format":           req.DeltaFormat,
 		"tracks_and_channels":    req.TracksAndChannels,
 		"timeout_seconds":        req.TimeoutSeconds,
 	}
-
 	b, _ := json.Marshal(payload)
 	respBytes, err := l.doRequest("POST", url, "application/json", bytes.NewReader(b))
 	if err != nil {
-		logrus.Error("DeltaPush", err)
+		logrus.Error("DeltaPush:", err)
 		return nil, err
 	}
-
 	var out model.DeltaPushResponse
 	if err := json.Unmarshal(respBytes, &out); err != nil {
-		return nil, fmt.Errorf("unmarshal delta-push response: %v", err)
+		return nil, fmt.Errorf("unmarshal delta-push response: %w", err)
 	}
 	return &out, nil
 }

@@ -3,9 +3,9 @@ package util
 import (
 	"bufio"
 	"crypto/rand"
-	"golang.org/x/crypto/sha3"
 	"encoding/base64"
 	"fmt"
+	"golang.org/x/crypto/sha3"
 	"io"
 	"math/big"
 	"os"
@@ -105,16 +105,24 @@ func DeltaFileReader(path string) (io.ReadCloser, string, error) {
 }
 
 func ComputeSHA3_384(path string) (string, error) {
-    f, err := os.Open(path)
-    if err != nil {
-        return "", fmt.Errorf("opening file for SHA computation %s: %w", path, err)
-    }
-    defer f.Close()
+	f, err := os.Open(path)
+	if err != nil {
+		return "", fmt.Errorf("opening file for SHA computation %s: %w", path, err)
+	}
+	defer f.Close()
 
-    hasher := sha3.New384()
+	hasher := sha3.New384()
 
-    if _, err := io.Copy(hasher, f); err != nil {
-        return "", fmt.Errorf("hashing file %s: %w", path, err)
-    }
-    return base64.RawURLEncoding.EncodeToString(hasher.Sum(nil)), nil
+	if _, err := io.Copy(hasher, f); err != nil {
+		return "", fmt.Errorf("hashing file %s: %w", path, err)
+	}
+	return base64.RawURLEncoding.EncodeToString(hasher.Sum(nil)), nil
+}
+
+func SpecificSnapReader(filePath string, snapName string) (io.ReadCloser, error) {
+	f, err := os.Open(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("opening snap file %s: %w", filePath, err)
+	}
+	return f, nil
 }
