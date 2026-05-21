@@ -96,25 +96,27 @@ func ParseAssertion(blob string) map[string]string {
 	return fields
 }
 
-func DeltaFileReader(path string) (io.ReadCloser, string, error) {
-	f, err := os.Open(path)
+func DeltaFileReader(dataDir, fileName string) (io.ReadCloser, string, error) {
+	fullPath := filepath.Join(dataDir, fileName)
+	f, err := os.Open(fullPath)
 	if err != nil {
-		return nil, "", fmt.Errorf("opening delta file %s: %v", path, err)
+		return nil, "", fmt.Errorf("opening delta file %s: %v", fullPath, err)
 	}
-	return f, filepath.Base(path), nil
+	return f, filepath.Base(fullPath), nil
 }
 
-func ComputeSHA3_384(path string) (string, error) {
-	f, err := os.Open(path)
+func ComputeSHA3_384(dataDir, fileName string) (string, error) {
+	fullPath := filepath.Join(dataDir, fileName)
+	f, err := os.Open(fullPath)
 	if err != nil {
-		return "", fmt.Errorf("opening file for SHA computation %s: %w", path, err)
+		return "", fmt.Errorf("opening file for SHA computation %s: %w", fullPath, err)
 	}
 	defer f.Close()
 
 	hasher := sha3.New384()
 
 	if _, err := io.Copy(hasher, f); err != nil {
-		return "", fmt.Errorf("hashing file %s: %w", path, err)
+		return "", fmt.Errorf("hashing file %s: %w", fullPath, err)
 	}
 	return base64.RawURLEncoding.EncodeToString(hasher.Sum(nil)), nil
 }

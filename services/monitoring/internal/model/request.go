@@ -91,8 +91,8 @@ type CohortKeysRequest struct {
 type DeltaUploadRequest struct {
 	SnapName             string   `json:"snap_name" binding:"required"`
 	BaseRevisionSequence uint32   `json:"base_revision_sequence" binding:"required"`
-	BaseSnapFilePath     string   `json:"base_snap_file_path" binding:"required"`
-	DeltaFilePath        string   `json:"delta_file_path" binding:"required"`
+	BaseSnapFileName     string   `json:"base_snap_file_name" binding:"required"`
+	DeltaFileName        string   `json:"delta_file_name" binding:"required"`
 	DeltaFormat          string   `json:"delta_format" binding:"required"`
 	TracksAndChannels    []string `json:"tracks_and_channels" binding:"required"`
 	TimeoutSeconds       uint32   `json:"timeout_seconds"`

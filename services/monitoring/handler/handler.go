@@ -400,7 +400,7 @@ func (h *Handler) DeltaUpload(c *gin.Context) {
 			})
 			return
 		}
-		rc, _, err := util.DeltaFileReader(req.BaseSnapFilePath)
+		rc, _, err := util.DeltaFileReader(h.Logic.Config.SnapDataPath, req.BaseSnapFileName)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": fmt.Sprintf("provisioning: open snap failed at %d: %v", i, err),
@@ -462,12 +462,12 @@ func (h *Handler) DeltaUpload(c *gin.Context) {
 		name := snapNames[idx%int64(len(snapNames))]
 
 		return func() error {
-			sha, err := util.ComputeSHA3_384(req.DeltaFilePath)
+			sha, err := util.ComputeSHA3_384(h.Logic.Config.SnapDataPath, req.DeltaFileName)
 			if err != nil {
 				return err
 			}
 
-			rc, fileName, err := util.DeltaFileReader(req.DeltaFilePath)
+			rc, fileName, err := util.DeltaFileReader(h.Logic.Config.SnapDataPath, req.DeltaFileName)
 			if err != nil {
 				return err
 			}
