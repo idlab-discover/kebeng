@@ -133,6 +133,7 @@ func (h *Handler) SnapcraftUpload(c *gin.Context) {
 				return err
 			}
 			logrus.Debugf("push response 2: %+v", pushResp)
+			stopProcessing := monitoring.StartMonitoringTimer("snap_processing")
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
 			ticker := time.NewTicker(1 * time.Second)
@@ -140,17 +141,17 @@ func (h *Handler) SnapcraftUpload(c *gin.Context) {
 			for {
 				select {
 				case <-ctx.Done():
+					stopProcessing()
 					return fmt.Errorf("timed out waiting for upload %s to process", pushResp.UploadID)
 				case <-ticker.C:
-
-					//stop = monitoring.StartMonitoringTimer("upload_status")
 					status, err := h.Logic.GetUploadStatus(pushResp.UploadID)
-					//stop()
 					if err != nil {
+						stopProcessing()
 						return fmt.Errorf("failed to get upload status: %w", err)
 					}
 					logrus.Debugf("upload status: %+v", status)
 					if status.Processed {
+						stopProcessing()
 						return nil
 					}
 				}
