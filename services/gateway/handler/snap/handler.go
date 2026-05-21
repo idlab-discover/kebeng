@@ -923,11 +923,31 @@ func (h *Handler) DeltaPush(c *gin.Context) {
 		return
 	}
 
+	entries := h.StoreClient.GetEntries(&storepb.GetEntriesRequest{
+		Entries: []*storepb.GetEntryRequest{
+			&storepb.GetEntryRequest{
+				Name: &req.Name,
+			},
+		},
+	})
+
+	if len(entries.Errors) > 0 || len(entries.Entries) != 1 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Snap not found"})
+		return
+	}
+
+	entry := entries.Entries[0]
+
+	if entry.PublisherId != accountResp.Id {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You do not own this snap"})
+		return
+	}
+
 	resp := h.StoreClient.ApplyUploadDelta(
 		req.Name,
 		req.BaseRevisionSequence,
 		req.UnscannedFileName,
-		req.DeltaSha3_385,
+		req.DeltaSha3_384,
 		req.DeltaFormat,
 		req.TracksAndChannels,
 		req.TimeoutSeconds,

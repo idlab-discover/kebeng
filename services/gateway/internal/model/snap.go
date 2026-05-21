@@ -271,7 +271,7 @@ type SnapDeltaPushRequest struct {
 	Name                 string   `json:"name" binding:"required"`
 	UnscannedFileName    string   `json:"updown_id" binding:"required"`
 	BaseRevisionSequence uint32   `json:"base_revision_sequence" binding:"required"`
-	DeltaSha3_385        string   `json:"delta_sha3_384" binding:"required"`
+	DeltaSha3_384        string   `json:"delta_sha3_384" binding:"required"`
 	DeltaFormat          string   `json:"delta_format" binding:"required"`
 	TracksAndChannels    []string `json:"tracks_and_channels" binding:"required"`
 	TimeoutSeconds       uint32   `json:"timeout_seconds"`
