@@ -196,3 +196,4 @@ volumes:
 networks:
   kebeng-backend:
     driver: bridge
+    name: kebeng-backend
