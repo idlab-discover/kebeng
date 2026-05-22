@@ -200,6 +200,11 @@ type CreateCohortsResult struct {
 	CohortKeys map[string]string `json:"cohort-keys"`
 }
 
+type ProvisionSnapNamesResponse struct {
+	SnapNames []string `json:"snap_names"`
+	Count     int      `json:"count"`
+}
+
 type FindSnapsResponse struct {
 	Results []FindSnapResult `json:"results"`
 }

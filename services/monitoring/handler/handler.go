@@ -38,6 +38,7 @@ func (h *Handler) SetupEndpoints(r *gin.Engine) {
 	r.POST("/snapcraft-upload", h.SnapcraftUpload)
 	r.POST("/snapd-download", h.SnapdDownload)
 	r.POST("/cohort-keys", h.CohortKeys)
+	r.POST("/provision-snap-names", h.ProvisionSnapNames)
 	r.POST("/find-snaps", h.FindSnaps)
 	r.POST("/delta-upload", h.DeltaUpload)
 	r.POST("/delta-download", h.DeltaDownload)
@@ -264,60 +265,64 @@ func (h *Handler) SnapdDownload(c *gin.Context) {
 }
 
 func (h *Handler) CohortKeys(c *gin.Context) {
-	var req model.CohortKeysRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		logrus.Errorf("failed to bind JSON: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "batch_size is required."})
-		return
-	}
+    var req model.CohortKeysRequest
+    if err := c.ShouldBindJSON(&req); err != nil {
+        logrus.Errorf("failed to bind JSON: %v", err)
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request, snap_names is required"})
+        return
+    }
 
-	total, _, concurrentParse := setupQueryParams(c)
-	stamp := time.Now().Format("2006-01-02_15-04-05")
-	err := monitoring.InitFileRecorder(
-		fmt.Sprintf(
-			"/var/log/request_duration_%s_%s_%d_%d_%d.csv",
-			"cohort-keys", stamp, concurrentParse, total, req.BatchSize,
-		),
-		5*time.Second,
-		10000,
-	)
-	if err != nil {
-		logrus.Errorf("failed to initialize file recorder: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to initialize monitoring"})
-		return
-	}
-	defer monitoring.ShutdownFileRecorder()
+    total, _, concurrentParse := setupQueryParams(c)
+    stamp := time.Now().Format("2006-01-02_15-04-05")
+    err := monitoring.InitFileRecorder(
+        fmt.Sprintf("/var/log/request_duration_%s_%s_%d_%d_%d.csv",
+            "cohort-keys", stamp, concurrentParse, total, len(req.SnapNames)),
+        5*time.Second,
+        10000,
+    )
+    if err != nil {
+        logrus.Errorf("failed to initialize file recorder: %v", err)
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to initialize monitoring"})
+        return
+    }
+    defer monitoring.ShutdownFileRecorder()
 
-	// Snap provisioning: cohorts can only be created for registered snaps
-	// Create batch_size snap registrations to use for the benchmark
-	// NOTE: This isn't actually what is benchmarked, so this isn't timed
-	snapNames := make([]string, 0, req.BatchSize)
-	for i := range req.BatchSize {
+    h.performOperation(c, func() SnapOperation {
+        return func() error {
+            stop := monitoring.StartMonitoringTimer("create_cohorts")
+            _, err := h.Logic.CreateCohorts(req.SnapNames)
+            stop()
+            return err
+        }
+    })
+}
 
-		name := fmt.Sprintf("cohort-bench-%s", uuid.New().String())
+func (h *Handler) ProvisionSnapNames(c *gin.Context) {
+    var req model.ProvisionSnapNamesRequest
+    if err := c.ShouldBindJSON(&req); err != nil {
+        logrus.Errorf("failed to bind JSON: %v", err)
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request, count is required"})
+        return
+    }
 
-		if err := h.Logic.RegisterName(name); err != nil {
-			logrus.Errorf("failed to provision snap %d/%d (%s): %v", i+1, req.BatchSize, name, err)
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": fmt.Sprintf("provisioning failed at snap %d: %v", i+1, err),
-			})
-			return
-		}
+    snapNames := make([]string, 0, req.Count)
+    for i := range req.Count {
+        name := fmt.Sprintf("cohort-bench-%s", uuid.New().String())
+        if err := h.Logic.RegisterName(name); err != nil {
+            logrus.Errorf("failed to provision snap %d/%d: %v", i+1, req.Count, err)
+            c.JSON(http.StatusInternalServerError, gin.H{
+                "error": fmt.Sprintf("registration failed at %d: %v", i+1, err),
+            })
+            return
+        }
+        snapNames = append(snapNames, name)
+        logrus.Infof("provisioned snap name: %s (%d/%d)", name, i+1, req.Count)
+    }
 
-		snapNames = append(snapNames, name)
-
-	}
-
-	logrus.Infof("Provisioned %d snap names for cohort benchmark", len(snapNames))
-
-	h.performOperation(c, func() SnapOperation {
-		return func() error {
-			stop := monitoring.StartMonitoringTimer("create_cohorts")
-			_, err := h.Logic.CreateCohorts(snapNames)
-			stop()
-			return err
-		}
-	})
+    c.JSON(http.StatusOK, model.ProvisionSnapNamesResponse{
+        SnapNames: snapNames,
+        Count:     len(snapNames),
+    })
 }
 
 func (h *Handler) FindSnaps(c *gin.Context) {

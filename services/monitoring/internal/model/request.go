@@ -85,7 +85,11 @@ type SnapDownloadRequest struct {
 }
 
 type CohortKeysRequest struct {
-	BatchSize int `json:"batch_size" binding:"required,min=1"`
+	SnapNames []string `json:"snap_names" binding:"required,min=1"`
+}
+
+type ProvisionSnapNamesRequest struct {
+	Count int `json:"count" binding:"required,min=1"`
 }
 
 type DeltaUploadRequest struct {
