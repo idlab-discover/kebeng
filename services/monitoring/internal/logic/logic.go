@@ -297,6 +297,10 @@ func (l *Logic) FindSnaps(req model.FindSnapsRequest) (*model.FindSnapsResponse,
 		params.Add("confinement", conf)
 	}
 
+	if req.Private {
+		params.Add("private", "true")
+	}
+
 	fullURL := fmt.Sprintf("%s/v2/snaps/find", l.Config.StoreUrl)
 	if len(params) > 0 {
 		fullURL = fmt.Sprintf("%s?%s", fullURL, params.Encode())

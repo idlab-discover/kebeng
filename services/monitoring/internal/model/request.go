@@ -38,6 +38,7 @@ type FindSnapsRequest struct {
 	Architectures []string `json:"architectures,omitempty"`
 	Channels      []string `json:"channels,omitempty"`
 	Confinements  []string `json:"confinements,omitempty"`
+	Private       bool     `json:"private,omitempty"`
 }
 
 type RegisterSnapNameRequest struct {
