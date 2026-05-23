@@ -76,6 +76,7 @@ func main() {
 		monitoring.CreateMetricsEndpoint()
 		grpcServer = grpc.NewServer(
 			grpc.StreamInterceptor(monitoring.StreamingInterceptor),
+			grpc.UnaryInterceptor(monitoring.UnaryInterceptor),
 		)
 	} else {
 		grpcServer = grpc.NewServer()

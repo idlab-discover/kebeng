@@ -1,6 +1,7 @@
 package monitoring
 
 import (
+	"context"
 	"net/http"
 	"runtime"
 	"time"
@@ -49,6 +50,14 @@ var (
 		Buckets:   prometheus.DefBuckets,
 	}, []string{"method"})
 
+	UnaryDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Namespace: "kebeng",
+		Subsystem: "store",
+		Name:      "grpc_unary_duration_seconds",
+		Help:      "Time taken for each gRPC unary RPC",
+		Buckets:   prometheus.DefBuckets,
+	}, []string{"method"})
+
 	monitoringRequestDuration = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Name:    "request_duration_seconds_monitoring",
@@ -60,7 +69,7 @@ var (
 )
 
 func init() {
-	prometheus.MustRegister(requestDuration, requestCount, StreamDuration, monitoringRequestDuration)
+	prometheus.MustRegister(requestDuration, requestCount, StreamDuration, UnaryDuration, monitoringRequestDuration)
 }
 
 func CreateMetricsEndpoint() {
@@ -94,6 +103,14 @@ func StreamingInterceptor(srv any, ss grpc.ServerStream, info *grpc.StreamServer
 	StreamDuration.WithLabelValues(info.FullMethod).
 		Observe(time.Since(start).Seconds())
 	return err
+}
+
+func UnaryInterceptor(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+	start := time.Now()
+	resp, err := handler(ctx, req)
+	UnaryDuration.WithLabelValues(info.FullMethod).
+		Observe(time.Since(start).Seconds())
+	return resp, err
 }
 
 func generateBuckets(amount_buckets int, min float64, max float64) []float64 {
