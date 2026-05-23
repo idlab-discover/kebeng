@@ -25,6 +25,19 @@
       "store": "kebeng",
       "icon_url": "http://example.com/core-icon.png",
       "account_id": "acc2"
+    },
+    {
+      "id": "canul_hello_go_entry",
+      "name": "canul-hello-go",
+      "type": "app",
+      "confinement": "strict",
+      "base": "core",
+      "private": false,
+      "status": "active",
+      "price": 0.0,
+      "store": "kebeng",
+      "icon_url": "http://example.com/core-icon.png",
+      "account_id": "acc3"
     }
   ]
 }
