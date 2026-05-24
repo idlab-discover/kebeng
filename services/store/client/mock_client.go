@@ -146,8 +146,8 @@ func (m *MockStoreClient) DeltaDownloadStream(snapName, deltaName, format string
 }
 
 // UnscannedUpload mocks the UnscannedUpload function.
-func (m *MockStoreClient) UnscannedUpload(ctx context.Context, snapFile io.Reader) *proto.UnscannedUploadCompleteResponse {
-	args := m.Called(snapFile)
+func (m *MockStoreClient) UnscannedUpload(ctx context.Context, snapFile io.Reader, entryName string, isDelta bool) *proto.UnscannedUploadCompleteResponse {
+	args := m.Called(snapFile, entryName, isDelta)
 	if resp, ok := args.Get(0).(*proto.UnscannedUploadCompleteResponse); ok {
 		return resp
 	}

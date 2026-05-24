@@ -794,7 +794,7 @@ func (h *Handler) UnscannedUpload(c *gin.Context) {
 	}
 
 	// Stream the file part directly to your StoreClient
-	resp := h.StoreClient.UnscannedUpload(c, filePart)
+	resp := h.StoreClient.UnscannedUpload(c, filePart, filename, false)
 	if len(resp.Errors) > 0 {
 		el.ExtendProtoError(resp.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})

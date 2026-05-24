@@ -743,8 +743,24 @@ func (s *StoreLogic) UnscannedUpload(stream proto.StoreService_UnscannedUploadSe
 	el := cerror.NewErrorList()
 	sha := sha3.New384()
 
-	snapFileName := uuid.New().String() + ".snap"
-	tmpFilePath := path.Join(os.TempDir(), snapFileName)
+	firstMsg, err := stream.Recv()
+	if err != nil {
+		return fmt.Errorf("failed to receive initial message: %v", err)
+	}
+
+	initial := firstMsg.GetInitial()
+	if initial == nil {
+		return fmt.Errorf("first message must hav initialmessage format!")
+	}
+	isDelta := initial.IsDelta
+
+	fileName := uuid.New().String()
+	if isDelta {
+		fileName += ".delta"
+	} else {
+		fileName += ".snap"
+	}
+	tmpFilePath := path.Join(os.TempDir(), fileName)
 
 	outFile, err := os.Create(tmpFilePath)
 	if err != nil {
@@ -798,6 +814,23 @@ func (s *StoreLogic) UnscannedUpload(stream proto.StoreService_UnscannedUploadSe
 
 	digest := sha.Sum(nil)
 	sha3_384HashEncoded := base64.RawURLEncoding.EncodeToString(digest[:])
+
+	if isDelta {
+		metadataMinio, err := s.obs.SaveFileToBucket(
+			"unscanned", tmpFilePath,
+			sha3_384HashEncoded,
+			initial.EntryName, // use entry name as the object name
+			"", "", "", "", "", "", nil, nil, nil, nil,
+		)
+		if err != nil {
+			return fmt.Errorf("failed to save delta to object store: %v", err)
+		}
+		os.Remove(tmpFilePath)
+		return stream.SendAndClose(&proto.UnscannedUploadCompleteResponse{
+			TempFileName: metadataMinio.Key,
+			Size:         uint64(metadataMinio.Size),
+		})
+	}
 
 	metadataYaml, err := getSnapMetaFromFile(tmpFilePath, os.TempDir())
 	if err != nil {

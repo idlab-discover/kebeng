@@ -260,6 +260,7 @@ message UnscannedUploadRequest {
 
 message InitialUnscannedUploadRequest {
     string entry_name = 1;
+    bool is_delta = 2;
 }
 
 // Already defined in Download

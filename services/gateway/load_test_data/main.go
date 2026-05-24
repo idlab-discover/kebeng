@@ -217,7 +217,7 @@ func (h *testHandler) loadInStoreDataInDB(ctx context.Context, storeTestData *Te
 		if err != nil {
 			return fmt.Errorf("failed to open snap file: %v", err)
 		}
-		uploadResp := h.StoreClient.UnscannedUpload(ctx, fileReader)
+		uploadResp := h.StoreClient.UnscannedUpload(ctx, fileReader, entry.Name, false)
 		if len(uploadResp.Errors) > 0 {
 			fileReader.Close() // ensure the file is closed on error
 			return fmt.Errorf("failed to upload snap file: %+v", uploadResp.Errors)

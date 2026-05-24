@@ -2134,6 +2134,7 @@ func (*UnscannedUploadRequest_Data) isUnscannedUploadRequest_Payload() {}
 type InitialUnscannedUploadRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	EntryName     string                 `protobuf:"bytes,1,opt,name=entry_name,json=entryName,proto3" json:"entry_name,omitempty"`
+	IsDelta       bool                   `protobuf:"varint,2,opt,name=is_delta,json=isDelta,proto3" json:"is_delta,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2173,6 +2174,13 @@ func (x *InitialUnscannedUploadRequest) GetEntryName() string {
 		return x.EntryName
 	}
 	return ""
+}
+
+func (x *InitialUnscannedUploadRequest) GetIsDelta() bool {
+	if x != nil {
+		return x.IsDelta
+	}
+	return false
 }
 
 type UnscannedUploadCompleteResponse struct {
@@ -3637,10 +3645,11 @@ const file_services_store_proto_store_proto_rawDesc = "" +
 	"\ainitial\x18\x01 \x01(\v2$.store.InitialUnscannedUploadRequestH\x00R\ainitial\x12&\n" +
 	"\x04data\x18\x02 \x01(\v2\x10.store.DataChunkH\x00R\x04data\x12$\n" +
 	"\x06errors\x18\x03 \x03(\v2\f.proto.ErrorR\x06errorsB\t\n" +
-	"\apayload\">\n" +
+	"\apayload\"Y\n" +
 	"\x1dInitialUnscannedUploadRequest\x12\x1d\n" +
 	"\n" +
-	"entry_name\x18\x01 \x01(\tR\tentryName\"\x81\x01\n" +
+	"entry_name\x18\x01 \x01(\tR\tentryName\x12\x19\n" +
+	"\bis_delta\x18\x02 \x01(\bR\aisDelta\"\x81\x01\n" +
 	"\x1fUnscannedUploadCompleteResponse\x12$\n" +
 	"\x0etemp_file_name\x18\x01 \x01(\tR\ftempFileName\x12\x12\n" +
 	"\x04size\x18\x02 \x01(\x04R\x04size\x12$\n" +
