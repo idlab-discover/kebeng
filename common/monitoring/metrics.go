@@ -47,7 +47,13 @@ var (
 		Subsystem: "store",
 		Name:      "grpc_stream_duration_seconds",
 		Help:      "Time taken for each gRPC streaming RPC",
-		Buckets:   prometheus.DefBuckets,
+		Buckets: []float64{
+			0.0001, 0.00025, 0.0005, 0.00075,
+			0.001, 0.0025, 0.005, 0.0075,
+			0.01, 0.025, 0.05, 0.075,
+			0.1, 0.25, 0.5, 0.75,
+			1.0, 2.5, 5.0, 10.0,
+		},
 	}, []string{"method"})
 
 	UnaryDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
@@ -55,7 +61,13 @@ var (
 		Subsystem: "store",
 		Name:      "grpc_unary_duration_seconds",
 		Help:      "Time taken for each gRPC unary RPC",
-		Buckets:   prometheus.DefBuckets,
+		Buckets: []float64{
+			0.0001, 0.00025, 0.0005, 0.00075,
+			0.001, 0.0025, 0.005, 0.0075,
+			0.01, 0.025, 0.05, 0.075,
+			0.1, 0.25, 0.5, 0.75,
+			1.0, 2.5, 5.0, 10.0,
+		},
 	}, []string{"method"})
 
 	monitoringRequestDuration = prometheus.NewHistogramVec(
