@@ -205,6 +205,11 @@ type ProvisionSnapNamesResponse struct {
 	Count     int      `json:"count"`
 }
 
+type ProvisionDeltaBaseResponse struct {
+	SnapNames []string `json:"snap_names"`
+	Count     int      `json:"count"`
+}
+
 type FindSnapsResponse struct {
 	Results []FindSnapResult `json:"results"`
 }

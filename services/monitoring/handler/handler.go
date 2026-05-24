@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -41,6 +42,7 @@ func (h *Handler) SetupEndpoints(r *gin.Engine) {
 	r.POST("/provision-snap-names", h.ProvisionSnapNames)
 	r.POST("/find-snaps", h.FindSnaps)
 	r.POST("/delta-upload", h.DeltaUpload)
+	r.POST("/provision-delta-base", h.ProvisionDeltaBase)
 	r.POST("/delta-download", h.DeltaDownload)
 }
 
@@ -265,64 +267,64 @@ func (h *Handler) SnapdDownload(c *gin.Context) {
 }
 
 func (h *Handler) CohortKeys(c *gin.Context) {
-    var req model.CohortKeysRequest
-    if err := c.ShouldBindJSON(&req); err != nil {
-        logrus.Errorf("failed to bind JSON: %v", err)
-        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request, snap_names is required"})
-        return
-    }
+	var req model.CohortKeysRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		logrus.Errorf("failed to bind JSON: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request, snap_names is required"})
+		return
+	}
 
-    total, _, concurrentParse := setupQueryParams(c)
-    stamp := time.Now().Format("2006-01-02_15-04-05")
-    err := monitoring.InitFileRecorder(
-        fmt.Sprintf("/var/log/request_duration_%s_%s_%d_%d_%d.csv",
-            "cohort-keys", stamp, concurrentParse, total, len(req.SnapNames)),
-        5*time.Second,
-        10000,
-    )
-    if err != nil {
-        logrus.Errorf("failed to initialize file recorder: %v", err)
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to initialize monitoring"})
-        return
-    }
-    defer monitoring.ShutdownFileRecorder()
+	total, _, concurrentParse := setupQueryParams(c)
+	stamp := time.Now().Format("2006-01-02_15-04-05")
+	err := monitoring.InitFileRecorder(
+		fmt.Sprintf("/var/log/request_duration_%s_%s_%d_%d_%d.csv",
+			"cohort-keys", stamp, concurrentParse, total, len(req.SnapNames)),
+		5*time.Second,
+		10000,
+	)
+	if err != nil {
+		logrus.Errorf("failed to initialize file recorder: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to initialize monitoring"})
+		return
+	}
+	defer monitoring.ShutdownFileRecorder()
 
-    h.performOperation(c, func() SnapOperation {
-        return func() error {
-            stop := monitoring.StartMonitoringTimer("create_cohorts")
-            _, err := h.Logic.CreateCohorts(req.SnapNames)
-            stop()
-            return err
-        }
-    })
+	h.performOperation(c, func() SnapOperation {
+		return func() error {
+			stop := monitoring.StartMonitoringTimer("create_cohorts")
+			_, err := h.Logic.CreateCohorts(req.SnapNames)
+			stop()
+			return err
+		}
+	})
 }
 
 func (h *Handler) ProvisionSnapNames(c *gin.Context) {
-    var req model.ProvisionSnapNamesRequest
-    if err := c.ShouldBindJSON(&req); err != nil {
-        logrus.Errorf("failed to bind JSON: %v", err)
-        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request, count is required"})
-        return
-    }
+	var req model.ProvisionSnapNamesRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		logrus.Errorf("failed to bind JSON: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request, count is required"})
+		return
+	}
 
-    snapNames := make([]string, 0, req.Count)
-    for i := range req.Count {
-        name := fmt.Sprintf("cohort-bench-%s", uuid.New().String())
-        if err := h.Logic.RegisterName(name); err != nil {
-            logrus.Errorf("failed to provision snap %d/%d: %v", i+1, req.Count, err)
-            c.JSON(http.StatusInternalServerError, gin.H{
-                "error": fmt.Sprintf("registration failed at %d: %v", i+1, err),
-            })
-            return
-        }
-        snapNames = append(snapNames, name)
-        logrus.Infof("provisioned snap name: %s (%d/%d)", name, i+1, req.Count)
-    }
+	snapNames := make([]string, 0, req.Count)
+	for i := range req.Count {
+		name := fmt.Sprintf("cohort-bench-%s", uuid.New().String())
+		if err := h.Logic.RegisterName(name); err != nil {
+			logrus.Errorf("failed to provision snap %d/%d: %v", i+1, req.Count, err)
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": fmt.Sprintf("registration failed at %d: %v", i+1, err),
+			})
+			return
+		}
+		snapNames = append(snapNames, name)
+		logrus.Infof("provisioned snap name: %s (%d/%d)", name, i+1, req.Count)
+	}
 
-    c.JSON(http.StatusOK, model.ProvisionSnapNamesResponse{
-        SnapNames: snapNames,
-        Count:     len(snapNames),
-    })
+	c.JSON(http.StatusOK, model.ProvisionSnapNamesResponse{
+		SnapNames: snapNames,
+		Count:     len(snapNames),
+	})
 }
 
 func (h *Handler) FindSnaps(c *gin.Context) {
@@ -384,7 +386,7 @@ func (h *Handler) DeltaUpload(c *gin.Context) {
 	stamp := time.Now().Format("2006-01-02_15-04-05")
 	err := monitoring.InitFileRecorder(
 		fmt.Sprintf("/var/log/request_duration_%s_%s_%d_%d_%s.csv",
-			"delta-upload", stamp, concurrentParse, total, req.SnapName),
+			"delta-upload", stamp, concurrentParse, total, req.DeltaFileName),
 		5*time.Second,
 		10000,
 	)
@@ -395,20 +397,61 @@ func (h *Handler) DeltaUpload(c *gin.Context) {
 	}
 	defer monitoring.ShutdownFileRecorder()
 
-	snapNames := make([]string, 0, total)
-	for i := range total {
-		name := fmt.Sprintf("%s-%s", req.SnapName, uuid.New().String())
+	var nameIdx int64
+	h.performOperation(c, func() SnapOperation {
+		idx := atomic.AddInt64(&nameIdx, 1) - 1
+		name := req.SnapNames[idx%int64(len(req.SnapNames))]
+
+		return func() error {
+			sha, err := util.ComputeSHA3_384(h.Logic.Config.SnapDataPath, req.DeltaFileName)
+			if err != nil {
+				return err
+			}
+
+			rc, fileName, err := util.DeltaFileReader(h.Logic.Config.SnapDataPath, req.DeltaFileName)
+			if err != nil {
+				return err
+			}
+			defer rc.Close()
+
+			stop := monitoring.StartMonitoringTimer("delta_unscanned_upload")
+			uploadResp, err := h.Logic.UnscannedDeltaUpload(rc, fileName)
+			stop()
+			if err != nil {
+				return fmt.Errorf("unscanned upload of delta: %w", err)
+			}
+
+			stop = monitoring.StartMonitoringTimer("delta_push")
+			_, err = h.Logic.DeltaPush(req, name, uploadResp.UploadID, sha)
+			stop()
+			return err
+		}
+	})
+}
+
+func (h *Handler) ProvisionDeltaBase(c *gin.Context) {
+	var req model.ProvisionDeltaBaseRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		logrus.Errorf("failed to bind JSON: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+
+	snapNames := make([]string, 0, req.Count)
+	for i := range req.Count {
+		name := fmt.Sprintf("%s-%s", strings.TrimSuffix(req.BaseSnapFileName, ".snap"), uuid.New().String())
 
 		if err := h.Logic.RegisterName(name); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": fmt.Sprintf("provisioning: register failed at %d: %v", i, err),
+				"error": fmt.Sprintf("provisioning: register failed at %d: %v", i+1, err),
 			})
 			return
 		}
+
 		rc, _, err := util.DeltaFileReader(h.Logic.Config.SnapDataPath, req.BaseSnapFileName)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": fmt.Sprintf("provisioning: open snap failed at %d: %v", i, err),
+				"error": fmt.Sprintf("provisioning: open snap failed at %d: %v", i+1, err),
 			})
 			return
 		}
@@ -417,7 +460,7 @@ func (h *Handler) DeltaUpload(c *gin.Context) {
 		rc.Close()
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": fmt.Sprintf("provisioning: upload failed at %d: %v", i, err),
+				"error": fmt.Sprintf("provisioning: upload failed at %d: %v", i+1, err),
 			})
 			return
 		}
@@ -430,7 +473,7 @@ func (h *Handler) DeltaUpload(c *gin.Context) {
 		})
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": fmt.Sprintf("provisioning: snap push failed at %d: %v", i, err),
+				"error": fmt.Sprintf("provisioning: snap push failed at %d: %v", i+1, err),
 			})
 			return
 		}
@@ -458,38 +501,12 @@ func (h *Handler) DeltaUpload(c *gin.Context) {
 		cancel()
 
 		snapNames = append(snapNames, name)
-		logrus.Infof("provisioned base revision for %s (%d/%d)", name, i+1, total)
+		logrus.Infof("provisioned base revision for %s (%d/%d)", name, i+1, req.Count)
 	}
 
-	var nameIdx int64
-	h.performOperation(c, func() SnapOperation {
-		idx := atomic.AddInt64(&nameIdx, 1) - 1
-		name := snapNames[idx%int64(len(snapNames))]
-
-		return func() error {
-			sha, err := util.ComputeSHA3_384(h.Logic.Config.SnapDataPath, req.DeltaFileName)
-			if err != nil {
-				return err
-			}
-
-			rc, fileName, err := util.DeltaFileReader(h.Logic.Config.SnapDataPath, req.DeltaFileName)
-			if err != nil {
-				return err
-			}
-			defer rc.Close()
-
-			stop := monitoring.StartMonitoringTimer("delta_unscanned_upload")
-			uploadResp, err := h.Logic.UnscannedUpload(rc, fileName)
-			stop()
-			if err != nil {
-				return fmt.Errorf("unscanned upload of delta: %w", err)
-			}
-
-			stop = monitoring.StartMonitoringTimer("delta_push")
-			_, err = h.Logic.DeltaPush(req, name, uploadResp.UploadID, sha)
-			stop()
-			return err
-		}
+	c.JSON(http.StatusOK, model.ProvisionDeltaBaseResponse{
+		SnapNames: snapNames,
+		Count:     len(snapNames),
 	})
 }
 

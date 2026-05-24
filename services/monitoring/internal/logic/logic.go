@@ -188,6 +188,58 @@ func (l *Logic) UnscannedUpload(reader io.Reader, entryName string) (*model.Unsc
 	return &out, nil
 }
 
+func (l *Logic) UnscannedDeltaUpload(reader io.Reader, entryName string) (*model.UnscannedUploadResponse, error) {
+	pr, pw := io.Pipe()
+	mw := multipart.NewWriter(pw)
+
+	go func() {
+		defer pw.Close()
+		defer mw.Close()
+
+		part, err := mw.CreateFormFile("binary", entryName)
+		if err != nil {
+			pw.CloseWithError(fmt.Errorf("create form file: %w", err))
+			return
+		}
+		if _, err := io.Copy(part, reader); err != nil {
+			pw.CloseWithError(fmt.Errorf("copy binary into multipart: %w", err))
+			return
+		}
+	}()
+
+	url := fmt.Sprintf("%s/unscanned-delta-upload/", l.Config.StoreUrl)
+	req, err := http.NewRequest("POST", url, pr)
+	if err != nil {
+		return nil, fmt.Errorf("creating POST %s: %w", url, err)
+	}
+	req.Header.Set("Content-Type", mw.FormDataContentType())
+	req.Header.Set("Authorization", fmt.Sprintf(
+		"Macaroon root=%s, discharge=%s",
+		l.Config.Macaroon, l.Config.Macaroon,
+	))
+
+	resp, err := l.Client.Do(req)
+	if err != nil {
+		logrus.Error("UnscannedDeltaUpload:", err)
+		return nil, fmt.Errorf("HTTP POST %s error: %w", url, err)
+	}
+	defer resp.Body.Close()
+
+	respBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("reading response from %s: %w", url, err)
+	}
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("bad status %d from %s: %s", resp.StatusCode, url, respBytes)
+	}
+
+	var out model.UnscannedUploadResponse
+	if err := json.Unmarshal(respBytes, &out); err != nil {
+		return nil, fmt.Errorf("unmarshal unscanned-delta-upload response: %w", err)
+	}
+	return &out, nil
+}
+
 func (l *Logic) GetUploadStatus(uploadID string) (*model.UploadStatusResponse, error) {
 	url := fmt.Sprintf("%s/dev/api/snaps/%s/status", l.Config.StoreUrl, uploadID)
 	respBytes, err := l.doRequest("GET", url, "", nil)

@@ -93,10 +93,14 @@ type ProvisionSnapNamesRequest struct {
 	Count int `json:"count" binding:"required,min=1"`
 }
 
+type ProvisionDeltaBaseRequest struct {
+	Count            int    `json:"count" binding:"required,min=1"`
+	BaseSnapFileName string `json:"base_snap_file_name" binding:"required"`
+}
+
 type DeltaUploadRequest struct {
-	SnapName             string   `json:"snap_name" binding:"required"`
+	SnapNames            []string   `json:"snap_names" binding:"required,min=1"`
 	BaseRevisionSequence uint32   `json:"base_revision_sequence" binding:"required"`
-	BaseSnapFileName     string   `json:"base_snap_file_name" binding:"required"`
 	DeltaFileName        string   `json:"delta_file_name" binding:"required"`
 	DeltaFormat          string   `json:"delta_format" binding:"required"`
 	TracksAndChannels    []string `json:"tracks_and_channels" binding:"required"`

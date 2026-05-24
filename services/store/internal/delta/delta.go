@@ -64,10 +64,9 @@ func (g *Xdelta3Generator) ApplyDelta(source *os.File, delta *os.File, out io.Wr
 
 	cmd := exec.CommandContext(
 		g.ctx,
-		"xdelta3", "-d", "-f",
+		"xdelta3", "-d", "-c", "-f",
 		"-s", sourcePath,
 		deltaPath,
-		"-",
 	)
 
 	var written uint64

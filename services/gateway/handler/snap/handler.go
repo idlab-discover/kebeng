@@ -815,6 +815,68 @@ func (h *Handler) UnscannedUpload(c *gin.Context) {
 	})
 }
 
+func (h *Handler) UnscannedDeltaUpload(c *gin.Context) {
+	el := cerror.NewErrorList()
+
+	// Grab the multipart reader for the request
+	mr, err := c.Request.MultipartReader()
+	if err != nil {
+		el.Add(cerror.BadRequest, "invalid multipart/form-data binary file not found")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+
+	var (
+		filePart io.Reader
+		filename string
+	)
+	// Iterate parts until we find the "binary" field
+	for {
+		part, err := mr.NextPart()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			el.Add(cerror.InternalServerError, "error reading multipart")
+			c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+			return
+		}
+		if part.FormName() == "binary" {
+			filename = part.FileName()
+			filePart = part
+			break
+		}
+		part.Close() // skip unrelated parts
+	}
+
+	if filePart == nil {
+		el.Add(cerror.BadRequest, "binary part not found")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+
+	// Stream the file part directly to your StoreClient
+	resp := h.StoreClient.UnscannedUpload(c, filePart, filename, true)
+	if len(resp.Errors) > 0 {
+		el.ExtendProtoError(resp.Errors)
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+	if resp.GetTempFileName() == "" {
+		el.Add(cerror.InternalServerError, "upload failed: no ID returned")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+
+	// Respond with the upload info
+	c.JSON(http.StatusOK, gin.H{
+		"successful": true,
+		"upload_id":  resp.GetTempFileName(),
+		"filename":   filename,
+		"size":       resp.GetSize(),
+	})
+}
+
 func (h *Handler) GetUploadStatus(c *gin.Context) {
 	el := cerror.NewErrorList()
 	uploadId := c.Param("upload_id")
