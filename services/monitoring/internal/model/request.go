@@ -99,7 +99,7 @@ type ProvisionDeltaBaseRequest struct {
 }
 
 type DeltaUploadRequest struct {
-	SnapNames            []string   `json:"snap_names" binding:"required,min=1"`
+	SnapNames            []string `json:"snap_names" binding:"required,min=1"`
 	BaseRevisionSequence uint32   `json:"base_revision_sequence" binding:"required"`
 	DeltaFileName        string   `json:"delta_file_name" binding:"required"`
 	DeltaFormat          string   `json:"delta_format" binding:"required"`
@@ -111,4 +111,9 @@ type DeltaDownloadRequest struct {
 	SnapName    string `json:"snap_name" bidning:"required"`
 	DeltaFormat string `json:"delta_format" binding:"required"`
 	DeltaName   string `json:"delta_name" binding:"required"`
+}
+
+type SnapRevisionUploadRequest struct {
+	SnapNames    []string `json:"snap_names" binding:"required,min=1"`
+	SnapFileName string   `json:"snap_file_name" binding:"required"`
 }

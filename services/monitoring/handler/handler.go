@@ -44,6 +44,7 @@ func (h *Handler) SetupEndpoints(r *gin.Engine) {
 	r.POST("/delta-upload", h.DeltaUpload)
 	r.POST("/provision-delta-base", h.ProvisionDeltaBase)
 	r.POST("/delta-download", h.DeltaDownload)
+	r.POST("/snapcraft-revision-upload", h.SnapRevisionUpload)
 }
 
 func (h *Handler) RegisterName(c *gin.Context) {
@@ -542,6 +543,86 @@ func (h *Handler) DeltaDownload(c *gin.Context) {
 			err := h.Logic.DeltaDownload(req.SnapName, req.DeltaFormat, req.DeltaName)
 			stop()
 			return err
+		}
+	})
+}
+
+func (h *Handler) SnapRevisionUpload(c *gin.Context) {
+	var req model.SnapRevisionUploadRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		logrus.Errorf("failed to bind JSON: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+
+	total, _, concurrentParse := setupQueryParams(c)
+	stamp := time.Now().Format("2006-01-02_15-04-05")
+	err := monitoring.InitFileRecorder(
+		fmt.Sprintf("/var/log/request_duration_%s_%s_%d_%d_%s.csv",
+			"snap-revision-upload", stamp, concurrentParse, total, req.SnapFileName),
+		5*time.Second,
+		10000,
+	)
+	if err != nil {
+		logrus.Errorf("failed to initialize file recorder: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to initialize monitoring"})
+		return
+	}
+	defer monitoring.ShutdownFileRecorder()
+
+	var nameIdx int64
+	h.performOperation(c, func() SnapOperation {
+		idx := atomic.AddInt64(&nameIdx, 1) - 1
+		name := req.SnapNames[idx%int64(len(req.SnapNames))]
+
+		return func() error {
+			rc, _, err := util.DeltaFileReader(h.Logic.Config.SnapDataPath, req.SnapFileName)
+			if err != nil {
+				return err
+			}
+			defer rc.Close()
+
+			stop := monitoring.StartMonitoringTimer("unscanned_upload")
+			uploadResp, err := h.Logic.UnscannedUpload(rc, name)
+			stop()
+			if err != nil {
+				return err
+			}
+
+			stop = monitoring.StartMonitoringTimer("snap_push")
+			pushResp, err := h.Logic.SnapPush(model.SnapPushRequest{
+				Name:              name,
+				UnscannedFileName: uploadResp.UploadID,
+				BinaryFileSize:    uploadResp.Size,
+				Series:            "20",
+			})
+			stop()
+			if err != nil {
+				return err
+			}
+
+			stopProcessing := monitoring.StartMonitoringTimer("snap_processing")
+			ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+			defer cancel()
+			ticker := time.NewTicker(1 * time.Second)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ctx.Done():
+					stopProcessing()
+					return fmt.Errorf("timed out waiting for upload %s to process", pushResp.UploadID)
+				case <-ticker.C:
+					status, err := h.Logic.GetUploadStatus(pushResp.UploadID)
+					if err != nil {
+						stopProcessing()
+						return fmt.Errorf("failed to get upload status: %w", err)
+					}
+					if status.Processed {
+						stopProcessing()
+						return nil
+					}
+				}
+			}
 		}
 	})
 }
