@@ -56,6 +56,8 @@ github.com/idlab-discover/kebeng/common v0.0.0-20260523115748-dcd541952c8d h1:I9
 github.com/idlab-discover/kebeng/common v0.0.0-20260523115748-dcd541952c8d/go.mod h1:RPi3764OR/vJMi2C5/HOM+ecxZ4NumnzOIC8VZjH5zo=
 github.com/idlab-discover/kebeng/common v0.0.0-20260524144253-741211a97a30 h1:kO+NEb4FCLQsMzs4bh7bNcKegDlhKgB4aXMMXMrcJIg=
 github.com/idlab-discover/kebeng/common v0.0.0-20260524144253-741211a97a30/go.mod h1:RPi3764OR/vJMi2C5/HOM+ecxZ4NumnzOIC8VZjH5zo=
+github.com/idlab-discover/kebeng/common v0.0.0-20260524165325-1a8e787fd634 h1:a9sOQl6F9/b/xpje2CyfP+/5hI8YcBs+axwNPtPNb/8=
+github.com/idlab-discover/kebeng/common v0.0.0-20260524165325-1a8e787fd634/go.mod h1:RPi3764OR/vJMi2C5/HOM+ecxZ4NumnzOIC8VZjH5zo=
 github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnrnM=
 github.com/json-iterator/go v1.1.12/go.mod h1:e30LSqwooZae/UwlEbR2852Gd8hjQvJoHmT4TnhNGBo=
 github.com/klauspost/compress v1.18.0 h1:c/Cqfb0r+Yi+JtIEq73FWXVkRonBlf0CRNYc8Zttxdo=
