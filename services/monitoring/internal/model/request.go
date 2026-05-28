@@ -33,7 +33,12 @@ type UnscannedUploadRequest struct {
 }
 
 type FindSnapsRequest struct {
-	Name string `json:"name"`
+	Query         string   `json:"query"`
+	Fields        []string `json:"fields"`
+	Architectures []string `json:"architectures,omitempty"`
+	Channels      []string `json:"channels,omitempty"`
+	Confinements  []string `json:"confinements,omitempty"`
+	Private       bool     `json:"private,omitempty"`
 }
 
 type RegisterSnapNameRequest struct {
@@ -78,4 +83,37 @@ type Action struct {
 type SnapDownloadRequest struct {
 	SnapName string `json:"snap_name"`
 	Channel  string `json:"channel"`
+}
+
+type CohortKeysRequest struct {
+	SnapNames []string `json:"snap_names" binding:"required,min=1"`
+}
+
+type ProvisionSnapNamesRequest struct {
+	Count int `json:"count" binding:"required,min=1"`
+}
+
+type ProvisionDeltaBaseRequest struct {
+	Count            int    `json:"count" binding:"required,min=1"`
+	BaseSnapFileName string `json:"base_snap_file_name" binding:"required"`
+}
+
+type DeltaUploadRequest struct {
+	SnapNames            []string `json:"snap_names" binding:"required,min=1"`
+	BaseRevisionSequence uint32   `json:"base_revision_sequence" binding:"required"`
+	DeltaFileName        string   `json:"delta_file_name" binding:"required"`
+	DeltaFormat          string   `json:"delta_format" binding:"required"`
+	TracksAndChannels    []string `json:"tracks_and_channels" binding:"required"`
+	TimeoutSeconds       uint32   `json:"timeout_seconds"`
+}
+
+type DeltaDownloadRequest struct {
+	SnapName    string `json:"snap_name" bidning:"required"`
+	DeltaFormat string `json:"delta_format" binding:"required"`
+	DeltaName   string `json:"delta_name" binding:"required"`
+}
+
+type SnapRevisionUploadRequest struct {
+	SnapNames    []string `json:"snap_names" binding:"required,min=1"`
+	SnapFileName string   `json:"snap_file_name" binding:"required"`
 }

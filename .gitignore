@@ -11,6 +11,7 @@ keys
 config.yaml
 *.cov
 *.snap
+*.xdelta3
 .go-version
 monitoring_data
 /Taskfile.yml

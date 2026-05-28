@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -37,6 +38,13 @@ func (h *Handler) SetupEndpoints(r *gin.Engine) {
 	r.GET("/register-name", h.RegisterName)
 	r.POST("/snapcraft-upload", h.SnapcraftUpload)
 	r.POST("/snapd-download", h.SnapdDownload)
+	r.POST("/cohort-keys", h.CohortKeys)
+	r.POST("/provision-snap-names", h.ProvisionSnapNames)
+	r.POST("/find-snaps", h.FindSnaps)
+	r.POST("/delta-upload", h.DeltaUpload)
+	r.POST("/provision-delta-base", h.ProvisionDeltaBase)
+	r.POST("/delta-download", h.DeltaDownload)
+	r.POST("/snapcraft-revision-upload", h.SnapRevisionUpload)
 }
 
 func (h *Handler) RegisterName(c *gin.Context) {
@@ -129,6 +137,7 @@ func (h *Handler) SnapcraftUpload(c *gin.Context) {
 				return err
 			}
 			logrus.Debugf("push response 2: %+v", pushResp)
+			stopProcessing := monitoring.StartMonitoringTimer("snap_processing")
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
 			ticker := time.NewTicker(1 * time.Second)
@@ -136,17 +145,17 @@ func (h *Handler) SnapcraftUpload(c *gin.Context) {
 			for {
 				select {
 				case <-ctx.Done():
+					stopProcessing()
 					return fmt.Errorf("timed out waiting for upload %s to process", pushResp.UploadID)
 				case <-ticker.C:
-
-					//stop = monitoring.StartMonitoringTimer("upload_status")
 					status, err := h.Logic.GetUploadStatus(pushResp.UploadID)
-					//stop()
 					if err != nil {
+						stopProcessing()
 						return fmt.Errorf("failed to get upload status: %w", err)
 					}
 					logrus.Debugf("upload status: %+v", status)
 					if status.Processed {
+						stopProcessing()
 						return nil
 					}
 				}
@@ -253,6 +262,366 @@ func (h *Handler) SnapdDownload(c *gin.Context) {
 				}
 				// otherwise, climb again using the sign-key from this account
 				nextKey = acctFields["sign-key-sha3-384"]
+			}
+		}
+	})
+}
+
+func (h *Handler) CohortKeys(c *gin.Context) {
+	var req model.CohortKeysRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		logrus.Errorf("failed to bind JSON: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request, snap_names is required"})
+		return
+	}
+
+	total, _, concurrentParse := setupQueryParams(c)
+	stamp := time.Now().Format("2006-01-02_15-04-05")
+	err := monitoring.InitFileRecorder(
+		fmt.Sprintf("/var/log/request_duration_%s_%s_%d_%d_%d.csv",
+			"cohort-keys", stamp, concurrentParse, total, len(req.SnapNames)),
+		5*time.Second,
+		10000,
+	)
+	if err != nil {
+		logrus.Errorf("failed to initialize file recorder: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to initialize monitoring"})
+		return
+	}
+	defer monitoring.ShutdownFileRecorder()
+
+	h.performOperation(c, func() SnapOperation {
+		return func() error {
+			stop := monitoring.StartMonitoringTimer("create_cohorts")
+			_, err := h.Logic.CreateCohorts(req.SnapNames)
+			stop()
+			return err
+		}
+	})
+}
+
+func (h *Handler) ProvisionSnapNames(c *gin.Context) {
+	var req model.ProvisionSnapNamesRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		logrus.Errorf("failed to bind JSON: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request, count is required"})
+		return
+	}
+
+	snapNames := make([]string, 0, req.Count)
+	for i := range req.Count {
+		name := fmt.Sprintf("cohort-bench-%s", uuid.New().String())
+		if err := h.Logic.RegisterName(name); err != nil {
+			logrus.Errorf("failed to provision snap %d/%d: %v", i+1, req.Count, err)
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": fmt.Sprintf("registration failed at %d: %v", i+1, err),
+			})
+			return
+		}
+		snapNames = append(snapNames, name)
+		logrus.Infof("provisioned snap name: %s (%d/%d)", name, i+1, req.Count)
+	}
+
+	c.JSON(http.StatusOK, model.ProvisionSnapNamesResponse{
+		SnapNames: snapNames,
+		Count:     len(snapNames),
+	})
+}
+
+func (h *Handler) FindSnaps(c *gin.Context) {
+	var req model.FindSnapsRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		logrus.Errorf("failed to bind JSON: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+
+	total, _, concurrentParse := setupQueryParams(c)
+	stamp := time.Now().Format("2006-01-02_15-04-05")
+
+	queryLabel := req.Query
+	if queryLabel == "" {
+		queryLabel = "emptyquery"
+	}
+
+	err := monitoring.InitFileRecorder(
+		fmt.Sprintf(
+			"/var/log/request_duration_%s_%s_%d_%d_%s.csv",
+			"find-snaps", stamp, concurrentParse, total, queryLabel,
+		),
+		5*time.Second,
+		10000,
+	)
+
+	if err != nil {
+		logrus.Errorf("failed to initialize file recorder: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to initialize monitoring"})
+		return
+	}
+	defer monitoring.ShutdownFileRecorder()
+
+	h.performOperation(c, func() SnapOperation {
+		return func() error {
+			stop := monitoring.StartMonitoringTimer("find_snaps")
+			_, err := h.Logic.FindSnaps(req)
+			stop()
+			return err
+		}
+	})
+}
+
+func (h *Handler) DeltaUpload(c *gin.Context) {
+	var req model.DeltaUploadRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		logrus.Errorf("failed to bind JSON: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+
+	if req.TimeoutSeconds == 0 {
+		req.TimeoutSeconds = 60
+	}
+
+	total, _, concurrentParse := setupQueryParams(c)
+	stamp := time.Now().Format("2006-01-02_15-04-05")
+	err := monitoring.InitFileRecorder(
+		fmt.Sprintf("/var/log/request_duration_%s_%s_%d_%d_%s.csv",
+			"delta-upload", stamp, concurrentParse, total, req.DeltaFileName),
+		5*time.Second,
+		10000,
+	)
+	if err != nil {
+		logrus.Errorf("failed to initialize file recorder: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to initialize monitoring"})
+		return
+	}
+	defer monitoring.ShutdownFileRecorder()
+
+	var nameIdx int64
+	h.performOperation(c, func() SnapOperation {
+		idx := atomic.AddInt64(&nameIdx, 1) - 1
+		name := req.SnapNames[idx%int64(len(req.SnapNames))]
+
+		return func() error {
+			sha, err := util.ComputeSHA3_384(h.Logic.Config.SnapDataPath, req.DeltaFileName)
+			if err != nil {
+				return err
+			}
+
+			rc, fileName, err := util.DeltaFileReader(h.Logic.Config.SnapDataPath, req.DeltaFileName)
+			if err != nil {
+				return err
+			}
+			defer rc.Close()
+
+			stop := monitoring.StartMonitoringTimer("delta_unscanned_upload")
+			uploadResp, err := h.Logic.UnscannedDeltaUpload(rc, fileName)
+			stop()
+			if err != nil {
+				return fmt.Errorf("unscanned upload of delta: %w", err)
+			}
+
+			stop = monitoring.StartMonitoringTimer("delta_push")
+			_, err = h.Logic.DeltaPush(req, name, uploadResp.UploadID, sha)
+			stop()
+			return err
+		}
+	})
+}
+
+func (h *Handler) ProvisionDeltaBase(c *gin.Context) {
+	var req model.ProvisionDeltaBaseRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		logrus.Errorf("failed to bind JSON: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+
+	snapNames := make([]string, 0, req.Count)
+	for i := range req.Count {
+		name := fmt.Sprintf("%s-%s", strings.TrimSuffix(req.BaseSnapFileName, ".snap"), uuid.New().String())
+
+		if err := h.Logic.RegisterName(name); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": fmt.Sprintf("provisioning: register failed at %d: %v", i+1, err),
+			})
+			return
+		}
+
+		rc, _, err := util.DeltaFileReader(h.Logic.Config.SnapDataPath, req.BaseSnapFileName)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": fmt.Sprintf("provisioning: open snap failed at %d: %v", i+1, err),
+			})
+			return
+		}
+
+		uploadResp, err := h.Logic.UnscannedUpload(rc, name)
+		rc.Close()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": fmt.Sprintf("provisioning: upload failed at %d: %v", i+1, err),
+			})
+			return
+		}
+
+		pushResp, err := h.Logic.SnapPush(model.SnapPushRequest{
+			Name:              name,
+			UnscannedFileName: uploadResp.UploadID,
+			BinaryFileSize:    uploadResp.Size,
+			Series:            "20",
+		})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": fmt.Sprintf("provisioning: snap push failed at %d: %v", i+1, err),
+			})
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+		ticker := time.NewTicker(1 * time.Second)
+		processed := false
+		for !processed {
+			select {
+			case <-ctx.Done():
+				ticker.Stop()
+				cancel()
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"error": fmt.Sprintf("provisioning: timed out waiting for snap %s", name),
+				})
+				return
+			case <-ticker.C:
+				status, err := h.Logic.GetUploadStatus(pushResp.UploadID)
+				if err == nil && status.Processed {
+					processed = true
+				}
+			}
+		}
+		ticker.Stop()
+		cancel()
+
+		snapNames = append(snapNames, name)
+		logrus.Infof("provisioned base revision for %s (%d/%d)", name, i+1, req.Count)
+	}
+
+	c.JSON(http.StatusOK, model.ProvisionDeltaBaseResponse{
+		SnapNames: snapNames,
+		Count:     len(snapNames),
+	})
+}
+
+func (h *Handler) DeltaDownload(c *gin.Context) {
+	var req model.DeltaDownloadRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		logrus.Errorf("failed to bind JSON: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+
+	total, _, concurrentParse := setupQueryParams(c)
+	stamp := time.Now().Format("2006-01-02_15-04-05")
+
+	err := monitoring.InitFileRecorder(
+		fmt.Sprintf("/var/log/request_duration_%s_%s_%d_%d_%s.csv",
+			"delta-download", stamp, concurrentParse, total, req.SnapName),
+		5*time.Second,
+		10000,
+	)
+
+	if err != nil {
+		logrus.Errorf("failed to initialize file recorder: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to initialize monitoring"})
+		return
+	}
+	defer monitoring.ShutdownFileRecorder()
+
+	h.performOperation(c, func() SnapOperation {
+		return func() error {
+			stop := monitoring.StartMonitoringTimer("delta_download")
+			err := h.Logic.DeltaDownload(req.SnapName, req.DeltaFormat, req.DeltaName)
+			stop()
+			return err
+		}
+	})
+}
+
+func (h *Handler) SnapRevisionUpload(c *gin.Context) {
+	var req model.SnapRevisionUploadRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		logrus.Errorf("failed to bind JSON: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+
+	total, _, concurrentParse := setupQueryParams(c)
+	stamp := time.Now().Format("2006-01-02_15-04-05")
+	err := monitoring.InitFileRecorder(
+		fmt.Sprintf("/var/log/request_duration_%s_%s_%d_%d_%s.csv",
+			"snap-revision-upload", stamp, concurrentParse, total, req.SnapFileName),
+		5*time.Second,
+		10000,
+	)
+	if err != nil {
+		logrus.Errorf("failed to initialize file recorder: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to initialize monitoring"})
+		return
+	}
+	defer monitoring.ShutdownFileRecorder()
+
+	var nameIdx int64
+	h.performOperation(c, func() SnapOperation {
+		idx := atomic.AddInt64(&nameIdx, 1) - 1
+		name := req.SnapNames[idx%int64(len(req.SnapNames))]
+
+		return func() error {
+			rc, _, err := util.DeltaFileReader(h.Logic.Config.SnapDataPath, req.SnapFileName)
+			if err != nil {
+				return err
+			}
+			defer rc.Close()
+
+			stop := monitoring.StartMonitoringTimer("unscanned_upload")
+			uploadResp, err := h.Logic.UnscannedUpload(rc, name)
+			stop()
+			if err != nil {
+				return err
+			}
+
+			stop = monitoring.StartMonitoringTimer("snap_push")
+			pushResp, err := h.Logic.SnapPush(model.SnapPushRequest{
+				Name:              name,
+				UnscannedFileName: uploadResp.UploadID,
+				BinaryFileSize:    uploadResp.Size,
+				Series:            "20",
+			})
+			stop()
+			if err != nil {
+				return err
+			}
+
+			stopProcessing := monitoring.StartMonitoringTimer("snap_processing")
+			ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+			defer cancel()
+			ticker := time.NewTicker(1 * time.Second)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ctx.Done():
+					stopProcessing()
+					return fmt.Errorf("timed out waiting for upload %s to process", pushResp.UploadID)
+				case <-ticker.C:
+					status, err := h.Logic.GetUploadStatus(pushResp.UploadID)
+					if err != nil {
+						stopProcessing()
+						return fmt.Errorf("failed to get upload status: %w", err)
+					}
+					if status.Processed {
+						stopProcessing()
+						return nil
+					}
+				}
 			}
 		}
 	})

@@ -40,7 +40,7 @@ type StoreClientInterface interface {
 	GetLatestRevisionBeforeDateById(date time.Time, id string) *proto.GetRevisionResponse
 	SnapDownloadStream(revisionId string) (proto.StoreService_SnapDownloadClient, error)
 	DeltaDownloadStream(snapName, deltaName, format string) (proto.StoreService_DeltaDownloadClient, error)
-	UnscannedUpload(ctx context.Context, snapFile io.Reader) *proto.UnscannedUploadCompleteResponse
+	UnscannedUpload(ctx context.Context, snapFile io.Reader, entryName string, isDelta bool) *proto.UnscannedUploadCompleteResponse
 	AddUpload(entryId uuid.UUID, accountId uuid.UUID, snapName string, status string, unscannedFileName string, revision uint32) *proto.AddUploadResponse
 	GetUploadStatus(uploadId string) *proto.GetUploadStatusResponse
 	AddRevision(snapName string, sha3_384_encoded string, size uint64, architectures []string, tracksAndChannels []string, unscannedFileName string) *proto.AddRevisionResponse
@@ -330,7 +330,7 @@ func (c *StoreClient) GetRevisionByNameAndSequence(name string, sequence uint32)
 }
 
 // TODO: fix so that file gets streamed
-func (c *StoreClient) UnscannedUpload(ctx context.Context, snapFile io.Reader) *proto.UnscannedUploadCompleteResponse {
+func (c *StoreClient) UnscannedUpload(ctx context.Context, snapFile io.Reader, entryName string, isDelta bool) *proto.UnscannedUploadCompleteResponse {
 	// create a stream to send the file to the server
 	stream, err := c.client.UnscannedUpload(context.Background())
 	if err != nil {
@@ -339,6 +339,19 @@ func (c *StoreClient) UnscannedUpload(ctx context.Context, snapFile io.Reader) *
 				Code:    cerror.InternalServerError,
 				Message: err.Error(),
 			}},
+		}
+	}
+
+	if err := stream.Send(&proto.UnscannedUploadRequest{
+		Payload: &proto.UnscannedUploadRequest_Initial{
+			Initial: &proto.InitialUnscannedUploadRequest{
+				EntryName: entryName,
+				IsDelta:   isDelta,
+			},
+		},
+	}); err != nil {
+		return &proto.UnscannedUploadCompleteResponse{
+			Errors: []*cerrorpb.Error{{Code: cerror.InternalServerError, Message: err.Error()}},
 		}
 	}
 

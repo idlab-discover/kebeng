@@ -5,10 +5,10 @@ go 1.22.2
 require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/google/uuid v1.6.0
-	github.com/idlab-discover/kebeng/common v0.0.0-20260503175840-62ee931edaa9
+	github.com/idlab-discover/kebeng/common v0.0.0-20260524165325-1a8e787fd634
 	github.com/idlab-discover/kebeng/services/account v0.0.0-20260503175840-62ee931edaa9
 	github.com/idlab-discover/kebeng/services/assertion v0.0.0-20260503175840-62ee931edaa9
-	github.com/idlab-discover/kebeng/services/store v0.0.0-20260503175840-62ee931edaa9
+	github.com/idlab-discover/kebeng/services/store v0.0.0-20260524002825-8f2a2b40a711
 	github.com/sirupsen/logrus v1.9.3
 	github.com/snapcore/snapd v0.0.0-20250429095531-40da7e0e1234
 	github.com/spf13/viper v1.19.0

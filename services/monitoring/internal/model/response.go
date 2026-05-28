@@ -195,3 +195,32 @@ type Store struct {
 	ID    uuid.UUID `json:"id"`
 	Roles []string  `json:"roles"`
 }
+
+type CreateCohortsResult struct {
+	CohortKeys map[string]string `json:"cohort-keys"`
+}
+
+type ProvisionSnapNamesResponse struct {
+	SnapNames []string `json:"snap_names"`
+	Count     int      `json:"count"`
+}
+
+type ProvisionDeltaBaseResponse struct {
+	SnapNames []string `json:"snap_names"`
+	Count     int      `json:"count"`
+}
+
+type FindSnapsResponse struct {
+	Results []FindSnapResult `json:"results"`
+}
+
+type FindSnapResult struct {
+	Name   string `json:"name"`
+	SnapID string `json:"snap-id"`
+}
+
+type DeltaPushResponse struct {
+	SnapName string `json:"snap_name"`
+	Status   string `json:"status"`
+	Revision uint32 `json:"revision"`
+}

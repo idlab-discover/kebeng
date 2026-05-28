@@ -59,6 +59,7 @@ func (h *Handler) SetupEndpoints(r *gin.Engine) {
 	r.GET("/download/:revision_id", h.snapHandler.DownloadSnap)
 	authGroup.POST("/snap-push/", h.snapHandler.SnapPush)
 	r.POST("/unscanned-upload/", h.snapHandler.UnscannedUpload)
+	r.POST("/unscanned-delta-upload/", h.snapHandler.UnscannedDeltaUpload)
 	authGroup.GET("/snaps/:upload_id/status", h.snapHandler.GetUploadStatus)
 
 	// ********** ASSERTION **********
@@ -79,6 +80,7 @@ func (h *Handler) SetupEndpoints(r *gin.Engine) {
 
 	// ********** DELTAS **********
 	r.GET("/download-delta/:delta-format/:snap-name/:delta-name", h.snapHandler.DownloadDelta)
+	authGroup.POST("/snap-delta-push/", h.snapHandler.DeltaPush)
 }
 
 func (h *Handler) SetupEndpointsWithMonitoring(r *gin.Engine) {
@@ -103,6 +105,7 @@ func (h *Handler) SetupEndpointsWithMonitoring(r *gin.Engine) {
 	r.GET("/download/:revision_id", monitoring.Wrapper("DownloadSnap", h.snapHandler.DownloadSnap))
 	authGroup.POST("/snap-push/", monitoring.Wrapper("SnapPush", h.snapHandler.SnapPush))
 	r.POST("/unscanned-upload/", monitoring.Wrapper("UnscannedUpload", h.snapHandler.UnscannedUpload))
+	r.POST("/unscanned-delta-upload/", monitoring.Wrapper("UnscannedDeltaUpload", h.snapHandler.UnscannedDeltaUpload))
 	authGroup.GET("/snaps/:upload_id/status", monitoring.Wrapper("GetUploadStatus", h.snapHandler.GetUploadStatus))
 
 	// ********** ASSERTION **********
@@ -121,5 +124,5 @@ func (h *Handler) SetupEndpointsWithMonitoring(r *gin.Engine) {
 
 	// ********** DELTAS **********
 	r.GET("/download-delta/:delta-format/:snap-name/:delta-name", monitoring.Wrapper("DownloadDelta", h.snapHandler.DownloadDelta))
-
+	authGroup.POST("/snap-delta-push/", monitoring.Wrapper("DeltaPush", h.snapHandler.DeltaPush))
 }

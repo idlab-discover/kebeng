@@ -36,7 +36,7 @@ type ISnapsRepository interface {
 	GetEntriesByAccountId(accountId uuid.UUID, preloadAssociations []string, errorList *cerror.ErrorList) ([]*model.SnapEntry, *cerror.CustomError)
 	GetEntryById(id uuid.UUID, preloadAssociations []string, errorList *cerror.ErrorList) (*model.SnapEntry, *cerror.CustomError)
 	GetEntryByName(name string, preloadAssociations []string, errorList *cerror.ErrorList) (*model.SnapEntry, *cerror.CustomError)
-	GetEntriesByQuery(query string, architectureList []string, confinementsList []string, fieldsList []string, private bool, publisherId string, preloadAssociations []string, errorList *cerror.ErrorList) (*[]model.SnapEntry, *cerror.CustomError)
+	GetEntriesByQuery(query string, architectureList []string, channelList []string, confinementsList []string, fieldsList []string, private bool, publisherId string, preloadAssociations []string, errorList *cerror.ErrorList) (*[]model.SnapEntry, *cerror.CustomError)
 	GetLatestRevisionByEntryId(entryId uuid.UUID, errorList *cerror.ErrorList) (*model.SnapRevision, *cerror.CustomError)
 	GetLatestRevisionByTrackAndChannel(snapName string, track string, channel string, errorList *cerror.ErrorList) (*model.SnapRevision, *cerror.CustomError)
 	GetPreloadAssociations(entry *model.SnapEntry, preloadAssociations *[]string, errorList *cerror.ErrorList) *cerror.CustomError
@@ -45,6 +45,7 @@ type ISnapsRepository interface {
 	GetLatestRevisionBeforeDateById(date time.Time, id string, el *cerror.ErrorList) (*model.SnapRevision, *cerror.CustomError)
 	GetRevisionByNameAndSequence(name string, sequence uint32, errorList *cerror.ErrorList) (*model.SnapRevision, *cerror.CustomError)
 	GetRevisionBySHA(SHA3_384_encoded string, errorList *cerror.ErrorList) (*model.SnapRevision, *cerror.CustomError)
+	GetRevisionBySHAAndEntryId(SHA3_384_encoded string, entryId uuid.UUID, el *cerror.ErrorList) (*model.SnapRevision, *cerror.CustomError)
 	GetTrackByEntryIdAndName(entryId uuid.UUID, trackName string, errorList *cerror.ErrorList) (*model.SnapTrack, *cerror.CustomError)
 	GetTracksByEntryId(snapId uuid.UUID, errorList *cerror.ErrorList) ([]*model.SnapTrack, *cerror.CustomError)
 	GetTrackById(id uuid.UUID, errorList *cerror.ErrorList) (*model.SnapTrack, *cerror.CustomError)
@@ -186,7 +187,7 @@ func (sp *SnapsRepository) AddDelta(sourceRevisionID, targetRevisionID uuid.UUID
 	snapDelta := model.SnapDelta{
 		SourceRevisionID: sourceRevisionID,
 		TargetRevisionID: targetRevisionID,
-		Format: format,
+		Format:           format,
 		MinioFilePath:    minioFilePath,
 		Size:             size,
 		SHA3_384_Encoded: sha3_384_encoded,
@@ -424,45 +425,64 @@ func (sp *SnapsRepository) GetEntryByName(name string, preloadAssociations []str
 func (sp *SnapsRepository) GetEntriesByQuery(
 	query string,
 	architectureList []string,
+	channelList []string,
 	confinementsList []string,
 	fieldsList []string,
 	private bool,
 	publisherId string,
 	preloadAssociations []string,
 	el *cerror.ErrorList) (*[]model.SnapEntry, *cerror.CustomError) {
+
 	var snapEntries []model.SnapEntry
+
+	// Map field values to their Kebeng-compatible counterpart
+	safeColumnMap := map[string]string{
+		"title":       "name",
+		"base":        "base",
+		"confinement": "confinement",
+		"description": "description",
+		"summary":     "summary",
+		"type":        "type",
+		"version":     "version",
+		"store":       "store",
+	}
+
 	if len(fieldsList) == 0 {
 		return &snapEntries, nil
 	}
-
-	// NOTE: Workaround. snapd searches on the field `title` by default but we don't have a field title
-	// We do have a field name which snapd doesn't use, but is interchangeable with `title`.
-	// This should however be fixed in the DB eventually
-	fieldsList = append(fieldsList, "name")
 
 	sqlArgs := []any{"%" + query + "%"}
 
 	stmt := "SELECT * FROM entry WHERE "
 	if private {
-		stmt += fmt.Sprintf("private = true AND account_id = $%d ", len(sqlArgs)+1)
 		sqlArgs = append(sqlArgs, publisherId)
+		stmt += fmt.Sprintf("private = true AND account_id = $%d ", len(sqlArgs))
 	} else {
 		stmt += "private = false "
 	}
 
 	var searchFilters []string
-	// TODO: We don't store all the fields snapd may request a query for yet,
-	// For now, we restrict to the fields we do support
-	searchableColumns := []string{"name", "base", "confinement", "description", "summary", "type", "version", "store"}
-
-	for _, col := range searchableColumns {
-		if slices.Contains(fieldsList, col) {
-			searchFilters = append(searchFilters, fmt.Sprintf("%s ILIKE $1", col))
+	for _, col := range fieldsList {
+		safeCol, allowed := safeColumnMap[col]
+		// If a field is unknown to us, don't add it to the query
+		// WARN: This is important shielding
+		if !allowed {
+			continue
 		}
+		searchFilters = append(searchFilters, fmt.Sprintf("%s ILIKE $1", safeCol))
 	}
 
 	if len(searchFilters) > 0 {
 		stmt += fmt.Sprintf("AND (%s)", strings.Join(searchFilters, " OR "))
+	}
+
+	if len(channelList) > 0 {
+		placeHolders := make([]string, len(channelList))
+		for idx, ch := range channelList {
+			sqlArgs = append(sqlArgs, ch)
+			placeHolders[idx] = fmt.Sprintf("$%d", len(sqlArgs))
+		}
+		stmt += fmt.Sprintf(" AND EXISTS (SELECT 1 FROM channel WHERE channel.entry_id = entry.id AND channel.name IN (%s))", strings.Join(placeHolders, ", "))
 	}
 
 	err := sp.db.Select(&snapEntries, stmt, sqlArgs...)
@@ -590,6 +610,25 @@ func (sp *SnapsRepository) GetRevisionBySHA(SHA3_384_encoded string, el *cerror.
 	err := sp.db.Get(&revision, query, SHA3_384_encoded)
 	if err != nil {
 		cerr := cerror.ConvertError(err, fmt.Sprintf("error getting revision with sha3_384_encoded = '%s'", SHA3_384_encoded))
+		logrus.Error(cerr)
+		el.AddCustomError(cerr)
+		return nil, cerr
+	}
+
+	return &revision, nil
+}
+
+func (sp *SnapsRepository) GetRevisionBySHAAndEntryId(SHA3_384_encoded string, entryId uuid.UUID, el *cerror.ErrorList) (*model.SnapRevision, *cerror.CustomError) {
+	var revision model.SnapRevision
+	query := `
+        	SELECT *
+        	FROM revision
+        	WHERE sha3_384_encoded = $1
+        	AND entry_id = $2
+    	`
+	err := sp.db.Get(&revision, query, SHA3_384_encoded, entryId)
+	if err != nil {
+		cerr := cerror.ConvertError(err, fmt.Sprintf("error getting revision with sha3_384_encoded = '%s' for entry '%s'", SHA3_384_encoded, entryId))
 		logrus.Error(cerr)
 		el.AddCustomError(cerr)
 		return nil, cerr

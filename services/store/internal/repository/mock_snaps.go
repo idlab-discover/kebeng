@@ -142,12 +142,13 @@ func (m *MockSnapsRepository) GetEntryByName(name string, preloadAssociations []
 func (m *MockSnapsRepository) GetEntriesByQuery(
 	query string,
 	architectureList []string,
+	channelList []string,
 	confinementsList []string,
 	fieldsList []string,
 	private bool,
 	publisherId string,
 	preloadAssociations []string, el *cerror.ErrorList) (*[]model.SnapEntry, *cerror.CustomError) {
-	args := m.Called(query, architectureList, confinementsList, fieldsList, private, publisherId, preloadAssociations, el)
+	args := m.Called(query, architectureList, channelList, confinementsList, fieldsList, private, publisherId, preloadAssociations, el)
 	if args.Get(0) != nil {
 		return args.Get(0).(*[]model.SnapEntry), nil
 	}
@@ -193,6 +194,15 @@ func (m *MockSnapsRepository) GetRevisionByNameAndSequence(name string, sequence
 
 func (m *MockSnapsRepository) GetRevisionBySHA(SHA3_384 string, el *cerror.ErrorList) (*model.SnapRevision, *cerror.CustomError) {
 	args := m.Called(SHA3_384, el)
+	if args.Get(0) != nil {
+		return args.Get(0).(*model.SnapRevision), nil
+	}
+	el.Add(cerror.InternalServerError, "")
+	return nil, args.Get(1).(*cerror.CustomError)
+}
+
+func (m *MockSnapsRepository) GetRevisionBySHAAndEntryId(SHA3_384_encoded string, entryId uuid.UUID, el *cerror.ErrorList) (*model.SnapRevision, *cerror.CustomError) {
+	args := m.Called(SHA3_384_encoded, entryId, el)
 	if args.Get(0) != nil {
 		return args.Get(0).(*model.SnapRevision), nil
 	}

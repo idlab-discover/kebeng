@@ -251,6 +251,7 @@ func (s *StoreLogic) GetEntriesByQuery(ctx context.Context, req *proto.GetEntrie
 	snapEntries, cerr := s.repo.GetEntriesByQuery(
 		req.Query,
 		req.ArchitectureList,
+		req.ChannelList,
 		req.ConfinementsList,
 		req.FieldsList,
 		req.Private,
@@ -742,8 +743,24 @@ func (s *StoreLogic) UnscannedUpload(stream proto.StoreService_UnscannedUploadSe
 	el := cerror.NewErrorList()
 	sha := sha3.New384()
 
-	snapFileName := uuid.New().String() + ".snap"
-	tmpFilePath := path.Join(os.TempDir(), snapFileName)
+	firstMsg, err := stream.Recv()
+	if err != nil {
+		return fmt.Errorf("failed to receive initial message: %v", err)
+	}
+
+	initial := firstMsg.GetInitial()
+	if initial == nil {
+		return fmt.Errorf("first message must hav initialmessage format!")
+	}
+	isDelta := initial.IsDelta
+
+	fileName := uuid.New().String()
+	if isDelta {
+		fileName += ".delta"
+	} else {
+		fileName += ".snap"
+	}
+	tmpFilePath := path.Join(os.TempDir(), fileName)
 
 	outFile, err := os.Create(tmpFilePath)
 	if err != nil {
@@ -797,6 +814,23 @@ func (s *StoreLogic) UnscannedUpload(stream proto.StoreService_UnscannedUploadSe
 
 	digest := sha.Sum(nil)
 	sha3_384HashEncoded := base64.RawURLEncoding.EncodeToString(digest[:])
+
+	if isDelta {
+		metadataMinio, err := s.obs.SaveFileToBucket(
+			"unscanned", tmpFilePath,
+			sha3_384HashEncoded,
+			initial.EntryName, // use entry name as the object name
+			"", "", "", "", "", "", nil, nil, nil, nil,
+		)
+		if err != nil {
+			return fmt.Errorf("failed to save delta to object store: %v", err)
+		}
+		os.Remove(tmpFilePath)
+		return stream.SendAndClose(&proto.UnscannedUploadCompleteResponse{
+			TempFileName: metadataMinio.Key,
+			Size:         uint64(metadataMinio.Size),
+		})
+	}
 
 	metadataYaml, err := getSnapMetaFromFile(tmpFilePath, os.TempDir())
 	if err != nil {
@@ -1482,7 +1516,7 @@ func (s *StoreLogic) processUnscannedSnap(
 		return 0, cerr
 	}
 
-	existingRevision, cerr := s.repo.GetRevisionBySHA(sha3_384Encoded, el)
+	existingRevision, cerr := s.repo.GetRevisionBySHAAndEntryId(sha3_384Encoded, entry.ID, el)
 	if cerr != nil && cerr.GetCode() != cerror.ResourceNotFound {
 		return 0, cerr
 	}
@@ -1554,8 +1588,15 @@ func (s *StoreLogic) processUnscannedSnap(
 	}
 
 	if lastRevision != nil && newRevision != nil {
-		if err := s.generateAndStoreDelta(ctx, lastRevision, newRevision, "xdelta3"); err != nil {
-			logrus.Warnf("delta generation failed for %s rev %d -> %d: %v", snapName, lastRevision.SequenceNumber, newRevision.SequenceNumber, err)
+		deltaCtx, deltaCancel := context.WithTimeout(ctx, time.Second*60)
+		defer deltaCancel()
+
+		if err := s.generateAndStoreDelta(deltaCtx, lastRevision, newRevision, "xdelta3"); err != nil {
+			if deltaCtx.Err() == context.DeadlineExceeded {
+				logrus.Warnf("delta generation timed out after 60s for %s rev %d -> %d, skipping", snapName, lastRevision.SequenceNumber, newRevision.SequenceNumber)
+			} else {
+				logrus.Warnf("delta generation failed for %s rev %d -> %d: %v", snapName, lastRevision.SequenceNumber, newRevision.SequenceNumber, err)
+			}
 		}
 		// NOTE: Append new delta formats here when implemented
 	}

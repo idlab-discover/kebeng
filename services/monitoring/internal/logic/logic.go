@@ -7,6 +7,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/idlab-discover/kebeng/services/monitoring/internal/config"
@@ -187,6 +188,58 @@ func (l *Logic) UnscannedUpload(reader io.Reader, entryName string) (*model.Unsc
 	return &out, nil
 }
 
+func (l *Logic) UnscannedDeltaUpload(reader io.Reader, entryName string) (*model.UnscannedUploadResponse, error) {
+	pr, pw := io.Pipe()
+	mw := multipart.NewWriter(pw)
+
+	go func() {
+		defer pw.Close()
+		defer mw.Close()
+
+		part, err := mw.CreateFormFile("binary", entryName)
+		if err != nil {
+			pw.CloseWithError(fmt.Errorf("create form file: %w", err))
+			return
+		}
+		if _, err := io.Copy(part, reader); err != nil {
+			pw.CloseWithError(fmt.Errorf("copy binary into multipart: %w", err))
+			return
+		}
+	}()
+
+	url := fmt.Sprintf("%s/unscanned-delta-upload/", l.Config.StoreUrl)
+	req, err := http.NewRequest("POST", url, pr)
+	if err != nil {
+		return nil, fmt.Errorf("creating POST %s: %w", url, err)
+	}
+	req.Header.Set("Content-Type", mw.FormDataContentType())
+	req.Header.Set("Authorization", fmt.Sprintf(
+		"Macaroon root=%s, discharge=%s",
+		l.Config.Macaroon, l.Config.Macaroon,
+	))
+
+	resp, err := l.Client.Do(req)
+	if err != nil {
+		logrus.Error("UnscannedDeltaUpload:", err)
+		return nil, fmt.Errorf("HTTP POST %s error: %w", url, err)
+	}
+	defer resp.Body.Close()
+
+	respBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("reading response from %s: %w", url, err)
+	}
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("bad status %d from %s: %s", resp.StatusCode, url, respBytes)
+	}
+
+	var out model.UnscannedUploadResponse
+	if err := json.Unmarshal(respBytes, &out); err != nil {
+		return nil, fmt.Errorf("unmarshal unscanned-delta-upload response: %w", err)
+	}
+	return &out, nil
+}
+
 func (l *Logic) GetUploadStatus(uploadID string) (*model.UploadStatusResponse, error) {
 	url := fmt.Sprintf("%s/dev/api/snaps/%s/status", l.Config.StoreUrl, uploadID)
 	respBytes, err := l.doRequest("GET", url, "", nil)
@@ -253,6 +306,128 @@ func (l *Logic) RegisterNameAndUnscannedUpload(snapName string, reader io.Reader
 	if _, err := l.UnscannedUpload(reader, snapName); err != nil {
 		return fmt.Errorf("unscanned upload: %w", err)
 	}
+	return nil
+}
+
+func (l *Logic) CreateCohorts(snapNames []string) (*model.CreateCohortsResult, error) {
+	url := fmt.Sprintf("%s/v2/cohorts", l.Config.StoreUrl)
+	payload := map[string][]string{"snaps": snapNames}
+	b, _ := json.Marshal(payload)
+
+	respBytes, err := l.doRequest("POST", url, "application/json", bytes.NewReader(b))
+	if err != nil {
+		logrus.Error("CreateCohorts: ", err)
+		return nil, err
+	}
+
+	var out model.CreateCohortsResult
+	if err := json.Unmarshal(respBytes, &out); err != nil {
+		return nil, fmt.Errorf("unmarshal create-cohorts response: %v", err)
+	}
+	return &out, nil
+}
+
+func (l *Logic) FindSnaps(req model.FindSnapsRequest) (*model.FindSnapsResponse, error) {
+	params := url.Values{}
+	if req.Query != "" {
+		params.Set("q", req.Query)
+	}
+
+	for _, field := range req.Fields {
+		params.Add("fields", field)
+	}
+
+	for _, arch := range req.Architectures {
+		params.Add("architecture", arch)
+	}
+
+	for _, ch := range req.Channels {
+		params.Add("channel", ch)
+	}
+
+	for _, conf := range req.Confinements {
+		params.Add("confinement", conf)
+	}
+
+	if req.Private {
+		params.Add("private", "true")
+	}
+
+	fullURL := fmt.Sprintf("%s/v2/snaps/find", l.Config.StoreUrl)
+	if len(params) > 0 {
+		fullURL = fmt.Sprintf("%s?%s", fullURL, params.Encode())
+	}
+
+	respBytes, err := l.doRequest("GET", fullURL, "", nil)
+	if err != nil {
+		logrus.Error("FindSnaps:", err)
+		return nil, err
+	}
+
+	var out model.FindSnapsResponse
+	if err := json.Unmarshal(respBytes, &out); err != nil {
+		return nil, fmt.Errorf("unmarshal find-snaps response: %w", err)
+	}
+	return &out, nil
+}
+
+func (l *Logic) DeltaPush(req model.DeltaUploadRequest, snapName string, unscannedFileName string, sha string) (*model.DeltaPushResponse, error) {
+	url := fmt.Sprintf("%s/dev/api/snap-delta-push/", l.Config.StoreUrl)
+	payload := map[string]any{
+		"name":                   snapName,
+		"updown_id":              unscannedFileName,
+		"base_revision_sequence": req.BaseRevisionSequence,
+		"delta_sha3_384":         sha,
+		"delta_format":           req.DeltaFormat,
+		"tracks_and_channels":    req.TracksAndChannels,
+		"timeout_seconds":        req.TimeoutSeconds,
+	}
+	b, _ := json.Marshal(payload)
+	respBytes, err := l.doRequest("POST", url, "application/json", bytes.NewReader(b))
+	if err != nil {
+		logrus.Error("DeltaPush:", err)
+		return nil, err
+	}
+	var out model.DeltaPushResponse
+	if err := json.Unmarshal(respBytes, &out); err != nil {
+		return nil, fmt.Errorf("unmarshal delta-push response: %w", err)
+	}
+	return &out, nil
+}
+
+func (l *Logic) DeltaDownload(snapName, deltaFormat, deltaName string) error {
+
+	url := fmt.Sprintf("%s/download-delta/%s/%s/%s", l.Config.StoreUrl, deltaFormat, snapName, deltaName)
+
+	req, err := http.NewRequest("GET", url, nil)
+
+	if err != nil {
+		return fmt.Errorf("creating GET %s: %w", url, err)
+	}
+
+	req.Header.Set("Authorization", fmt.Sprintf(
+		"Macaroon root=%s, discharge=%s",
+		l.Config.Macaroon, l.Config.Macaroon,
+	))
+
+	resp, err := l.Client.Do(req)
+	if err != nil {
+		logrus.Error("DeltaDownload:", err)
+		return fmt.Errorf("HTTP GET %s error: %w", url, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		buf := make([]byte, 512)
+		n, _ := resp.Body.Read(buf)
+		return fmt.Errorf("bad status %d from %s: %s", resp.StatusCode, url, buf[:n])
+	}
+
+	if _, err := io.Copy(io.Discard, resp.Body); err != nil {
+		logrus.Error("DeltaDownload copy:", err)
+		return fmt.Errorf("reading body from %s: %w", url, err)
+	}
+
 	return nil
 }
 

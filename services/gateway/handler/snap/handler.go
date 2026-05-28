@@ -27,6 +27,11 @@ type Handler struct {
 	*util.BaseHandler
 }
 
+var supportedDeltaFormats = map[string]bool{
+	"xdelta3": true,
+	// "snap-1-1-xdelta": true,
+}
+
 // TODO: Implement this function properly
 // Right now it's just a placeholder to make sure Snapcraft can be installed in the lxc container
 func (h *Handler) RequestStoreDeviceNonce(c *gin.Context) {
@@ -49,6 +54,8 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 		c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
 		return
 	}
+
+	acceptedDeltaFormat := c.GetHeader("Snap-Accept-Delta-Format")
 
 	var resp model.RefreshSnapResults
 
@@ -85,7 +92,7 @@ func (h *Handler) RefreshSnap(c *gin.Context) {
 			})
 
 		case "refresh":
-			res, cerr := h.refreshRefresh(action, req.Context, el)
+			res, cerr := h.refreshRefresh(action, req.Context, acceptedDeltaFormat, el)
 			if cerr != nil {
 				el.AddCustomError(cerr)
 				c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
@@ -204,7 +211,7 @@ func (h *Handler) refreshInstallOrDownload(action *model.Action, el *cerror.Erro
 	return &res, nil
 }
 
-func (h *Handler) refreshRefresh(action *model.Action, context []*model.Context, el *cerror.ErrorList) (*model.RefreshSnapResult, *cerror.CustomError) {
+func (h *Handler) refreshRefresh(action *model.Action, context []*model.Context, acceptedDeltaFormat string, el *cerror.ErrorList) (*model.RefreshSnapResult, *cerror.CustomError) {
 	// The workflow differs slightly from refreshInstallOrDownload: in this endpoint we only recieve the snap-id, not name.
 	// Depending on the Snap, we may also need to add deltas
 
@@ -260,20 +267,18 @@ func (h *Handler) refreshRefresh(action *model.Action, context []*model.Context,
 			res.Result = "error"
 			return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("error getting revision: %v", selectedRevision.Errors))
 		}
+	} else if action.Revision > 0 {
+		selectedRevision = h.StoreClient.GetRevisionByNameAndSequence(entry.SnapName, uint32(action.Revision))
+		if len(selectedRevision.Errors) > 0 {
+			el.ExtendProtoError(selectedRevision.Errors)
+			res.Result = "error"
+			return &res, cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("revision %d not found for snap %s", action.Revision, entry.SnapName))
+		}
 	} else {
-		if action.Revision > 0 {
-			selectedRevision = h.StoreClient.GetRevisionByNameAndSequence(entry.SnapName, uint32(action.Revision))
-			if len(selectedRevision.Errors) > 0 {
-				el.ExtendProtoError(selectedRevision.Errors)
-				res.Result = "error"
-				return &res, cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("revision %d not found for snap %s", action.Revision, entry.SnapName))
-			}
-		} else {
-			_, selectedRevision = h.getLatestRevisionByEntryName(el, entry.SnapName, action.Channel)
+		_, selectedRevision = h.getLatestRevisionByEntryName(el, entry.SnapName, action.Channel)
 
-			if el.HasError() {
-				return nil, cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("latest revision not found by name: %s", action.Name))
-			}
+		if el.HasError() {
+			return nil, cerror.NewCustomError(cerror.ResourceNotFound, fmt.Sprintf("latest revision not found by name: %s", action.Name))
 		}
 	}
 
@@ -287,49 +292,51 @@ func (h *Handler) refreshRefresh(action *model.Action, context []*model.Context,
 	deltas := make([]model.Delta, 0)
 
 	// What revision does the client have right now?
-	for _, c := range context {
-		if c.SnapID == entry.Id {
-			userRevision := h.StoreClient.GetRevisionByNameAndSequence(entry.SnapName, uint32(c.Revision))
-			if len(userRevision.Errors) > 0 {
-				res.Result = "error"
-				return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("error getting revision: %v", userRevision.Errors))
-			}
-			if selectedRevision.SequenceNumber-userRevision.SequenceNumber != 1 {
-				// NOTE: Delta saving
-				// Currently, we only store deltas for steps of 1 revision at a time
-				// Bigger steps can be ignored for now
+	if supportedDeltaFormats[acceptedDeltaFormat] {
+		for _, c := range context {
+			if c.SnapID == entry.Id {
+				userRevision := h.StoreClient.GetRevisionByNameAndSequence(entry.SnapName, uint32(c.Revision))
+				if len(userRevision.Errors) > 0 {
+					res.Result = "error"
+					return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("error getting revision: %v", userRevision.Errors))
+				}
+				if selectedRevision.SequenceNumber-userRevision.SequenceNumber != 1 {
+					// NOTE: Delta saving
+					// Currently, we only store deltas for steps of 1 revision at a time
+					// Bigger steps can be ignored for now
+					break
+				}
+
+				userRevisionId, erra := uuid.Parse(userRevision.Id)
+				latestRevisionId, errb := uuid.Parse(selectedRevision.Id)
+				if erra != nil || errb != nil {
+					res.Result = "error"
+					return &res, cerror.NewCustomError(cerror.BadRequest, fmt.Sprintf("Unable to parse source and target revision IDs to uuids: %v, %v", erra, errb))
+				}
+				deltaInfo := h.StoreClient.GetDeltaByRevisionPair(userRevisionId, latestRevisionId, "xdelta3", el)
+				if len(deltaInfo.Errors) > 0 {
+					res.Result = "error"
+					return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("error getting delta details: %v", deltaInfo.Errors))
+				}
+
+				deltaRaw, err := base64.RawURLEncoding.DecodeString(deltaInfo.Sha3_384Encoded)
+				if err != nil {
+					el.Add(cerror.InternalServerError, fmt.Sprintf("error decoding sha3_384: %s", err.Error()))
+				}
+
+				deltaHexSum := hex.EncodeToString(deltaRaw)
+
+				deltas = append(deltas, model.Delta{
+					Format:   acceptedDeltaFormat,
+					Sha3_384: deltaHexSum,
+					Size:     selectedRevision.Size,
+					Source:   uint64(userRevision.SequenceNumber),
+					Target:   uint64(selectedRevision.SequenceNumber),
+					URL:      fmt.Sprintf("%s/download-delta/%s/%s/%d-%d.xdelta3", h.Config.StoreUrl, "xdelta3", entry.SnapName, userRevision.SequenceNumber, selectedRevision.SequenceNumber),
+				})
+
 				break
 			}
-
-			userRevisionId, erra := uuid.Parse(userRevision.Id)
-			latestRevisionId, errb := uuid.Parse(selectedRevision.Id)
-			if erra != nil || errb != nil {
-				res.Result = "error"
-				return &res, cerror.NewCustomError(cerror.BadRequest, fmt.Sprintf("Unable to parse source and target revision IDs to uuids: %v, %v", erra, errb))
-			}
-			deltaInfo := h.StoreClient.GetDeltaByRevisionPair(userRevisionId, latestRevisionId, "xdelta3", el)
-			if len(deltaInfo.Errors) > 0 {
-				res.Result = "error"
-				return &res, cerror.NewCustomError(cerror.InternalServerError, fmt.Sprintf("error getting delta details: %v", deltaInfo.Errors))
-			}
-
-			deltaRaw, err := base64.RawURLEncoding.DecodeString(deltaInfo.Sha3_384Encoded)
-			if err != nil {
-				el.Add(cerror.InternalServerError, fmt.Sprintf("error decoding sha3_384: %s", err.Error()))
-			}
-
-			deltaHexSum := hex.EncodeToString(deltaRaw)
-
-			deltas = append(deltas, model.Delta{
-				Format:   "xdelta3", // NOTE: we only support this type, canonical has more
-				Sha3_384: deltaHexSum,
-				Size:     selectedRevision.Size,
-				Source:   uint64(userRevision.SequenceNumber),
-				Target:   uint64(selectedRevision.SequenceNumber),
-				URL:      fmt.Sprintf("%s/download-delta/%s/%s/%d-%d.xdelta3", h.Config.StoreUrl, "xdelta3", entry.SnapName, userRevision.SequenceNumber, selectedRevision.SequenceNumber),
-			})
-
-			break
 		}
 	}
 
@@ -378,6 +385,9 @@ func (h *Handler) FindSnaps(c *gin.Context) {
 	el := cerror.NewErrorList()
 	result := *model.NewFindSnapResponse()
 
+	// Snap Find fails the content-type is `application/json;charset=utf-8`
+	c.Header("Content-Type", "application/json")
+
 	query, queryIsPresent := c.GetQuery("q")
 	if !queryIsPresent || query == "" {
 		// Featured snaps are not yet tracked in the database.
@@ -396,8 +406,14 @@ func (h *Handler) FindSnaps(c *gin.Context) {
 	}
 	architectureList := strings.Split(architecture, ",")
 
-	channel, _ := c.GetQuery("channel")
-	channelList := strings.Split(channel, ",")
+	var channelList []string = make([]string, 0)
+	channel, channelIsPresent := c.GetQuery("channel")
+	if !channelIsPresent {
+		// If no channels are passed by the client the default behaviour is to search for stable and candidate snaps
+		channelList = append(channelList, "stable", "candidate")
+	} else {
+		channelList = strings.Split(channel, ",")
+	}
 
 	confinement, confinementIsPresent := c.GetQuery("confinement")
 	if !confinementIsPresent {
@@ -424,7 +440,8 @@ func (h *Handler) FindSnaps(c *gin.Context) {
 	}
 
 	publisher_id := ""
-	if emailIsPresent {
+	// No need to query account service if the query is not for private Snaps
+	if privateBool && emailIsPresent {
 		acc := h.AccountClient.GetAccountByEmail(email.(string))
 		if len(acc.Errors) > 0 {
 			el.ExtendProtoError(acc.Errors)
@@ -459,15 +476,36 @@ func (h *Handler) FindSnaps(c *gin.Context) {
 			return
 		}
 
-		// GetLatestRevisionByTrackAndChannel is invoked with defaults
-		lastRev := h.StoreClient.GetLatestRevisionByTrackAndChannel(
-			entry.SnapName,
-			"",
-			"",
-		)
-		if len(lastRev.Errors) > 0 {
-			el.ExtendProtoError(lastRev.Errors)
-			c.JSON(el.GetHTTPStatus(), gin.H{"error_list": el})
+		var lastRev *storepb.GetRevisionResponse
+
+		for _, chnnl := range channelList {
+			thisRev := h.StoreClient.GetLatestRevisionByTrackAndChannel(
+				entry.SnapName,
+				"latest",
+				chnnl,
+			)
+
+			if len(thisRev.Errors) > 0 {
+				el.ExtendProtoError(thisRev.Errors)
+				continue
+			}
+
+			if lastRev == nil || thisRev.SequenceNumber > lastRev.SequenceNumber {
+				lastRev = thisRev
+			}
+		}
+
+		if lastRev == nil && el.HasError() {
+			// 404 - just send empty result with OK
+			// Anything different - send errorlist
+			if el.GetHTTPStatus() == 404 {
+				c.JSON(http.StatusOK, result)
+			} else {
+				c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+			}
+			return
+		} else if lastRev == nil {
+			c.JSON(http.StatusOK, result)
 			return
 		}
 
@@ -493,7 +531,7 @@ func (h *Handler) FindSnaps(c *gin.Context) {
 					Channel:     "stable",
 					Confinement: entry.Confinement,
 					Revision:    int(lastRev.SequenceNumber),
-					Version:     entry.Version,
+					Version:     entry.Version, // Misnomer: version should be tied to a rivision, and lastRev.Version should be used. Database currently keeps track of versions incorrectly
 					Status:      entry.Status,
 					Download: model.Download{
 						Size: &lastRev.Size,
@@ -503,8 +541,6 @@ func (h *Handler) FindSnaps(c *gin.Context) {
 		)
 	}
 
-	// Snap Find fails the content-type is `application/json;charset=utf-8`
-	c.Header("Content-Type", "application/json")
 	c.JSON(200, result)
 }
 
@@ -758,7 +794,69 @@ func (h *Handler) UnscannedUpload(c *gin.Context) {
 	}
 
 	// Stream the file part directly to your StoreClient
-	resp := h.StoreClient.UnscannedUpload(c, filePart)
+	resp := h.StoreClient.UnscannedUpload(c, filePart, filename, false)
+	if len(resp.Errors) > 0 {
+		el.ExtendProtoError(resp.Errors)
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+	if resp.GetTempFileName() == "" {
+		el.Add(cerror.InternalServerError, "upload failed: no ID returned")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+
+	// Respond with the upload info
+	c.JSON(http.StatusOK, gin.H{
+		"successful": true,
+		"upload_id":  resp.GetTempFileName(),
+		"filename":   filename,
+		"size":       resp.GetSize(),
+	})
+}
+
+func (h *Handler) UnscannedDeltaUpload(c *gin.Context) {
+	el := cerror.NewErrorList()
+
+	// Grab the multipart reader for the request
+	mr, err := c.Request.MultipartReader()
+	if err != nil {
+		el.Add(cerror.BadRequest, "invalid multipart/form-data binary file not found")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+
+	var (
+		filePart io.Reader
+		filename string
+	)
+	// Iterate parts until we find the "binary" field
+	for {
+		part, err := mr.NextPart()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			el.Add(cerror.InternalServerError, "error reading multipart")
+			c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+			return
+		}
+		if part.FormName() == "binary" {
+			filename = part.FileName()
+			filePart = part
+			break
+		}
+		part.Close() // skip unrelated parts
+	}
+
+	if filePart == nil {
+		el.Add(cerror.BadRequest, "binary part not found")
+		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
+		return
+	}
+
+	// Stream the file part directly to your StoreClient
+	resp := h.StoreClient.UnscannedUpload(c, filePart, filename, true)
 	if len(resp.Errors) > 0 {
 		el.ExtendProtoError(resp.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
@@ -816,14 +914,14 @@ func (h *Handler) CreateCohorts(c *gin.Context) {
 		return
 	}
 
-	var getEntryRequests storepb.GetEntriesRequest
+	var getEntriesRequest storepb.GetEntriesRequest
 	for _, snapname := range req.SnapNames {
-		getEntryRequests.Entries = append(getEntryRequests.Entries, &storepb.GetEntryRequest{
+		getEntriesRequest.Entries = append(getEntriesRequest.Entries, &storepb.GetEntryRequest{
 			Name: &snapname,
 		})
 	}
 
-	getEntriesResponse := h.StoreClient.GetEntries(&getEntryRequests)
+	getEntriesResponse := h.StoreClient.GetEntries(&getEntriesRequest)
 	if len(getEntriesResponse.Errors) > 0 {
 		el.ExtendProtoError(getEntriesResponse.Errors)
 		c.JSON(el.GetHTTPStatus(), gin.H{"error-list": el})
@@ -863,6 +961,70 @@ func (h *Handler) DownloadDelta(c *gin.Context) {
 		return
 	}
 	h.downloadDelta(c, deltaFormat, snapName, deltaName, el)
+}
+
+// WARN: Temporary implementation to allow testing the flow
+// Actual handling of delta uploads will most likely be different
+// Verify once Canonical implementation can be analyzed!
+func (h *Handler) DeltaPush(c *gin.Context) {
+	email, exists := c.Get("email")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	accountResp := h.AccountClient.GetAccountByEmail(email.(string))
+	if len(accountResp.Errors) > 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Could not resolve account"})
+		return
+	}
+
+	var req model.SnapDeltaPushRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	entries := h.StoreClient.GetEntries(&storepb.GetEntriesRequest{
+		Entries: []*storepb.GetEntryRequest{
+			&storepb.GetEntryRequest{
+				Name: &req.Name,
+			},
+		},
+	})
+
+	if len(entries.Errors) > 0 || len(entries.Entries) != 1 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Snap not found"})
+		return
+	}
+
+	entry := entries.Entries[0]
+
+	if entry.PublisherId != accountResp.Id {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You do not own this snap"})
+		return
+	}
+
+	resp := h.StoreClient.ApplyUploadDelta(
+		req.Name,
+		req.BaseRevisionSequence,
+		req.UnscannedFileName,
+		req.DeltaSha3_384,
+		req.DeltaFormat,
+		req.TracksAndChannels,
+		req.TimeoutSeconds,
+	)
+
+	if len(resp.Errors) > 0 {
+		c.JSON(http.StatusInternalServerError, gin.H{"errors": resp.Errors})
+		return
+	}
+
+	c.JSON(http.StatusOK, model.SnapDeltaPushResponse{
+		SnapName: resp.SnapName,
+		Status:   resp.Status,
+		Revision: resp.Revision,
+	})
 }
 
 // ########################## HELPER FUNCTIONS ##########################
