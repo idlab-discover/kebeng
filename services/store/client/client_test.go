@@ -756,7 +756,8 @@ func TestStoreClient_UnscannedUpload(t *testing.T) {
 			fileName: "test_file",
 			mockStream: func() proto.StoreService_UnscannedUploadClient {
 				mockStream := new(logic.MockUnscannedUploadClient)
-				mockStream.On("Send", mock.Anything).Return(nil).Once()
+				mockStream.On("Send", mock.Anything).Return(nil).Once() // initial message
+				mockStream.On("Send", mock.Anything).Return(nil).Once() // data chunk
 				mockStream.On("CloseAndRecv").Return(&proto.UnscannedUploadCompleteResponse{
 					TempFileName: "test_file",
 					Size:         12345,
@@ -789,7 +790,8 @@ func TestStoreClient_UnscannedUpload(t *testing.T) {
 			name: "Error sending data",
 			mockStream: func() proto.StoreService_UnscannedUploadClient {
 				mockStream := new(logic.MockUnscannedUploadClient)
-				mockStream.On("Send", mock.Anything).Return(errors.New("")).Once()
+				mockStream.On("Send", mock.Anything).Return(nil).Once()            // initial message succeeds
+				mockStream.On("Send", mock.Anything).Return(errors.New("")).Once() // data chunk fails
 				mockStream.On("CloseAndRecv").Return(&proto.UnscannedUploadCompleteResponse{
 					TempFileName: "test_file",
 					Size:         12345,
@@ -816,7 +818,8 @@ func TestStoreClient_UnscannedUpload(t *testing.T) {
 			name: "Error closing stream",
 			mockStream: func() proto.StoreService_UnscannedUploadClient {
 				mockStream := new(logic.MockUnscannedUploadClient)
-				mockStream.On("Send", mock.Anything).Return(nil).Once()
+				mockStream.On("Send", mock.Anything).Return(nil).Once() // initial message
+				mockStream.On("Send", mock.Anything).Return(nil).Once() // data chunk
 				mockStream.On("CloseAndRecv").Return(nil, errors.New("")).Once()
 				return mockStream
 			},
