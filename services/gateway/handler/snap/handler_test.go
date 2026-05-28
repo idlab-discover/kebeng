@@ -577,7 +577,7 @@ func TestUnscannedUploadHandler_Success(t *testing.T) {
 		TempFileName: "temp123",
 	}
 	mockStoreClient.
-		On("UnscannedUpload", mock.Anything).
+		On("UnscannedUpload", mock.Anything, "dummy.snap", false).
 		Return(dummyResp).
 		Once()
 
