@@ -842,7 +842,7 @@ func TestStoreClient_UnscannedUpload(t *testing.T) {
 			}
 
 			ctx := context.Background()
-			resp := storeClient.UnscannedUpload(ctx, reader)
+			resp := storeClient.UnscannedUpload(ctx, reader, "test", false)
 			if !tc.expectedErrors && !tc.expectedStreamError {
 				assert.Equal(t, tc.expectedResp, resp)
 				assert.Empty(t, resp.Errors)
